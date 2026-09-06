@@ -1,25 +1,71 @@
 <template>
-  <div v-if="visible" class="user-prompt-backdrop">
-    <div class="user-prompt-modal">
-      <div class="user-prompt-message">{{ message }}</div>
-      <input
-        v-model="inputValue"
-        :type="type"
-        class="user-prompt-input"
-        autofocus
-        @keyup.enter="submit"
-      />
-      <div v-if="warning" class="user-prompt-warning">{{ warning }}</div>
-      <div class="user-prompt-actions">
-        <button class="user-prompt-btn" @click="submit">OK</button>
-        <button class="user-prompt-btn cancel" @click="cancel">Cancel</button>
-      </div>
+  <div v-if="visible" class="prompt-backdrop" @mousedown.self="cancel">
+    <div
+      class="prompt-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="prompt-title"
+      @keydown.esc="cancel"
+    >
+      <header class="prompt-header">
+        <span class="prompt-icon"
+          ><FontAwesomeIcon :icon="faPenToSquare"
+        /></span>
+        <div>
+          <span class="prompt-eyebrow">Information required</span>
+          <h2 id="prompt-title">Enter a value</h2>
+        </div>
+        <button
+          type="button"
+          class="prompt-close"
+          aria-label="Cancel and close"
+          @click="cancel"
+        >
+          <FontAwesomeIcon :icon="faXmark" />
+        </button>
+      </header>
+
+      <form class="prompt-form" @submit.prevent="submit">
+        <label for="user-prompt-value">{{ message }}</label>
+        <input
+          id="user-prompt-value"
+          v-model="inputValue"
+          :type="type"
+          class="prompt-input"
+          :aria-invalid="Boolean(warning)"
+          :aria-describedby="warning ? 'prompt-warning' : undefined"
+          autofocus
+        />
+        <div
+          v-if="warning"
+          id="prompt-warning"
+          class="prompt-warning"
+          role="alert"
+        >
+          <FontAwesomeIcon :icon="faTriangleExclamation" />
+          {{ warning }}
+        </div>
+        <footer class="prompt-actions">
+          <button type="button" class="prompt-button secondary" @click="cancel">
+            Cancel
+          </button>
+          <button type="submit" class="prompt-button primary">
+            Save value
+          </button>
+        </footer>
+      </form>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import {
+  faPenToSquare,
+  faTriangleExclamation,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -29,7 +75,6 @@ const props = defineProps({
   validator: { type: Function, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'submit', 'cancel']);
-
 const visible = ref(props.modelValue);
 const inputValue = ref(props.defaultValue ?? '');
 const warning = ref('');
@@ -37,20 +82,18 @@ const warning = ref('');
 let wasVisible = false;
 watch(
   () => props.modelValue,
-  (v) => {
-    visible.value = v;
-    if (v && !wasVisible) {
-      inputValue.value = props.defaultValue ?? '';
-    }
-    wasVisible = v;
-  }
+  (value) => {
+    visible.value = value;
+    if (value && !wasVisible) inputValue.value = props.defaultValue ?? '';
+    wasVisible = value;
+  },
+  { immediate: true }
 );
 
-// Live validation
-watch(inputValue, (val) => {
+watch(inputValue, (value) => {
   if (props.validator) {
-    const msg = props.validator(val);
-    warning.value = typeof msg === 'string' ? msg : '';
+    const message = props.validator(value);
+    warning.value = typeof message === 'string' ? message : '';
   } else {
     warning.value = '';
   }
@@ -70,75 +113,164 @@ defineExpose({ inputValue });
 </script>
 
 <style scoped>
-.user-prompt-backdrop {
+.prompt-backdrop {
   position: fixed;
   z-index: 10000;
   inset: 0;
-  background: rgb(0 0 0 / 25%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(18 35 64 / 58%);
+  backdrop-filter: blur(3px);
 }
 
-.user-prompt-modal {
+.prompt-dialog {
+  width: min(500px, 100%);
+  overflow: hidden;
   background: #fff;
-  border-radius: 10px;
-  padding: 28px 32px 22px;
-  min-width: 320px;
-  max-width: 50vw;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 32px #0002;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  text-align: justify;
+  border: 1px solid #d7e1f0;
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgb(15 35 70 / 28%);
 }
 
-.user-prompt-message {
-  font-size: 1.08rem;
-  margin-bottom: 16px;
-  color: #222;
+.prompt-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 22px 24px 18px;
+  background: linear-gradient(145deg, #fff, #f7faff);
+  border-bottom: 1px solid #e2e8f2;
 }
 
-.user-prompt-input {
-  font-size: 1.1rem;
-  padding: 7px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 5px;
-  margin-bottom: 18px;
+.prompt-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: #2864e8;
+  background: #e8f0ff;
+  border-radius: 12px;
 }
 
-.user-prompt-warning {
-  color: #e74c3c;
-  font-size: 0.98em;
-  margin-bottom: 8px;
-  margin-top: -10px;
+.prompt-eyebrow {
+  display: block;
+  color: #2864e8;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
 }
 
-.user-prompt-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
+.prompt-header h2 {
+  margin: 2px 0 0;
+  color: #12213b;
+  font-size: 1.18rem;
 }
 
-.user-prompt-btn {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  padding: 7px 18px;
-  font-size: 1rem;
+.prompt-close {
+  width: 38px;
+  height: 38px;
+  color: #65748d;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
   cursor: pointer;
-  transition: background 0.18s;
 }
 
-.user-prompt-btn.cancel {
-  background: #e5e7eb;
-  color: #333;
+.prompt-close:hover {
+  color: #17243b;
+  background: #eef3f9;
 }
 
-.user-prompt-btn:hover {
-  filter: brightness(1.08);
+.prompt-form {
+  display: grid;
+  gap: 10px;
+  padding: 22px 24px 0;
+}
+
+.prompt-form label {
+  color: #35445f;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.prompt-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: #12213b;
+  background: #fff;
+  border: 1px solid #cdd8e8;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.prompt-input:focus {
+  outline: 3px solid rgb(37 99 235 / 15%);
+  border-color: #4480ef;
+}
+
+.prompt-input[aria-invalid='true'] {
+  border-color: #dc4848;
+}
+
+.prompt-warning {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: #b52626;
+  font-size: 0.82rem;
+}
+
+.prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 12px -24px 0;
+  padding: 16px 24px;
+  background: #f7f9fc;
+  border-top: 1px solid #e2e8f2;
+}
+
+.prompt-button {
+  min-height: 42px;
+  padding: 9px 17px;
+  font: inherit;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.prompt-button.secondary {
+  color: #35445f;
+  background: #fff;
+  border: 1px solid #cdd8e8;
+}
+
+.prompt-button.primary {
+  color: #fff;
+  background: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+@media (width <= 560px) {
+  .prompt-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .prompt-dialog {
+    border-radius: 16px;
+  }
+
+  .prompt-actions {
+    flex-direction: column-reverse;
+  }
+
+  .prompt-button {
+    width: 100%;
+  }
 }
 </style>

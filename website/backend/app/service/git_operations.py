@@ -1,13 +1,16 @@
+import os
 import shutil
+import stat
 import subprocess
+import traceback
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from app.core.centralized_logging import get_logger
-from app.utils.project_backup import create_hidden_folder_in_root, update_backup
 from app.service.git_diff_parser import GitDiffParser
+from app.utils.project_backup import update_backup
 
 logger = get_logger()
 
@@ -34,6 +37,18 @@ class MergeAnalysis:
     file_diffs: dict[str, dict] | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class MergeReadiness:
+    """A non-mutating merge-tree result for a submitted branch."""
+
+    status: str
+    conflicted_files: list[str]
+
+    @property
+    def can_merge(self) -> bool:
+        return self.status == "ready_to_merge"
+
+
 class GitBranchManager:
     """Handles Git branch operations."""
 
@@ -56,13 +71,10 @@ class GitBranchManager:
         return branch_name
 
     def switch_to_master(self) -> None:
-        """Switch to master branch."""
-        subprocess.run(
-            ["git", "checkout", "master"],
-            cwd=self.project_path,
-            check=True,
-        )
-        logger.info("Switched to master branch")
+        """Switch to the repository's canonical branch."""
+        branch = self.commandRunner.canonical_branch()
+        self.commandRunner.checkout(branch)
+        logger.info("Switched to canonical branch: %s", branch)
 
     def delete_branch(self, branch_name: str) -> None:
         """Delete a branch."""
@@ -84,8 +96,11 @@ class GitDiffAnalyzer:
         )
         diff_parser = GitDiffParser()
 
+        canonical = GitCommandRunner(
+            self.project_path, maintain_backup=False
+        ).canonical_branch()
         diff_name_status_result = subprocess.run(
-            ["git", "diff", f"master...{branch_name}", "--name-status"],
+            ["git", "diff", f"{canonical}...{branch_name}", "--name-status"],
             cwd=self.project_path,
             capture_output=True,
             text=True,
@@ -109,7 +124,7 @@ class GitDiffAnalyzer:
         # For each modified file, parse the diff ONCE
         for filename in modified_files:
             file_diff_result = subprocess.run(
-                ["git", "diff", f"master...{branch_name}", "--", filename],
+                ["git", "diff", f"{canonical}...{branch_name}", "--", filename],
                 cwd=self.project_path,
                 capture_output=True,
                 text=True,
@@ -265,8 +280,8 @@ class GitMerger:
                 runner.checkout("master")
                 runner.run(["branch", "-D", conflict_branch_name], check=False)
                 runner.run(["branch", "-D", branch_name], check=False)
-            except:
-                pass
+            except Exception:
+                logger.exception("Failed to clean up branches after selective merge")
             raise RuntimeError(f"Selective merge failed: {e}") from e
 
     def auto_merge_if_safe(
@@ -407,8 +422,18 @@ class FileUploadProcessor:
         elan_files_dir = self.project_path / "elan_files"
         elan_files_dir.mkdir(exist_ok=True)
 
-        dest_path = elan_files_dir / file.filename
-        logger.debug(f"Processing file: {file.filename} -> {dest_path}")
+        filename = file.filename
+        if (
+            not filename
+            or filename in {".", ".."}
+            or "/" in filename
+            or "\\" in filename
+            or "\x00" in filename
+        ):
+            raise ValueError("Invalid upload filename")
+
+        dest_path = elan_files_dir / filename
+        logger.debug(f"Processing file: {filename} -> {dest_path}")
 
         # Always save the file - let Git determine if it changed
         content = await file.read()
@@ -420,15 +445,15 @@ class FileUploadProcessor:
         # Add to git - Git will handle change detection
         try:
             runner = GitCommandRunner(self.project_path)
-            runner.run(["add", f"elan_files/{file.filename}"], check=True)
-            logger.debug(f"Git add successful for {file.filename}")
+            runner.run(["add", "--", f"elan_files/{filename}"], check=True)
+            logger.debug(f"Git add successful for {filename}")
 
         except subprocess.CalledProcessError as e:
             logger.error(f"Git add failed for {file.filename}: {e}")
             raise RuntimeError(f"Failed to add file to Git: {e}") from e
 
         return FileUploadResult(
-            filename=file.filename,
+            filename=filename,
             size=file.size or 0,
             existed=file.filename in existing_files,
             success=True,
@@ -494,12 +519,30 @@ class FileUploadProcessor:
 class GitCommandRunner:
     """Runs generic git commands and returns results."""
 
-    def __init__(self, project_path: Path):
+    def __init__(self, project_path: Path, *, maintain_backup: bool = True) -> None:
         self.project_path = project_path
+        self.maintain_backup = maintain_backup
 
-    def run(self, args: list[str], check: bool = False) -> subprocess.CompletedProcess:
+    def _update_backup(self) -> None:
+        if self.maintain_backup:
+            update_backup(self.project_path.name, self.project_path.parent)
+
+    def run(
+        self, args: list[str], check: bool = False
+    ) -> subprocess.CompletedProcess[str]:
+        # Project repositories commonly live on bind mounts whose host UID does not
+        # match the container user. Trust only this already-resolved repository for
+        # this command instead of mutating Git's process-global safe.directory list.
+        safe_directory = self.project_path.resolve()
         return subprocess.run(
-            ["git", *args],
+            [
+                "git",
+                "-c",
+                f"safe.directory={safe_directory}",
+                "-c",
+                "core.quotepath=false",
+                *args,
+            ],
             cwd=self.project_path,
             capture_output=True,
             text=True,
@@ -507,7 +550,47 @@ class GitCommandRunner:
         )
 
     def get_status(self) -> str:
-        return self.run(["status", "--porcelain"]).stdout
+        return self.run(["status", "--porcelain"], check=True).stdout
+
+    def canonical_branch(self) -> str:
+        """Support modern `main` projects and retained legacy `master` projects."""
+        for branch in ("main", "master"):
+            result = self.run(
+                ["show-ref", "--verify", "--quiet", f"refs/heads/{branch}"],
+                check=False,
+            )
+            if result.returncode == 0:
+                return branch
+        raise RuntimeError("Project has no main or master branch")
+
+    def preview_merge(self, branch_name: str) -> MergeReadiness:
+        """Inspect a three-way merge without touching HEAD, index, or worktree."""
+        result = self.run(
+            [
+                "merge-tree",
+                "--write-tree",
+                "--name-only",
+                self.canonical_branch(),
+                branch_name,
+            ],
+            check=False,
+        )
+        if result.returncode == 0:
+            return MergeReadiness("ready_to_merge", [])
+
+        lines = result.stdout.splitlines()
+        conflicted_files: list[str] = []
+        # With --name-only, merge-tree prints the tree id followed by the
+        # unmerged paths, then a blank line and human-readable messages.
+        for line in lines[1:]:
+            candidate = line.strip()
+            if not candidate:
+                break
+            conflicted_files.append(candidate)
+        if not conflicted_files:
+            detail = result.stderr.strip() or "Git could not inspect the contribution"
+            raise RuntimeError(detail)
+        return MergeReadiness("needs_resolution", conflicted_files)
 
     def stage_all_changes(self) -> None:
         """Stage all changes to enable rename detection."""
@@ -550,7 +633,7 @@ class GitCommandRunner:
         self.run(["config", "user.name", instance_name], check=True)
         self.run(["config", "user.email", email], check=True)
         logger.info(f"Configured Git user: {instance_name} <{email}>")
-        update_backup(self.project_path.name, self.project_path.parent)
+        self._update_backup()
 
     def get_branches(self) -> list[str]:
         result = self.run(["branch", "-a"], check=True)
@@ -572,26 +655,41 @@ class GitCommandRunner:
 
     def add_all(self):
         self.run(["add", "."], check=True)
-        update_backup(self.project_path.name, self.project_path.parent)
+        self._update_backup()
 
     def commit(self, message: str):
         self.run(["commit", "-m", message], check=True)
-        update_backup(self.project_path.name, self.project_path.parent)
+        self._update_backup()
 
-    def push(self, branch: str = "master"):
+    def push(self, branch: str | None = None):
+        branch = branch or self.canonical_branch()
         self.run(["push", "origin", branch], check=True)
-        update_backup(self.project_path.name, self.project_path.parent)
+        self._update_backup()
 
     def get_commit_hash(self) -> str:
         return self.run(["rev-parse", "HEAD"]).stdout.strip()
 
-    def init_repo(self):
-        self.run(["init"], check=True)
-        update_backup(self.project_path.name, self.project_path.parent)
+    def get_tree_hash(self, revision: str = "HEAD") -> str:
+        """Return the content identity of a revision, independent of commit metadata."""
+        return self.run(
+            ["rev-parse", "--verify", f"{revision}^{{tree}}"], check=True
+        ).stdout.strip()
+
+    def init_repo(self) -> None:
+        """Initialize a repository with an application-owned commit identity.
+
+        Server-side Git operations must not depend on a host or container's
+        global Git configuration. Human attribution remains in the commit
+        message and ELANORA audit records.
+        """
+        self.run(["init", "--initial-branch=main"], check=True)
+        self.run(["config", "user.name", "ELANORA"], check=True)
+        self.run(["config", "user.email", "system@elanora.local"], check=True)
+        self._update_backup()
 
     def add_file(self, filepath: str):
         self.run(["add", filepath], check=True)
-        update_backup(self.project_path.name, self.project_path.parent)
+        self._update_backup()
 
     def merge(self, branch_name: str, message: str, no_ff: bool = True):
         args = ["merge", branch_name]
@@ -599,10 +697,12 @@ class GitCommandRunner:
             args.append("--no-ff")
         args += ["-m", message]
         self.run(args, check=True)
-        update_backup(self.project_path.name, self.project_path.parent)
+        self._update_backup()
 
     def diff_stat(self, branch_name: str) -> str:
-        return self.run(["diff", f"master...{branch_name}", "--stat"]).stdout
+        return self.run(
+            ["diff", f"{self.canonical_branch()}...{branch_name}", "--stat"]
+        ).stdout
 
     def delete_branch_localy(self, branch_name: str):
         self.run(["branch", "-D", branch_name], check=False)
@@ -618,7 +718,7 @@ class GitCommandRunner:
     def resolve_conflicts(
         self, branch_name: str, resolution_strategy: str
     ) -> dict[str, Any]:
-        self.checkout("master")
+        self.checkout(self.canonical_branch())
         self.run(["merge", branch_name, "--no-ff"], check=False)
         if resolution_strategy == "accept_incoming":
             self.run(["checkout", "--theirs", "."], check=True)
@@ -633,7 +733,6 @@ class GitCommandRunner:
             ],
             check=True,
         )
-        self.run(["branch", "-d", branch_name], check=False)
         update_backup(self.project_path.name, self.project_path.parent)
         return {
             "branch_name": branch_name,
@@ -641,12 +740,67 @@ class GitCommandRunner:
             "status": "resolved",
         }
 
+    def complete_pending_merge(
+        self, branch_name: str, resolution_strategy: str = "auto"
+    ) -> dict[str, Any]:
+        """Merge a reviewed branch, resolving conflicts only when explicitly asked."""
+        allowed_strategies = {"auto", "accept_incoming", "accept_current"}
+        if resolution_strategy not in allowed_strategies:
+            raise ValueError("Unsupported merge resolution strategy")
+
+        already_merged = self.run(
+            [
+                "merge-base",
+                "--is-ancestor",
+                branch_name,
+                self.canonical_branch(),
+            ],
+            check=False,
+        )
+        if already_merged.returncode == 0:
+            return {
+                "branch_name": branch_name,
+                "resolution_strategy": resolution_strategy,
+                "status": "already_merged",
+            }
+
+        self.checkout(self.canonical_branch())
+        merge_result = self.run(
+            ["merge", "--no-commit", "--no-ff", branch_name], check=False
+        )
+        conflicted_files = self.get_conflicted_files()
+        if conflicted_files and resolution_strategy == "auto":
+            self.run(["merge", "--abort"], check=False)
+            raise ValueError("Contribution has conflicts that require resolution")
+
+        if merge_result.returncode != 0 and not conflicted_files:
+            self.run(["merge", "--abort"], check=False)
+            raise RuntimeError("Git could not merge the contribution")
+
+        if conflicted_files:
+            checkout_side = (
+                "--theirs" if resolution_strategy == "accept_incoming" else "--ours"
+            )
+            self.run(["checkout", checkout_side, "--", "."], check=True)
+
+        self.run(["add", "--all"], check=True)
+        self.run(
+            ["commit", "-m", f"Merge reviewed contribution {branch_name}"],
+            check=True,
+        )
+        self._update_backup()
+        return {
+            "branch_name": branch_name,
+            "resolution_strategy": resolution_strategy,
+            "status": "resolved",
+        }
+
     def cleanup_on_error(self, branch_name: str | None = None):
-        """Cleanup on error: optionally delete a branch, then checkout master."""
+        """Cleanup on error and return to the repository's accepted branch."""
         try:
+            self.run(["checkout", self.canonical_branch()], check=False)
             if branch_name:
                 self.run(["branch", "-D", branch_name], check=False)
-            self.run(["checkout", "master"], check=False)
             update_backup(self.project_path.name, self.project_path.parent)
         except Exception:
             logger.exception("Exception occurred during cleanup_on_error")
@@ -672,13 +826,14 @@ class GitCommandRunner:
         try:
             result = self.run(["branch", "--show-current"])
             return result.stdout.strip()
-        except:
+        except Exception:
             # Fallback method
             try:
                 result = self.run(["rev-parse", "--abbrev-ref", "HEAD"])
                 return result.stdout.strip()
-            except:
-                return "master"
+            except Exception:
+                logger.exception("Unable to determine current Git branch")
+                return "unknown"
 
 
 def delete_project_folder(project_path: Path) -> None:
@@ -688,8 +843,6 @@ def delete_project_folder(project_path: Path) -> None:
         return
 
     def on_rm_exc(func, path, exc_info):
-        import traceback
-
         exc = (
             exc_info[1]
             if isinstance(exc_info, tuple) and len(exc_info) > 1
@@ -697,9 +850,6 @@ def delete_project_folder(project_path: Path) -> None:
         )
         # Try to remove read-only and retry
         try:
-            import os
-            import stat
-
             os.chmod(path, stat.S_IWRITE)
             func(path)
             logger.info(f"Retried and deleted after chmod: {path}")
@@ -715,10 +865,6 @@ def delete_project_folder(project_path: Path) -> None:
     try:
         shutil.rmtree(project_path, onexc=on_rm_exc)
         logger.info(f"Successfully deleted project folder: {project_path}")
-        backup_path = create_hidden_folder_in_root() / project_path.name
-        if backup_path.exists():
-            shutil.rmtree(backup_path)
-            logger.info(f"Deleted backup for project: {project_path.name}")
 
     except Exception as fs_exc:
         logger.error(
@@ -726,4 +872,4 @@ def delete_project_folder(project_path: Path) -> None:
         )
         raise RuntimeError(
             f"Failed to delete project folder: {project_path} | Error: {fs_exc}"
-        )
+        ) from fs_exc

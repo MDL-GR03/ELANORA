@@ -1,6 +1,9 @@
 <template>
   <div
-    class="file-rename-suggestion-popover"
+    :class="[
+      'file-rename-suggestion-popover',
+      `file-rename-suggestion-popover--${placement}`,
+    ]"
     tabindex="-1"
     @mouseenter="clearCloseTimer"
     @mouseleave="startCloseTimer"
@@ -8,11 +11,14 @@
     @focusout="startCloseTimer"
   >
     <div class="suggestion-title">{{ t('fileRenameSuggestion.title') }}</div>
-    
+
     <div v-if="mediaFiles && mediaFiles.length > 0" class="media-files-info">
-      <small>{{ t('fileRenameSuggestion.basedOnMediaFiles') }}: {{ mediaFiles.join(', ') }}</small>
+      <small
+        >{{ t('fileRenameSuggestion.basedOnMediaFiles') }}:
+        {{ mediaFiles.join(', ') }}</small
+      >
     </div>
-    
+
     <div class="suggestion-input-container">
       <input
         v-model="renameValue"
@@ -27,15 +33,19 @@
         <i class="fas fa-exclamation-triangle"></i>
         <small>{{ t('fileRenameSuggestion.notCompliant') }}</small>
       </div>
-      <button 
-        class="suggestion-confirm-btn" 
+      <button
+        class="suggestion-confirm-btn"
         :disabled="!isValidRename || isRenaming"
         @click="confirmRename"
         @focus="clearCloseTimer"
         @blur="startCloseTimer"
       >
         <i v-if="isRenaming" class="fas fa-spinner fa-spin"></i>
-        {{ isRenaming ? t('fileRenameSuggestion.renaming') : t('fileRenameSuggestion.confirm') }}
+        {{
+          isRenaming
+            ? t('fileRenameSuggestion.renaming')
+            : t('fileRenameSuggestion.confirm')
+        }}
       </button>
     </div>
   </div>
@@ -54,7 +64,12 @@ const props = defineProps({
   projectName: { type: String, required: true },
   elanId: { type: Number, required: true },
   standard: { type: Object, default: null },
-  mediaFiles: { type: Array, default: () => [] }
+  mediaFiles: { type: Array, default: () => [] },
+  placement: {
+    type: String,
+    default: 'right',
+    validator: (value) => ['right', 'left', 'top', 'bottom'].includes(value),
+  },
 });
 const emit = defineEmits(['accept', 'close', 'error', 'conflict']);
 
@@ -65,8 +80,13 @@ const isValidRename = computed(() => {
   const trimmedValue = renameValue.value.trim();
   if (!trimmedValue || trimmedValue === props.currentFilename) return false;
   if (!props.standard) return false;
-  
-  console.log('FileRenameSuggestion - Checking compliance for:', trimmedValue, 'with standard:', props.standard);
+
+  console.log(
+    'FileRenameSuggestion - Checking compliance for:',
+    trimmedValue,
+    'with standard:',
+    props.standard
+  );
   const result = isElanFilenameCompliant(props.standard, trimmedValue);
   console.log('FileRenameSuggestion - Compliance result:', result);
   return result;
@@ -92,11 +112,15 @@ function clearCloseTimer() {
 
 async function confirmRename() {
   if (!isValidRename.value || isRenaming.value) return;
-  
+
   isRenaming.value = true;
   try {
-    const result = await gitService.renameFile(props.projectName, props.elanId, renameValue.value.trim());
-    
+    const result = await gitService.renameFile(
+      props.projectName,
+      props.elanId,
+      renameValue.value.trim()
+    );
+
     // Check if the operation was successful or if there was a conflict
     if (result.success) {
       emit('accept', renameValue.value.trim());
@@ -107,18 +131,18 @@ async function confirmRename() {
         currentElanId: props.elanId,
         conflictElanId: result.conflict_elan_id,
         targetFilename: renameValue.value.trim(),
-        currentFilename: props.currentFilename
+        currentFilename: props.currentFilename,
       });
-      
+
       // Emit conflict event with conflict information
       emit('conflict', {
         currentElanId: props.elanId,
         conflictElanId: result.conflict_elan_id,
         targetFilename: renameValue.value.trim(),
         currentFilename: props.currentFilename,
-        messageKey: result.message_key || 'rename.conflict'
+        messageKey: result.message_key || 'rename.conflict',
       });
-      
+
       emit('close');
     } else {
       // Other error case
@@ -138,39 +162,49 @@ onMounted(() => {
 });
 
 // Watch for changes in suggestion prop and update the input
-watch(() => props.suggestion, (newSuggestion) => {
-  renameValue.value = newSuggestion;
-}, { immediate: true });
+watch(
+  () => props.suggestion,
+  (newSuggestion) => {
+    renameValue.value = newSuggestion;
+  },
+  { immediate: true }
+);
 
 // Watch for changes in currentFilename to ensure we're showing the right file
-watch(() => props.currentFilename, () => {
-  renameValue.value = props.suggestion;
-}, { immediate: true });
+watch(
+  () => props.currentFilename,
+  () => {
+    renameValue.value = props.suggestion;
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
 .file-rename-suggestion-popover {
   background: #fff;
-  border: 1px solid #ffe082;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 12px 16px;
-  min-width: 280px;
-  max-width: 320px;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 18px 45px rgb(15 23 42 / 18%);
+  padding: 1rem;
+  width: min(20rem, calc(100vw - 1.5rem));
+  max-height: calc(100vh - 1.5rem);
+  overflow: visible;
   z-index: 1000;
   font-size: 0.98rem;
-  position: absolute;
-  
+  position: fixed;
+
   /* Smooth appearance animation */
-  animation: popoverFadeIn 0.2s ease-out;
-  transform-origin: var(--arrow-placement, right);
+  animation: popover-fade-in 0.2s ease-out;
+  transform-origin: center;
 }
 
-@keyframes popoverFadeIn {
+@keyframes popover-fade-in {
   from {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -188,7 +222,7 @@ watch(() => props.currentFilename, () => {
 /* Arrow pointing to the filename - right placement (default) */
 .file-rename-suggestion-popover::before {
   border-width: 8px;
-  border-right-color: #ffe082;
+  border-right-color: #94a3b8;
   top: var(--arrow-offset, 50%);
   left: -16px;
   transform: translateY(-50%);
@@ -203,8 +237,8 @@ watch(() => props.currentFilename, () => {
 }
 
 /* Left placement - arrow points right */
-.file-rename-suggestion-popover[style*="--arrow-placement: left"]::before {
-  border-left-color: #ffe082;
+.file-rename-suggestion-popover--left::before {
+  border-left-color: #94a3b8;
   border-right-color: transparent;
   left: auto;
   right: -16px;
@@ -212,7 +246,7 @@ watch(() => props.currentFilename, () => {
   transform: translateY(-50%);
 }
 
-.file-rename-suggestion-popover[style*="--arrow-placement: left"]::after {
+.file-rename-suggestion-popover--left::after {
   border-left-color: #fff;
   border-right-color: transparent;
   left: auto;
@@ -222,8 +256,8 @@ watch(() => props.currentFilename, () => {
 }
 
 /* Top placement - arrow points down */
-.file-rename-suggestion-popover[style*="--arrow-placement: top"]::before {
-  border-top-color: #ffe082;
+.file-rename-suggestion-popover--top::before {
+  border-top-color: #94a3b8;
   border-right-color: transparent;
   top: auto;
   bottom: -16px;
@@ -231,7 +265,7 @@ watch(() => props.currentFilename, () => {
   transform: translateX(-50%);
 }
 
-.file-rename-suggestion-popover[style*="--arrow-placement: top"]::after {
+.file-rename-suggestion-popover--top::after {
   border-top-color: #fff;
   border-right-color: transparent;
   top: auto;
@@ -241,8 +275,8 @@ watch(() => props.currentFilename, () => {
 }
 
 /* Bottom placement - arrow points up */
-.file-rename-suggestion-popover[style*="--arrow-placement: bottom"]::before {
-  border-bottom-color: #ffe082;
+.file-rename-suggestion-popover--bottom::before {
+  border-bottom-color: #94a3b8;
   border-right-color: transparent;
   bottom: auto;
   top: -16px;
@@ -250,7 +284,7 @@ watch(() => props.currentFilename, () => {
   transform: translateX(-50%);
 }
 
-.file-rename-suggestion-popover[style*="--arrow-placement: bottom"]::after {
+.file-rename-suggestion-popover--bottom::after {
   border-bottom-color: #fff;
   border-right-color: transparent;
   bottom: auto;
@@ -292,7 +326,7 @@ watch(() => props.currentFilename, () => {
 
 .suggestion-input:focus {
   outline: none;
-  border-color: #2196F3;
+  border-color: #2196f3;
 }
 
 .suggestion-input.non-compliant {

@@ -1,5 +1,3 @@
-from typing import List
-
 from app.schema.common.base import CustomBaseModel
 
 
@@ -18,10 +16,10 @@ class ElanFileWithMediaResponse(CustomBaseModel):
     elan_id: int
     filename: str
     file_path: str
-    media_filenames: List[str]  # This should match what we're providing
+    media_filenames: list[str]  # This should match what we're providing
 
 
 class ProjectFilesWithMediaResponse(CustomBaseModel):
     """Response schema for project files with their associated media."""
 
-    files: List[ElanFileWithMediaResponse]
+    files: list[ElanFileWithMediaResponse]

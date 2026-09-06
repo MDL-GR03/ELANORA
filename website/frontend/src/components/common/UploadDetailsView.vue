@@ -4,12 +4,8 @@
       <h3>Upload Information</h3>
       <div class="details-grid">
         <div class="detail-item">
-          <label>Branch:</label>
-          <span class="branch-name" :title="upload.branch_name">{{ upload.branch_name }}</span>
-        </div>
-        <div class="detail-item">
-          <label>Original Branch:</label>
-          <span class="branch-name" :title="upload.original_branch">{{ upload.original_branch }}</span>
+          <label>Contribution:</label>
+          <span>#{{ upload.upload_id }}</span>
         </div>
         <div class="detail-item">
           <label>Upload Type:</label>
@@ -17,7 +13,10 @@
         </div>
         <div class="detail-item">
           <label>Status:</label>
-          <span class="status-badge" :class="getStatusClass(upload.merge_status)">
+          <span
+            class="status-badge"
+            :class="getStatusClass(upload.merge_status)"
+          >
             {{ formatStatus(upload.merge_status) }}
           </span>
         </div>
@@ -27,11 +26,29 @@
         </div>
         <div class="detail-item">
           <label>Uploaded By:</label>
-          <span>User {{ upload.uploaded_by }}</span>
+          <span>{{ upload.uploaded_by || 'Unknown researcher' }}</span>
         </div>
         <div v-if="upload.tested_at" class="detail-item">
           <label>Last Tested:</label>
           <span>{{ formatDate(upload.tested_at) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="details-section">
+      <h3>Quality checks</h3>
+      <div class="details-grid">
+        <div class="detail-item">
+          <label>ELAN file structure</label>
+          <span>Passed</span>
+        </div>
+        <div class="detail-item">
+          <label>Project naming rules</label>
+          <span>Passed</span>
+        </div>
+        <div class="detail-item">
+          <label>Project protocol</label>
+          <span>{{ protocolLabel }}</span>
         </div>
       </div>
     </div>
@@ -45,7 +62,11 @@
             New Files ({{ upload.files.new.length }})
           </h4>
           <ul class="file-list">
-            <li v-for="file in upload.files.new" :key="file" class="file-item new">
+            <li
+              v-for="file in upload.files.new"
+              :key="file"
+              class="file-item new"
+            >
               <span class="file-name" :title="file">{{ file }}</span>
             </li>
           </ul>
@@ -57,7 +78,11 @@
             Modified Files ({{ upload.files.modified.length }})
           </h4>
           <ul class="file-list">
-            <li v-for="file in upload.files.modified" :key="file" class="file-item modified">
+            <li
+              v-for="file in upload.files.modified"
+              :key="file"
+              class="file-item modified"
+            >
               <span class="file-name" :title="file">{{ file }}</span>
             </li>
           </ul>
@@ -69,7 +94,11 @@
             Deleted Files ({{ upload.files.deleted.length }})
           </h4>
           <ul class="file-list">
-            <li v-for="file in upload.files.deleted" :key="file" class="file-item deleted">
+            <li
+              v-for="file in upload.files.deleted"
+              :key="file"
+              class="file-item deleted"
+            >
               <span class="file-name" :title="file">{{ file }}</span>
             </li>
           </ul>
@@ -81,59 +110,68 @@
       <h3>Conflicts</h3>
       <div class="conflicts-info">
         <p class="conflict-summary">
-          {{ upload.conflicted_files.length }} files have merge conflicts that need resolution.
+          {{ upload.conflicted_files.length }} files have merge conflicts that
+          need resolution.
         </p>
         <ul class="conflict-files">
-          <li v-for="file in upload.conflicted_files" :key="file" class="conflict-file">
+          <li
+            v-for="file in upload.conflicted_files"
+            :key="file"
+            class="conflict-file"
+          >
             <span class="conflict-icon">⚠️</span>
             <span class="file-name" :title="file">{{ file }}</span>
           </li>
         </ul>
       </div>
     </div>
-
-    <div v-if="upload.git_details" class="details-section">
-      <h3>Technical Details</h3>
-      <div class="tech-details">
-        <pre>{{ JSON.stringify(upload.git_details, null, 2) }}</pre>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue';
+
 const props = defineProps({
   upload: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
+});
+
+const protocolLabel = computed(() => {
+  const outcome = props.upload.quality_checks?.protocol;
+  if (outcome === 'passed') return 'Passed';
+  if (outcome === 'recheck_required')
+    return 'Protocol changed; this contribution will be checked again before acceptance';
+  if (outcome === 'not_configured') return 'Not configured for this project';
+  return 'Not recorded for this older contribution';
 });
 
 function formatUploadType(type) {
   const types = {
-    'pending_upload': 'New Files Only',
-    'upload_with_modifications': 'With Modifications',
-    'upload_with_deletions': 'With Deletions'
+    pending_upload: 'New Files Only',
+    upload_with_modifications: 'With Modifications',
+    upload_with_deletions: 'With Deletions',
   };
   return types[type] || type;
 }
 
 function formatStatus(status) {
   const statuses = {
-    'ready_to_merge': 'Ready to Merge',
-    'needs_resolution': 'Needs Resolution',
-    'error': 'Error',
-    'pending_admin_approval': 'Pending Review'
+    ready_to_merge: 'Ready to Merge',
+    needs_resolution: 'Needs Resolution',
+    error: 'Error',
+    pending_admin_approval: 'Pending Review',
   };
   return statuses[status] || status;
 }
 
 function getStatusClass(status) {
   const classes = {
-    'ready_to_merge': 'ready',
-    'needs_resolution': 'conflicts', 
-    'error': 'error',
-    'pending_admin_approval': 'pending'
+    ready_to_merge: 'ready',
+    needs_resolution: 'conflicts',
+    error: 'error',
+    pending_admin_approval: 'pending',
   };
   return classes[status] || 'pending';
 }
@@ -160,7 +198,7 @@ function formatDate(dateString) {
 }
 
 .details-section h3 {
-  margin: 0 0 15px 0;
+  margin: 0 0 15px;
   color: #2c3e50;
   font-size: 1.2rem;
 }
@@ -248,7 +286,7 @@ function formatDate(dateString) {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 10px 0;
+  margin: 0 0 10px;
   font-size: 1rem;
   font-weight: 600;
 }
@@ -317,7 +355,7 @@ function formatDate(dateString) {
 }
 
 .conflict-summary {
-  margin: 0 0 15px 0;
+  margin: 0 0 15px;
   font-weight: 500;
   color: #f57c00;
 }
@@ -364,27 +402,29 @@ function formatDate(dateString) {
 }
 
 /* Responsive design improvements */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .details-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .detail-item {
     padding: 8px 0;
     border-bottom: 1px solid #f0f0f0;
   }
-  
+
   .detail-item:last-child {
     border-bottom: none;
   }
-  
+
   .branch-name {
     font-size: 0.8rem;
   }
 }
 
 /* Alternative styles if you prefer ellipsis truncation */
+
 /* Uncomment these and change .branch-name to .branch-name-ellipsis in template */
+
 /*
 @media (min-width: 769px) {
   .branch-name-ellipsis {

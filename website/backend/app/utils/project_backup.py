@@ -1,10 +1,10 @@
-import ctypes
 import os
-import platform
 import shutil
 from pathlib import Path
 
 from app.core.centralized_logging import get_logger
+from app.core.config import ELAN_BACKUPS_BASE_PATH
+from app.storage.paths import safe_project_path
 
 
 def make_writable(path: Path):
@@ -17,27 +17,16 @@ def make_writable(path: Path):
 
 
 def create_hidden_folder_in_root():
-    """Create a hidden folder for backups in the root directory.
-
-    - On Windows: 'elanora_projects_backups' with hidden attribute.
-    - On Linux/macOS: '.elanora_projects_backups' (dot prefix).
-    """
-    root_dir = Path(__file__).resolve().parents[4]
-    if platform.system() == "Windows":
-        folder_name = "elanora_projects_backups"
-    else:
-        folder_name = ".elanora_projects_backups"
-    hidden_folder = root_dir / folder_name
+    """Create and return the configured same-host recovery cache directory."""
+    hidden_folder = Path(ELAN_BACKUPS_BASE_PATH).resolve()
     hidden_folder.mkdir(parents=True, exist_ok=True)
-    if platform.system() == "Windows":
-        ctypes.windll.kernel32.SetFileAttributesW(str(hidden_folder), 0x02)
     return hidden_folder
 
 
 def create_project_backup_structure(project_name: str):
     """Create a backup structure for the project in the hidden folder."""
     hidden_folder = create_hidden_folder_in_root()
-    project_backup_path = hidden_folder / project_name
+    project_backup_path = safe_project_path(hidden_folder, project_name)
     project_backup_path.mkdir(parents=True, exist_ok=True)
 
 
@@ -45,13 +34,13 @@ def update_backup(project_name: str, projects_root: Path | None):
     """Copy .git, elan_files, README.md, and .gitignore from the project directory to its backup directory."""
     logger = get_logger()
     hidden_folder = create_hidden_folder_in_root()
-    project_backup_path = hidden_folder / project_name
+    project_backup_path = safe_project_path(hidden_folder, project_name)
 
     # Infer projects_root if not provided
     if projects_root is None:
         projects_root = hidden_folder.parent / "elanora_projects"
 
-    project_path = projects_root / project_name
+    project_path = safe_project_path(projects_root, project_name)
 
     # Backup .git folder
     git_src = project_path / ".git"
@@ -106,7 +95,7 @@ def remove_project_backup(project_name: str):
     """Remove the backup directory for the specified project."""
     logger = get_logger()
     hidden_folder = create_hidden_folder_in_root()
-    project_backup_path = hidden_folder / project_name
+    project_backup_path = safe_project_path(hidden_folder, project_name)
 
     if project_backup_path.exists():
         try:
@@ -123,12 +112,12 @@ def restore_project_backup(project_name: str, projects_root: Path | None):
     """Restore .git, elan_files, README.md, and .gitignore from backup to the project directory."""
     logger = get_logger()
     hidden_folder = create_hidden_folder_in_root()
-    project_backup_path = hidden_folder / project_name
+    project_backup_path = safe_project_path(hidden_folder, project_name)
 
     if projects_root is None:
         projects_root = hidden_folder.parent / "elanora_projects"
 
-    project_path = projects_root / project_name
+    project_path = safe_project_path(projects_root, project_name)
     project_path.mkdir(parents=True, exist_ok=True)
 
     # Restore .git folder
@@ -196,8 +185,8 @@ def rename_project_backup_folder(old_project_name: str, new_project_name: str):
     """
     logger = get_logger()
     hidden_folder = create_hidden_folder_in_root()
-    old_backup_path = hidden_folder / old_project_name
-    new_backup_path = hidden_folder / new_project_name
+    old_backup_path = safe_project_path(hidden_folder, old_project_name)
+    new_backup_path = safe_project_path(hidden_folder, new_project_name)
 
     if not old_backup_path.exists():
         logger.error(f"Backup folder '{old_backup_path}' not found.")

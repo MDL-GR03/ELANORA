@@ -136,19 +136,19 @@ class ContactService:
                 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                     <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                         <h1 style="color: #2563eb;">ELANORA Contact Form</h1>
-                        
+
                         <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
                             <h2 style="margin-top: 0;">New Contact Message</h2>
                             <p><strong>From:</strong> {sender_email}</p>
                             <p><strong>Request Type:</strong> {request_label}</p>
                             <p><strong>Date:</strong> {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
                         </div>
-                        
+
                         <div style="background-color: #ffffff; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
                             <h3 style="margin-top: 0;">Message:</h3>
                             <p style="white-space: pre-wrap;">{message}</p>
                         </div>
-                        
+
                         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
                             <p>This message was sent through the ELANORA contact form.</p>
                             <p>© {current_year} ELANORA Platform</p>

@@ -4,6 +4,9 @@ from typing import Any
 from app.core.centralized_logging import get_logger
 
 logger = get_logger()
+NAME_STATUS_FIELD_COUNT = 2
+EXCERPT_LINE_LIMIT = 10
+SIMPLE_CONFLICT_LINE_LIMIT = 5
 
 
 class GitDiffParser:
@@ -42,7 +45,7 @@ class GitDiffParser:
 
             # Split by tab (git uses tab as separator)
             parts = stripped_line.split("\t", 1)
-            if len(parts) != 2:
+            if len(parts) != NAME_STATUS_FIELD_COUNT:
                 logger.warning(f"Unexpected git diff --name-status format: {line}")
                 continue
 
@@ -284,14 +287,14 @@ class GitDiffParser:
                 },
                 # Convert to expected format
                 "current_excerpt": {
-                    "content": "\n".join(removed_lines[:10]),  # Limit lines
-                    "is_truncated": len(removed_lines) > 10,
+                    "content": "\n".join(removed_lines[:EXCERPT_LINE_LIMIT]),
+                    "is_truncated": len(removed_lines) > EXCERPT_LINE_LIMIT,
                     "total_lines": len(removed_lines),
                     "total_chars": sum(len(line) for line in removed_lines),
                 },
                 "incoming_excerpt": {
-                    "content": "\n".join(added_lines[:10]),  # Limit lines
-                    "is_truncated": len(added_lines) > 10,
+                    "content": "\n".join(added_lines[:EXCERPT_LINE_LIMIT]),
+                    "is_truncated": len(added_lines) > EXCERPT_LINE_LIMIT,
                     "total_lines": len(added_lines),
                     "total_chars": sum(len(line) for line in added_lines),
                 },
@@ -305,7 +308,7 @@ class GitDiffParser:
                 },
                 "conflict_type": self._classify_hunk_type(removed_lines, added_lines),
                 "complexity": "simple"
-                if len(removed_lines) + len(added_lines) <= 5
+                if len(removed_lines) + len(added_lines) <= SIMPLE_CONFLICT_LINE_LIMIT
                 else "moderate",
                 "auto_resolvable": True,
                 "suggested_resolution": self._suggest_hunk_resolution(

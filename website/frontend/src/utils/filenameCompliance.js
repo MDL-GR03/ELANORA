@@ -14,7 +14,8 @@ const parseRange = (s) => {
   if (typeof s !== 'string') return null;
   const m = /^(\d+)-(\d+)$/.exec(s.trim());
   if (!m) return null;
-  const minS = m[1], maxS = m[2];
+  const minS = m[1],
+    maxS = m[2];
   return { min: Number(minS), max: Number(maxS), width: minS.length, raw: s };
 };
 
@@ -50,7 +51,8 @@ function isAcceptedValueRange(av, value) {
 }
 
 function checkAcceptedValues(comp, value) {
-  if (!Array.isArray(comp.acceptedValues) || comp.acceptedValues.length === 0) return true;
+  if (!Array.isArray(comp.acceptedValues) || comp.acceptedValues.length === 0)
+    return true;
   for (const av of comp.acceptedValues) {
     if (av == null) continue;
     if (isAcceptedValueRegex(av, value)) return true;
@@ -78,13 +80,22 @@ function checkNumericRangeObject(comp, value) {
   if (Number.isNaN(num)) {
     return false;
   }
-  if (typeof comp.numericRange.width === 'number' && String(value).length !== comp.numericRange.width) {
+  if (
+    typeof comp.numericRange.width === 'number' &&
+    String(value).length !== comp.numericRange.width
+  ) {
     return false;
   }
-  if (typeof comp.numericRange.min === 'number' && num < comp.numericRange.min) {
+  if (
+    typeof comp.numericRange.min === 'number' &&
+    num < comp.numericRange.min
+  ) {
     return false;
   }
-  if (typeof comp.numericRange.max === 'number' && num > comp.numericRange.max) {
+  if (
+    typeof comp.numericRange.max === 'number' &&
+    num > comp.numericRange.max
+  ) {
     return false;
   }
   return true;
@@ -114,7 +125,7 @@ export function isFilenameCompliant(standard, name) {
   const nameWithoutExt = String(name || '').replace(/\.[^/.]+$/, '');
 
   if (!standard?.pattern || !Array.isArray(standard?.components)) {
-    return true;
+    return false;
   }
 
   const components = standard.components.map((c) => {
@@ -124,7 +135,10 @@ export function isFilenameCompliant(standard, name) {
     } else if (Array.isArray(c.accepted_values)) {
       acceptedValues = c.accepted_values;
     } else if (typeof c.accepted_values_str === 'string') {
-      acceptedValues = c.accepted_values_str.split(',').map(s => s.trim()).filter(Boolean);
+      acceptedValues = c.accepted_values_str
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
 
     return {
@@ -133,21 +147,25 @@ export function isFilenameCompliant(standard, name) {
       regex: c.regex ?? c.pattern ?? null,
       acceptedValues,
       fixedValue: c.fixedValue ?? c.fixed_value ?? c.value ?? null,
-      numericRange: c.numericRange ?? c.numeric_range ?? (c.numericRangeValue ?? null),
+      numericRange:
+        c.numericRange ?? c.numeric_range ?? c.numericRangeValue ?? null,
     };
   });
 
   let pattern = standard.pattern;
   for (const comp of components) {
     const compRegex = comp.regex || '.+';
-    pattern = pattern.replace(new RegExp(`\\{${comp.name}\\}`, 'g'), `(${compRegex})`);
+    pattern = pattern.replace(
+      new RegExp(`\\{${comp.name}\\}`, 'g'),
+      `(${compRegex})`
+    );
   }
 
   let topRx;
   try {
     topRx = new RegExp(`^${pattern}$`, 'u');
   } catch {
-    return true;
+    return false;
   }
 
   const match = topRx.exec(nameWithoutExt);
@@ -181,7 +199,10 @@ export function extractComponentsFromFilename(standard, filename) {
     } else if (Array.isArray(c.accepted_values)) {
       acceptedValues = c.accepted_values;
     } else if (typeof c.accepted_values_str === 'string') {
-      acceptedValues = c.accepted_values_str.split(',').map(s => s.trim()).filter(Boolean);
+      acceptedValues = c.accepted_values_str
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
 
     return {
@@ -190,7 +211,8 @@ export function extractComponentsFromFilename(standard, filename) {
       regex: c.regex ?? c.pattern ?? null,
       acceptedValues,
       fixedValue: c.fixedValue ?? c.fixed_value ?? c.value ?? null,
-      numericRange: c.numericRange ?? c.numeric_range ?? (c.numericRangeValue ?? null),
+      numericRange:
+        c.numericRange ?? c.numeric_range ?? c.numericRangeValue ?? null,
     };
   });
 
@@ -198,7 +220,10 @@ export function extractComponentsFromFilename(standard, filename) {
   let pattern = standard.pattern;
   for (const comp of components) {
     const compRegex = comp.regex || '.+';
-    pattern = pattern.replace(new RegExp(`\\{${comp.name}\\}`, 'g'), `(${compRegex})`);
+    pattern = pattern.replace(
+      new RegExp(`\\{${comp.name}\\}`, 'g'),
+      `(${compRegex})`
+    );
   }
 
   let topRx;

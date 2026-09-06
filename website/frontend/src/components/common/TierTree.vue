@@ -1,52 +1,64 @@
 <template>
   <div class="tiers-tree-container">
-    <div class="tiers-tree-scroll-area">
-      <div class="tiers-tree-group-label" @click="toggleGroup">
-        <span class="tiers-tree-toggle">
-          <span v-if="open">▼</span>
-          <span v-else>▶</span>
-        </span>
-        <span class="tiers-tree-group-name">{{ groupLabel }}</span>
-      </div>
-      <transition name="fade">
-        <ul v-if="open" class="tiers-tree-root">
-          <li
-            v-for="rootTier in sortedRootTiers"
-            :key="rootTier.tier_id"
-            class="tiers-tree-root-group"
-          >
-            <TierNode :tier="rootTier" />
-          </li>
-        </ul>
-      </transition>
+    <button
+      type="button"
+      class="tiers-tree-group-label"
+      :aria-expanded="open"
+      :aria-controls="contentId"
+      @click="toggleGroup"
+    >
+      <font-awesome-icon
+        icon="fa-solid fa-chevron-right"
+        class="tiers-tree-toggle"
+        :class="{ 'tiers-tree-toggle--open': open }"
+      />
+      <font-awesome-icon
+        icon="fa-solid fa-file-code"
+        class="tiers-tree-file-icon"
+      />
+      <span class="tiers-tree-group-name">{{ groupLabel }}</span>
+      <span class="tiers-tree-count">{{
+        t('tiersPage.tierCount', { count: tiers.length })
+      }}</span>
+    </button>
+    <div v-if="open" :id="contentId" class="tiers-tree-content">
+      <ul v-if="sortedRootTiers.length" class="tiers-tree-root">
+        <TierNode
+          v-for="rootTier in sortedRootTiers"
+          :key="rootTier.tier_id"
+          :tier="rootTier"
+        />
+      </ul>
+      <p v-else class="tiers-tree-empty">{{ t('tiersPage.noTiers') }}</p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import TierNode from './TierNode.vue';
 
 const props = defineProps({
   tiers: { type: Array, required: true },
-  groupIndex: { type: Number, required: true },
-  groupLabel: { type: String, required: false, default: '' },
+  groupId: { type: [Number, String], required: true },
+  groupLabel: { type: String, default: '' },
 });
 
-console.log('TiersTree props:', props);
+const { t } = useI18n();
 const open = ref(false);
+const contentId = computed(() => `tier-group-content-${props.groupId}`);
 
 const sortedRootTiers = computed(() => {
-  if (!props.tiers) return [];
   const folders = props.tiers
     .filter((tier) => Array.isArray(tier.children) && tier.children.length > 0)
-    .sort((a, b) => a.tier_name.localeCompare(b.tier_name));
-  const files = props.tiers
+    .toSorted((a, b) => a.tier_name.localeCompare(b.tier_name));
+  const leaves = props.tiers
     .filter(
       (tier) => !Array.isArray(tier.children) || tier.children.length === 0
     )
-    .sort((a, b) => a.tier_name.localeCompare(b.tier_name));
-  return [...folders, ...files];
+    .toSorted((a, b) => a.tier_name.localeCompare(b.tier_name));
+  return [...folders, ...leaves];
 });
 
 function toggleGroup() {
@@ -55,62 +67,78 @@ function toggleGroup() {
 </script>
 
 <style scoped>
-.tiers-tree-scroll-area {
-  max-height: 600px;
-  overflow-y: auto;
-  padding-right: 8px;
+.tiers-tree-container {
+  min-width: 0;
+  flex: 1;
 }
 
 .tiers-tree-group-label {
+  width: 100%;
+  min-height: 2.75rem;
   display: flex;
   align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.2rem;
+  border: 0;
+  color: var(--color-text);
+  background: transparent;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 1.1rem;
-  background: #ede9fe;
-  color: #5b21b6;
-  border-radius: 8px;
-  padding: 0.7rem 1.2rem;
-  box-shadow: 0 1px 4px 0 #e0e7ef;
-  transition: background 0.2s;
-  margin-bottom: 0.7rem;
 }
 
-.tiers-tree-group-label:hover {
-  background: #c7d2fe;
+.tiers-tree-group-label:focus-visible {
+  border-radius: 0.4rem;
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
 .tiers-tree-toggle {
-  margin-right: 0.6rem;
-  font-size: 1.1rem;
-  user-select: none;
-  width: 1.2em;
-  display: inline-block;
-  text-align: center;
+  width: 0.7rem;
+  color: var(--color-text-muted);
+  transition: transform 150ms ease;
+}
+
+.tiers-tree-toggle--open {
+  transform: rotate(90deg);
+}
+
+.tiers-tree-file-icon {
+  color: var(--primary-color);
 }
 
 .tiers-tree-group-name {
-  margin-right: 0.7em;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tiers-tree-count {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.tiers-tree-content {
+  max-height: 28rem;
+  margin: 0.25rem 0 0.6rem 1.25rem;
+  padding: 0.75rem 0.75rem 0.4rem;
+  overflow: auto;
+  border-left: 2px solid color-mix(in srgb, var(--primary-color) 22%, white);
 }
 
 .tiers-tree-root {
-  list-style: none;
-  padding-left: 0;
   margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.tiers-tree-root-group {
-  margin-bottom: 1.2rem;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: all 0.2s;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  max-height: 0;
+.tiers-tree-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
 }
 </style>

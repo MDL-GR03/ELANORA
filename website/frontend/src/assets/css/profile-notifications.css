@@ -1,4 +1,4 @@
-@import './style.css';
+@import url('./style.css');
 
 /* Profile Notifications Page Container */
 .profile-overview {
@@ -14,7 +14,7 @@
 .profile-card {
   background: var(--card-bg);
   border-radius: var(--border-radius);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
   border: 1px solid #e5e7eb;
   overflow: hidden;
 }
@@ -40,7 +40,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-color-dark) 100%
+  );
   border-radius: 12px;
   color: white;
 }
@@ -252,7 +256,7 @@
   width: 1rem;
   height: 1rem;
   border: 2px solid transparent;
-  border-top: 2px solid currentColor;
+  border-top: 2px solid currentcolor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -309,7 +313,7 @@
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.5rem;
 }
 
 .empty-description {
@@ -341,7 +345,7 @@
 
 .notification-item:hover {
   border-color: var(--primary-light);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgb(0 0 0 / 8%);
   transform: translateY(-1px);
 }
 
@@ -360,7 +364,7 @@
   height: 8px;
   background: var(--primary-color);
   border-radius: 50%;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 20%);
 }
 
 .notification-content {
@@ -396,7 +400,11 @@
 }
 
 .unread-badge {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-color-dark) 100%
+  );
   color: white;
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
@@ -404,7 +412,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 8px rgb(59 130 246 / 30%);
 }
 
 .notification-date {
@@ -455,21 +463,33 @@
 }
 
 .view-btn {
-  background: linear-gradient(135deg, var(--primary-light) 0%, rgba(59, 130, 246, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-light) 0%,
+    rgb(59 130 246 / 10%) 100%
+  );
   color: var(--primary-color);
   border: 1px solid var(--primary-light);
 }
 
 .view-btn:hover {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-color-dark) 100%
+  );
   color: white;
   border-color: var(--primary-color);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgb(59 130 246 / 30%);
   transform: translateY(-1px);
 }
 
 .read-btn {
-  background: linear-gradient(135deg, var(--success-light) 0%, rgba(34, 197, 94, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--success-light) 0%,
+    rgb(34 197 94 / 10%) 100%
+  );
   color: var(--success-color);
   border: 1px solid var(--success-light);
 }
@@ -478,12 +498,12 @@
   background: linear-gradient(135deg, var(--success-color) 0%, #16a34a 100%);
   color: white;
   border-color: var(--success-color);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 4px 12px rgb(34 197 94 / 30%);
   transform: translateY(-1px);
 }
 
 .delete-btn {
-  background: linear-gradient(135deg, #fef2f2 0%, rgba(239, 68, 68, 0.1) 100%);
+  background: linear-gradient(135deg, #fef2f2 0%, rgb(239 68 68 / 10%) 100%);
   color: #dc2626;
   border: 1px solid #fecaca;
 }
@@ -492,17 +512,16 @@
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   color: white;
   border-color: #dc2626;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  box-shadow: 0 4px 12px rgb(220 38 38 / 30%);
   transform: translateY(-1px);
 }
 
 /* Style responsive pour les actions */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .notification-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-flow: row wrap;
   }
-  
+
   .notification-action-btn {
     min-width: auto;
     flex: 1;
@@ -551,7 +570,7 @@
   width: 1rem;
   height: 1rem;
   border: 2px solid transparent;
-  border-top: 2px solid currentColor;
+  border-top: 2px solid currentcolor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -612,19 +631,16 @@
 .toggle-slider {
   position: absolute;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: #e5e7eb;
   border: 2px solid #d1d5db;
   transition: all 0.3s ease;
   border-radius: 1.75rem;
 }
 
-.toggle-slider:before {
+.toggle-slider::before {
   position: absolute;
-  content: "";
+  content: '';
   height: 1.25rem;
   width: 1.25rem;
   left: 0.125rem;
@@ -632,7 +648,7 @@
   background-color: white;
   transition: all 0.3s ease;
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
 }
 
 .toggle-input:checked + .toggle-slider {
@@ -640,27 +656,32 @@
   border-color: var(--primary-color);
 }
 
-.toggle-input:checked + .toggle-slider:before {
+.toggle-input:checked + .toggle-slider::before {
   transform: translateX(1.125rem);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 30%);
 }
 
 .toggle-slider:hover {
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 4px rgb(59 130 246 / 15%);
 }
 
 .toggle-input:focus + .toggle-slider {
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 0 4px rgb(59 130 246 / 25%);
 }
 
 /* Animations */
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .notifications-stats {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -700,7 +721,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .notification-actions {
     width: 100%;
   }

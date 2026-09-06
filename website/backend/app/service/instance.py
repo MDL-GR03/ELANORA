@@ -4,18 +4,16 @@ from app.crud.instance import (
     create_instance as crud_create_instance,
 )
 from app.crud.instance import (
-    get_first_instance,
-    get_instance_by_name,
+    get_installation_profile,
 )
 from app.crud.instance import (
     update_instance as crud_update_instance,
 )
 
 
-async def get_instance_info(db: AsyncSession, name: str | None):
-    if name:
-        return await get_instance_by_name(db, name)
-    return await get_first_instance(db)
+async def get_instance_info(db: AsyncSession):
+    """Return this deployment's single institution profile."""
+    return await get_installation_profile(db)
 
 
 async def create_instance(db: AsyncSession, data: dict):

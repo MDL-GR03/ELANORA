@@ -1,6 +1,8 @@
-import regex as re
 from decimal import Decimal
 from typing import Any
+
+import regex as re
+
 from app.core.centralized_logging import get_logger
 
 logger = get_logger()

@@ -87,15 +87,17 @@ async def create_annotation_in_db(
     annotation_id: str,
     elan_id: int,
     value_id: int,
-    start_time: Decimal,
-    end_time: Decimal,
+    start_time: Decimal | None,
+    end_time: Decimal | None,
     tier_id: int,
+    annotation_kind: str = "alignable",
 ) -> Annotation:
     """Create a new annotation in the database."""
     annotation = Annotation(
         annotation_id=annotation_id,
         elan_id=elan_id,
         value_id=value_id,
+        annotation_kind=annotation_kind,
         start_time=start_time,
         end_time=end_time,
         tier_id=tier_id,
@@ -106,10 +108,7 @@ async def create_annotation_in_db(
 async def check_annotation_exists(
     db: AsyncSession, annotation_id: str, elan_id: int
 ) -> bool:
-    filters = {"annotation_id": annotation_id, "elan_id": elan_id}
-    return await DatabaseUtils.exists(
-        db, Annotation, "annotation_id", annotation_id
-    ) and await DatabaseUtils.exists(db, Annotation, "elan_id", elan_id)
+    return await get_annotation_by_id(db, annotation_id, elan_id) is not None
 
 
 async def delete_annotations_by_tier(db: AsyncSession, tier_id: int) -> int:
@@ -138,6 +137,11 @@ async def bulk_create_annotations(
                     "annotation_id": ann["annotation_id"],
                     "elan_id": elan_id,
                     "value_id": value_map[ann["annotation_value"]],
+                    "annotation_kind": ann["annotation_kind"],
+                    "annotation_ref": ann.get("annotation_ref"),
+                    "previous_annotation": ann.get("previous_annotation"),
+                    "cv_entry_ref": ann.get("cv_entry_ref"),
+                    "external_ref": ann.get("ext_ref"),
                     "start_time": ann["start_time"],
                     "end_time": ann["end_time"],
                     "tier_id": tier_id,

@@ -1,6 +1,6 @@
 """Response schemas for project-user association management."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.model.enums import ProjectPermission
 
@@ -12,6 +12,7 @@ class ProjectUserInfo(BaseModel):
     username: str
     email: str
     permission: ProjectPermission
+    capabilities: list[str] = Field(default_factory=list)
 
 
 class UserProjectInfo(BaseModel):

@@ -1,525 +1,399 @@
 <template>
-  <div class="conflict-merge-view">
-    <div class="merge-header">
-      <h3>Resolve Conflict: {{ filename }}</h3>
-      <div class="merge-actions">
-        <button 
-          @click="acceptCurrent" 
-          class="btn-accept current"
-          :disabled="resolving"
-        >
-          Accept Current (Master)
-        </button>
-        <button 
-          @click="acceptIncoming" 
-          class="btn-accept incoming"
-          :disabled="resolving"
-        >
-          Accept Incoming ({{ branchName }})
-        </button>
-        <button 
-          @click="toggleManualMode" 
-          class="btn-manual"
-          :disabled="resolving"
-        >
-          {{ isManualMode ? 'Exit Manual' : 'Manual Resolve' }}
-        </button>
+  <section class="eaf-review" aria-labelledby="eaf-review-title">
+    <header class="review-heading">
+      <div>
+        <span class="eyebrow">ELAN annotation comparison</span>
+        <h3 id="eaf-review-title">{{ filename }}</h3>
+        <p>
+          Review annotation meaning and timing. Corrections remain in ELAN and
+          are submitted as a new revision.
+        </p>
+      </div>
+      <span v-if="review" class="count">
+        {{ review.changes.length }}
+        {{ review.changes.length === 1 ? 'change' : 'changes' }}
+      </span>
+    </header>
+
+    <div v-if="loading" class="state" role="status">
+      <span class="spinner" aria-hidden="true"></span>
+      Preparing the annotation preview…
+    </div>
+    <div v-else-if="error" class="state error" role="alert">
+      <font-awesome-icon icon="fa-solid fa-circle-xmark" />
+      <div>
+        <strong>Preview unavailable</strong>
+        <p>{{ error }}</p>
       </div>
     </div>
 
-    <div v-if="loading" class="loading">
-      Loading conflict details...
-    </div>
+    <template v-else-if="review">
+      <div v-if="mediaReferences.length" class="state info">
+        <font-awesome-icon icon="fa-solid fa-circle-info" />
+        <div>
+          <strong>Linked media</strong>
+          <p>
+            {{ mediaReferences.join(', ') }}. Synchronized playback becomes
+            available when this media is stored as a protected project asset.
+          </p>
+        </div>
+      </div>
 
-    <div v-else-if="conflictData" class="merge-content">
-      <!-- Automatic Resolution Preview -->
-      <div v-if="!isManualMode" class="auto-resolve-view">
-        <div class="conflict-sections">
-          <div 
-            v-for="(section, index) in conflictData.conflict_content.merge_data.conflict_sections" 
-            :key="index"
-            class="conflict-section"
-          >
-            <div class="section-header">
-              <h4>Conflict {{ index + 1 }}</h4>
-              <div class="section-actions">
-                <button 
-                  @click="selectSectionContent(index, 'current')"
-                  class="btn-select current"
-                  :class="{ active: sectionSelections[index] === 'current' }"
-                >
-                  Use Current
-                </button>
-                <button 
-                  @click="selectSectionContent(index, 'incoming')"
-                  class="btn-select incoming"
-                  :class="{ active: sectionSelections[index] === 'incoming' }"
-                >
-                  Use Incoming
-                </button>
-                <button 
-                  @click="selectSectionContent(index, 'both')"
-                  class="btn-select both"
-                  :class="{ active: sectionSelections[index] === 'both' }"
-                >
-                  Use Both
-                </button>
-              </div>
+      <div v-if="review.changes.length" class="review-list">
+        <article
+          v-for="change in review.changes"
+          :key="change.annotation_id"
+          class="annotation-change"
+        >
+          <div class="annotation-meta">
+            <div>
+              <span class="annotation-id">{{ change.annotation_id }}</span>
+              <strong>{{ tierLabel(change) }}</strong>
             </div>
-
-            <div class="diff-view">
-              <!-- Current Content -->
-              <div class="diff-side current">
-                <div class="diff-header">
-                  <span class="diff-label">Current (Master)</span>
-                  <span class="line-count">{{ section.current_content.split('\n').length }} lines</span>
-                </div>
-                <pre class="diff-content current"><code>{{ section.current_content }}</code></pre>
-              </div>
-
-              <!-- Incoming Content -->
-              <div class="diff-side incoming">
-                <div class="diff-header">
-                  <span class="diff-label">Incoming ({{ section.branch_name }})</span>
-                  <span class="line-count">{{ section.incoming_content.split('\n').length }} lines</span>
-                </div>
-                <pre class="diff-content incoming"><code>{{ section.incoming_content }}</code></pre>
-              </div>
-            </div>
-
-            <!-- Base Content (if 3-way merge) -->
-            <div v-if="section.base_content" class="diff-side base">
-              <div class="diff-header">
-                <span class="diff-label">Base (Common Ancestor)</span>
-                <span class="line-count">{{ section.base_content.split('\n').length }} lines</span>
-              </div>
-              <pre class="diff-content base"><code>{{ section.base_content }}</code></pre>
+            <div class="badges">
+              <span
+                v-for="kind in change.kinds"
+                :key="kind"
+                class="badge"
+                :class="`kind-${kind}`"
+                >{{ formatKind(kind) }}</span
+              >
+              <span v-if="timeLabel(change)" class="time">
+                {{ timeLabel(change) }}
+              </span>
             </div>
           </div>
-        </div>
 
-        <!-- Resolution Preview -->
-        <div class="resolution-preview">
-          <h4>Resolution Preview</h4>
-          <pre class="preview-content"><code>{{ generateResolutionPreview() }}</code></pre>
-          <button 
-            @click="applyAutoResolution" 
-            class="btn-apply"
-            :disabled="!hasSelections || resolving"
+          <div class="comparison">
+            <div class="version accepted">
+              <span class="version-label">Accepted project version</span>
+              <p v-if="change.before">
+                {{ displayValue(change.before.value) }}
+              </p>
+              <p v-else class="missing">Annotation not present</p>
+              <small v-if="change.before"
+                >Tier: {{ change.before.tier_id }}</small
+              >
+            </div>
+            <font-awesome-icon class="arrow" icon="fa-solid fa-chevron-right" />
+            <div class="version submitted">
+              <span class="version-label">Submitted version</span>
+              <p v-if="change.after">{{ displayValue(change.after.value) }}</p>
+              <p v-else class="missing">Annotation removed</p>
+              <small v-if="change.after"
+                >Tier: {{ change.after.tier_id }}</small
+              >
+            </div>
+          </div>
+          <button
+            type="button"
+            class="open-case"
+            @click="$emit('open-review', reviewTarget(change))"
           >
-            {{ resolving ? 'Applying...' : 'Apply Resolution' }}
+            <font-awesome-icon icon="fa-solid fa-comment-medical" />
+            Open a review case for this annotation
           </button>
-        </div>
+        </article>
+      </div>
+      <div v-else class="state">
+        <font-awesome-icon icon="fa-solid fa-circle-check" />
+        No annotation-level differences were found in these valid EAF files.
       </div>
 
-      <!-- Manual Resolution Editor -->
-      <div v-else class="manual-resolve-view">
-        <div class="editor-header">
-          <h4>Manual Resolution Editor</h4>
-          <p>Edit the content below to resolve the conflict manually:</p>
+      <footer class="state guidance">
+        <div>
+          <strong>What happens next?</strong>
+          <p>
+            Close the preview to keep reviewing. For mixed corrections, ask the
+            contributor to correct the file in ELAN and upload a new revision.
+          </p>
         </div>
-        
-        <div class="editor-content">
-          <textarea 
-            v-model="manualContent"
-            class="manual-editor"
-            rows="20"
-            placeholder="Enter your resolved content here..."
-          ></textarea>
-        </div>
-
-        <div class="editor-actions">
-          <button 
-            @click="applyManualResolution" 
-            class="btn-apply"
-            :disabled="!manualContent.trim() || resolving"
-          >
-            {{ resolving ? 'Applying...' : 'Apply Manual Resolution' }}
-          </button>
-          <button @click="resetManualContent" class="btn-reset">
-            Reset to Original
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="error" class="error-message">
-      {{ error }}
-    </div>
-  </div>
+      </footer>
+    </template>
+  </section>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import gitService from '@/api/service/gitService';
 
 const props = defineProps({
-  projectName: String,
-  branchName: String,
-  filename: String,
+  projectName: { type: String, required: true },
+  branchName: { type: String, required: true },
+  filename: { type: String, required: true },
 });
-
-const emit = defineEmits(['resolved', 'cancelled']);
-
+defineEmits(['open-review']);
 const loading = ref(true);
-const resolving = ref(false);
 const error = ref('');
-const conflictData = ref(null);
-const isManualMode = ref(false);
-const sectionSelections = ref({});
-const manualContent = ref('');
+const review = ref(null);
+const mediaReferences = computed(() => [
+  ...new Set(
+    [
+      ...(review.value?.before_media_urls || []),
+      ...(review.value?.after_media_urls || []),
+    ].map((item) => item.split('/').pop())
+  ),
+]);
 
-const hasSelections = computed(() => {
-  return Object.keys(sectionSelections.value).length > 0;
-});
-
-onMounted(async () => {
-  await loadConflictDetails();
-});
-
-async function loadConflictDetails() {
+const displayValue = (value) => value || 'Empty annotation';
+const formatKind = (kind) => kind.replaceAll('_', ' ');
+function tierLabel(change) {
+  const before = change.before?.tier_id;
+  const after = change.after?.tier_id;
+  return before === after || !before || !after
+    ? before || after || 'Unknown tier'
+    : `${before} → ${after}`;
+}
+function formatTime(milliseconds) {
+  const seconds = milliseconds / 1000;
+  return `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(3).padStart(6, '0')}`;
+}
+function timeLabel(change) {
+  const starts = [change.before?.start_ms, change.after?.start_ms].filter(
+    Number.isFinite
+  );
+  const ends = [change.before?.end_ms, change.after?.end_ms].filter(
+    Number.isFinite
+  );
+  return starts.length && ends.length
+    ? `${formatTime(Math.min(...starts))}–${formatTime(Math.max(...ends))}`
+    : '';
+}
+function reviewTarget(change) {
+  const starts = [change.before?.start_ms, change.after?.start_ms].filter(
+    Number.isFinite
+  );
+  const ends = [change.before?.end_ms, change.after?.end_ms].filter(
+    Number.isFinite
+  );
+  return {
+    filename: props.filename,
+    tier_id: change.after?.tier_id || change.before?.tier_id || null,
+    annotation_id: change.annotation_id,
+    start_ms: starts.length ? Math.min(...starts) : null,
+    end_ms: ends.length ? Math.max(...ends) : null,
+    title: `Review annotation ${change.annotation_id}`,
+  };
+}
+async function loadReview() {
+  loading.value = true;
+  error.value = '';
+  review.value = null;
   try {
-    loading.value = true;
-    const response = await gitService.getConflictDetails(
+    review.value = await gitService.getEafReview(
       props.projectName,
       props.branchName,
       props.filename
     );
-    
-    conflictData.value = response;
-    
-    // Initialize manual content with original file content
-    if (response.conflict_content.full_content) {
-      manualContent.value = response.conflict_content.full_content;
-    }
-    
-  } catch (e) {
-    error.value = 'Failed to load conflict details';
-    console.error('Error loading conflict details:', e);
+  } catch (requestError) {
+    error.value =
+      requestError?.response?.data?.detail ||
+      'The accepted and submitted files could not be compared.';
   } finally {
     loading.value = false;
   }
 }
-
-function selectSectionContent(sectionIndex, choice) {
-  sectionSelections.value[sectionIndex] = choice;
-}
-
-function generateResolutionPreview() {
-  if (!conflictData.value?.conflict_content?.merge_data?.conflict_sections) {
-    return '';
-  }
-
-  let resolvedContent = '';
-  const sections = conflictData.value.conflict_content.merge_data.conflict_sections;
-  
-  sections.forEach((section, index) => {
-    const selection = sectionSelections.value[index];
-    
-    switch (selection) {
-      case 'current':
-        resolvedContent += section.current_content + '\n';
-        break;
-      case 'incoming':
-        resolvedContent += section.incoming_content + '\n';
-        break;
-      case 'both':
-        resolvedContent += section.current_content + '\n' + section.incoming_content + '\n';
-        break;
-      default:
-        resolvedContent += `// UNRESOLVED CONFLICT ${index + 1}\n`;
-        resolvedContent += section.current_content + '\n';
-        resolvedContent += '// END CONFLICT\n';
-    }
-  });
-  
-  return resolvedContent;
-}
-
-async function acceptCurrent() {
-  try {
-    resolving.value = true;
-    await gitService.resolveConflicts(
-      props.projectName,
-      props.branchName,
-      'accept_current',
-      props.filename
-    );
-    emit('resolved');
-  } catch (e) {
-    error.value = 'Failed to accept current version';
-    console.error('Error accepting current:', e);
-  } finally {
-    resolving.value = false;
-  }
-}
-
-async function acceptIncoming() {
-  try {
-    resolving.value = true;
-    await gitService.resolveConflicts(
-      props.projectName,
-      props.branchName,
-      'accept_incoming',
-      props.filename
-    );
-    emit('resolved');
-  } catch (e) {
-    error.value = 'Failed to accept incoming version';
-    console.error('Error accepting incoming:', e);
-  } finally {
-    resolving.value = false;
-  }
-}
-
-async function applyAutoResolution() {
-  try {
-    resolving.value = true;
-    const resolvedContent = generateResolutionPreview();
-    
-    await gitService.resolveConflictManually(
-      props.projectName,
-      props.branchName,
-      props.filename,
-      resolvedContent
-    );
-    
-    emit('resolved');
-  } catch (e) {
-    error.value = 'Failed to apply resolution';
-    console.error('Error applying resolution:', e);
-  } finally {
-    resolving.value = false;
-  }
-}
-
-async function applyManualResolution() {
-  try {
-    resolving.value = true;
-    
-    await gitService.resolveConflictManually(
-      props.projectName,
-      props.branchName,
-      props.filename,
-      manualContent.value
-    );
-    
-    emit('resolved');
-  } catch (e) {
-    error.value = 'Failed to apply manual resolution';
-    console.error('Error applying manual resolution:', e);
-  } finally {
-    resolving.value = false;
-  }
-}
-
-function toggleManualMode() {
-  isManualMode.value = !isManualMode.value;
-  if (isManualMode.value && hasSelections.value) {
-    // Pre-fill with current selection preview
-    manualContent.value = generateResolutionPreview();
-  }
-}
-
-function resetManualContent() {
-  if (conflictData.value?.conflict_content?.full_content) {
-    manualContent.value = conflictData.value.conflict_content.full_content;
-  }
-}
+onMounted(loadReview);
+watch(() => [props.projectName, props.branchName, props.filename], loadReview);
 </script>
 
 <style scoped>
-.conflict-merge-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.merge-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.merge-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.btn-accept, .btn-manual, .btn-apply, .btn-reset {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s;
-}
-
-.btn-accept.current {
-  background: #2196f3;
-  color: white;
-}
-
-.btn-accept.incoming {
-  background: #4caf50;
-  color: white;
-}
-
-.btn-manual {
-  background: #ff9800;
-  color: white;
-}
-
-.btn-apply {
-  background: #4caf50;
-  color: white;
-}
-
-.btn-reset {
-  background: #666;
-  color: white;
-}
-
-.conflict-section {
-  margin-bottom: 30px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #f5f5f5;
-  padding: 10px 15px;
-}
-
-.section-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.btn-select {
-  padding: 4px 8px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  background: white;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.btn-select.active {
-  background: #2196f3;
-  color: white;
-  border-color: #2196f3;
-}
-
-.diff-view {
+.eaf-review {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: #ddd;
+  gap: 1rem;
+  color: var(--color-text);
 }
 
-.diff-side {
-  background: white;
-}
-
-.diff-header {
+.review-heading,
+.annotation-meta {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-  font-size: 14px;
+  gap: 1rem;
 }
 
-.diff-label {
-  font-weight: 600;
-}
-
-.line-count {
-  color: #666;
-  font-size: 12px;
-}
-
-.diff-content {
+.review-heading h3,
+.review-heading p,
+.state p {
   margin: 0;
-  padding: 15px;
-  font-family: 'Monaco', 'Consolas', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow-x: auto;
-  max-height: 300px;
-  overflow-y: auto;
 }
 
-.diff-content.current {
-  background: #fff5f5;
-  border-left: 4px solid #f56565;
+.review-heading h3 {
+  margin-block: 0.2rem;
+  overflow-wrap: anywhere;
 }
 
-.diff-content.incoming {
-  background: #f0fff4;
-  border-left: 4px solid #48bb78;
+.review-heading p,
+.state p,
+.version small {
+  color: var(--color-text-muted);
 }
 
-.diff-content.base {
-  background: #fffbf0;
-  border-left: 4px solid #ed8936;
+.eyebrow,
+.version-label,
+.annotation-id {
+  color: var(--primary-color);
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.resolution-preview {
-  margin-top: 20px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 6px;
+.count,
+.badge,
+.time {
+  flex: none;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
-.preview-content {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 15px;
-  margin: 10px 0;
-  font-family: 'Monaco', 'Consolas', monospace;
-  font-size: 14px;
-  max-height: 200px;
-  overflow-y: auto;
+.count,
+.time {
+  color: #1e40af;
+  background: #dbeafe;
 }
 
-.manual-editor {
-  width: 100%;
-  min-height: 400px;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Monaco', 'Consolas', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  resize: vertical;
-}
-
-.editor-actions {
+.state {
   display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
 }
 
-.loading, .error-message {
-  text-align: center;
-  padding: 20px;
+.state.error {
+  color: #991b1b;
+  border-color: #fecaca;
+  background: #fef2f2;
 }
 
-.error-message {
-  background: #fee;
-  color: #c33;
-  border: 1px solid #fcc;
-  border-radius: 4px;
+.review-list {
+  display: grid;
+  gap: 0.75rem;
+  max-height: min(60vh, 48rem);
+  padding-right: 0.25rem;
+  overflow: auto;
+}
+
+.annotation-change {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.open-case {
+  margin-top: 0.85rem;
+  color: var(--primary-color);
+  border: 0;
+  background: transparent;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.annotation-meta > div:first-child {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.badge {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.kind-added {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.kind-removed {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.comparison {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.version {
+  min-width: 0;
+  padding: 0.85rem;
+  border-radius: var(--radius-sm);
+}
+
+.version.accepted {
+  background: #f1f5f9;
+}
+
+.version.submitted {
+  background: #eff6ff;
+}
+
+.version p {
+  margin: 0.35rem 0;
+  font-size: 1rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.missing {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.arrow {
+  align-self: center;
+  color: var(--color-text-muted);
+}
+
+.spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (width <= 700px) {
+  .review-heading,
+  .annotation-meta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .badges {
+    justify-content: flex-start;
+  }
+
+  .comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .arrow {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
 }
 </style>

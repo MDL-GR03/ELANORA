@@ -46,3 +46,15 @@ class BulkRenameRequest(CustomBaseModel):
     """Schema for bulk file rename request."""
 
     renames: list[FileRename]
+
+
+class PendingUploadMergeRequest(CustomBaseModel):
+    """An administrator's explicit strategy for a reviewed contribution."""
+
+    resolution_strategy: str = "auto"
+
+
+class ContributionPolicyRequest(CustomBaseModel):
+    """Safe automatic-acceptance settings for one project."""
+
+    auto_accept_new_files: bool

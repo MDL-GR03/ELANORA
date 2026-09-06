@@ -1,4 +1,3 @@
-import os
 import uuid
 
 from fastapi import Request
@@ -8,43 +7,29 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.status import HTTP_400_BAD_REQUEST
 
-from app.core.logging import get_rotating_logger
+from app.core.logging import get_stream_logger
 
 # Try to import config, but don't fail if it's not available
 try:
     from app.core.config import (
-        EXCEPTION_LOG_DIR as CONFIG_LOG_DIR,
-    )
-    from app.core.config import (
         EXCEPTION_LOG_LEVEL as CONFIG_LOG_LEVEL,
     )
 
-    EXCEPTION_LOG_DIR = CONFIG_LOG_DIR
     EXCEPTION_LOG_LEVEL = CONFIG_LOG_LEVEL
     HAS_CONFIG = True
-
-    if not EXCEPTION_LOG_DIR:
-        EXCEPTION_LOG_DIR = "app/logs/exceptions"
     if not EXCEPTION_LOG_LEVEL:
         EXCEPTION_LOG_LEVEL = "WARNING"
 except ImportError:
     HAS_CONFIG = False
 
 
-def get_exception_logger(logger_name: str, log_filename: str):
+def get_exception_logger(logger_name: str):
     """Get a logger for exception handling with consistent configuration."""
     # Use config if available, fallback to environment variables
-    if HAS_CONFIG:
-        log_dir = EXCEPTION_LOG_DIR
-        level = EXCEPTION_LOG_LEVEL
-    else:
-        log_dir = os.getenv("EXCEPTION_LOG_DIR", "app/logs/exceptions")
-        level = os.getenv("EXCEPTION_LOG_LEVEL", "WARNING")
+    level = EXCEPTION_LOG_LEVEL if HAS_CONFIG else "WARNING"
 
-    return get_rotating_logger(
+    return get_stream_logger(
         logger_name=f"elanora.exceptions.{logger_name}",
-        log_dir=log_dir,
-        log_filename=log_filename,
         level=level,
     )
 
@@ -66,7 +51,7 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     """Handle validation errors raised by FastAPI and returns a JSON response with error details."""
     if isinstance(exc, RequestValidationError):
-        validation_logger = get_exception_logger("validation", "validation.log")
+        validation_logger = get_exception_logger("validation")
         client_info = get_client_info(request)
 
         # Log with structured information
@@ -98,7 +83,7 @@ async def validation_exception_handler(
 async def rate_limit_exception_handler(request: Request, exc: Exception) -> Response:
     """Handle rate limit exceptions and log details before delegating to the default handler."""
     if isinstance(exc, RateLimitExceeded):
-        rate_limit_logger = get_exception_logger("rate_limit", "rate_limit.log")
+        rate_limit_logger = get_exception_logger("rate_limit")
         client_info = get_client_info(request)
 
         # Log with structured information
@@ -122,7 +107,7 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
 
 def add_general_exception_handler():
     """Create a general exception handler for unexpected errors."""
-    general_logger = get_exception_logger("general", "general.log")
+    general_logger = get_exception_logger("general")
 
     async def general_exception_handler(
         request: Request, exc: Exception

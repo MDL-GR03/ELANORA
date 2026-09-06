@@ -2,31 +2,55 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 import { useProjectStore } from '@stores/project.js';
-import gitService from '@/api/service/gitService';
+import setupService from '@/api/service/setupService';
+import {
+  hasProjectCapability,
+  hasProjectPermission,
+} from '@/utils/authorization';
 
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
-import HomePage from '@views/HomePage.vue';
-import LoginPage from '@views/LoginPage.vue';
-import RegisterPage from '@views/RegisterPage.vue';
-import ForgotPassword from '@views/ForgotPassword.vue';
-import ResetPassword from '@views/ResetPassword.vue';
-import EmailVerificationPage from '@views/EmailVerificationPage.vue';
-import ContactPage from '@views/ContactPage.vue';
-import HTTPStatusPage from '@views/HTTPStatusPage.vue';
-import ProjectsPage from '@views/ProjectsPage.vue';
-import UploadPage from '@views/UploadPage.vue';
-import PendingUploadPage from '@views/PendingUploadPage.vue';
-import AdminInvitationsPage from '@views/AdminInvitationsPage.vue';
-import InvitationResponsePage from '@views/InvitationResponsePage.vue';
-import InvitationDecisionPage from '@views/InvitationDecisionPage.vue';
-import TiersPage from '@views/TiersPage.vue';
-import TestProjectUsersPage from '@views/TestProjectUsersPage.vue';
-import ProjectConfigurationPage from '@views/ProjectConfigurationPage.vue';
-import ProfilePage from '@views/ProfilePage.vue';
+
+const HomePage = () => import('@views/HomePage.vue');
+const LoginPage = () => import('@views/LoginPage.vue');
+const RegisterPage = () => import('@views/RegisterPage.vue');
+const ForgotPassword = () => import('@views/ForgotPassword.vue');
+const ResetPassword = () => import('@views/ResetPassword.vue');
+const EmailVerificationPage = () => import('@views/EmailVerificationPage.vue');
+const ContactPage = () => import('@views/ContactPage.vue');
+const HTTPStatusPage = () => import('@views/HTTPStatusPage.vue');
+const ProjectsPage = () => import('@views/ProjectsPage.vue');
+const UploadPage = () => import('@views/UploadPage.vue');
+const PendingUploadPage = () => import('@views/PendingUploadPage.vue');
+const AdminInvitationsPage = () => import('@views/AdminInvitationsPage.vue');
+const InvitationResponsePage = () =>
+  import('@views/InvitationResponsePage.vue');
+const InvitationDecisionPage = () =>
+  import('@views/InvitationDecisionPage.vue');
+const TiersPage = () => import('@views/TiersPage.vue');
+const ProjectConfigurationPage = () =>
+  import('@views/ProjectConfigurationPage.vue');
+const ProfilePage = () => import('@views/ProfilePage.vue');
+const SetupPage = () => import('@views/SetupPage.vue');
+
+const authenticatedPageLoaders = [
+  HomePage,
+  ProjectsPage,
+  UploadPage,
+  PendingUploadPage,
+  AdminInvitationsPage,
+  TiersPage,
+  ProjectConfigurationPage,
+  ProfilePage,
+];
 
 // Define routes
 const routes = [
   // Public routes
+  {
+    path: '/setup',
+    name: 'SetupPage',
+    component: SetupPage,
+  },
   {
     path: '/',
     name: 'LoginPage',
@@ -100,31 +124,25 @@ const routes = [
         path: 'upload',
         name: 'UploadPage',
         component: UploadPage,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, minimumProjectPermission: 'write' },
       },
       {
         path: 'contribution',
         name: 'PendingUpload',
         component: PendingUploadPage,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, minimumProjectPermission: 'read' },
       },
       {
         path: 'tiers',
         name: 'TiersPage',
         component: TiersPage,
-        meta: { requiresAuth: true },
-      },
-      {
-        path: 'test/project-users',
-        name: 'TestProjectUsersPage',
-        component: TestProjectUsersPage,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, minimumProjectPermission: 'read' },
       },
       {
         path: '/projects/:projectId/configuration',
         name: 'ProjectConfigurationPage',
         component: ProjectConfigurationPage,
-        meta: { requiresAuth: true, requiresAdmin: true },
+        meta: { requiresAuth: true, projectConfigurationAccess: true },
       },
       {
         path: 'profile',
@@ -172,6 +190,16 @@ const router = createRouter({
   routes,
 });
 
+let setupStatusPromise;
+
+function getSetupStatus() {
+  setupStatusPromise ||= setupService.getStatus().catch((error) => {
+    setupStatusPromise = undefined;
+    throw error;
+  });
+  return setupStatusPromise;
+}
+
 // Helper: handle not authenticated
 function handleNotAuthenticated(eventMessageStore, to, next) {
   localStorage.setItem('redirectAfterLogin', to.fullPath);
@@ -183,6 +211,30 @@ function handleNotAuthenticated(eventMessageStore, to, next) {
 router.beforeEach(async (to, from, next) => {
   const eventMessageStore = useEventMessageStore();
   const userStore = useUserStore();
+  const needsAuthCheck =
+    to.meta.requiresAuth || to.meta.requiresAdmin || to.name === 'LoginPage';
+  const authenticationPromise =
+    needsAuthCheck && !userStore.authState.initialized
+      ? userStore.verifyAuthentication()
+      : Promise.resolve(userStore.isAuthenticated);
+
+  try {
+    // These independent bootstrap requests must not form a network waterfall.
+    const [setupStatus] = await Promise.all([
+      getSetupStatus(),
+      authenticationPromise,
+    ]);
+    if (!setupStatus.initialized && to.name !== 'SetupPage') {
+      return next({ name: 'SetupPage' });
+    }
+    if (setupStatus.initialized && to.name === 'SetupPage') {
+      return next({
+        name: userStore.isAuthenticated ? 'HomePage' : 'LoginPage',
+      });
+    }
+  } catch (error) {
+    console.error('Unable to determine installation status:', error);
+  }
 
   // Always wait for authentication to be initialized before allowing navigation to public auth pages
   const publicAuthPages = [
@@ -205,10 +257,6 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // Check if authentication verification is needed for this route
-  const needsAuthCheck =
-    to.meta.requiresAuth || to.meta.requiresAdmin || to.name === 'LoginPage';
-
   // Only verify authentication if we need it for this route
   if (needsAuthCheck && !userStore.authState.initialized) {
     await userStore.verifyAuthentication();
@@ -220,28 +268,26 @@ router.beforeEach(async (to, from, next) => {
       return handleNotAuthenticated(eventMessageStore, to, next);
     } else {
       const projectStore = useProjectStore();
-      if (!projectStore.projects.length) {
-        try {
-          const res = await gitService.listUserProjects();
-          if (res?.projects) {
-            projectStore.setProjects(res.projects);
-            if (res.projects.length === 0) {
-              projectStore.clearCurrentProject();
-            } else {
+      if (!projectStore.initialized) {
+        // Project data is hydrated from local storage before routing. Refresh it
+        // without blocking the navigation; project-dependent screens expose
+        // their own loading state when there is no cached data.
+        void projectStore
+          .ensureProjects()
+          .then((projects) => {
+            if (projects.length) {
               // Load saved currentProject from localStorage if it exists
-              const savedCurrentProject = localStorage.getItem('currentProject');
+              const savedCurrentProject =
+                localStorage.getItem('currentProject');
               if (savedCurrentProject) {
                 projectStore.currentProject = JSON.parse(savedCurrentProject);
               } else if (!projectStore.currentProject) {
                 // Fallback: set to the first project (sorted by setProjects)
-                projectStore.setCurrentProject(res.projects[0]);
+                projectStore.setCurrentProject(projects[0]);
               }
             }
-          }
-        } catch (e) {
-          // Optionally handle error
-          console.error('Failed to fetch projects:', e);
-        }
+          })
+          .catch((error) => console.error('Failed to fetch projects:', error));
       }
     }
   }
@@ -254,11 +300,62 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
+  if (to.meta.minimumProjectPermission && userStore.user?.role !== 'admin') {
+    const projectStore = useProjectStore();
+    const projects = await projectStore.ensureProjects();
+    const routeProjectId = Number(to.params.projectId || 0);
+    const project = routeProjectId
+      ? projects.find((item) => item.project_id === routeProjectId)
+      : projectStore.currentProject;
+    if (
+      !hasProjectPermission(
+        userStore.user,
+        project,
+        to.meta.minimumProjectPermission
+      )
+    ) {
+      eventMessageStore.addMessage('http_status.403', 'error');
+      return next({ name: 'ProjectsPage' });
+    }
+  }
+
+  if (to.meta.projectConfigurationAccess) {
+    const projectStore = useProjectStore();
+    const projects = await projectStore.ensureProjects();
+    const project = projects.find(
+      (item) => item.project_id === Number(to.params.projectId)
+    );
+    const allowed =
+      hasProjectPermission(userStore.user, project, 'admin') ||
+      hasProjectCapability(userStore.user, project, 'manage_protocols');
+    if (!allowed) {
+      eventMessageStore.addMessage('http_status.403', 'error');
+      return next({ name: 'ProjectsPage' });
+    }
+  }
+
   next();
 });
 
+let authenticatedRoutesPrefetched = false;
+
+function prefetchAuthenticatedRoutes() {
+  if (authenticatedRoutesPrefetched) return;
+  authenticatedRoutesPrefetched = true;
+  void Promise.allSettled(authenticatedPageLoaders.map((load) => load()));
+}
+
 // Add afterEach to track last successful route for redirectTo
 router.afterEach((to, from) => {
+  if (to.meta.requiresAuth) {
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(prefetchAuthenticatedRoutes, {
+        timeout: 2000,
+      });
+    } else {
+      window.setTimeout(prefetchAuthenticatedRoutes, 250);
+    }
+  }
   // Don't update redirectTo if navigating to or coming from the HTTPStatus error page
   if (to.name !== 'HTTPStatusPage' && from.name !== 'HTTPStatusPage') {
     localStorage.setItem('redirectTo', from.fullPath || '/');

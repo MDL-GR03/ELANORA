@@ -11,10 +11,16 @@
       @click="toggleDropdown"
     >
       <span class="project-section-current">
-        <FontAwesomeIcon
-          :icon="faDiagramProject"
+        <svg
           class="project-section-icon"
-        />
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            fill="currentColor"
+            d="M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z"
+          />
+        </svg>
         <span
           class="project-section-current-name"
           :title="
@@ -72,11 +78,12 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useProjectStore } from '@/stores/project';
 import { useI18n } from 'vue-i18n';
-import { faDiagramProject } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { useRoute, useRouter } from 'vue-router';
 
 const projectStore = useProjectStore();
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 
 const projects = computed(() => projectStore.projects || []);
 const currentProject = computed(() => projectStore.currentProject);
@@ -85,7 +92,10 @@ const currentProjectName = computed(() => {
     return t('appHeader.projectSection.selectProject');
   }
   if (typeof currentProject.value === 'object') {
-    return currentProject.value.project_name || t('appHeader.projectSection.selectProject');
+    return (
+      currentProject.value.project_name ||
+      t('appHeader.projectSection.selectProject')
+    );
   }
   return currentProject.value || t('appHeader.projectSection.selectProject');
 });
@@ -101,6 +111,12 @@ function closeDropdown() {
 }
 function selectProject(project) {
   projectStore.setCurrentProject(project);
+  if (route.name === 'ProjectConfigurationPage' && project?.project_id) {
+    void router.replace({
+      name: 'ProjectConfigurationPage',
+      params: { projectId: project.project_id },
+    });
+  }
   closeDropdown();
 }
 function isCurrentProject(project) {
@@ -118,6 +134,7 @@ function handleClickOutside(event) {
 onMounted(() => {
   projectStore.initializeFromStorage();
   projectStore.initBroadcastChannel();
+  document.addEventListener('click', handleClickOutside);
 });
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
@@ -180,7 +197,8 @@ onBeforeUnmount(() => {
 }
 
 .project-section-icon {
-  font-size: 1.2em;
+  width: 1.1rem;
+  height: 1.1rem;
   color: #7c3aed;
   vertical-align: middle;
   flex-shrink: 0;

@@ -12,6 +12,15 @@ export async function fetchSectionsAndGroups(projectId) {
   return response.data;
 }
 
+export async function exportTierSubset(projectName, filename, tierNames) {
+  const response = await axiosInstance.post(
+    `/tier/${encodeURIComponent(projectName)}/export`,
+    { filename, tier_names: tierNames },
+    { responseType: 'blob' }
+  );
+  return response;
+}
+
 export async function createSection(projectId, name) {
   return axiosInstance.post('/tier/sections/create', {
     project_id: projectId,

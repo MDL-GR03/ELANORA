@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import JSON, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -16,6 +16,13 @@ class Tier(Base):
 
     tier_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     tier_name: Mapped[str] = mapped_column(String)
+    linguistic_type_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    eaf_attributes: Mapped[dict[str, str]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    elan_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("ELAN_FILE.elan_id", ondelete="CASCADE"), nullable=False
+    )
     parent_tier_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("TIER.tier_id", ondelete="CASCADE"), nullable=True
     )
@@ -29,6 +36,10 @@ class Tier(Base):
     )
     annotations: Mapped[list["Annotation"]] = relationship(
         "Annotation", back_populates="tier"
+    )
+
+    __table_args__ = (
+        UniqueConstraint("elan_id", "tier_name", name="uq_tier_elan_name"),
     )
 
     def __repr__(self) -> str:

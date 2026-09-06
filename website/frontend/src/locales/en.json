@@ -8,6 +8,7 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "save": "Save",
+    "close": "Close",
     "saving": "Saving...",
     "or": "or",
     "loading": "Loading...",
@@ -93,7 +94,8 @@
     "upload": "File Upload",
     "tiers": "Tiers",
     "export": "Export",
-    "contribution": "Contribution",
+    "contribution": "Contributions",
+    "reviews": "Reviews",
     "projectSection": {
       "selectProject": "Select a project",
       "noProjectAvailable": "No projects available",
@@ -120,6 +122,11 @@
   },
   "login": {
     "platform_subtitle": "Collaborative annotation platform for linguistics.",
+    "instance_label": "Research institution",
+    "default_instance": "ELANORA instance",
+    "institution_fallback": "Institutional research workspace",
+    "welcome_back": "Welcome back",
+    "sign_in_instruction": "Sign in to continue to your research workspace.",
     "connect_to_access": "Connect to access the instance: {instanceName}",
     "login_placeholder": "Enter your login",
     "password": "Password",
@@ -215,7 +222,7 @@
     "invitation_code_required": "Invitation code is required",
     "validating_invitation": "Validating invitation...",
     "invitation_valid": "Invitation is valid!",
-    "invitation_auto_accepted": "Your account has been added to the project! You will be redirected to the login page.",
+    "invitation_existing_user": "You already have an account. Sign in to review and accept this invitation.",
     "invitation_invalid": "Invalid or expired invitation code",
     "invitation_validation_error": "Error validating invitation",
     "first_name_label": "First Name",
@@ -318,6 +325,7 @@
     "email_check_error": "Error checking email availability"
   },
   "invitation": {
+    "context": "Collaboration",
     "send_title": "Send Invitation",
     "send_description": "Invite users to join a specific project on ELANORA",
     "email_label": "Email Address",
@@ -366,6 +374,10 @@
       "load_error": "Error loading users",
       "permission_updated": "Permission updated successfully",
       "permission_update_error": "Error updating permission",
+      "protocol_manager": "Manage protocols",
+      "protocol_manager_help": "Can edit, publish and assign protocol versions for this project",
+      "capability_updated": "Protocol permission updated",
+      "capability_update_error": "Could not update protocol permission",
       "user_added": "User added successfully",
       "add_error": "Error adding user",
       "user_removed": "User removed successfully",
@@ -464,9 +476,12 @@
     "projectListTitle": "Projects",
     "noProjects": "No current projects for this instance.\nYou can start by clicking on the button \"Create a new project\" to create one.",
     "noDescription": "No description",
+    "selectedProject": "Selected project",
+    "readFullDescription": "Read full description",
+    "showLessDescription": "Show less",
     "filesInProject": "Files in {projectName}",
     "synchronizing": "Synchronizing...",
-    "synchronize": "Synchronize",
+    "synchronize": "Review server changes",
     "loadingFiles": "Loading files...",
     "noFilesFound": "No files found.",
     "deleteTitle": "Delete Project",
@@ -484,8 +499,34 @@
       }
     },
     "syncDialog": {
-      "title": "Synchronize Project",
+      "eyebrow": "Server recovery",
+      "title": "Review server changes",
+      "description": "Inspect unmanaged filesystem changes for {project} before accepting or discarding them.",
+      "missingTitle": "Project storage needs attention",
+      "changeCount": "{count} ELAN file change(s) require an administrator decision.",
+      "safetyTitle": "Nothing has been accepted yet",
+      "safetyDescription": "Accepting validates every changed EAF, updates the research database, and records one Git commit. Keeping the repository version permanently discards these server edits.",
+      "acceptServerChanges": "Validate and accept changes",
+      "keepRepositoryVersion": "Discard server changes",
+      "acceptConfirm": "Validate and accept all {count} detected server change(s)? Invalid EAF files will be rejected and no synchronization commit will be created.",
+      "retry": "Check again",
+      "historyTitle": "Recovery history",
+      "historyRetained": "Evidence retained for 30 days after success",
+      "operationChanges": "{count} change(s)",
+      "recover": "Recover",
+      "recoveryFailed": "The operation could not be recovered automatically.",
+      "states": {
+        "preparing": "Preparing",
+        "prepared": "Validated",
+        "committing": "Committing",
+        "completed": "Completed",
+        "discarded": "Discarded safely",
+        "failed": "Failed safely",
+        "recovery_required": "Recovery required"
+      },
       "checkingStatus": "Checking status...",
+      "recoveryTitle": "An interrupted synchronization needs recovery",
+      "recoveryDescription": "Git contains the accepted operation, but its database result was not finalized. Use Recover in the operation history below.",
       "missingFolder": "Project folder is missing. You can restore from backup or delete the project.",
       "missingGit": "Project .git folder is missing. You can restore from backup or delete the project.",
       "missingElanFiles": "Project elan_files folder is missing. You can restore from backup or delete the project.",
@@ -514,7 +555,8 @@
         "succesfullyDeleted": "Project successfully deleted.",
         "succesfullyDiscarded": "Local changes successfully discarded.",
         "succesfullySynced": "Project successfully synchronized and database updated.",
-        "alreadyUpToDate": "No changes detected. Project is already in sync."
+        "alreadyUpToDate": "No changes detected. Project is already in sync.",
+        "recovered": "The database projection was recovered from canonical Git history."
       }
     },
     "createDialog": {
@@ -577,7 +619,7 @@
     "conflict": "A file with this name already exists in the project",
     "conflictMultiple": "{count} files couldn't be renamed because they already exist under the same name in the project",
     "success": "File renamed successfully",
-    "bulkSuccess": "All files renamed successfully", 
+    "bulkSuccess": "All files renamed successfully",
     "bulkPartial": "Some files were renamed successfully, but {failed} failed",
     "bulkPartialSingular": "1 file was renamed successfully, but 1 failed",
     "bulkPartialOneSuccess": "1 file was renamed successfully, but {failed} failed",
@@ -593,6 +635,7 @@
   },
 
   "projectSettings": {
+    "pageTitle": "Project configuration",
     "title": "Configure the {projectName} project",
     "subtitle": "Customize your project settings",
     "sectionNames": {
@@ -604,9 +647,23 @@
           "namingStandards": "Naming Standards",
           "effectiveStandards": "Effective Standards",
           "members": "Members and Access",
-          "invitations": "Invitations"
+          "invitations": "Invitations",
+          "protocols": "Versioned Protocol"
         }
       }
+    },
+    "protocols": {
+      "description": "Publish immutable research rules and pin a version to this project.",
+      "name": "Protocol name",
+      "required_tiers": "Required tiers (comma separated)",
+      "tier_parents": "Required tier parents (JSON)",
+      "linguistic_types": "Required linguistic types (JSON)",
+      "vocabularies": "Required controlled vocabularies",
+      "media_required": "Require linked media",
+      "media_types": "Allowed media MIME types",
+      "create": "Create draft",
+      "publish": "Publish",
+      "pin": "Use for this project"
     },
     "members": {
       "title": "Members Management",
@@ -1013,10 +1070,39 @@
   },
 
   "tiersPage": {
-    "pageTitle": "Tiers"
+    "pageTitle": "Tier hierarchy",
+    "pageDescription": "Inspect and organize the linguistic annotation layers found in this project's ELAN files.",
+    "sectionsTitle": "Corpus organization",
+    "sectionsDescription": "Group ELAN files into meaningful research sections.",
+    "newSectionName": "New section name",
+    "createSection": "Create section",
+    "renameSection": "Rename section",
+    "deleteSection": "Delete section",
+    "deleteConfirmation": "Delete the section “{name}”? Its files will return to Unsectioned.",
+    "unsectioned": "Unsectioned",
+    "fileCount": "{count} ELAN file(s)",
+    "tierCount": "{count} root tier(s)",
+    "moveGuidance": "Drag files by the grip to move them between sections, or use the Move to control for keyboard and touch input.",
+    "moveTo": "Move to",
+    "dragHandle": "Drag to another section",
+    "dragFile": "Drag {name} to another section",
+    "dropHere": "Drop an ELAN file here",
+    "noUnsectioned": "Every ELAN file belongs to a section.",
+    "noTiers": "No tiers were found in this file.",
+    "loading": "Loading tier hierarchy...",
+    "noProject": "Select a project to inspect its tier hierarchy.",
+    "loadFailed": "The tier hierarchy could not be loaded.",
+    "operationFailed": "The change could not be saved. The latest server state has been restored.",
+    "sectionCreated": "Section created.",
+    "sectionRenamed": "Section renamed.",
+    "sectionDeleted": "Section deleted.",
+    "groupMoved": "ELAN file moved."
   },
   "pendingUploads": {
-    "title": "Manage Pending Uploads for",
+    "title": "Contributions",
+    "pageDescription": "Review submitted annotation work, discuss corrections, and accept validated revisions.",
+    "queueTitle": "Incoming work",
+    "queueDescription": "Inspect submitted files and their validation result before adding them to the shared project.",
     "loading": "Loading pending uploads...",
     "noProjectSelected": {
       "title": "No Project Selected",
@@ -1029,7 +1115,7 @@
     },
     "summary": {
       "totalPending": "Total Pending",
-      "readyToMerge": "Ready to Merge",
+      "readyToMerge": "Ready to Accept",
       "needResolution": "Need Resolution"
     },
     "uploadedBy": "by User {user}",
@@ -1041,11 +1127,12 @@
     "conflictedFiles": "Conflicted Files",
     "actions": {
       "viewDetails": "View Details",
-      "mergeNow": "Merge Now",
-      "merging": "Merging...",
-      "resolveConflicts": "Resolve Conflicts",
-      "testMerge": "Test Merge",
-      "testing": "Testing...",
+      "mergeNow": "Accept Contribution",
+      "merging": "Accepting...",
+      "resolveConflicts": "Review Differences",
+      "testMerge": "Check Compatibility",
+      "testing": "Checking...",
+      "refresh": "Refresh",
       "mergeAllReady": "Merge All Ready ({count})",
       "mergingAll": "Merging All..."
     },
@@ -1053,9 +1140,13 @@
       "uploadDetails": "Upload Details",
       "resolveConflicts": "Resolve Upload Conflicts"
     },
+    "mergeConfirmation": {
+      "title": "Accept this contribution?",
+      "message": "The validated files from {branch} will become the new accepted project revision. The previous revision remains preserved in history."
+    },
     "status": {
-      "readyToMerge": "Ready to Merge",
-      "needsResolution": "Needs Resolution",
+      "readyToMerge": "Ready to Accept",
+      "needsResolution": "Review Needed",
       "error": "Error",
       "pendingReview": "Pending Review"
     },
@@ -1066,9 +1157,9 @@
     },
     "errors": {
       "loadFailed": "Failed to load pending uploads",
-      "testMergeFailed": "Failed to test merge",
-      "notReadyToMerge": "Upload is not ready to merge. Please test merge first.",
-      "mergeFailed": "Failed to merge upload",
+      "testMergeFailed": "The contribution compatibility check failed",
+      "notReadyToMerge": "This contribution is not ready to accept. Check its differences first.",
+      "mergeFailed": "The contribution could not be accepted",
       "noReadyUploads": "No uploads are ready to merge",
       "batchMergeFailed": "Failed to merge uploads"
     },
@@ -1093,10 +1184,14 @@
     "noNewFiles": "No new files to add",
     "filesAddedFromFolder": "Added {count} files from folder",
     "fileAdded": "Added: {fileName}",
-    "filesAdded": "Added {count} files"
+    "filesAdded": "Added {count} files",
+    "chooseFiles": "Choose files",
+    "chooseFolder": "Choose folder",
+    "removeNamedFile": "Remove {name}"
   },
   "uploadPage": {
     "title": "Upload ELAN Files",
+    "pageDescription": "Validate naming conventions and ELAN structure before contributing files to a project.",
     "projectSelection": {
       "label": "Select Project:",
       "placeholder": "Choose a project..."
@@ -1106,14 +1201,32 @@
       "subtitle": "Only .eaf files are accepted (max 50MB per file)"
     },
     "uploadButton": "Upload Files",
+    "projectStep": {
+      "title": "Choose a project",
+      "description": "Select the research project that will receive this contribution."
+    },
+    "filesStep": {
+      "title": "Select and validate ELAN files",
+      "description": "Files are checked before they enter the collaborative review workflow."
+    },
+    "ready": "Ready",
+    "selectedCount": "{count} file(s) selected",
+    "selectProjectFirst": "Choose a project to enable file selection.",
+    "nonCompliantSummary": "{count} file(s) do not meet this project's naming standard.",
+    "compliantSummary": "All selected filenames meet the active naming standard.",
+    "submitTitle": "Submit contribution",
+    "submitDescription": "Validated files will be prepared for review before merging.",
+    "complete": "Submission complete",
     "uploadingFiles": "Uploading {count} file(s)...",
     "uploadResults": "Upload Results",
     "resultSuccess": "✓ Success",
     "resultFailed": "✗ Failed",
+    "correctionLinked": "The corrected contribution was linked to its review request.",
     "errors": {
       "failedToLoadProjects": "Failed to load projects",
       "selectProjectAndFiles": "Please select a project and files",
-      "uploadFailed": "Upload failed"
+      "uploadFailed": "Upload failed",
+      "standardsFailed": "The project's naming rules could not be loaded. Upload is paused to avoid an unchecked submission."
     },
     "complianceWarning": "Some files don't comply with the naming standard. Please verify the file names and try again."
   }

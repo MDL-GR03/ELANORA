@@ -1,8 +1,0 @@
-#!/bin/bash
-REPO_NAME="{{REPO_NAME}}"
-WORK_TREE="{{WORK_TREE}}"
-GIT_DIR="{{GIT_DIR}}"
-
-git --work-tree="$WORK_TREE" --git-dir="$GIT_DIR" checkout -f master
-
-curl -X POST http://localhost:8000/api/v1/git/projects/$REPO_NAME/process

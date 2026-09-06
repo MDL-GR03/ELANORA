@@ -20,8 +20,8 @@ from .enums import UserRole
 
 if TYPE_CHECKING:
     from .address import Address
-    from .comment import Comment
     from .file_content import FileContent
+    from .instance import Instance
     from .invitation import Invitation
     from .notification import Notification
     from .notification_preference import NotificationPreference
@@ -52,6 +52,12 @@ class User(Base):
         nullable=True,
         index=True,
     )
+    instance_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("INSTANCE.instance_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
     activation_code: Mapped[str] = mapped_column(String(100), nullable=False)
     is_verified_account: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, index=True
@@ -60,20 +66,23 @@ class User(Base):
         SQLEnum(UserRole), nullable=False, default=UserRole.PUBLIC, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.current_timestamp()
+        DateTime(timezone=True), default=func.current_timestamp()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp()
+        DateTime(timezone=True),
+        default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, index=True
     )
     last_login: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True, index=True
+        DateTime(timezone=True), nullable=True, index=True
     )
 
     # Relationships
     address: Mapped["Address | None"] = relationship("Address", back_populates="users")
+    instance: Mapped["Instance"] = relationship("Instance", back_populates="users")
     file_contents: Mapped[list["FileContent"]] = relationship(
         "FileContent", back_populates="user"
     )
@@ -83,11 +92,15 @@ class User(Base):
     received_invitations: Mapped[list["Invitation"]] = relationship(
         "Invitation", foreign_keys="Invitation.receiver", back_populates="receiver_user"
     )
-    comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="user")
     resolved_uploads: Mapped[list["PendingUpload"]] = relationship(
         "PendingUpload",
         foreign_keys="PendingUpload.resolved_by",
         back_populates="resolver",
+    )
+    submitted_uploads: Mapped[list["PendingUpload"]] = relationship(
+        "PendingUpload",
+        foreign_keys="PendingUpload.submitted_by",
+        back_populates="submitter",
     )
     notifications: Mapped[list["Notification"]] = relationship(
         "Notification", back_populates="user"

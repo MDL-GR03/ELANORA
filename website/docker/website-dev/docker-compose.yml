@@ -1,19 +1,80 @@
 ---
 services:
+  storage-init:
+    image: postgres:18.6-alpine
+    user: "0:0"
+    volumes:
+      - ../../data:/data
+    command:
+      - sh
+      - -c
+      - >-
+        mkdir -p /data/elanora_projects/.locks /data/recovery-cache /data/instance-assets &&
+        chown -R ${ELANORA_DEV_UID:-1000}:${ELANORA_DEV_GID:-1000}
+        /data /data/elanora_projects /data/elanora_projects/.locks
+        /data/recovery-cache /data/instance-assets
+    restart: "no"
+
   backend:
     build:
       context: ../../backend
       dockerfile: ../backend/docker/Dockerfile.dev
+    env_file:
+      - path: ../../env/.env.dev.docker
+        required: false
     environment:
-      - DOCKER=true
+      DOCKER: "true"
+      ENVIRONMENT: dev
+      DB_NAME: elanora
+      DB_USER: elanora
+      DB_PASSWORD: ${ELANORA_DEV_DB_PASSWORD:-elanora-local-only}
+      DB_HOST: db
+      DB_PORT: "5432"
+      JWT_SECRET_KEY: ${ELANORA_DEV_JWT_SECRET:-elanora-local-jwt-secret-not-for-production}
+      SETUP_TOKEN: ${ELANORA_DEV_SETUP_TOKEN:-elanora-local-setup}
+      FRONTEND_HOST: http://localhost:8777
+      BACKEND_HOST: http://localhost:8018
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_FROM: mailer@dev.elanora.example.org
+      MAIL_PORT: "1025"
+      MAIL_SERVER: mailpit
+      MAIL_STARTTLS: "false"
+      MAIL_SSL_TLS: "false"
+      MAIL_USE_CREDENTIALS: "false"
+      OUTBOX_ENCRYPTION_KEYS: svzSYyqHlCqGnZmcGdjsp3qNN6HvwqEAAkhiJCMdrtk=
+      ELAN_PROJECTS_BASE_PATH: /app/website/data/elanora_projects
+      ELAN_BACKUPS_BASE_PATH: /app/website/data/recovery-cache
+      INSTANCE_ASSETS_BASE_PATH: /app/website/data/instance-assets
+      SYNC_STAGING_BASE_PATH: /app/website/data/sync-staging
+    user: "${ELANORA_DEV_UID:-1000}:${ELANORA_DEV_GID:-1000}"
     volumes:
       - ../../backend:/app
+      # Never let container Poetry replace the host interpreter links.
+      - backend_venv:/app/.venv
+      - ../../data:/app/website/data
+      - ../../static:/static:ro
     ports:
       - "8018:8018"
-    env_file:
-      - ../../env/.env.dev.docker
+    command:
+      - sh
+      - -c
+      - >-
+        alembic upgrade head &&
+        exec uvicorn app.main:app --reload --reload-dir /app/app
+        --host 0.0.0.0 --port 8018
     depends_on:
-      - db
+      storage-init:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8018/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     container_name: elanora-website-backend-dev
 
   frontend:
@@ -21,24 +82,93 @@ services:
       context: ../../frontend
       dockerfile: ../frontend/docker/Dockerfile.dev
     environment:
-      - DOCKER=true
+      DOCKER: "true"
+      VITE_API_URL: http://localhost:8018/api/v1
     volumes:
       - ../../frontend:/app
       - /app/node_modules
     ports:
       - "8777:8777"
-    env_file:
-      - ../../env/.env.dev.docker
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
     container_name: elanora-website-frontend-dev
 
-  db:
-    image: mysql:8.4
-    volumes:
-      - ../../database:/docker-entrypoint-initdb.d
-    ports:
-      - "3316:3306"
+  outbox-worker:
+    build:
+      context: ../../backend
+      dockerfile: ../backend/docker/Dockerfile.dev
     env_file:
-      - ../../env/.env.dev.docker
+      - path: ../../env/.env.dev.docker
+        required: false
+    environment:
+      DOCKER: "true"
+      ENVIRONMENT: dev
+      DB_NAME: elanora
+      DB_USER: elanora
+      DB_PASSWORD: ${ELANORA_DEV_DB_PASSWORD:-elanora-local-only}
+      DB_HOST: db
+      DB_PORT: "5432"
+      JWT_SECRET_KEY: ${ELANORA_DEV_JWT_SECRET:-elanora-local-jwt-secret-not-for-production}
+      SETUP_TOKEN: ${ELANORA_DEV_SETUP_TOKEN:-elanora-local-setup}
+      FRONTEND_HOST: http://localhost:8777
+      BACKEND_HOST: http://localhost:8018
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_FROM: mailer@dev.elanora.example.org
+      MAIL_PORT: "1025"
+      MAIL_SERVER: mailpit
+      MAIL_STARTTLS: "false"
+      MAIL_SSL_TLS: "false"
+      MAIL_USE_CREDENTIALS: "false"
+      OUTBOX_ENCRYPTION_KEYS: svzSYyqHlCqGnZmcGdjsp3qNN6HvwqEAAkhiJCMdrtk=
+    user: "${ELANORA_DEV_UID:-1000}:${ELANORA_DEV_GID:-1000}"
+    volumes:
+      - ../../backend:/app
+      - backend_venv:/app/.venv
+    command: ["python", "-m", "app.cli.dispatch_outbox"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    container_name: elanora-outbox-worker-dev
+
+  mailpit:
+    image: axllent/mailpit:v1.31.0
+    environment:
+      MP_MAX_MESSAGES: "500"
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+    container_name: elanora-mailpit-dev
+
+  db:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_DB: elanora
+      POSTGRES_USER: elanora
+      POSTGRES_PASSWORD: ${ELANORA_DEV_DB_PASSWORD:-elanora-local-only}
+    volumes:
+      # PostgreSQL 18 keeps major-version-specific data directories here so
+      # future pg_upgrade operations do not cross a mount boundary.
+      - elanora_db_dev:/var/lib/postgresql
+    ports:
+      - "5416:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     container_name: elanora-website-db-dev
+
+volumes:
+  elanora_db_dev:
+  backend_venv:

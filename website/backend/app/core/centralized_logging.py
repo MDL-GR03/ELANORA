@@ -5,12 +5,11 @@ without having to manually create loggers in each file.
 """
 
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import ClassVar, Optional
 
-from app.core.logging import get_rotating_logger
+from app.core.logging import get_stream_logger
 
 # Constants
 MAX_FRAME_DEPTH = 10
@@ -18,14 +17,13 @@ MIN_MODULE_PARTS = 2
 
 # Try to import config, but don't fail if it's not available
 try:
-    from app.core.config import APP_NAME, LOG_DIR, LOG_LEVEL, ROOT_LOG_LEVEL
+    from app.core.config import APP_NAME, LOG_LEVEL, ROOT_LOG_LEVEL
 
     HAS_CONFIG = True
 except ImportError:
     HAS_CONFIG = False
     # Set defaults when config is not available
     APP_NAME = "elanora"
-    LOG_DIR = "app/logs"
     LOG_LEVEL = "INFO"
     ROOT_LOG_LEVEL = "WARNING"
 
@@ -38,12 +36,7 @@ def setup_application_logging():
     - Reduce noise from third-party libraries
     - Set consistent baseline logging behavior
     """
-    if HAS_CONFIG:
-        root_level = ROOT_LOG_LEVEL
-    else:
-        root_level = os.getenv("ROOT_LOG_LEVEL", ROOT_LOG_LEVEL)
-
-    root_numeric_level = getattr(logging, root_level.upper(), logging.WARNING)
+    root_numeric_level = getattr(logging, ROOT_LOG_LEVEL.upper(), logging.WARNING)
 
     logging.basicConfig(
         level=root_numeric_level,
@@ -75,13 +68,7 @@ class CentralizedLogger:
         if not hasattr(self, "_initialized"):
             self._initialized = True
 
-            # Use config if available, fallback to environment variables
-            if HAS_CONFIG:
-                self._base_log_dir = LOG_DIR
-                self._app_name = APP_NAME
-            else:
-                self._base_log_dir = os.getenv("LOG_DIR", LOG_DIR)
-                self._app_name = os.getenv("APP_NAME", APP_NAME)
+            self._app_name = APP_NAME
 
             # Setup application logging once
             setup_application_logging()
@@ -155,43 +142,7 @@ class CentralizedLogger:
 
     def _create_module_logger(self, module_name: str) -> logging.Logger:
         """Create a logger for a specific module."""
-        # Determine log directory and filename based on module
-        log_dir = self._get_log_dir_for_module(module_name)
-        log_filename = self._get_log_filename_for_module(module_name)
-
-        # Use config if available, fallback to environment
-        level = LOG_LEVEL if HAS_CONFIG else os.getenv("LOG_LEVEL", LOG_LEVEL)
-
-        return get_rotating_logger(
-            logger_name=module_name,
-            log_dir=log_dir,
-            log_filename=log_filename,
-            level=level,
-        )
-
-    def _get_log_dir_for_module(self, module_name: str) -> str:
-        """Determine the log directory for a module."""
-        parts = module_name.split(".")
-
-        if len(parts) >= MIN_MODULE_PARTS:
-            # Create subdirectories based on module structure
-            # e.g., elanora.api.auth -> logs/api/
-            subdir = (
-                "/".join(parts[1:-1]) if len(parts) > MIN_MODULE_PARTS else parts[1]
-            )
-            return os.path.join(self._base_log_dir, subdir)
-
-        return self._base_log_dir
-
-    def _get_log_filename_for_module(self, module_name: str) -> str:
-        """Determine the log filename for a module."""
-        parts = module_name.split(".")
-
-        if len(parts) >= MIN_MODULE_PARTS:
-            # Use the last part as filename
-            return f"{parts[-1]}.log"
-
-        return f"{module_name}.log"
+        return get_stream_logger(logger_name=module_name, level=LOG_LEVEL)
 
     def create_directory_logger(
         self, directory_path: str, logger_name: str | None = None
@@ -213,16 +164,7 @@ class CentralizedLogger:
         if logger_name in self._loggers:
             return self._loggers[logger_name]
 
-        # Create directory-specific logger
-        # Use config if available, fallback to environment
-        level = LOG_LEVEL if HAS_CONFIG else os.getenv("LOG_LEVEL", LOG_LEVEL)
-
-        logger = get_rotating_logger(
-            logger_name=logger_name,
-            log_dir=os.path.join(self._base_log_dir, Path(directory_path).name),
-            log_filename=f"{Path(directory_path).name}.log",
-            level=level,
-        )
+        logger = get_stream_logger(logger_name=logger_name, level=LOG_LEVEL)
 
         self._loggers[logger_name] = logger
         return logger

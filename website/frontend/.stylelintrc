@@ -12,6 +12,8 @@
     "declaration-property-value-keyword-no-deprecated": true,
     "function-name-case": "lower",
     "selector-type-case": "lower",
-    "value-keyword-case": "lower"
+    "value-keyword-case": "lower",
+    "no-descending-specificity": null,
+    "selector-class-pattern": null
   }
 }

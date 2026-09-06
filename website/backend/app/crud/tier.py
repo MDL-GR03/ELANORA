@@ -15,12 +15,11 @@ logger = get_logger()
 async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int):
     logger.info(f"Bulk deleting tiers and annotations for elan_id={elan_id}")
     try:
-        tier_ids = [
-            row[0]
-            for row in await db.execute(
-                select(ElanFileToTier.tier_id).where(ElanFileToTier.elan_id == elan_id)
-            )
-        ]
+        tier_ids = list(
+            (await db.execute(select(Tier.tier_id).where(Tier.elan_id == elan_id)))
+            .scalars()
+            .all()
+        )
         logger.info(f"tier_ids to delete for elan_id={elan_id}: {tier_ids}")
         if tier_ids:
             await DatabaseUtils.bulk_delete(
@@ -32,19 +31,7 @@ async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int):
                 (ElanFileToTier.elan_id == elan_id)
                 & ElanFileToTier.tier_id.in_(tier_ids),
             )
-            orphaned_tiers = [
-                row[0]
-                for row in await db.execute(
-                    select(Tier.tier_id).where(
-                        Tier.tier_id.in_(tier_ids),
-                        ~Tier.tier_id.in_(select(ElanFileToTier.tier_id)),
-                    )
-                )
-            ]
-            if orphaned_tiers:
-                await DatabaseUtils.bulk_delete(
-                    db, Tier, Tier.tier_id.in_(orphaned_tiers)
-                )
+            await DatabaseUtils.bulk_delete(db, Tier, Tier.elan_id == elan_id)
         logger.info(f"Bulk deleted tiers and annotations for elan_id={elan_id}")
     except Exception as e:
         logger.error(f"Failed to bulk delete tiers for elan_id={elan_id}: {e}")
@@ -72,25 +59,35 @@ async def get_root_tiers(db: AsyncSession) -> list[Tier]:
     return await DatabaseUtils.get_by_filter(db, Tier, filters)
 
 
-async def get_tier_id_by_name(db: AsyncSession, tier_name: str) -> int | None:
-    filters = {"tier_name": tier_name}
+async def get_tier_id_by_name(
+    db: AsyncSession, tier_name: str, elan_id: int
+) -> int | None:
+    filters = {"tier_name": tier_name, "elan_id": elan_id}
     tier = await DatabaseUtils.get_one_by_filter(db, Tier, filters)
     return tier.tier_id if tier else None
 
 
-async def get_tier_by_name(db: AsyncSession, tier_name: str) -> Tier | None:
-    filters = {"tier_name": tier_name}
+async def get_tier_by_name(
+    db: AsyncSession, tier_name: str, elan_id: int
+) -> Tier | None:
+    filters = {"tier_name": tier_name, "elan_id": elan_id}
     return await DatabaseUtils.get_one_by_filter(db, Tier, filters)
 
 
 async def create_tier_in_db(
     db: AsyncSession,
     tier_name: str,
+    elan_id: int,
+    linguistic_type_ref: str,
+    eaf_attributes: dict[str, str] | None = None,
     parent_tier_id: int | None = None,
 ) -> Tier:
     """Create a new tier in the database."""
     tier = Tier(
         tier_name=tier_name,
+        elan_id=elan_id,
+        linguistic_type_ref=linguistic_type_ref,
+        eaf_attributes=eaf_attributes or {},
         parent_tier_id=parent_tier_id,
     )
     await DatabaseUtils.create(db, tier)
@@ -99,12 +96,8 @@ async def create_tier_in_db(
 
 
 async def get_tiers_by_elan_id(db: AsyncSession, elan_id: int) -> list[Tier]:
-    """Get all tiers for a given ELAN file using tier_id association."""
-    result = await db.execute(
-        select(Tier)
-        .join(ElanFileToTier, Tier.tier_id == ElanFileToTier.tier_id)
-        .filter(ElanFileToTier.elan_id == elan_id)
-    )
+    """Get all tiers for a given ELAN file."""
+    result = await db.execute(select(Tier).where(Tier.elan_id == elan_id))
     return list(result.scalars().all())
 
 

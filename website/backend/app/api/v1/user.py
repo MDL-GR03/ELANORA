@@ -4,25 +4,25 @@ from sqlalchemy.orm import selectinload
 
 from app.crud.user import get_all_active_users
 from app.dependency.database import get_db_dep
-from app.dependency.user import get_user_dep
-from app.model.user import User
+from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.address import Address
 from app.model.city import City
+from app.model.user import User
+from app.schema.requests.user import (
+    AddressRequest,
+    ChangePasswordRequest,
+    ProfileUpdateRequest,
+)
 from app.schema.responses.user import (
     AddressResponse,
+    CityResponse,
+    ProfileUpdateResponse,
     UserListResponse,
     UserProfileResponse,
     UserResponse,
-    CityResponse,
-    ProfileUpdateResponse,
 )
-from app.schema.requests.user import (
-    ProfileUpdateRequest,
-    AddressRequest,
-    ChangePasswordRequest,
-)
-from app.service.user import UserService
 from app.service.address import AddressService
+from app.service.user import UserService
 from app.utils.database import DatabaseUtils
 
 router = APIRouter()
@@ -132,7 +132,7 @@ async def update_current_user_profile(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating profile: {e!s}",
+            detail="Unable to update profile",
         ) from e
 
 
@@ -203,18 +203,17 @@ async def update_current_user_address(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error updating address: {e!s}",
+            detail="Unable to update address",
         ) from e
 
 
 @router.get("/active", response_model=UserListResponse)
 async def get_active_users(
-    user: User = get_user_dep,
+    user: User = get_admin_dep,
     db: AsyncSession = get_db_dep,
 ) -> UserListResponse:
-    """Get all active users (for admins or authorized operations)."""
-    # This endpoint could be restricted to admins if needed
-    users = await get_all_active_users(db)
+    """Get all active institution users for administrator member management."""
+    users = await get_all_active_users(db, user.instance_id)
 
     return UserListResponse(
         users=[
@@ -262,5 +261,5 @@ async def change_user_password(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error changing password: {e!s}",
+            detail="Unable to change password",
         ) from e

@@ -1,227 +1,111 @@
-# Contributing to the Elanora Project
+# Contributing to ELANORA
 
-Thank you for your interest in contributing to MDL-Corpus!  
-This guide will help you get started and ensure a consistent workflow for all contributors.
+ELANORA protects research annotations, so correctness and reproducibility take
+priority over delivery speed. Changes should preserve the original `.eaf`
+bytes, keep database migrations reversible, and include a test for every fixed
+defect or new rule.
 
----
+## Development workflow
 
-## Branch Management
+Create `feature/<name>`, `fix/<name>`, `test/<name>`, or `docs/<name>` branches
+from `dev`. Open a pull request back to `dev`; releases merge through `main`.
+Use [Conventional Commits](https://www.conventionalcommits.org/), for example
+`fix(eaf): reject dangling annotation references`.
 
-### Main Branches
+Do not commit secrets, real participant data, generated coverage output,
+database files, or local environment files. The files under `website/static`
+and `website/backend/tests/fixtures` must remain public-safe test data.
 
-- **`main`** – Production-ready code.
-- **`dev`** – Main development branch.
+## Backend
 
-### Supporting Branches
+The backend requires Python 3.13 and Poetry 2. Run commands from
+`website/backend`:
 
-- **`feature/<name>`** – New features (e.g., `feature/user-authentication`).  
-  When working on an issue, use `feature/issue-name`.
-- **`test/<name>`** – Adding or updating tests.
-- **`release/<version>`** – Release preparation (e.g., `release/1.3.5`).
-- **`hotfix/<name>`** – Emergency fixes for production (e.g., `hotfix/security-patch`).
-- **`docs/<name>`** – Documentation updates.
-
-### Branch Flow
-
-- Start new features from `dev` in a `feature/*` branch.
-- Merge features into `dev` via Pull Requests (PRs).
-- Create `release/*` branches from `dev` for releases.
-- Merge `release/*` into both `main` and `dev` after testing.
-- Create `hotfix/*` branches from `main` for urgent fixes, then merge back to both `main` and `dev`.
-
----
-
-## Commit Message Guidelines
-
-Follow the [Conventional Commits](https://www.conventionalcommits.org/) style:
-
-```text
-<type>(<scope>): <subject>
-
-[optional body]
-
-[optional footer(s)]
+```bash
+poetry install
+poetry run ruff format --check .
+poetry run ruff check .
+poetry run mypy --config-file mypy.ini
+poetry run pytest tests/unit --cov=app --cov-report=term-missing
+poetry run pip-audit
 ```
 
-**Types:**
+Database integration tests require PostgreSQL rather than SQLite. From the
+repository root, run `make test-integration`, or run `make backend-check` for
+the complete backend gate. The test stack is isolated from development and is
+destroyed after a successful run.
 
-- `feat` – New feature
-- `fix` – Bug fix
-- `docs` – Documentation changes
-- `style` – Code style changes (formatting, etc.)
-- `refactor` – Code refactoring
-- `test` – Adding or updating tests
-- `chore` – Maintenance tasks
-- `ci` – CI/CD related changes
+New domain, storage, configuration, and persistence modules must be fully
+typed and added to the strict boundary in `mypy.ini`. Do not add anonymous
+`dict` structures where a dataclass, Pydantic request/response model, or typed
+record describes a stable contract. The legacy service layer is being moved
+into that boundary incrementally; a pull request must not weaken strictness or
+add a new untyped architectural module.
 
-**Scope:**  
-Module or component name (e.g., `auth`, `api`, `ui`). Optional.
+### EAF changes
 
-**Subject:**  
+EAF ingestion has two required validation layers: the vendored official ELAN
+3.0 XSD and ELANORA's cross-reference and semantic checks. Parsing must use the
+typed models in `app/elan`, retain the exact original bytes and SHA-256 digest,
+and preserve unknown XML attributes and elements for forward compatibility.
 
-- Use imperative mood ("add" not "added" or "adds")
-- No capitalization or period at the end
-- Max 50 characters
+Add focused malformed-document tests and at least one realistic end-to-end
+fixture assertion. Run the EAF suite directly with:
 
-**Examples:**
-
-```text
-feat(auth): add OAuth2 authentication
-fix(api): handle null response from payment service
-docs: update README with deployment instructions
-test(user): add integration tests for user registration
-ci(deploy): add staging environment deployment
+```bash
+poetry run pytest tests/unit/test_eaf_parser.py tests/unit/test_elan_validation.py
 ```
 
-**Best Practices:**
+Never silently repair a source document during ingestion. Report validation
+issues to the researcher and store a new immutable revision only after the
+document passes.
 
-1. Keep commits atomic and focused.
-2. Write meaningful commit messages.
-3. Reference issue numbers in commit body or appFooter.
-4. Separate subject from body with a blank line.
-5. Wrap body at 72 characters.
-6. Use the body to explain what and why, not how.
+### Database changes
 
----
+SQLAlchemy models are the application model; Alembic migrations are the
+deployment history. After changing a model:
 
-## Code Quality & Tooling
+```bash
+poetry run alembic revision --autogenerate -m "describe the change"
+```
 
-### Backend (Python, FastAPI)
+Review generated migrations by hand. Test both upgrade and downgrade, avoid
+data-destructive transformations, and use expand, migrate, and contract steps
+for deployed databases. The SQL dump under `website/database` is historical
+reference only. `make test-integration` exercises the latest downgrade and
+upgrade and runs `alembic check`, which fails when SQLAlchemy models and the
+migration head have drifted apart. Run migration verification against disposable PostgreSQL with
+`make test-db-reset`, use its `TEST_DATABASE_URL` documented in the integration
+test guide, and finish with `make test-db-down`.
 
-Run these from `lsfb-website/backend` (activate your Poetry environment first):
+## Frontend
 
-- **ruff** – Linting and formatting:
-  - Check:
+The frontend requires Node.js 24. Run commands from `website/frontend`:
 
-    ```bash
-    poetry run ruff check .
-    ```
+```bash
+npm ci
+npm run lint
+npm run stylelint
+npm run format
+npm run test
+npm run build
+npm audit --audit-level=high
+```
 
-  - Format:
+Use `npm run lint:fix`, `npm run stylelint:fix`, and `npm run format:fix` for
+local repairs. `npm run test:watch` provides the interactive Vitest workflow;
+`npm run test` is deterministic and exits for CI.
 
-    ```bash
-    poetry run ruff format .
-    ```
+## Pull-request checklist
 
-- **mypy** – Static type checking:
+- The backend and frontend commands above pass for the changed areas.
+- Behavior changes have realistic tests and failure-path coverage.
+- EAF source fidelity and validation rules remain intact.
+- Schema changes include reviewed reversible migrations.
+- Authorization is checked at the project boundary, not only in the UI.
+- Logs and API errors contain no tokens, passwords, participant data, or
+  internal exception details.
+- Documentation and example environment variables reflect the change.
 
-  ```bash
-  poetry run mypy --explicit-package-bases .
-  ```
-
-> **Note:** Use `--explicit-package-bases` with mypy to avoid import issues.
-
-### Frontend (Vue.js, Vite)
-
-Run these from `lsfb-website/frontend`:
-
-- **stylelint** – CSS/Vue style linting:
-
-  ```bash
-  npm run stylelint:fix
-  ```
-
-- **eslint** – JS/Vue linting:
-
-  ```bash
-  npm run lint:fix
-  ```
-
-- **prettier** – Code formatting:
-
-  ```bash
-  npm run format:fix
-  ```
-
-- **i18n extract & clean** – Internationalization:
-  - Extract and clean in one step (recommended, see below):
-
-    ```bash
-    npm run i18n:extract-clean
-    ```
-
-    > This script will extract i18n keys and immediately clean empty translation keys/values in one step.
-
-  - Or run separately:
-
-    ```bash
-    npm run i18n:extract
-    npm run i18n:clean-empty
-    ```
-
-    > Use this if you want more control over each step.
-
----
-
-## Testing & Development
-
-### Running Tests Using Pytest
-
-Testing is done using **Pytest** (and **pytest-cov** for coverage). Both are managed by Poetry.
-
-**Steps to Run the Tests:**
-
-1. Make sure you're in the `backend` folder:
-
-    ```bash
-    cd lsfb-website/backend
-    ```
-
-2. Run the tests:
-
-    ```bash
-    poetry run pytest
-    ```
-
-   This will automatically discover and run the tests.
-
-3. To run the tests with a coverage report:
-
-    ```bash
-    poetry run pytest --cov=. --cov-config=.coveragerc --cov-report=html:coverage/html
-    ```
-
-### Running Tests Using Vitest
-
-Testing is done using **Vitest** (with **@vitest/coverage-v8** for coverage and **@vue/test-utils** for Vue component testing).
-
-**Steps to Run the Tests:**
-
-1. Make sure you're in the `frontend` folder:
-
-    ```bash
-    cd lsfb-website/frontend
-    ```
-
-2. Run the tests:
-
-    ```bash
-    npm run test
-    ```
-
-   This will run tests in watch mode by default.
-
-3. To run the tests with a coverage report:
-
-    ```bash
-    npm run test:coverage
-    ```
-
-   This will generate coverage reports and exit after running all tests.
-
----
-
-## Pull Requests
-
-- Make sure your branch is up to date with `dev` before opening a PR.
-- Ensure all checks pass (lint, tests, formatting).
-- Provide a clear description of your changes and reference related issues.
-- Assign reviewers if possible.
-
----
-
-## Questions?
-
-If you have any questions, [open an issue](https://github.com/lsfb/MDL-Corpus/issues) or [start a discussion](https://github.com/lsfb/MDL-Corpus/discussions).
-
-Thank you for helping improve MDL-Corpus!
+Questions and design proposals belong in this repository's issue tracker or
+discussion board.

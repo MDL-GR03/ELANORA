@@ -1,5 +1,5 @@
 /* InvitationResponsePage.css - Cohérent avec le design du site */
-@import './style.css';
+@import url('./style.css');
 
 .invitation-response-page {
   min-height: 100vh;
@@ -8,7 +8,8 @@
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .container {
@@ -22,8 +23,8 @@
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-main);
   overflow: hidden;
-  animation: slideInUp 0.6s ease-out;
-  border: 1px solid rgba(226, 232, 240, 0.5);
+  animation: slide-in-up 0.6s ease-out;
+  border: 1px solid rgb(226 232 240 / 50%);
 }
 
 /* Loading State */
@@ -40,7 +41,7 @@
   border-top: 3px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 1.5rem auto;
+  margin: 0 auto 1.5rem;
 }
 
 .loading-state p {
@@ -72,7 +73,7 @@
   font-size: 1.5rem;
   font-weight: bold;
   animation: bounce 0.6s ease-out;
-  border: 1px solid rgba(22, 163, 74, 0.2);
+  border: 1px solid rgb(22 163 74 / 20%);
 }
 
 .success-state h1 {
@@ -111,7 +112,7 @@
   justify-content: center;
   font-size: 1.5rem;
   font-weight: bold;
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  border: 1px solid rgb(220 38 38 / 20%);
 }
 
 .error-state h1 {
@@ -155,7 +156,12 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 20%),
+    transparent
+  );
   transition: left 0.5s;
 }
 
@@ -165,7 +171,11 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-color-dark) 100%
+  );
   color: white;
   box-shadow: var(--btn-shadow);
 }
@@ -184,20 +194,26 @@
 .btn-secondary:hover {
   background: #e5e7eb;
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
 }
 
 /* Animations */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-@keyframes slideInUp {
+@keyframes slide-in-up {
   from {
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -205,45 +221,53 @@
 }
 
 @keyframes bounce {
-  0%, 20%, 53%, 80%, 100% {
+  0%,
+  20%,
+  53%,
+  80%,
+  100% {
     transform: translateY(0);
   }
-  40%, 43% {
+
+  40%,
+  43% {
     transform: translateY(-10px);
   }
+
   70% {
     transform: translateY(-5px);
   }
+
   90% {
     transform: translateY(-2px);
   }
 }
 
 /* Responsive Design */
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .invitation-response-page {
     padding: 1rem;
   }
-  
+
   .container {
     max-width: 100%;
   }
-  
+
   .response-card {
     border-radius: 1rem;
   }
-  
+
   .loading-state,
   .success-state,
   .error-state {
     padding: 3rem 1.5rem;
   }
-  
+
   .success-state h1,
   .error-state h1 {
     font-size: 1.5rem;
   }
-  
+
   .btn-primary,
   .btn-secondary {
     padding: 0.875rem 1.5rem;
@@ -253,17 +277,17 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .response-card {
     margin: 0.5rem;
   }
-  
+
   .loading-state,
   .success-state,
   .error-state {
     padding: 2rem 1rem;
   }
-  
+
   .success-icon,
   .error-icon {
     width: 3rem;

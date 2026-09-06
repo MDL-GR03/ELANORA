@@ -1,5 +1,6 @@
-"""Invitation service layer - Business logic for invitation management."""
+"""Invitation use cases for local project collaboration."""
 
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,16 +22,16 @@ from app.crud.notification import (
 )
 from app.crud.project import (
     add_user_to_project,
+    get_project_admins_and_owners,
     get_project_by_id,
     get_project_by_name,
-    get_project_admins_and_owners,
     user_in_project,
 )
 from app.crud.user import get_user_by_id, get_user_by_username_or_email
 from app.model.enums import InvitationStatus
 from app.model.invitation import Invitation
-from app.schema.requests.notification import NotificationCreateRequest
 from app.schema.requests.invitation import InvitationSendRequest
+from app.schema.requests.notification import NotificationCreateRequest
 from app.schema.responses.invitation import (
     InvitationListResponse,
     InvitationResponse,
@@ -39,6 +40,7 @@ from app.schema.responses.invitation import (
 )
 from app.service.email import EmailService
 from app.service.notification import NotificationService
+from app.service.outbox import enqueue_existing_user_invitation_email
 
 # Get logger for this module
 logger = get_logger()
@@ -77,7 +79,7 @@ class InvitationService:
 
             # Check for existing invitations for this email
             existing = await get_pending_invitations_by_email(
-                db, request.receiver_email
+                db, request.receiver_email, project_id=project.project_id
             )
             if existing:
                 return InvitationSendResponse(
@@ -104,6 +106,7 @@ class InvitationService:
                 project_id=project.project_id,
                 project_permission=request.project_permission,
                 expires_in_days=request.expires_in_days,
+                commit=False,
             )
 
             # Send different email based on whether user exists
@@ -120,7 +123,7 @@ class InvitationService:
                 )
 
                 # Check user's email preferences and send email if enabled
-                email_sent = await self._send_invitation_email_if_enabled(
+                email_sent = await self._queue_invitation_email_if_enabled(
                     db=db,
                     user_id=existing_user.user_id,
                     email=request.receiver_email,
@@ -159,14 +162,14 @@ class InvitationService:
                     invitation_code=raw_code if not existing_user else None,
                 )
             else:
+                await db.rollback()
                 return InvitationSendResponse(
                     success=False,
                     message="Failed to send invitation email",
-                    invitation_id=invitation.invitation_id,
-                    invitation_code=raw_code if not existing_user else None,
                 )
 
         except Exception as e:
+            await db.rollback()
             logger.error(
                 "Failed to send invitation",
                 extra={
@@ -185,7 +188,7 @@ class InvitationService:
         db: AsyncSession,
         invitation_code: str,
     ) -> InvitationValidationResponse:
-        """Validate an invitation code and auto-accept for existing users."""
+        """Validate an invitation code without changing membership or state."""
         try:
             # Find invitation by code
             invitation = await get_invitation_by_code(db, invitation_code)
@@ -210,88 +213,32 @@ class InvitationService:
                     valid=False, message="This invitation is no longer valid"
                 )
 
-            # Check if the invitation email corresponds to an existing user
+            # Validation is deliberately read-only. Existing users accept through the
+            # authenticated decision endpoint; new users redeem the code at registration.
             if invitation.receiver_email:
                 existing_user = await get_user_by_username_or_email(
                     db, invitation.receiver_email
                 )
 
                 if existing_user:
-                    # Check if user is already in the project before auto-accepting
-
                     existing_membership = await user_in_project(
                         db, existing_user.user_id, invitation.project_id
                     )
-
                     if existing_membership:
-                        # User is already in the project
-                        logger.info(
-                            "User is already a member of the project",
-                            extra={
-                                "invitation_id": invitation.invitation_id,
-                                "user_id": existing_user.user_id,
-                                "email": invitation.receiver_email,
-                                "project_id": invitation.project_id,
-                            },
-                        )
-
-                        # Mark invitation as accepted anyway
-                        await update_invitation_status(
-                            db=db,
-                            invitation_id=invitation.invitation_id,
-                            status=InvitationStatus.ACCEPTED,
-                            receiver_id=existing_user.user_id,
-                        )
-
                         return InvitationValidationResponse(
                             valid=False,
                             message="You are already a member of this project",
-                            auto_accepted=True,
                             user_exists=True,
                         )
-
-                    # Auto-accept invitation for existing user
-                    logger.info(
-                        "Auto-accepting invitation for existing user",
-                        extra={
-                            "invitation_id": invitation.invitation_id,
-                            "user_id": existing_user.user_id,
-                            "email": invitation.receiver_email,
-                        },
+                    invitation_response = await self._convert_to_response(
+                        db, invitation
                     )
-
-                    # Accept the invitation
-                    success = await self.accept_invitation(
-                        db=db,
-                        invitation_id=invitation.invitation_id,
-                        user_id=existing_user.user_id,
+                    return InvitationValidationResponse(
+                        valid=True,
+                        invitation=invitation_response,
+                        message="Sign in to review this invitation",
+                        user_exists=True,
                     )
-
-                    if success:
-                        # Convert to response format
-                        invitation_response = await self._convert_to_response(
-                            db, invitation
-                        )
-
-                        return InvitationValidationResponse(
-                            valid=True,
-                            invitation=invitation_response,
-                            message="Invitation automatically accepted for existing user",
-                            auto_accepted=True,
-                            user_exists=True,
-                        )
-                    else:
-                        logger.error(
-                            "Failed to auto-accept invitation",
-                            extra={
-                                "invitation_id": invitation.invitation_id,
-                                "user_id": existing_user.user_id,
-                            },
-                        )
-                        return InvitationValidationResponse(
-                            valid=False,
-                            message="Failed to accept invitation for existing user",
-                        )
 
             # Convert to response format for new user registration
             invitation_response = await self._convert_to_response(db, invitation)
@@ -300,7 +247,6 @@ class InvitationService:
                 valid=True,
                 invitation=invitation_response,
                 message="Invitation is valid",
-                auto_accepted=False,
                 user_exists=False,
             )
 
@@ -320,13 +266,13 @@ class InvitationService:
     async def accept_invitation(
         self,
         db: AsyncSession,
-        invitation_id: str,
+        invitation_id: int,
         user_id: int,
     ) -> bool:
         """Mark an invitation as accepted and add user to project."""
         try:
             # Get invitation details first
-            invitation = await get_invitation_by_id(db, invitation_id)
+            invitation = await get_invitation_by_id(db, invitation_id, for_update=True)
             if not invitation:
                 logger.warning(
                     "Invitation not found",
@@ -334,116 +280,117 @@ class InvitationService:
                 )
                 return False
 
-            # Update invitation status
-            success = await update_invitation_status(
-                db=db,
-                invitation_id=invitation_id,
-                status=InvitationStatus.ACCEPTED,
-                receiver_id=user_id,
-            )
+            project_id = invitation.project_id
 
-            if success:
-                # Add user to project with the permission specified in the invitation
-                try:
-                    await add_user_to_project(
-                        db=db,
-                        user_id=user_id,
-                        project_id=invitation.project_id,
-                        permission=invitation.project_permission,
-                    )
-                    logger.info(
-                        "User added to project via invitation",
-                        extra={
-                            "invitation_id": invitation_id,
-                            "user_id": user_id,
-                            "project_id": invitation.project_id,
-                            "permission": invitation.project_permission,
-                        },
-                    )
-
-                    # Notify project admins and owners about the new member
-                    try:
-                        # Get project details
-                        project = await get_project_by_id(db, invitation.project_id)
-                        # Get user details
-                        new_member = await get_user_by_id(db, user_id)
-
-                        if project and new_member:
-                            # Get all admins and owners of the project
-                            admin_user_ids = await get_project_admins_and_owners(
-                                db, invitation.project_id
-                            )
-
-                            # Create notifications for each admin/owner
-                            for admin_user_id in admin_user_ids:
-                                # Don't notify the user who just joined
-                                if admin_user_id != user_id:
-                                    await InvitationService._create_member_joined_notification(
-                                        db=db,
-                                        admin_user_id=admin_user_id,
-                                        project_name=project.project_name,
-                                        new_member_name=f"{new_member.first_name} {new_member.last_name}",
-                                        project_id=invitation.project_id,
-                                    )
-
-                    except Exception as notify_error:
-                        # Log but don't fail the invitation acceptance
-                        logger.warning(
-                            "Failed to notify admins about new member",
-                            extra={
-                                "invitation_id": invitation_id,
-                                "project_id": invitation.project_id,
-                                "error": str(notify_error),
-                            },
-                        )
-                except ValueError as ve:
-                    # Handle case where user is already in the project
-                    if "already a member" in str(ve):
-                        logger.info(
-                            "User is already a member of the project",
-                            extra={
-                                "invitation_id": invitation_id,
-                                "user_id": user_id,
-                                "project_id": invitation.project_id,
-                            },
-                        )
-                        # We still consider this a success since the goal is achieved
-                        return True
-                    else:
-                        logger.error(
-                            "Failed to add user to project - ValueError",
-                            extra={
-                                "invitation_id": invitation_id,
-                                "user_id": user_id,
-                                "project_id": invitation.project_id,
-                                "error": str(ve),
-                            },
-                        )
-                        return False
-                except Exception as project_error:
-                    logger.error(
-                        "Failed to add user to project",
-                        extra={
-                            "invitation_id": invitation_id,
-                            "user_id": user_id,
-                            "project_id": invitation.project_id,
-                            "error": str(project_error),
-                        },
-                        exc_info=True,
-                    )
-                    # Note: invitation status is already updated,
-                    # but user was not added to project
-                    return False
-
+            if (
+                invitation.status != InvitationStatus.PENDING
+                or invitation.expires_at <= datetime.now()
+            ):
                 logger.info(
-                    "Invitation accepted",
+                    "Invitation cannot be accepted",
+                    extra={
+                        "invitation_id": invitation_id,
+                        "status": invitation.status,
+                    },
+                )
+                return False
+
+            user = await get_user_by_id(db, user_id)
+            if (
+                user is None
+                or user.email.strip().casefold()
+                != invitation.receiver_email.strip().casefold()
+            ):
+                logger.warning(
+                    "Invitation recipient mismatch",
+                    extra={"invitation_id": invitation_id, "user_id": user_id},
+                )
+                return False
+
+            existing_membership = await user_in_project(db, user_id, project_id)
+            if existing_membership:
+                logger.info(
+                    "User is already a member of the project",
                     extra={
                         "invitation_id": invitation_id,
                         "user_id": user_id,
+                        "project_id": project_id,
+                    },
+                )
+                return False
+
+            try:
+                await add_user_to_project(
+                    db=db,
+                    user_id=user_id,
+                    project_id=project_id,
+                    permission=invitation.project_permission,
+                    commit=False,
+                )
+                success = await update_invitation_status(
+                    db=db,
+                    invitation_id=invitation_id,
+                    status=InvitationStatus.ACCEPTED,
+                    receiver_id=user_id,
+                    commit=False,
+                )
+                if not success:
+                    await db.rollback()
+                    return False
+
+                await db.commit()
+                logger.info(
+                    "User added to project via invitation",
+                    extra={
+                        "invitation_id": invitation_id,
+                        "user_id": user_id,
+                        "project_id": project_id,
+                        "permission": invitation.project_permission,
                     },
                 )
 
-            return success
+                # Notifications are best-effort and do not affect membership.
+                try:
+                    project = await get_project_by_id(db, project_id)
+                    if project:
+                        admin_user_ids = await get_project_admins_and_owners(
+                            db, project_id
+                        )
+                        for admin_user_id in admin_user_ids:
+                            if admin_user_id != user_id:
+                                await InvitationService._create_member_joined_notification(
+                                    db=db,
+                                    admin_user_id=admin_user_id,
+                                    project_name=project.project_name,
+                                    new_member_name=f"{user.first_name} {user.last_name}",
+                                    project_id=project_id,
+                                )
+                        await db.commit()
+                except Exception as notify_error:
+                    await db.rollback()
+                    logger.warning(
+                        "Failed to notify admins about new member",
+                        extra={
+                            "invitation_id": invitation_id,
+                            "project_id": project_id,
+                            "error": str(notify_error),
+                        },
+                    )
+
+                return True
+            except Exception as project_error:
+                await db.rollback()
+                logger.error(
+                    "Failed to accept invitation atomically",
+                    extra={
+                        "invitation_id": invitation_id,
+                        "user_id": user_id,
+                        "project_id": project_id,
+                        "error": str(project_error),
+                    },
+                    exc_info=True,
+                )
+                return False
 
         except Exception as e:
             logger.error(
@@ -962,7 +909,7 @@ class InvitationService:
                 exc_info=True,
             )
 
-    async def _send_invitation_email_if_enabled(
+    async def _queue_invitation_email_if_enabled(
         self,
         db: AsyncSession,
         user_id: int,
@@ -973,7 +920,7 @@ class InvitationService:
         custom_message: str | None = None,
         language: str = "en",
     ) -> bool:
-        """Send invitation email only if user has email notifications enabled."""
+        """Queue invitation email if the recipient enabled email notifications."""
         try:
             # Check user's email preferences
             preferences = await get_notification_preference_by_user_id(db, user_id)
@@ -986,8 +933,8 @@ class InvitationService:
                 )
                 return True  # Return True because the operation succeeded (just no email sent)
 
-            # Send the email since preferences allow it
-            email_sent = await self.email_service.send_existing_user_invitation_email(
+            await enqueue_existing_user_invitation_email(
+                db,
                 email=email,
                 invitation_id=invitation_id,
                 sender_name=sender_name,
@@ -995,27 +942,11 @@ class InvitationService:
                 custom_message=custom_message,
                 language=language,
             )
-
-            if email_sent:
-                logger.info(
-                    "Invitation email sent successfully",
-                    extra={
-                        "user_id": user_id,
-                        "email": email,
-                        "invitation_id": invitation_id,
-                    },
-                )
-            else:
-                logger.warning(
-                    "Failed to send invitation email",
-                    extra={
-                        "user_id": user_id,
-                        "email": email,
-                        "invitation_id": invitation_id,
-                    },
-                )
-
-            return email_sent
+            logger.info(
+                "Invitation email queued",
+                extra={"user_id": user_id, "invitation_id": invitation_id},
+            )
+            return True
 
         except Exception as e:
             logger.error(

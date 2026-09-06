@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
+from app.dependency.user import get_admin_dep
 from app.schema.requests.project_naming_standard import (
     CreateNamingStandardRequest,
     ImportSelectedStandardsRequest,
@@ -13,7 +14,7 @@ from app.schema.responses.project_naming_standard import (
 )
 from app.service.project_naming_standard import ProjectNamingStandardService
 
-router = APIRouter()
+router = APIRouter(dependencies=[get_admin_dep])
 
 
 @router.get(

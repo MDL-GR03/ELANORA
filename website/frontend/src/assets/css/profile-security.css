@@ -1,4 +1,4 @@
-@import './style.css';
+@import url('./style.css');
 
 /* Profile Security Styles */
 .profile-security {
@@ -11,20 +11,20 @@
 .security-section {
   background: var(--card-bg);
   border-radius: var(--border-radius);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
   border: 1px solid #e5e7eb;
   padding: 2rem;
   transition: all 0.3s ease;
 }
 
 .security-section:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 25px rgb(0 0 0 / 12%);
   transform: translateY(-2px);
 }
 
 /* Security Header */
 .security-title {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.5rem;
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-main);
@@ -41,12 +41,16 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-color-dark) 100%
+  );
   border-radius: 10px;
 }
 
 .security-description {
-  margin: 0 0 2rem 0;
+  margin: 0 0 2rem;
   font-size: 1rem;
   color: var(--text-secondary);
   line-height: 1.5;
@@ -91,7 +95,7 @@
 .form-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
   background: var(--card-bg);
 }
 
@@ -236,7 +240,7 @@
 
 .security-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 25px rgb(0 0 0 / 8%);
 }
 
 .security-card-header {
@@ -265,7 +269,7 @@
 }
 
 .security-card-description {
-  margin: 0 0 1rem 0;
+  margin: 0 0 1rem;
   font-size: 0.9rem;
   color: var(--text-secondary);
   line-height: 1.4;
@@ -325,7 +329,7 @@
 }
 
 .two-factor-description {
-  margin: 0 0 1rem 0;
+  margin: 0 0 1rem;
   font-size: 0.95rem;
   color: #075985;
   line-height: 1.4;
@@ -363,43 +367,43 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .profile-security {
     padding: 1rem;
   }
-  
+
   .security-section {
     padding: 1.5rem;
   }
-  
+
   .security-description {
     padding-left: 0;
     margin-top: 1rem;
   }
-  
+
   .security-title::before {
     width: 32px;
     height: 32px;
     font-size: 1rem;
   }
-  
+
   .form-actions {
     justify-content: stretch;
   }
-  
+
   .btn-primary {
     width: 100%;
   }
-  
+
   .security-cards {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   .two-factor-section {
     padding: 1.25rem;
   }
-  
+
   .two-factor-icon {
     width: 40px;
     height: 40px;
@@ -407,28 +411,28 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .profile-security {
     padding: 0.5rem;
   }
-  
+
   .security-section {
     padding: 1rem;
     border-radius: 12px;
   }
-  
+
   .form-input {
     padding: 0.75rem;
   }
-  
+
   .password-requirements {
     padding: 0.875rem;
   }
-  
+
   .security-card {
     padding: 1.25rem;
   }
-  
+
   .two-factor-section {
     padding: 1rem;
   }

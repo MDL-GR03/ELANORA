@@ -20,6 +20,11 @@ export const getProjectUsers = async (projectId) => {
   }
 };
 
+export const getAvailableProjectUsers = (projectId) =>
+  axiosInstance.get(
+    `/project-associations/projects/${projectId}/available-users`
+  );
+
 /**
  * Add a user to a project with specified permission by project ID
  * @param {number} projectId - The project ID
@@ -80,3 +85,11 @@ export const removeUserFromProject = async (projectId, userId) => {
     throw error;
   }
 };
+
+/** Delegate protocol publication and configuration without granting project admin. */
+export const grantProtocolManager = (projectId, userId) =>
+  axiosInstance.put(`/projects/${projectId}/protocol-managers/${userId}`);
+
+/** Revoke protocol management without changing normal project access. */
+export const revokeProtocolManager = (projectId, userId) =>
+  axiosInstance.delete(`/projects/${projectId}/protocol-managers/${userId}`);

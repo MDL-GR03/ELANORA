@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint, Boolean
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base

@@ -3,30 +3,23 @@
     <div
       v-if="visible"
       :class="['event-message', typeClasses[type]]"
+      :role="type === 'error' ? 'alert' : 'status'"
+      aria-live="polite"
       @mouseenter="onMouseEnter"
       @mouseleave="onMouseLeave"
     >
       <div class="event-message-icon">
-        <font-awesome-icon
-          v-if="type === 'error'"
-          :icon="faExclamationCircle"
-        />
-        <font-awesome-icon
-          v-if="type === 'warning'"
-          :icon="faExclamationTriangle"
-        />
-        <font-awesome-icon v-if="type === 'info'" :icon="faInfoCircle" />
-        <font-awesome-icon v-if="type === 'success'" :icon="faCheckCircle" />
+        <span aria-hidden="true">{{ typeIcons[type] }}</span>
       </div>
       <div class="event-message-text">
-        {{ t(translationKey, params || {}) }}
+        {{ displayText }}
       </div>
       <button
         class="event-message-close"
         aria-label="Close notification"
         @click="closeMessage"
       >
-        <font-awesome-icon :icon="faTimes" />
+        <span aria-hidden="true">×</span>
       </button>
     </div>
   </transition>
@@ -35,13 +28,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
-import {
-  faExclamationCircle,
-  faExclamationTriangle,
-  faInfoCircle,
-  faCheckCircle,
-  faTimes,
-} from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
   translationKey: {
@@ -68,11 +54,11 @@ const props = defineProps({
   },
   params: {
     type: Object,
-    default: () => ({})
-  }
+    default: () => ({}),
+  },
 });
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 const emit = defineEmits(['close']);
 const visible = ref(props.show);
 const timer = ref(null);
@@ -85,6 +71,12 @@ const typeClasses = computed(() => ({
   info: 'event-message-info',
   success: 'event-message-success',
 }));
+const displayText = computed(() =>
+  te(props.translationKey)
+    ? t(props.translationKey, props.params || {})
+    : props.translationKey
+);
+const typeIcons = { error: '!', warning: '!', info: 'i', success: '✓' };
 
 const closeMessage = () => {
   visible.value = false;
@@ -161,46 +153,66 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .slide-fade-enter-active {
-  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease;
 }
 
 .slide-fade-leave-active {
-  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .slide-fade-enter-from {
-  transform: translateY(40px);
+  transform: translateX(1.25rem);
   opacity: 0;
 }
 
 .slide-fade-leave-to {
-  transform: translateY(40px);
+  transform: translateX(1.25rem);
   opacity: 0;
 }
 
 .event-message {
-  min-width: 300px;
-  max-width: 450px;
+  --toast-accent: #2563eb;
+  --toast-soft: #eff6ff;
+
+  width: min(24rem, calc(100vw - 2rem));
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
-  gap: 1rem;
+  grid-template-columns: 2rem minmax(0, 1fr) 1.75rem;
+  align-items: start;
+  padding: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--toast-accent) 22%, #dbe3ef);
+  border-radius: 0.8rem;
+  background: rgb(255 255 255 / 97%);
+  box-shadow:
+    0 1rem 2.5rem rgb(15 23 42 / 14%),
+    0 0.15rem 0.45rem rgb(15 23 42 / 8%);
+  gap: 0.75rem;
   overflow-wrap: break-word;
+  backdrop-filter: blur(12px);
 }
 
 .event-message-icon {
-  flex-shrink: 0;
-  margin-right: 0.75rem;
-  font-size: 1.5rem;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  background: var(--toast-soft);
+  color: var(--toast-accent);
+  font-size: 0.9rem;
+  font-weight: 900;
 }
 
 .event-message-text {
-  font-size: 1rem;
+  padding-top: 0.28rem;
+  color: #1e293b;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.45;
   text-align: left;
   white-space: pre-line;
   overflow-wrap: break-word;
@@ -208,42 +220,46 @@ onBeforeUnmount(() => {
 }
 
 .event-message-close {
-  margin-left: 1rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
   color: #6b7280;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.25rem;
-  font-size: 1.2rem;
-  transition: color 0.15s;
+  padding: 0;
+  border-radius: 0.45rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  transition:
+    color 0.15s,
+    background 0.15s;
   justify-self: end;
 }
 
 .event-message-close:hover {
+  background: #f1f5f9;
   color: #374151;
 }
 
 .event-message-error {
-  background: #ffe1e1;
-  color: #b91c1c;
-  border-left: 4px solid #ef4444;
+  --toast-accent: #dc2626;
+  --toast-soft: #fef2f2;
 }
 
 .event-message-warning {
-  background: #fffbe6;
-  color: #b45309;
-  border-left: 4px solid #f59e42;
+  --toast-accent: #d97706;
+  --toast-soft: #fffbeb;
 }
 
 .event-message-info {
-  background: var(--very-light-main, #d4fff7);
-  color: var(--color-main, #077a7d);
-  border-left: 4px solid var(--color-main, #077a7d);
+  --toast-accent: #2563eb;
+  --toast-soft: #eff6ff;
 }
 
 .event-message-success {
-  background: #e6fffa;
-  color: #047857;
-  border-left: 4px solid #34d399;
+  --toast-accent: #059669;
+  --toast-soft: #ecfdf5;
 }
 </style>

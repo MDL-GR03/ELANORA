@@ -700,6 +700,8 @@ import {
   getCountries,
   validateCity,
   validatePostalCode,
+  validatePostalCodeInCity,
+  validateStreetInCity,
   validateStreetName,
 } from '@/api/service/locationService';
 import {
@@ -1366,9 +1368,6 @@ const validateStreetInCityField = async () => {
 
   try {
     // Import the function dynamically to avoid unused import linting errors
-    const { validateStreetInCity } = await import(
-      '@/api/service/locationService'
-    );
     const result = await validateStreetInCity(
       form.value.address.streetName,
       form.value.address.cityName,
@@ -1417,9 +1416,6 @@ const validatePostalCodeInCityField = async () => {
 
   try {
     // Import the function dynamically to avoid unused import linting errors
-    const { validatePostalCodeInCity } = await import(
-      '@/api/service/locationService'
-    );
     const result = await validatePostalCodeInCity(
       form.value.address.postalCode,
       form.value.address.cityName,
@@ -1582,13 +1578,13 @@ const validateInvitationCode = async () => {
   try {
     const response = await validateInvitation(invitationCode.value);
     if (response.data.valid) {
-      // Check if invitation was auto-accepted for existing user
-      if (response.data.auto_accepted && response.data.user_exists) {
+      // Existing accounts review invitations after authentication. Validation
+      // never grants project access by itself.
+      if (response.data.user_exists) {
         eventMessageStore.addMessage(
-          t('register.invitation_auto_accepted'),
-          'success'
+          t('register.invitation_existing_user'),
+          'info'
         );
-        // Redirect to login page after a short delay
         setTimeout(() => {
           router.push({ name: 'LoginPage' });
         }, 2000);

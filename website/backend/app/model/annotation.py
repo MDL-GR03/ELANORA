@@ -27,8 +27,13 @@ class Annotation(Base):
         ForeignKey("ANNOTATION_VALUE.value_id", ondelete="CASCADE"),
         nullable=False,
     )
-    start_time: Mapped[Decimal] = mapped_column(Numeric(10, 3), nullable=False)
-    end_time: Mapped[Decimal] = mapped_column(Numeric(10, 3), nullable=False)
+    annotation_kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    annotation_ref: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    previous_annotation: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    cv_entry_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    external_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    start_time: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+    end_time: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
     tier_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("TIER.tier_id"), nullable=False
     )

@@ -31,10 +31,18 @@
             >
               <option value="">{{ t('contact.select_request_type') }}</option>
               <option value="bug_report">{{ t('contact.bug_report') }}</option>
-              <option value="feature_request">{{ t('contact.feature_request') }}</option>
-              <option value="technical_support">{{ t('contact.technical_support') }}</option>
-              <option value="account_issue">{{ t('contact.account_issue') }}</option>
-              <option value="general_inquiry">{{ t('contact.general_inquiry') }}</option>
+              <option value="feature_request">
+                {{ t('contact.feature_request') }}
+              </option>
+              <option value="technical_support">
+                {{ t('contact.technical_support') }}
+              </option>
+              <option value="account_issue">
+                {{ t('contact.account_issue') }}
+              </option>
+              <option value="general_inquiry">
+                {{ t('contact.general_inquiry') }}
+              </option>
               <option value="other">{{ t('contact.other') }}</option>
             </select>
           </div>
@@ -50,15 +58,21 @@
               :disabled="isSubmitting"
             ></textarea>
             <div class="message-counter">
-              <span 
-                :class="{ 
-                  'text-error': contactForm.message.length < 10 || contactForm.message.length > 5000,
+              <span
+                :class="{
+                  'text-error':
+                    contactForm.message.length < 10 ||
+                    contactForm.message.length > 5000,
                   'text-warning': contactForm.message.length > 4500,
-                  'text-success': contactForm.message.length >= 10 && contactForm.message.length <= 4500
+                  'text-success':
+                    contactForm.message.length >= 10 &&
+                    contactForm.message.length <= 4500,
                 }"
               >
-                {{ contactForm.message.length }} / 5000 caractères 
-                <span v-if="contactForm.message.length < 10">(minimum: 10)</span>
+                {{ contactForm.message.length }} / 5000 caractères
+                <span v-if="contactForm.message.length < 10"
+                  >(minimum: 10)</span
+                >
               </span>
             </div>
           </div>
@@ -95,10 +109,13 @@
               <button
                 type="button"
                 class="captcha-refresh"
-                @click="generateCaptcha(); contactForm.captcha_answer = ''"
                 :disabled="isSubmitting"
                 :title="t('contact.captcha_refresh')"
                 aria-label="{{ t('contact.captcha_refresh') }}"
+                @click="
+                  generateCaptcha();
+                  contactForm.captcha_answer = '';
+                "
               >
                 <!-- Small, sober reset icon (uses currentColor) -->
                 <svg
@@ -180,9 +197,9 @@ const captcha = ref({
 const generateCaptcha = () => {
   const operators = ['+', '-', '*'];
   const operator = operators[Math.floor(Math.random() * operators.length)];
-  
+
   let num1, num2, correctAnswer;
-  
+
   switch (operator) {
     case '+':
       num1 = Math.floor(Math.random() * 20) + 1; // 1-20
@@ -200,12 +217,14 @@ const generateCaptcha = () => {
       correctAnswer = num1 * num2;
       break;
   }
-  
+
   captcha.value = { num1, num2, operator, correctAnswer };
 };
 
 // Computed property to check if user is authenticated
-const isAuthenticated = computed(() => userStore.user && userStore.user.user_id);
+const isAuthenticated = computed(
+  () => userStore.user && userStore.user.user_id
+);
 
 // Computed property to get user email
 const userEmail = computed(() => userStore.user?.email || '');
@@ -214,12 +233,12 @@ const userEmail = computed(() => userStore.user?.email || '');
 onMounted(async () => {
   // Generate initial CAPTCHA
   generateCaptcha();
-  
+
   // Ensure authentication is verified first
   if (!userStore.authState.initialized) {
     await userStore.verifyAuthentication();
   }
-  
+
   if (isAuthenticated.value && userEmail.value) {
     contactForm.email = userEmail.value;
   }
@@ -235,11 +254,11 @@ watch([isAuthenticated, userEmail], ([isAuth, email]) => {
 // Handle error responses with specific error messages
 const handleContactError = (error) => {
   console.error('Contact form submission error:', error);
-  
+
   // Handle different types of errors with specific messages
   if (error.response?.status) {
     const status = error.response.status;
-    
+
     switch (status) {
       case 400:
         handleValidationError(error);
@@ -255,7 +274,10 @@ const handleContactError = (error) => {
         eventMessageStore.addMessage('contact.error_conflict', 'error');
         break;
       case 413:
-        eventMessageStore.addMessage('contact.error_payload_too_large', 'error');
+        eventMessageStore.addMessage(
+          'contact.error_payload_too_large',
+          'error'
+        );
         break;
       case 429:
         // Rate limiting - too many requests
@@ -280,7 +302,7 @@ const handleContactError = (error) => {
     // Generic error message for unknown errors
     eventMessageStore.addMessage('contact.error_unknown', 'error');
   }
-  
+
   // Generate new CAPTCHA on error
   generateCaptcha();
   contactForm.captcha_answer = '';
@@ -290,15 +312,24 @@ const handleContactError = (error) => {
 const handleValidationError = (error) => {
   if (error.response?.data?.detail) {
     const errors = error.response.data.detail;
-    
+
     // Check for specific validation errors
-    const messageError = errors.find(err => err.loc && err.loc.includes('message'));
-    const emailError = errors.find(err => err.loc && err.loc.includes('email'));
-    const requestTypeError = errors.find(err => err.loc && err.loc.includes('request_type'));
-    
+    const messageError = errors.find(
+      (err) => err.loc && err.loc.includes('message')
+    );
+    const emailError = errors.find(
+      (err) => err.loc && err.loc.includes('email')
+    );
+    const requestTypeError = errors.find(
+      (err) => err.loc && err.loc.includes('request_type')
+    );
+
     if (messageError) {
       if (messageError.type === 'string_too_short') {
-        eventMessageStore.addMessage('contact.error_message_too_short', 'error');
+        eventMessageStore.addMessage(
+          'contact.error_message_too_short',
+          'error'
+        );
       } else if (messageError.type === 'string_too_long') {
         eventMessageStore.addMessage('contact.error_message_too_long', 'error');
       } else {
@@ -307,7 +338,10 @@ const handleValidationError = (error) => {
     } else if (emailError) {
       eventMessageStore.addMessage('contact.error_email_invalid', 'error');
     } else if (requestTypeError) {
-      eventMessageStore.addMessage('contact.error_request_type_invalid', 'error');
+      eventMessageStore.addMessage(
+        'contact.error_request_type_invalid',
+        'error'
+      );
     } else {
       eventMessageStore.addMessage('contact.error_validation', 'error');
     }
@@ -340,7 +374,7 @@ const handleSubmit = async () => {
     eventMessageStore.addMessage('contact.error_message_too_short', 'error');
     return;
   }
-  
+
   if (contactForm.message.length > 5000) {
     eventMessageStore.addMessage('contact.error_message_too_long', 'error');
     return;
@@ -359,7 +393,7 @@ const handleSubmit = async () => {
     await contactService.sendContactMessage(submissionData);
 
     eventMessageStore.addMessage('contact.success_message', 'success');
-    
+
     // Reset form, but keep email if user is authenticated
     if (!isAuthenticated.value) {
       contactForm.email = '';
@@ -368,7 +402,7 @@ const handleSubmit = async () => {
     contactForm.message = '';
     contactForm.captcha_answer = '';
     contactForm.website = ''; // Reset honeypot
-    
+
     // Generate new CAPTCHA for next submission
     generateCaptcha();
   } catch (error) {
@@ -378,5 +412,3 @@ const handleSubmit = async () => {
   }
 };
 </script>
-
-

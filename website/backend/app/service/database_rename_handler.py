@@ -1,14 +1,13 @@
 """Database operations for handling Git-detected renames."""
 
-from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
-from app.crud.project import get_project_by_name
 from app.crud.elan_file import (
     get_elan_file_by_filename_and_project,
     update_elan_file_name,
 )
+from app.crud.project import get_project_by_name
 
 logger = get_logger()
 
@@ -32,6 +31,7 @@ class DatabaseRenameHandler:
 
         Returns:
             bool: True if successful, False otherwise
+
         """
         try:
             logger.info(f"Processing rename in DB: {old_filename} -> {new_filename}")

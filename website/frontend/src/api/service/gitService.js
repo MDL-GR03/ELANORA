@@ -42,7 +42,7 @@ const gitService = {
   },
 
   // Upload ELAN files to a project
-  async uploadElanFiles(projectId, files, userName) {
+  async uploadElanFiles(projectId, files, userName, requestConfig = {}) {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
@@ -53,7 +53,9 @@ const gitService = {
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectId)}/upload`,
       formData,
       {
+        ...requestConfig,
         headers: {
+          ...requestConfig.headers,
           'Content-Type': 'multipart/form-data',
         },
       }
@@ -70,42 +72,49 @@ const gitService = {
   },
 
   // Resolve conflicts and merge a branch
-  async getPendingUploadsWithStatus(projectName, forceRefresh = false) {
-    const params = new URLSearchParams();
-    if (forceRefresh) {
-      params.append('force_refresh', 'true');
-    }
-    
+  async getPendingUploadsWithStatus(projectName) {
     const { data } = await axiosInstance.get(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads`
     );
     return data;
   },
 
-  // Resolve conflicts (all or specific file)
-  async resolveConflicts(
-    projectName,
-    branchName,
-    resolutionStrategy = 'accept_incoming',
-    filename = null
-  ) {
-    const params = new URLSearchParams({
-      resolution_strategy: resolutionStrategy,
-    });
-    
-    if (filename) {
-      params.append('filename', filename);
-    }
-    
-    const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/resolve-conflicts?${params.toString()}`
+  async updateContributionPolicy(projectId, autoAcceptNewFiles) {
+    const { data } = await axiosInstance.put(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectId)}/contribution-policy`,
+      { auto_accept_new_files: autoAcceptNewFiles }
     );
     return data;
   },
 
-  // Force refresh conflicts from git
-  async refreshConflicts(projectName, branchName) {
-    return this.getConflicts(projectName, branchName, true);
+  async adminTestMerge(projectName, branchName) {
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads/${encodeURIComponent(branchName)}/test`
+    );
+    return data;
+  },
+
+  async getEafReview(projectName, branchName, filename) {
+    const { data } = await axiosInstance.get(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads/${encodeURIComponent(branchName)}/eaf-review`,
+      { params: { filename } }
+    );
+    return data;
+  },
+
+  async adminCompleteMerge(projectName, branchName, resolutionStrategy) {
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads/${encodeURIComponent(branchName)}/merge`,
+      { resolution_strategy: resolutionStrategy }
+    );
+    return data;
+  },
+
+  async dismissDuplicateUpload(projectName, uploadId) {
+    const { data } = await axiosInstance.delete(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads/${encodeURIComponent(uploadId)}/duplicate`
+    );
+    return data;
   },
 
   // List files in a project (recursive structure)
@@ -122,12 +131,15 @@ const gitService = {
   async initProjectFromFolderUpload({ project_name, description, files }) {
     const formData = new FormData();
     formData.append('project_name', project_name);
-    formData.append('description', !description || description === "undefined" ? "" : description);
-    
+    formData.append(
+      'description',
+      !description || description === 'undefined' ? '' : description
+    );
+
     files.forEach((file) => {
       formData.append('files', file, file.name);
     });
-    
+
     const { data } = await axiosInstance.post(
       `/git/projects/init-from-folder-upload`,
       formData,
@@ -148,6 +160,20 @@ const gitService = {
   async checkSyncStatus(projectName) {
     const { data } = await axiosInstance.get(
       `/git/projects/${encodeURIComponent(projectName)}/synchronize/check`
+    );
+    return data;
+  },
+
+  async getSynchronizationOperations(projectName) {
+    const { data } = await axiosInstance.get(
+      `/git/projects/${encodeURIComponent(projectName)}/synchronize/operations`
+    );
+    return data;
+  },
+
+  async recoverSynchronizationOperation(projectName, operationId) {
+    const { data } = await axiosInstance.post(
+      `/git/projects/${encodeURIComponent(projectName)}/synchronize/operations/${encodeURIComponent(operationId)}/recover`
     );
     return data;
   },
@@ -195,45 +221,32 @@ const gitService = {
     );
     return data;
   },
-    // Get detailed conflict information for a file
-  async getConflictDetails(projectName, branchName, filename) {
-    const { data } = await axiosInstance.get(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/details`
-    );
-    return data;
-  },
-
-  // Resolve conflict manually with custom content
-  async resolveConflictManually(projectName, branchName, filename, resolvedContent) {
-    const formData = new FormData();
-    formData.append('resolved_content', resolvedContent);
-    
-    const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches/${encodeURIComponent(branchName)}/conflicts/${encodeURIComponent(filename)}/resolve-manual`,
-      formData
-    );
-    return data;
-  },
-
   // Rename a single file
   async renameFile(projectName, elanId, newFilename) {
     const formData = new FormData();
     formData.append('elan_id', elanId);
     formData.append('new_filename', newFilename);
-    
-    const response = await axiosInstance.post(`${GIT_PREFIX}/projects/${projectName}/rename-file`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+
+    const response = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${projectName}/rename-file`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       }
-    });
+    );
     return response.data;
   },
 
   // Rename multiple files
   async renameFiles(projectName, renames) {
-    const response = await axiosInstance.post(`${GIT_PREFIX}/projects/${projectName}/rename-files`, {
-      renames: renames
-    });
+    const response = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${projectName}/rename-files`,
+      {
+        renames: renames,
+      }
+    );
     return response.data;
   },
 };

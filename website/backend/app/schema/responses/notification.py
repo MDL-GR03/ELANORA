@@ -2,11 +2,13 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NotificationResponse(BaseModel):
     """Schema for notification response."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     notification_id: int = Field(
         ..., description="The unique identifier for the notification"
@@ -22,14 +24,11 @@ class NotificationResponse(BaseModel):
     is_read: bool = Field(..., description="Whether the notification has been read")
     created_at: datetime = Field(..., description="When the notification was created")
 
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
-
 
 class NotificationPreferenceResponse(BaseModel):
     """Schema for notification preference response."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     preference_id: int = Field(
         ..., description="The unique identifier for the preference"
@@ -42,11 +41,6 @@ class NotificationPreferenceResponse(BaseModel):
     updated_at: datetime = Field(
         ..., description="When the preference was last updated"
     )
-
-    class Config:
-        """Pydantic config."""
-
-        from_attributes = True
 
 
 class NotificationStatsResponse(BaseModel):

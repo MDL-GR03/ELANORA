@@ -9,7 +9,10 @@
           + {{ t('configureNamingStandards.add') }}
         </button>
         <button class="configure-naming-add-btn" @click="startImportFlow">
-          {{ t('configureNamingStandards.import') || 'Import from another project' }}
+          {{
+            t('configureNamingStandards.import') ||
+            'Import from another project'
+          }}
         </button>
       </div>
     </div>
@@ -42,8 +45,9 @@
             <span
               class="configure-naming-accordion-chevron"
               :class="{ open: openStandardId === std.id }"
-              >&#9660;</span
             >
+              <font-awesome-icon icon="fa-solid fa-chevron-down" />
+            </span>
           </div>
           <transition name="accordion">
             <div
@@ -409,10 +413,34 @@
       @cancel="handleUserPromptCancel"
     />
     <!-- Import Modal -->
-    <div v-if="showImportModal" class="import-modal-overlay">
-      <div class="import-modal">
-        <button class="import-modal-close" @click="showImportModal = false">
-          ×
+    <div
+      v-if="showImportModal"
+      class="import-modal-overlay"
+      role="presentation"
+    >
+      <div
+        class="import-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="import-standards-title"
+        @keydown.esc="showImportModal = false"
+      >
+        <div class="import-modal-heading">
+          <span class="import-modal-icon">
+            <font-awesome-icon icon="fa-solid fa-arrow-down" />
+          </span>
+          <div>
+            <span>Reuse configuration</span>
+            <h2 id="import-standards-title">Import naming standards</h2>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="import-modal-close"
+          :aria-label="t('common.cancel')"
+          @click="showImportModal = false"
+        >
+          <font-awesome-icon icon="fa-solid fa-xmark" />
         </button>
         <div v-if="importStep === 1">
           <h3 style="margin-bottom: 1.5em">
@@ -509,8 +537,13 @@
                       class="import-standard-chevron"
                       style="margin-left: auto"
                     >
-                      <span v-if="isStandardFolded(std.id)">&#9654;</span>
-                      <span v-else>&#9660;</span>
+                      <font-awesome-icon
+                        :icon="
+                          isStandardFolded(std.id)
+                            ? 'fa-solid fa-chevron-right'
+                            : 'fa-solid fa-chevron-down'
+                        "
+                      />
                     </span>
                   </div>
                   <template
@@ -679,7 +712,7 @@ const standards = computed(() => {
     // First sort by name alphabetically
     const nameComparison = a.name.localeCompare(b.name);
     if (nameComparison !== 0) return nameComparison;
-    
+
     // If names are equal, sort by file type display name
     const fileTypeA = getFileTypeDisplay(a.project_file_type_id);
     const fileTypeB = getFileTypeDisplay(b.project_file_type_id);
@@ -1099,10 +1132,7 @@ async function extractRegexFromExample() {
         ) {
           run++;
         }
-        if (
-          (charClass === '\\p{L}' || charClass === '\\p{N}') &&
-          run >= 1
-        ) {
+        if ((charClass === '\\p{L}' || charClass === '\\p{N}') && run >= 1) {
           out += `${charClass}{${run}}`;
         } else {
           out += charClass.repeat(run);
@@ -1150,7 +1180,7 @@ async function extractRegexFromExample() {
           name: comp.name,
           value: val,
           length: val.length,
-          example: val.length === 3 ? '001-150' : '01-99'
+          example: val.length === 3 ? '001-150' : '01-99',
         }),
         '',
         (input) => {
@@ -1192,8 +1222,9 @@ async function handleShowAddStandard() {
 
 async function addStandard() {
   const exists = namingStandardStore.standards.some(
-    std =>
-      std.name.trim().toLowerCase() === newStandard.value.name.trim().toLowerCase() &&
+    (std) =>
+      std.name.trim().toLowerCase() ===
+        newStandard.value.name.trim().toLowerCase() &&
       std.project_file_type_id === newStandard.value.project_file_type_id
   );
   if (exists) {
@@ -1207,7 +1238,7 @@ async function addStandard() {
 
   // Block if any regex is empty or only whitespace
   const hasEmptyRegex = newStandard.value.components.some(
-    c => !c.regex || !c.regex.trim()
+    (c) => !c.regex || !c.regex.trim()
   );
   if (hasEmptyRegex) {
     eventMessageStore.addMessage(
@@ -1235,10 +1266,10 @@ async function addStandard() {
         project_file_type_id: newStandard.value.project_file_type_id,
       })),
     };
-    
+
     // Clear cache before adding
     exampleValuesCache.value = {};
-    
+
     await namingStandardStore.addNamingStandard(standardData, projectId.value);
     showAddStandard.value = false;
     resetAddForm();
@@ -1247,11 +1278,14 @@ async function addStandard() {
       'success',
       4000
     );
-    
+
     // Ensure DOM updates and scroll to top
     await nextTick();
     if (standardsTopRef.value) {
-      standardsTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      standardsTopRef.value.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
     }
   } catch (err) {
     if (err?.response?.status === 409) {
@@ -1280,7 +1314,7 @@ async function deleteStandard(id) {
   try {
     // Clear cache before deleting
     exampleValuesCache.value = {};
-    
+
     await namingStandardStore.deleteNamingStandard(id, projectId.value);
     eventMessageStore.addMessage(
       'configureNamingStandards.eventMessages.deleteSuccess',
@@ -1401,7 +1435,9 @@ function toggleAccordion(id) {
 function getPatternOrderedComponents(std) {
   if (!std?.pattern || !Array.isArray(std.components)) return [];
   // Extract component names in order from the pattern
-  const names = Array.from(std.pattern.matchAll(/\{([^}]+)\}/g)).map((m) => m[1]);
+  const names = Array.from(std.pattern.matchAll(/\{([^}]+)\}/g)).map(
+    (m) => m[1]
+  );
   // Map names to actual component objects
   return names
     .map((name) => std.components.find((c) => c.name === name))
@@ -1423,16 +1459,16 @@ function getExampleValuesForStandard(std) {
 
 // Call this whenever standards change to clear the cache
 watch(
-  standards, 
+  standards,
   (newStandards, oldStandards) => {
     // Clear cache when standards change
     exampleValuesCache.value = {};
-    
+
     // Force reactivity update for newly added standards
     if (newStandards.length > (oldStandards?.length || 0)) {
       nextTick(() => {
         // Trigger re-computation of example values for all standards
-        newStandards.forEach(std => {
+        newStandards.forEach((std) => {
           if (std.id && !exampleValuesCache.value[std.id]) {
             // This will trigger the cache to be populated
             getExampleValuesForStandard(std);
@@ -1440,7 +1476,7 @@ watch(
         });
       });
     }
-  }, 
+  },
   { immediate: true, deep: true }
 );
 
@@ -1549,7 +1585,10 @@ function resetAddForm() {
   regexExtractionError.value = '';
   nextTick(() => {
     if (standardsTopRef.value) {
-      standardsTopRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      standardsTopRef.value.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
     }
   });
 }
@@ -1676,14 +1715,17 @@ async function importSelectedStandards() {
       target_project_id: projectId.value,
       standard_ids: selectedStandardIds.value,
     });
-    
+
     showImportModal.value = false;
-    
+
     // Clear cache before fetching new data
     exampleValuesCache.value = {};
-    
-    await namingStandardStore.fetchStandardsAndComponentNames(projectId.value, true);
-    
+
+    await namingStandardStore.fetchStandardsAndComponentNames(
+      projectId.value,
+      true
+    );
+
     eventMessageStore.addMessage(
       'configureNamingStandards.eventMessages.importSuccessStandard',
       'success'
@@ -1974,7 +2016,7 @@ function splitPatternBlocks(pattern, sep) {
   text-align: left;
   overflow-wrap: break-word;
   max-width: 180px;
-  white-space: pre-line; 
+  white-space: pre-line;
   box-sizing: border-box;
 }
 
@@ -2203,26 +2245,68 @@ function splitPatternBlocks(pattern, sep) {
 .import-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgb(0 0 0 / 70%);
+  padding: 24px;
+  background: rgb(18 35 64 / 58%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  backdrop-filter: blur(3px);
 }
 
 .import-modal {
   background: #fff;
-  border-radius: 12px;
-  padding: 32px 36px 28px;
-  width: 900px;
-  height: 80vh;
-  max-width: 98vw;
-  max-height: 90vh;
-  box-shadow: 0 4px 24px rgb(0 0 0 / 18%);
+  border: 1px solid #d7e1f0;
+  border-radius: 18px;
+  padding: 104px 32px 82px;
+  width: min(900px, 100%);
+  height: min(760px, calc(100vh - 48px));
+  max-width: none;
+  max-height: none;
+  box-shadow: 0 24px 70px rgb(15 35 70 / 28%);
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.import-modal-heading {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  min-height: 82px;
+  padding: 18px 72px 18px 28px;
+  background: linear-gradient(145deg, #fff, #f7faff);
+  border-bottom: 1px solid #e2e8f2;
+}
+
+.import-modal-heading > div > span {
+  color: #2864e8;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.import-modal-heading h2 {
+  margin: 2px 0 0;
+  color: #12213b;
+  font-size: 1.2rem;
+}
+
+.import-modal-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: #2864e8;
+  background: #e8f0ff;
+  border-radius: 12px;
 }
 
 .import-modal-footer {
@@ -2230,28 +2314,62 @@ function splitPatternBlocks(pattern, sep) {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 18px 36px;
-  background: #fff;
-  border-top: 1.5px solid #e0e0e0;
+  padding: 16px 28px;
+  background: #f7f9fc;
+  border-top: 1px solid #e2e8f2;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   z-index: 2;
 }
 
 .import-modal-close {
   position: absolute;
-  top: 10px;
-  right: 16px;
-  background: none;
-  border: none;
-  font-size: 1.5em;
+  z-index: 3;
+  top: 22px;
+  right: 24px;
+  width: 38px;
+  height: 38px;
+  color: #65748d;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  font-size: 1rem;
   cursor: pointer;
+}
+
+.import-modal-close:hover {
+  color: #17243b;
+  background: #eef3f9;
 }
 
 .import-project-select-row {
   display: flex;
   align-items: center;
   margin-bottom: 2em;
+}
+
+@media (width <= 640px) {
+  .import-modal-overlay {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .import-modal {
+    height: calc(100vh - 24px);
+    padding-right: 18px;
+    padding-left: 18px;
+    border-radius: 16px;
+  }
+
+  .import-project-select-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .import-project-select-row .configure-naming-btn {
+    margin-left: 0 !important;
+  }
 }
 
 .import-project-select {

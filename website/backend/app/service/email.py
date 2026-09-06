@@ -34,16 +34,16 @@ ROLE_CHANGE_TEMPLATE_FR = TEMPLATES_DIR / "role_change_fr.html"
 class EmailService:
     """Service for sending password verification and reset emails."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.conf = ConnectionConfig(
             MAIL_USERNAME=config.MAIL_USERNAME,
             MAIL_PASSWORD=SecretStr(config.MAIL_PASSWORD),
             MAIL_FROM=config.MAIL_FROM,
             MAIL_PORT=config.MAIL_PORT,
             MAIL_SERVER=config.MAIL_SERVER,
-            MAIL_STARTTLS=True,
-            MAIL_SSL_TLS=False,
-            USE_CREDENTIALS=True,
+            MAIL_STARTTLS=config.MAIL_STARTTLS,
+            MAIL_SSL_TLS=config.MAIL_SSL_TLS,
+            USE_CREDENTIALS=config.MAIL_USE_CREDENTIALS,
         )
 
     @staticmethod

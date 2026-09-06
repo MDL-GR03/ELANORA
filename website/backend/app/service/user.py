@@ -4,7 +4,6 @@ import secrets
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import BackgroundTasks
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,11 +26,9 @@ from app.schema.requests.user import (
     ProfileUpdateRequest,
 )
 from app.service.address import AddressService
-from app.service.email import EmailService
 from app.service.notification import NotificationService
-
+from app.service.outbox import enqueue_account_verification_email
 from app.utils.database import DatabaseUtils
-
 
 # Get logger for this module
 logger = get_logger()
@@ -111,7 +108,6 @@ class UserService:
         db: AsyncSession,
         login_or_email: str,
         password: str,
-        background_tasks: BackgroundTasks,
     ) -> dict[str, Any]:
         """Handle user login with business logic.
 
@@ -131,17 +127,17 @@ class UserService:
             verification_code = cls._generate_verification_code()
             hashed_code = cls._hash_verification_code(verification_code)
 
-            # Update user's activation code
+            # Store the hash and encrypted delivery request atomically.
             user.activation_code = hashed_code
-            await db.commit()
-
-            # Add email sending to background tasks
-            background_tasks.add_task(
-                cls._send_verification_email,
-                user.email,
-                user.username,
-                verification_code,
+            await enqueue_account_verification_email(
+                db,
+                user_id=user.user_id,
+                email=user.email,
+                username=user.username,
+                code=verification_code,
+                language="fr",
             )
+            await db.commit()
 
             return {
                 "success": True,
@@ -207,6 +203,7 @@ class UserService:
         last_name: str,
         affiliation: str,
         department: str,
+        instance_id: int,
         is_verified: bool = False,
         phone_number: str | None = None,
         address_data: AddressRequest | None = None,
@@ -242,6 +239,7 @@ class UserService:
                 affiliation=affiliation,
                 department=department,
                 activation_code=activation_code,
+                instance_id=instance_id,
                 is_verified_account=is_verified,
                 address_id=address_id,
             )
@@ -598,52 +596,3 @@ class UserService:
     def _hash_verification_code(code: str) -> str:
         """Hash verification code."""
         return pwd_context.hash(code)
-
-    @staticmethod
-    async def _send_verification_email(
-        email: str, username: str, verification_code: str
-    ) -> None:
-        """Send verification email (background task).
-
-        Args:
-            email (str): Recipient email address.
-            username (str): Username for personalization.
-            verification_code (str): Verification code to include.
-
-        """
-        try:
-            email_service = EmailService()
-            await email_service.send_email_verification_code(
-                email=email,
-                username=username,
-                code=verification_code,
-                language="fr",  # Default to French, could be made configurable
-            )
-            logger.info(f"Verification email sent successfully to {email}")
-        except Exception as e:
-            logger.error(f"Failed to send verification email to {email}: {e}")
-            # Don't raise the exception to prevent registration/login failure
-            # The user can still request a new verification code manually
-
-        # Example implementation structure:
-        # await email_service.send_verification_email(
-        #     to_email=email,
-        #     username=username,
-        #     verification_code=verification_code
-        # )
-
-    @staticmethod
-    async def _send_password_reset_email(
-        email: str, username: str, reset_code: str
-    ) -> None:
-        """Send password reset email (background task).
-
-        Args:
-            email (str): Recipient email address.
-            username (str): Username for personalization.
-            reset_code (str): Password reset code.
-
-        """
-        # TODO: Implement password reset email logic
-        logger.info(f"Password reset email queued for {email} (user: {username})")
-        logger.debug(f"Reset code for {email}: {reset_code}")

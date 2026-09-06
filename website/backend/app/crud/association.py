@@ -1,6 +1,5 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
@@ -8,9 +7,11 @@ from app.model.association import (
     ElanFileToMedia,
     ElanFileToTier,
     ProjectAnnotStandard,
+    ProjectCapabilityGrant,
     UserToProject,
 )
 from app.model.elan_file import ElanFile
+from app.model.enums import ProjectCapability
 from app.model.project_file_type import ProjectFileType
 from app.model.user import User
 from app.utils.database import DatabaseUtils
@@ -166,13 +167,6 @@ async def add_user_to_project(db: AsyncSession, user_id: int, project_id: int):
         await DatabaseUtils.create(db, assoc)
 
 
-async def remove_user_from_project(db: AsyncSession, user_id: int, project_id: int):
-    """Remove a user from a project using simple delete by filter."""
-    await DatabaseUtils.delete_by_filter(
-        db, UserToProject, user_id=user_id, project_id=project_id
-    )
-
-
 async def update_user_project(
     db: AsyncSession, user_id: int, old_project_id: int, new_project_id: int
 ):
@@ -286,8 +280,6 @@ async def get_project_file_type_by_project_and_file_type(
     db, project_id: int, file_type_id: int
 ):
     """Get the ProjectFileType for a given project and file_type_id."""
-    from app.model.project_file_type import ProjectFileType
-
     return await DatabaseUtils.get_one_by_filter(
         db, ProjectFileType, {"project_id": project_id, "file_type_id": file_type_id}
     )
@@ -357,12 +349,27 @@ async def get_project_users(db: AsyncSession, project_id: int) -> list[dict]:
     )
 
     result = await db.execute(stmt)
+    grants = (
+        await db.execute(
+            select(ProjectCapabilityGrant).where(
+                ProjectCapabilityGrant.project_id == project_id
+            )
+        )
+    ).scalars()
+    capabilities_by_user: dict[int, list[str]] = {}
+    for grant in grants:
+        capabilities_by_user.setdefault(grant.user_id, []).append(
+            ProjectCapability(grant.capability).value
+        )
     return [
         {
             "user_id": user_to_project.user_id,
             "username": user.username,
             "email": user.email,
             "permission": user_to_project.permission,
+            "capabilities": sorted(
+                capabilities_by_user.get(user_to_project.user_id, [])
+            ),
         }
         for user_to_project, user in result.all()
     ]

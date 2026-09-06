@@ -1,9 +1,10 @@
 <template>
   <div class="upload-resolution">
     <div class="resolution-header">
-      <h3>Resolving Upload: {{ upload.original_branch }}</h3>
+      <h3>Reviewing submitted differences</h3>
       <p class="resolution-summary">
-        This upload has {{ upload.conflicted_files?.length || 0 }} conflicted files that need resolution.
+        {{ upload.conflicted_files?.length || 0 }} file(s) overlap with accepted
+        project work and need a decision.
       </p>
     </div>
 
@@ -13,45 +14,54 @@
     </div>
 
     <div v-else class="resolution-content">
+      <ReviewCasePanel
+        ref="reviewPanel"
+        :project-id="projectId"
+        :upload-id="upload.upload_id"
+        :filenames="upload.conflicted_files || []"
+      />
       <!-- Strategy Selection -->
       <div class="strategy-section">
-        <h4>Resolution Strategy</h4>
+        <h4>Decision for overlapping files</h4>
         <div class="strategy-options">
           <label class="strategy-option">
-            <input 
-              type="radio" 
-              v-model="resolutionStrategy" 
+            <input
+              v-model="resolutionStrategy"
+              type="radio"
               value="accept_incoming"
-            >
+            />
             <div class="strategy-content">
-              <strong>Accept All Incoming Changes</strong>
-              <p>Keep all changes from the upload, overwriting existing files</p>
+              <strong>Use the submitted versions</strong>
+              <p>
+                Accept the contributor's version wherever the same file changed
+              </p>
             </div>
           </label>
-          
+
           <label class="strategy-option">
-            <input 
-              type="radio" 
-              v-model="resolutionStrategy" 
+            <input
+              v-model="resolutionStrategy"
+              type="radio"
               value="accept_current"
-            >
+            />
             <div class="strategy-content">
-              <strong>Keep Current Version</strong>
-              <p>Reject the upload and keep the current master version</p>
+              <strong>Keep the accepted versions</strong>
+              <p>
+                Keep the shared version for overlapping files and accept only
+                the submission's non-overlapping work
+              </p>
             </div>
           </label>
-          
-          <label class="strategy-option">
-            <input 
-              type="radio" 
-              v-model="resolutionStrategy" 
-              value="manual"
-            >
+
+          <div class="strategy-option guidance-option">
             <div class="strategy-content">
-              <strong>Manual Resolution</strong>
-              <p>Resolve conflicts file by file (recommended for important changes)</p>
+              <strong>Need a mixed or corrected version?</strong>
+              <p>
+                Inspect each EAF comparison, then ask the contributor to make
+                corrections in ELAN and upload a new revision.
+              </p>
             </div>
-          </label>
+          </div>
         </div>
       </div>
 
@@ -59,8 +69,8 @@
       <div v-if="upload.conflicted_files?.length > 0" class="conflicted-files">
         <h4>Conflicted Files</h4>
         <div class="files-list">
-          <div 
-            v-for="file in upload.conflicted_files" 
+          <div
+            v-for="file in upload.conflicted_files"
             :key="file"
             class="conflict-file-item"
           >
@@ -69,11 +79,11 @@
               <span class="file-status">Merge conflict</span>
             </div>
             <div class="file-actions">
-              <button 
-                @click="viewFileConflict(file)"
+              <button
                 class="action-btn view-btn"
+                @click="viewFileConflict(file)"
               >
-                View Conflict
+                Preview annotations
               </button>
             </div>
           </div>
@@ -124,18 +134,15 @@
 
       <!-- Resolution Actions -->
       <div class="resolution-actions">
-        <button 
-          @click="applyResolution"
+        <button
           class="action-btn resolve-btn"
           :disabled="!resolutionStrategy || resolving"
+          @click="applyResolution"
         >
-          {{ resolving ? 'Resolving...' : 'Apply Resolution' }}
+          {{ resolving ? 'Accepting...' : 'Accept with this decision' }}
         </button>
-        
-        <button 
-          @click="$emit('cancelled')"
-          class="action-btn cancel-btn"
-        >
+
+        <button class="action-btn cancel-btn" @click="$emit('cancelled')">
           Cancel
         </button>
       </div>
@@ -143,26 +150,34 @@
       <!-- Progress -->
       <div v-if="resolving" class="resolution-progress">
         <div class="progress-bar">
-          <div class="progress-fill" :style="`width: ${resolutionProgress}%`"></div>
+          <div
+            class="progress-fill"
+            :style="`width: ${resolutionProgress}%`"
+          ></div>
         </div>
         <p class="progress-text">{{ resolutionMessage }}</p>
       </div>
     </div>
 
     <!-- File Conflict Modal -->
-    <div v-if="showFileConflict" class="modal-overlay" @click="closeFileConflict">
+    <div
+      v-if="showFileConflict"
+      class="modal-overlay"
+      @click="closeFileConflict"
+    >
       <div class="modal-content large" @click.stop>
         <div class="modal-header">
           <h3>Conflict in: {{ selectedConflictFile }}</h3>
-          <button @click="closeFileConflict" class="close-btn">×</button>
+          <button class="close-btn" @click="closeFileConflict">×</button>
         </div>
-        
+
         <div class="modal-body">
           <ConflictMergeView
             v-if="selectedConflictFile"
             :project-name="projectName"
             :branch-name="upload.branch_name"
             :filename="selectedConflictFile"
+            @open-review="openTargetedReview"
             @resolved="onFileResolved"
           />
         </div>
@@ -180,16 +195,21 @@
 import { ref, onMounted } from 'vue';
 import gitService from '@/api/service/gitService';
 import ConflictMergeView from '@/components/common/ConflictMergeView.vue';
+import ReviewCasePanel from '@/components/common/ReviewCasePanel.vue';
 
 const props = defineProps({
+  projectId: {
+    type: Number,
+    required: true,
+  },
   projectName: {
     type: String,
-    required: true
+    required: true,
   },
   upload: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 });
 
 const emit = defineEmits(['resolved', 'cancelled']);
@@ -205,6 +225,7 @@ const error = ref('');
 // File conflict modal
 const showFileConflict = ref(false);
 const selectedConflictFile = ref(null);
+const reviewPanel = ref(null);
 
 onMounted(() => {
   // Load any additional conflict details if needed
@@ -222,14 +243,6 @@ async function applyResolution() {
     resolutionMessage.value = 'Starting resolution...';
     error.value = '';
 
-    if (resolutionStrategy.value === 'manual') {
-      resolutionMessage.value = 'Please resolve conflicts manually for each file';
-      // For manual resolution, we'd need to handle each file individually
-      // This is a simplified approach
-      error.value = 'Manual resolution requires resolving each conflicted file individually. Use the "View Conflict" buttons above.';
-      return;
-    }
-
     resolutionProgress.value = 30;
     resolutionMessage.value = 'Applying resolution strategy...';
 
@@ -240,11 +253,11 @@ async function applyResolution() {
     );
 
     resolutionProgress.value = 80;
-    resolutionMessage.value = 'Finalizing merge...';
+    resolutionMessage.value = 'Creating the accepted revision...';
 
     // Simulate final progress
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     resolutionProgress.value = 100;
     resolutionMessage.value = 'Resolution complete!';
 
@@ -252,7 +265,6 @@ async function applyResolution() {
     setTimeout(() => {
       emit('resolved', result);
     }, 500);
-
   } catch (e) {
     error.value = e?.response?.data?.detail || 'Failed to resolve upload';
     console.error('Resolution error:', e);
@@ -273,6 +285,11 @@ function closeFileConflict() {
   selectedConflictFile.value = null;
 }
 
+function openTargetedReview(target) {
+  closeFileConflict();
+  reviewPanel.value?.openComposer(target);
+}
+
 function onFileResolved() {
   closeFileConflict();
   // Could refresh the upload status here
@@ -291,7 +308,7 @@ function onFileResolved() {
 }
 
 .resolution-header h3 {
-  margin: 0 0 10px 0;
+  margin: 0 0 10px;
   color: #2c3e50;
 }
 
@@ -316,8 +333,13 @@ function onFileResolved() {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .strategy-section {
@@ -325,7 +347,7 @@ function onFileResolved() {
 }
 
 .strategy-section h4 {
-  margin: 0 0 15px 0;
+  margin: 0 0 15px;
   color: #2c3e50;
 }
 
@@ -350,7 +372,7 @@ function onFileResolved() {
   border-color: #1976d2;
 }
 
-.strategy-option input[type="radio"]:checked + .strategy-content {
+.strategy-option input[type='radio']:checked + .strategy-content {
   color: #1976d2;
 }
 
@@ -374,7 +396,7 @@ function onFileResolved() {
 }
 
 .conflicted-files h4 {
-  margin: 0 0 15px 0;
+  margin: 0 0 15px;
   color: #f57c00;
 }
 
@@ -415,7 +437,7 @@ function onFileResolved() {
 }
 
 .changes-preview h4 {
-  margin: 0 0 15px 0;
+  margin: 0 0 15px;
   color: #2c3e50;
 }
 
@@ -426,7 +448,7 @@ function onFileResolved() {
 }
 
 .change-group h5 {
-  margin: 0 0 10px 0;
+  margin: 0 0 10px;
   color: #666;
   font-size: 0.9rem;
 }
@@ -527,7 +549,7 @@ function onFileResolved() {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgb(0 0 0 / 50%);
   display: flex;
   align-items: center;
   justify-content: center;

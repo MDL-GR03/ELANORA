@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from app.schema.common.base import CustomBaseModel
 
 
@@ -22,3 +24,10 @@ class DeleteSectionRequest(CustomBaseModel):
 class MoveTierGroupRequest(CustomBaseModel):
     tier_group_id: int
     section_id: int | None
+
+
+class TierSubsetExportRequest(CustomBaseModel):
+    """A non-destructive working extract of selected tiers from one EAF."""
+
+    filename: str = Field(min_length=1, max_length=255)
+    tier_names: list[str] = Field(min_length=1, max_length=500)

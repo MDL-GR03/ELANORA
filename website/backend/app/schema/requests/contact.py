@@ -1,13 +1,13 @@
 """Request schemas for contact functionality."""
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import EmailStr, Field
 
 from app.schema.common.base import CustomBaseModel
 
 
-class RequestType(str, Enum):
+class RequestType(StrEnum):
     """Enumeration of contact request types."""
 
     BUG_REPORT = "bug_report"

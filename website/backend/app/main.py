@@ -8,35 +8,37 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.auth import router as auth_router
-from app.api.v1.contact import router as contact_router
-from app.api.v1.file_type import router as file_type_router
-from app.api.v1.git import router as git_router
 from app.api.v1.effective_naming_standard import (
     router as effective_naming_standard_router,
 )
-from app.api.v1.notification import router as notification_router
+from app.api.v1.file_type import router as file_type_router
+from app.api.v1.git import router as git_router
 from app.api.v1.instance import router as instance_router
 from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
 from app.api.v1.notification import router as notification_router
 from app.api.v1.project_associations import router as project_associations_router
+from app.api.v1.project_location_file_type import (
+    router as project_location_file_type_router,
+)
 from app.api.v1.project_naming_standard import router as project_naming_standard_router
+from app.api.v1.protocol import router as protocol_router
+from app.api.v1.review import router as review_router
+from app.api.v1.setup import router as setup_router
 from app.api.v1.tier import router as tier_router
 from app.api.v1.user import router as user_router
 from app.core.centralized_logging import get_logger
-from app.core.config import BACKEND_HOST, ENVIRONMENT, FRONTEND_HOST
+from app.core.config import ENVIRONMENT, FRONTEND_HOST, TRUSTED_HOSTS
 from app.core.exception_handler import (
     add_general_exception_handler,
     rate_limit_exception_handler,
     validation_exception_handler,
 )
 from app.core.limiter import limiter
+from app.db.database import close_database, init_database
 from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.utils.project_backup import create_hidden_folder_in_root
-from app.api.v1.project_location_file_type import (
-    router as project_location_file_type_router,
-)
 
 # Get logger (this will automatically call setup_application_logging)
 logger = get_logger()
@@ -46,12 +48,13 @@ API_V1_PREFIX = "/api/v1"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup logic
+    """Initialize and dispose shared infrastructure with the ASGI process."""
+    init_database()
     backup_root = create_hidden_folder_in_root()
     logger.info(f"Backup folder created at: {backup_root}")
 
     yield
-    # Shutdown logic
+    await close_database()
 
 
 app = FastAPI(
@@ -94,11 +97,12 @@ app.add_middleware(GZipMiddleware, minimum_size=500)
 # TrustedHostMiddleware configuration
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=[BACKEND_HOST, "localhost", "127.0.0.1"],
+    allowed_hosts=TRUSTED_HOSTS,
 )
 
 # Include API routers
 app.include_router(git_router, prefix=f"{API_V1_PREFIX}/git", tags=["GIT"])
+app.include_router(review_router, prefix=f"{API_V1_PREFIX}/review", tags=["REVIEW"])
 app.include_router(tier_router, prefix=f"{API_V1_PREFIX}/tier", tags=["TIER"])
 app.include_router(user_router, prefix=f"{API_V1_PREFIX}/user", tags=["USER"])
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["AUTHENTICATION"])
@@ -121,6 +125,8 @@ app.include_router(
     prefix=f"{API_V1_PREFIX}/project-naming-standard",
     tags=["PROJECT NAMING STANDARD"],
 )
+app.include_router(protocol_router, prefix=API_V1_PREFIX, tags=["PROTOCOL"])
+app.include_router(setup_router, prefix=f"{API_V1_PREFIX}/setup", tags=["SETUP"])
 app.include_router(
     file_type_router, prefix=f"{API_V1_PREFIX}/file-type", tags=["FILE TYPE"]
 )

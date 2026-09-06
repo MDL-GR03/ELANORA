@@ -1,9 +1,10 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.crud.effective_naming_standard import (
     get_effective_standards_for_project,
     remove_effective_standard,
     set_effective_standard,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def assign_effective_standard(

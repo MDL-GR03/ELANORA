@@ -69,11 +69,23 @@ onMounted(() => {
 <style scoped>
 .event-message-container {
   position: fixed;
-  bottom: 1.5rem;
-  left: 1.5rem;
+  top: 5.25rem;
+  right: 1.25rem;
   z-index: 10001;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  pointer-events: none;
+}
+
+.event-message-container > * {
+  pointer-events: auto;
+}
+
+@media (width <= 640px) {
+  .event-message-container {
+    inset: auto 1rem 1rem;
+    align-items: center;
+  }
 }
 </style>

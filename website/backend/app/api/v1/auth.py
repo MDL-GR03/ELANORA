@@ -1,20 +1,21 @@
 import secrets
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import (
     ACCESS_TOKEN_COOKIE_NAME,
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    COOKIE_SECURE,
     CSRF_TOKEN_NAME,
-    ENVIRONMENT,
     REFRESH_TOKEN_COOKIE_NAME,
     REFRESH_TOKEN_EXPIRE_DAYS,
     REFRESH_TOKEN_PATH,
 )
 from app.core.jwt import create_access_token, create_refresh_token
 from app.core.limiter import limiter
+from app.crud.project import get_project_by_id
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.user import User
@@ -28,8 +29,11 @@ from app.schema.requests.user import (
     VerifyEmailRequest,
 )
 from app.schema.responses.user import LoginResponse, RegistrationResponse, UserResponse
-from app.service.email import EmailService
 from app.service.invitation import InvitationService
+from app.service.outbox import (
+    enqueue_account_verification_email,
+    enqueue_password_reset_email,
+)
 from app.service.user import UserService
 
 router = APIRouter()
@@ -41,7 +45,6 @@ async def login(
     request: Request,
     body: LoginRequest,
     response: Response,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = get_db_dep,
 ) -> LoginResponse:
     """Handle user login and set JWT tokens as HTTP-only cookies."""
@@ -50,7 +53,6 @@ async def login(
         db=db,
         login_or_email=body.login,
         password=body.password,
-        background_tasks=background_tasks,
     )
 
     if not login_result["success"]:
@@ -81,7 +83,7 @@ async def login(
         access_token,
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         httponly=True,
-        secure=ENVIRONMENT == "prod",
+        secure=COOKIE_SECURE,
         samesite="lax",
     )
 
@@ -90,7 +92,7 @@ async def login(
         refresh_token,
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         httponly=True,
-        secure=ENVIRONMENT == "prod",
+        secure=COOKIE_SECURE,
         samesite="lax",
         path=REFRESH_TOKEN_PATH,
     )
@@ -98,9 +100,11 @@ async def login(
     response.set_cookie(
         CSRF_TOKEN_NAME,
         csrf_token,
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        # The CSRF token must outlive the access token because the protected
+        # refresh endpoint needs it to issue the next access token.
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         httponly=False,
-        secure=ENVIRONMENT == "prod",
+        secure=COOKIE_SECURE,
         samesite="lax",
     )
 
@@ -151,7 +155,7 @@ async def refresh_tokens(
             refresh_result["access_token"],
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             httponly=True,
-            secure=ENVIRONMENT == "prod",
+            secure=COOKIE_SECURE,
             samesite="lax",
         )
 
@@ -160,7 +164,7 @@ async def refresh_tokens(
             refresh_result["refresh_token"],
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
             httponly=True,
-            secure=ENVIRONMENT == "prod",
+            secure=COOKIE_SECURE,
             samesite="lax",
             path=REFRESH_TOKEN_PATH,
         )
@@ -168,9 +172,9 @@ async def refresh_tokens(
         response.set_cookie(
             CSRF_TOKEN_NAME,
             refresh_result["csrf_token"],
-            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
             httponly=False,
-            secure=ENVIRONMENT == "prod",
+            secure=COOKIE_SECURE,
             samesite="lax",
         )
 
@@ -220,7 +224,7 @@ async def check_username_availability(
         }
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error checking username availability: {e!s}"
+            status_code=500, detail="Unable to check username availability"
         ) from e
 
 
@@ -238,7 +242,7 @@ async def check_email_availability(
         }
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error checking email availability: {e!s}"
+            status_code=500, detail="Unable to check email availability"
         ) from e
 
 
@@ -247,7 +251,6 @@ async def check_email_availability(
 async def forgot_password(
     request: Request,
     body: ForgotPasswordRequest,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = get_db_dep,
 ) -> dict[str, Any]:
     """Request a password reset via email.
@@ -258,7 +261,6 @@ async def forgot_password(
     Args:
         request (Request): The HTTP Request object (required by SlowAPI for rate limiting)
         body (ForgotPasswordRequest): Form data containing email and language
-        background_tasks (BackgroundTasks): Background task manager for sending emails
         db (AsyncSession): Database session
 
     Returns:
@@ -281,24 +283,17 @@ async def forgot_password(
             verification_code = UserService._generate_verification_code()
             hashed_code = UserService._hash_verification_code(verification_code)
 
-            # Update user's activation code for password reset
+            # Store the hash and encrypted delivery request atomically.
             user.activation_code = hashed_code
-            await db.commit()
-
-            # Send password reset email
-            email_service = EmailService()
-            email_sent = await email_service.send_password_reset_verification_email(
-                email=body.email,
+            await enqueue_password_reset_email(
+                db,
+                user_id=user.user_id,
+                email=user.email,
                 username=user.username,
                 code=verification_code,
-                language=body.language if hasattr(body, "language") else "en",
+                language=body.language,
             )
-
-            if not email_sent:
-                raise HTTPException(
-                    status_code=500,
-                    detail="An error occurred while sending the verification code. Please try again.",
-                )
+            await db.commit()
 
         # Always return the same response for security
         return {
@@ -309,7 +304,7 @@ async def forgot_password(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while processing your request: {e!s}",
+            detail="Unable to process request",
         ) from e
 
 
@@ -359,14 +354,13 @@ async def reset_password(
             raise e
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while resetting your password: {e!s}",
+            detail="Unable to reset password",
         ) from e
 
 
 @router.post("/register", response_model=RegistrationResponse)
 async def register(
     request: RegisterWithInvitationRequest,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = get_db_dep,
 ):
     """Register a new user using an invitation code.
@@ -399,26 +393,27 @@ async def register(
         )
 
     invitation_info = invitation_validation.invitation
+    project = await get_project_by_id(db, invitation_info.project_id)
+    if project is None:
+        raise HTTPException(
+            status_code=400, detail="Invitation project no longer exists."
+        )
     # check if the email in the invitation matches the one in the request (if provided)
-    if invitation_info.receiver_email and request.email:
-        if (
-            invitation_info.receiver_email.strip().lower()
-            != request.email.strip().lower()
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="L'email du formulaire ne correspond pas à celui de l'invitation.",
-            )
-
-    # 2. Create the user
-    is_verified = False
     if (
         invitation_info.receiver_email
         and request.email
         and invitation_info.receiver_email.strip().lower()
-        == request.email.strip().lower()
+        != request.email.strip().lower()
     ):
-        is_verified = True
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="L'email du formulaire ne correspond pas à celui de l'invitation.",
+        )
+
+    # 2. Create the user
+    # Registration requires the exact email bound to the invitation, so that
+    # successful redemption is itself proof of control of the invited address.
+    is_verified = True
 
     # Create user using UserService
     user = await user_service.create_user(
@@ -430,6 +425,7 @@ async def register(
         last_name=request.last_name,
         affiliation=request.affiliation,
         department=request.department,
+        instance_id=project.instance_id,
         is_verified=is_verified,
         phone_number=request.phone_number,
         address_data=request.address,
@@ -439,24 +435,7 @@ async def register(
         db, invitation_info.invitation_id, user.user_id
     )
 
-    # 4. Send verification email if user is not verified
-    if not is_verified:
-        verification_code = UserService._generate_verification_code()
-        hashed_code = UserService._hash_verification_code(verification_code)
-
-        # Update user's activation code
-        user.activation_code = hashed_code
-        await db.commit()
-
-        # Add email sending to background tasks
-        background_tasks.add_task(
-            UserService._send_verification_email,
-            user.email,
-            user.username,
-            verification_code,
-        )
-
-    # 5. Return the registration response
+    # 4. Return the registration response
     return RegistrationResponse(
         message="Account created successfully",
         user_id=user.user_id,
@@ -471,7 +450,6 @@ async def register(
 async def send_verification_email(
     request: Request,
     body: SendVerificationEmailRequest,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = get_db_dep,
 ) -> dict[str, Any]:
     """Send email verification code to user.
@@ -483,7 +461,6 @@ async def send_verification_email(
     Args:
         request (Request): The HTTP Request object (required by SlowAPI for rate limiting)
         body (SendVerificationEmailRequest): Form data containing email and language
-        background_tasks (BackgroundTasks): Background task manager for sending emails
         db (AsyncSession): Database session
 
     Returns:
@@ -507,24 +484,17 @@ async def send_verification_email(
         verification_code = UserService._generate_verification_code()
         hashed_code = UserService._hash_verification_code(verification_code)
 
-        # Update user's activation code for email verification
+        # Store the hash and encrypted delivery request atomically.
         user.activation_code = hashed_code
-        await db.commit()
-
-        # Send verification email
-        email_service = EmailService()
-        email_sent = await email_service.send_email_verification_code(
-            email=body.email,
+        await enqueue_account_verification_email(
+            db,
+            user_id=user.user_id,
+            email=user.email,
             username=user.username,
             code=verification_code,
             language=body.language,
         )
-
-        if not email_sent:
-            raise HTTPException(
-                status_code=500,
-                detail="An error occurred while sending the verification code. Please try again.",
-            )
+        await db.commit()
 
         return {
             "message": "Verification code sent to your email address.",
@@ -536,7 +506,7 @@ async def send_verification_email(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while processing your request: {e!s}",
+            detail="Unable to process request",
         ) from e
 
 
@@ -585,5 +555,5 @@ async def verify_email(
             raise e
         raise HTTPException(
             status_code=500,
-            detail=f"An error occurred while verifying your email: {e!s}",
+            detail="Unable to verify email",
         ) from e

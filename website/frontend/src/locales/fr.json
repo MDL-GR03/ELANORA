@@ -8,6 +8,7 @@
     "confirm": "Confirmer",
     "cancel": "Annuler",
     "save": "Enregistrer",
+    "close": "Fermer",
     "saving": "Enregistrement...",
     "or": "ou",
     "loading": "Chargement...",
@@ -35,7 +36,7 @@
     "504": "Délai d'attente de la passerelle - Le serveur en amont n'a pas répondu dans les temps",
     "unknown": "Une erreur inconnue s'est produite"
   },
-  
+
   "app": {
     "title": "ELANora"
   },
@@ -89,6 +90,11 @@
   },
   "login": {
     "platform_subtitle": "Plateforme collaborative d'annotation pour la linguistique.",
+    "instance_label": "Institution de recherche",
+    "default_instance": "Instance ELANORA",
+    "institution_fallback": "Espace de recherche institutionnel",
+    "welcome_back": "Bon retour",
+    "sign_in_instruction": "Connectez-vous pour accéder à votre espace de recherche.",
     "connect_to_access": "Connectez-vous pour accéder à l'instance : {instanceName}",
     "login_placeholder": "Entrez votre identifiant",
     "password": "Mot de passe",
@@ -128,6 +134,7 @@
   },
 
   "appHeader": {
+    "reviews": "Révisions",
     "projects": "Projets",
     "dashboard": "Tableau de bord",
     "upload": "File Upload",
@@ -136,7 +143,7 @@
     "profile": "Profil",
     "notifications": "Notifications",
     "logout": "Déconnexion",
-    "contribution": "Contribution",
+    "contribution": "Contributions",
     "projectSection": {
       "selectProject": "Sélectionnez un projet",
       "noProjectAvailable": "Aucun projet disponible",
@@ -216,7 +223,7 @@
     "invitation_code_required": "Le code d'invitation est requis",
     "validating_invitation": "Validation de l'invitation...",
     "invitation_valid": "L'invitation est valide !",
-    "invitation_auto_accepted": "Votre compte a été ajouté au projet ! Vous allez être redirigé vers la page de connexion.",
+    "invitation_existing_user": "Vous avez déjà un compte. Connectez-vous pour examiner et accepter cette invitation.",
     "invitation_invalid": "Code d'invitation invalide ou expiré",
     "invitation_validation_error": "Erreur lors de la validation de l'invitation",
     "first_name_label": "Prénom",
@@ -309,6 +316,7 @@
     "already_logged_in": "Vous êtes déjà connecté."
   },
   "invitation": {
+    "context": "Collaboration",
     "send_title": "Envoyer une invitation",
     "send_description": "Inviter des utilisateurs à rejoindre un projet spécifique sur ELANora",
     "email_label": "Adresse email",
@@ -357,6 +365,10 @@
       "load_error": "Erreur lors du chargement des utilisateurs",
       "permission_updated": "Permission mise à jour avec succès",
       "permission_update_error": "Erreur lors de la mise à jour de la permission",
+      "protocol_manager": "Gérer les protocoles",
+      "protocol_manager_help": "Peut modifier, publier et attribuer les versions de protocole de ce projet",
+      "capability_updated": "Permission de protocole mise à jour",
+      "capability_update_error": "Impossible de mettre à jour la permission de protocole",
       "user_added": "Utilisateur ajouté avec succès",
       "add_error": "Erreur lors de l'ajout de l'utilisateur",
       "user_removed": "Utilisateur retiré avec succès",
@@ -455,9 +467,12 @@
     "projectListTitle": "Projets",
     "noProjects": "Aucun projet en cours pour cette instance.\nPour commencer, veuillez créer un project en cliquant sur le bouton \"Créer un nouveau projet\".",
     "noDescription": "Pas de description",
+    "selectedProject": "Projet sélectionné",
+    "readFullDescription": "Lire la description complète",
+    "showLessDescription": "Afficher moins",
     "filesInProject": "Fichiers dans {projectName}",
     "synchronizing": "Synchronisation...",
-    "synchronize": "Synchroniser",
+    "synchronize": "Examiner les changements serveur",
     "loadingFiles": "Chargement des fichiers...",
     "noFilesFound": "Aucun fichier trouvé.",
     "deleteTitle": "Supprimer le projet",
@@ -475,8 +490,34 @@
       }
     },
     "syncDialog": {
-      "title": "Synchroniser le projet",
+      "eyebrow": "Récupération serveur",
+      "title": "Examiner les changements serveur",
+      "description": "Inspectez les changements non gérés du système de fichiers pour {project} avant de les accepter ou de les écarter.",
+      "missingTitle": "Le stockage du projet nécessite une intervention",
+      "changeCount": "{count} changement(s) de fichier ELAN nécessitent une décision administrative.",
+      "safetyTitle": "Aucun changement n'a encore été accepté",
+      "safetyDescription": "L'acceptation valide chaque EAF modifié, met à jour la base de recherche et crée un commit Git. Conserver la version du dépôt supprime définitivement ces changements serveur.",
+      "acceptServerChanges": "Valider et accepter",
+      "keepRepositoryVersion": "Écarter les changements serveur",
+      "acceptConfirm": "Valider et accepter les {count} changement(s) serveur détecté(s) ? Les EAF invalides seront refusés et aucun commit de synchronisation ne sera créé.",
+      "retry": "Vérifier à nouveau",
+      "historyTitle": "Historique de récupération",
+      "historyRetained": "Preuves conservées 30 jours après réussite",
+      "operationChanges": "{count} changement(s)",
+      "recover": "Récupérer",
+      "recoveryFailed": "L'opération n'a pas pu être récupérée automatiquement.",
+      "states": {
+        "preparing": "Préparation",
+        "prepared": "Validé",
+        "committing": "Enregistrement",
+        "completed": "Terminé",
+        "discarded": "Écarté en sécurité",
+        "failed": "Échec sécurisé",
+        "recovery_required": "Récupération requise"
+      },
       "checkingStatus": "Vérification du statut...",
+      "recoveryTitle": "Une synchronisation interrompue doit être récupérée",
+      "recoveryDescription": "Git contient l'opération acceptée, mais son résultat en base de données n'a pas été finalisé. Utilisez Récupérer dans l'historique ci-dessous.",
       "missingFolder": "Le dossier du projet est manquant. Vous pouvez restaurer depuis une sauvegarde ou supprimer le projet.",
       "missingGit": "Le dossier .git du projet est manquant. Vous pouvez restaurer depuis une sauvegarde ou supprimer le projet.",
       "missingElanFiles": "Le dossier elan_files du projet est manquant. Vous pouvez restaurer depuis une sauvegarde ou supprimer le projet.",
@@ -505,7 +546,8 @@
         "succesfullyDeleted": "Project supprimé avec succès.",
         "succesfullyDiscarded": "Changements locaux annulés avec succès.",
         "succesfullySynced": "Project synchronisé avec succès.",
-        "alreadyUpToDate": "Aucun changement n'a été détecté. Le project est déjà synchronisé."
+        "alreadyUpToDate": "Aucun changement n'a été détecté. Le projet est déjà synchronisé.",
+        "recovered": "La projection de la base a été récupérée depuis l'historique Git canonique."
       }
     },
     "createDialog": {
@@ -531,7 +573,7 @@
       "nonCompliant": "{count} fichier(s) ne respectent pas le(s) standard(s) de nommage.",
       "allCompliant": "Tous les fichiers respectent le(s) standard(s) de nommage.",
       "noEffectiveStandard1": "Aucun standard de nommage n'est actuellement appliqué. Allez dans les ",
-      "noEffectiveStandard2": "paramètres du projet", 
+      "noEffectiveStandard2": "paramètres du projet",
       "noEffectiveStandard3": "pour en créer un.",
       "bulkRename": "Renommer les fichiers."
     }
@@ -584,6 +626,7 @@
   },
 
   "projectSettings": {
+    "pageTitle": "Configuration du projet",
     "title": "Configuration du projet {projectName}",
     "subtitle": "Personnalisez les paramètres de votre projet",
     "sectionNames": {
@@ -595,9 +638,23 @@
           "namingStandards": "Normes de Nommage",
           "effectiveStandards": "Normes Effectives",
           "members": "Membres et Accès",
-          "invitations": "Invitations"
+          "invitations": "Invitations",
+          "protocols": "Protocole versionné"
         }
       }
+    },
+    "protocols": {
+      "description": "Publiez des règles de recherche immuables et attribuez une version à ce projet.",
+      "name": "Nom du protocole",
+      "required_tiers": "Tiers obligatoires (séparés par des virgules)",
+      "tier_parents": "Parents de tiers obligatoires (JSON)",
+      "linguistic_types": "Types linguistiques obligatoires (JSON)",
+      "vocabularies": "Vocabulaires contrôlés obligatoires",
+      "media_required": "Exiger un média lié",
+      "media_types": "Types MIME de média autorisés",
+      "create": "Créer le brouillon",
+      "publish": "Publier",
+      "pin": "Utiliser pour ce projet"
     },
     "members": {
       "title": "Gestion des membres",
@@ -971,27 +1028,27 @@
   },
 
   "configureEffectiveStandards": {
-  "title": "Configurer les normes effectives de nommage",
-  "fileType": "Type de fichier",
-  "effectiveStandard": "Norme effective",
-  "standardLocation": "Emplacement de la norme",
-  "assignStandardsTitle": "Assigner une norme de nommage au type de fichier",
-  "availableFileTypes": "Types de fichiers disponibles",
-  "associatedFileTypes": "Types de fichiers associés",
-  "selectStandard": "No standard selected",
-  "standardLocations": {
-    "projectFiles": "Fichiers du projet",
-    "tiers": "Tiers",
-    "elanMedia": "Médias ELAN",
-    "uploadPage": "Page d'upload"
-  },
-  "standardLocationsInfo": {
-    "projectFiles": "Fichiers stockés dans la structure de répertoires du projet. Il s'agit des principaux fichiers d'annotation ELAN et des fichiers médias associés sur lesquels les utilisateurs travaillent directement.",
-    "tiers": "Tiers d'annotation dans les fichiers ELAN. Ils définissent les différentes couches d'annotation linguistique telles que les informations sur le locuteur, la transcription et les gloses.",
-    "elanMedia": "Fichiers médias (vidéo/audio) liés aux fichiers d'annotation ELAN. Il s'agit des enregistrements source auxquels les annotations se réfèrent.",
-    "uploadPage": "Fichiers en cours de téléchargement via l'interface de téléchargement. Normes appliquées pendant le processus de téléchargement des fichiers avant leur ajout au projet."
-  },
-  "eventMessages": {
+    "title": "Configurer les normes effectives de nommage",
+    "fileType": "Type de fichier",
+    "effectiveStandard": "Norme effective",
+    "standardLocation": "Emplacement de la norme",
+    "assignStandardsTitle": "Assigner une norme de nommage au type de fichier",
+    "availableFileTypes": "Types de fichiers disponibles",
+    "associatedFileTypes": "Types de fichiers associés",
+    "selectStandard": "No standard selected",
+    "standardLocations": {
+      "projectFiles": "Fichiers du projet",
+      "tiers": "Tiers",
+      "elanMedia": "Médias ELAN",
+      "uploadPage": "Page d'upload"
+    },
+    "standardLocationsInfo": {
+      "projectFiles": "Fichiers stockés dans la structure de répertoires du projet. Il s'agit des principaux fichiers d'annotation ELAN et des fichiers médias associés sur lesquels les utilisateurs travaillent directement.",
+      "tiers": "Tiers d'annotation dans les fichiers ELAN. Ils définissent les différentes couches d'annotation linguistique telles que les informations sur le locuteur, la transcription et les gloses.",
+      "elanMedia": "Fichiers médias (vidéo/audio) liés aux fichiers d'annotation ELAN. Il s'agit des enregistrements source auxquels les annotations se réfèrent.",
+      "uploadPage": "Fichiers en cours de téléchargement via l'interface de téléchargement. Normes appliquées pendant le processus de téléchargement des fichiers avant leur ajout au projet."
+    },
+    "eventMessages": {
       "fileTypeAdded": "Type de fichier \"{fileType}\" a été associé avec succès avec \"{location}\".",
       "fileTypeAddFailed": "Échec de l'association du type de fichier.",
       "fileTypeRemoved": "Le type de fichier \"{fileType}\" n'est plus associé avec \"{location}\".",
@@ -1003,12 +1060,41 @@
       "loadFailed": "Échec du chargement des normes effectives."
     }
   },
-  
+
   "tiersPage": {
-    "pageTitle": "Tiers"
+    "pageTitle": "Hiérarchie des tiers",
+    "pageDescription": "Inspectez et organisez les couches d'annotation linguistique présentes dans les fichiers ELAN de ce projet.",
+    "sectionsTitle": "Organisation du corpus",
+    "sectionsDescription": "Regroupez les fichiers ELAN en sections de recherche pertinentes.",
+    "newSectionName": "Nom de la nouvelle section",
+    "createSection": "Créer la section",
+    "renameSection": "Renommer la section",
+    "deleteSection": "Supprimer la section",
+    "deleteConfirmation": "Supprimer la section « {name} » ? Ses fichiers retourneront dans Sans section.",
+    "unsectioned": "Sans section",
+    "fileCount": "{count} fichier(s) ELAN",
+    "tierCount": "{count} tier(s) racine",
+    "moveGuidance": "Faites glisser les fichiers avec la poignée entre les sections, ou utilisez le sélecteur Déplacer vers au clavier ou sur écran tactile.",
+    "moveTo": "Déplacer vers",
+    "dragHandle": "Faire glisser vers une autre section",
+    "dragFile": "Faire glisser {name} vers une autre section",
+    "dropHere": "Déposez un fichier ELAN ici",
+    "noUnsectioned": "Chaque fichier ELAN appartient à une section.",
+    "noTiers": "Aucun tier trouvé dans ce fichier.",
+    "loading": "Chargement de la hiérarchie...",
+    "noProject": "Sélectionnez un projet pour inspecter sa hiérarchie de tiers.",
+    "loadFailed": "Impossible de charger la hiérarchie des tiers.",
+    "operationFailed": "La modification n'a pas pu être enregistrée. Le dernier état du serveur a été restauré.",
+    "sectionCreated": "Section créée.",
+    "sectionRenamed": "Section renommée.",
+    "sectionDeleted": "Section supprimée.",
+    "groupMoved": "Fichier ELAN déplacé."
   },
   "pendingUploads": {
-    "title": "Gérer les téléchargements en attente pour",
+    "title": "Contributions en attente",
+    "pageDescription": "Examinez les contributions, inspectez les conflits et fusionnez les annotations validées.",
+    "queueTitle": "File de révision des contributions",
+    "queueDescription": "Testez les travaux reçus avant de les fusionner dans le projet de recherche partagé.",
     "loading": "Chargement des téléchargements en attente...",
     "noProjectSelected": {
       "title": "Aucun projet sélectionné",
@@ -1038,12 +1124,17 @@
       "resolveConflicts": "Résoudre les conflits",
       "testMerge": "Tester la fusion",
       "testing": "Test en cours...",
+      "refresh": "Actualiser",
       "mergeAllReady": "Fusionner tous les prêts ({count})",
       "mergingAll": "Fusion de tous en cours..."
     },
     "modal": {
       "uploadDetails": "Détails du téléchargement",
       "resolveConflicts": "Résoudre les conflits de téléchargement"
+    },
+    "mergeConfirmation": {
+      "title": "Fusionner la contribution ?",
+      "message": "Cette opération fusionnera {branch} dans le projet partagé et modifiera son historique."
     },
     "status": {
       "readyToMerge": "Prêt à fusionner",
@@ -1085,10 +1176,14 @@
     "noNewFiles": "Aucun nouveau fichier à ajouter",
     "filesAddedFromFolder": "Ajouté {count} fichiers depuis le dossier",
     "fileAdded": "Ajouté : {fileName}",
-    "filesAdded": "Ajouté {count} fichiers"
+    "filesAdded": "Ajouté {count} fichiers",
+    "chooseFiles": "Choisir des fichiers",
+    "chooseFolder": "Choisir un dossier",
+    "removeNamedFile": "Retirer {name}"
   },
   "uploadPage": {
     "title": "Upload des fichiers ELAN",
+    "pageDescription": "Validez les conventions de nommage et la structure ELAN avant de contribuer des fichiers à un projet.",
     "projectSelection": {
       "label": "Sélectionner un projet :",
       "placeholder": "Choisir un projet..."
@@ -1098,6 +1193,22 @@
       "subtitle": "Seuls les fichiers .eaf sont acceptés (max 50MB par fichier)"
     },
     "uploadButton": "Uploader les fichiers",
+    "projectStep": {
+      "title": "Choisir un projet",
+      "description": "Sélectionnez le projet de recherche qui recevra cette contribution."
+    },
+    "filesStep": {
+      "title": "Sélectionner et valider les fichiers ELAN",
+      "description": "Les fichiers sont vérifiés avant d'entrer dans le processus de révision collaborative."
+    },
+    "ready": "Prêt",
+    "selectedCount": "{count} fichier(s) sélectionné(s)",
+    "selectProjectFirst": "Choisissez un projet pour activer la sélection de fichiers.",
+    "nonCompliantSummary": "{count} fichier(s) ne respectent pas la norme de nommage du projet.",
+    "compliantSummary": "Tous les noms sélectionnés respectent la norme active.",
+    "submitTitle": "Soumettre la contribution",
+    "submitDescription": "Les fichiers validés seront préparés pour révision avant fusion.",
+    "complete": "Soumission terminée",
     "uploadingFiles": "Upload de {count} fichier(s)...",
     "uploadResults": "Résultats de l'upload",
     "resultSuccess": "✓ Succès",
@@ -1105,7 +1216,8 @@
     "errors": {
       "failedToLoadProjects": "Échec du chargement des projets",
       "selectProjectAndFiles": "Veuillez sélectionner un projet et des fichiers",
-      "uploadFailed": "Échec de l'upload des fichiers."
+      "uploadFailed": "Échec de l'upload des fichiers.",
+      "standardsFailed": "Les règles de nommage du projet n'ont pas pu être chargées. L'upload est suspendu afin d'éviter une soumission non vérifiée."
     },
     "complianceWarning": "Certains fichiers ne respectent pas la norme de nommage. Veuillez vérifier les noms des fichiers et réessayer."
   }

@@ -3,7 +3,9 @@
 from collections.abc import Sequence
 from typing import Any, TypeVar
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, exists, func, insert, select, update
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
@@ -12,6 +14,11 @@ from app.core.centralized_logging import get_logger
 ModelType = TypeVar("ModelType", bound=DeclarativeBase)
 
 logger = get_logger()
+
+# asyncpg rejects statements with more than 32,767 bind parameters. Leave
+# headroom for dialect/compiler changes and split every bulk operation by the
+# actual number of columns supplied per row.
+MAX_BULK_BIND_PARAMETERS = 30_000
 
 
 class DatabaseUtils:
@@ -39,7 +46,7 @@ class DatabaseUtils:
 
     @staticmethod
     async def get_all(
-        db: AsyncSession, model: type[ModelType], options: list = None
+        db: AsyncSession, model: type[ModelType], options: list | None = None
     ) -> list[ModelType]:
         logger.info(f"get_all: model={model.__name__}")
         query = select(model)
@@ -92,19 +99,21 @@ class DatabaseUtils:
         values: list[dict],
         ignore_duplicates: bool = False,
     ) -> None:
-        """Bulk insert records. If ignore_duplicates is True, uses MySQL ON DUPLICATE KEY UPDATE."""
-        from sqlalchemy.dialects.mysql import insert as mysql_insert
-
-        stmt = mysql_insert(model).values(values)
-        if ignore_duplicates:
-            pk_names = [key.name for key in model.__table__.primary_key]
-            update_cols = {
-                c.name: stmt.inserted[c.name]
-                for c in model.__table__.columns
-                if c.name not in pk_names
-            }
-            stmt = stmt.on_duplicate_key_update(**update_cols)
-        await db.execute(stmt)
+        """Bulk insert records, optionally ignoring unique-key duplicates."""
+        if not values:
+            return
+        column_count = max(len(row) for row in values)
+        rows_per_batch = max(1, MAX_BULK_BIND_PARAMETERS // column_count)
+        dialect_name = db.bind.dialect.name if db.bind is not None else ""
+        for offset in range(0, len(values), rows_per_batch):
+            batch = values[offset : offset + rows_per_batch]
+            if ignore_duplicates and dialect_name == "postgresql":
+                stmt = postgresql_insert(model).values(batch).on_conflict_do_nothing()
+            elif ignore_duplicates and dialect_name == "sqlite":
+                stmt = sqlite_insert(model).values(batch).on_conflict_do_nothing()
+            else:
+                stmt = insert(model).values(batch)
+            await db.execute(stmt)
 
     @staticmethod
     async def update_by_filter(
@@ -349,8 +358,8 @@ class DatabaseUtils:
         db: AsyncSession,
         model,
         column,
-        filters: dict[str, Any] = None,
-        in_filter: tuple = None,
+        filters: dict[str, Any] | None = None,
+        in_filter: tuple | None = None,
         order_by=None,
     ) -> Sequence[Any]:
         """Utility to get distinct values for a column, with optional filters and IN clause.
@@ -386,8 +395,6 @@ class DatabaseUtils:
         """Returns all instances of `model` where at least one `related_model` exists
         such that related_model.<related_field> == model.<model_field>
         """
-        from sqlalchemy import exists, select
-
         stmt = select(model).where(
             exists().where(
                 getattr(related_model, related_field) == getattr(model, model_field)
@@ -417,6 +424,7 @@ class DatabaseUtils:
 
         Returns:
             List of results (ORM objects or dicts).
+
         """
         try:
             result = await db.execute(stmt)

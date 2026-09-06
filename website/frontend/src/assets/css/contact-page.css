@@ -69,7 +69,10 @@
   font-size: 1rem;
   background: var(--secondary-bg);
   color: var(--text-main);
-  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .form-group input::placeholder,
@@ -194,17 +197,24 @@
   color: var(--text-main);
   border: 1px solid var(--profile-field-border);
   border-radius: calc(var(--input-radius) / 2);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  transition: background 180ms ease, color 180ms ease, transform 120ms ease, box-shadow 180ms ease;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 120ms ease,
+    box-shadow 180ms ease;
 }
+
 .captcha-refresh:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
+  box-shadow: 0 0 0 4px rgb(59 130 246 / 12%);
 }
+
 .captcha-refresh-icon {
   color: inherit;
   transition: transform 180ms ease;
 }
+
 .captcha-refresh:hover:not(:disabled) {
   background: var(--primary-color);
   color: white;
@@ -212,6 +222,7 @@
   transform: translateY(-3px);
   box-shadow: var(--btn-shadow-hover);
 }
+
 .captcha-refresh:active:not(:disabled) {
   transform: translateY(-1px);
 }
@@ -240,7 +251,9 @@
   font-size: 1.1rem;
   cursor: pointer;
   box-shadow: var(--btn-shadow);
-  transition: background-color 0.2s, box-shadow 0.2s;
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .contact-btn:hover:not(:disabled) {
@@ -250,7 +263,7 @@
 
 .contact-btn:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 30%);
 }
 
 .contact-btn:disabled {

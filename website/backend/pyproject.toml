@@ -1,36 +1,60 @@
-[tool.poetry]
+[project]
 name = "elanora-backend"
 version = "0.1.0"
 description = "ELANORA backend"
-authors = ["forsakenscheme", "antoninlesc", "romsti"]
+authors = [
+    { name = "forsakenscheme" },
+    { name = "antoninlesc" },
+    { name = "romsti" },
+]
+requires-python = ">=3.13,<4"
+dynamic = ["dependencies"]
+
+[project.scripts]
+elanora-bootstrap = "app.cli.bootstrap:main"
+elanora-migrate-legacy = "app.cli.migrate_legacy:main"
+elanora-reset-password = "app.cli.reset_password:main"
+elanora-dispatch-outbox = "app.cli.dispatch_outbox:main"
+elanora-queue-test-emails = "app.cli.queue_test_account_emails:main"
+
+[tool.poetry]
 packages = [
     { include = "app" }
 ]
 
 [tool.poetry.dependencies]
 python= "^3.13"
-fastapi = {extras = ["standard"], version = "^0.115.12"}
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.41"}
-python-jose = "^3.5.0"
-asyncmy = "^0.2.10"
+fastapi = ">=0.141,<0.142"
+sqlalchemy = {version = ">=2.0.52,<3", extras = ["asyncio"]}
 passlib = "^1.7.4"
-fastapi-mail = "^1.4.2"
-python-dotenv = "^1.1.0"
-pre-commit = "^4.2.0"
-cryptography = "^45.0.2"
-ruff = "^0.12.1"
-slowapi = "^0.1.9"
+fastapi-mail = ">=1.6,<2"
+python-dotenv = ">=1.2,<2"
+cryptography = ">=50,<51"
+slowapi = ">=0.1.10,<1"
 bcrypt = "^4.3.0"
-lxml = "^6.0.0"
-aiofiles = "^24.1.0"
+lxml = ">=6.1,<7"
+aiofiles = ">=25,<26"
 regex = "^2025.9.1"
+alembic = ">=1.16,<2"
+asyncpg = ">=0.30,<1"
+pydantic-settings = ">=2.10,<3"
+filelock = ">=3.18,<4"
+pyjwt = ">=2.10,<3"
+uvicorn = {version = ">=0.41,<1", extras = ["standard"]}
+idna = ">=3.15,<4"
+python-multipart = ">=0.0.20,<1"
+pillow = ">=12.3,<13"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5"
-pytest-cov = "^6.1.1"
-mypy = "^1.16.1"
-pre-commit = "^4.2.0"
-pytest-asyncio = "^0.26.0"
+pytest = ">=9,<10"
+pytest-cov = ">=7,<8"
+httpx = ">=0.28,<1"
+mypy = ">=2.3,<3"
+pytest-asyncio = ">=1.4,<2"
+ruff = ">=0.12,<1"
+pre-commit = ">=4.2,<5"
+pip-audit = ">=2.9,<3"
+pygments = ">=2.20,<3"
 
 [tool.ruff]
 target-version = "py313"
@@ -68,20 +92,21 @@ exclude = [
 docstring-code-format = true
 
 [tool.ruff.lint]
-extend-select = [
+select = [
+    "E", "F",
     # Style and correctness
     "W",    # pycodestyle warnings
     "I",    # isort (import sorting)
     "UP",   # pyupgrade (modern Python idioms)
-    "B",    # bugbear (common bugs and design issues)
+    "B0", "B9", # bugbear; explicit prefixes avoid Ruff's BLE namespace
     "C4",   # comprehensions (comprehension optimizations)
     "SIM",  # simplify (code simplifications)
     "TCH",  # type-checking imports
     "TID",  # tidy imports
-    "D",    # pydocstyle (docstring conventions)
+    "D1", "D2", "D3", "D4", # pydocstyle, excluding the DTZ namespace
     "N",    # pep8-naming
     "S",    # flake8-bandit (security)
-    "A",    # flake8-builtins (avoid shadowing builtins)
+    "A0",   # flake8-builtins, excluding Ruff's ASYNC namespace
     "PL",   # pylint (selected useful checks)
     "RUF",  # ruff-specific rules
     "PGH",  # pygrep-hooks (misc best practices)
@@ -89,12 +114,21 @@ extend-select = [
 
 # Example: Prefer D211 (no blank line before class) and D212 (multi-line summary on first line)
 ignore = [
-    "W191", 
+    "W191", "E501",
     "E111", "E114", "E117",
-    "D206", "D300", "D100", "D104", "D203", "D213",  
+    # Public API documentation is enforced in OpenAPI and architectural docs.
+    # Requiring docstrings on every thin CRUD wrapper produced duplicated noise.
+    "D100", "D101", "D102", "D103", "D104", "D106", "D107", "D202", "D203",
+    "D205", "D206", "D213", "D300", "D400", "D401", "D413", "D415", "D417",
     "Q000", "Q001", "Q002", "Q003",
     "COM812", "COM819",
     "ISC002",
 ]
 
-per-file-ignores = { "app/service/git.py" = ["S603", "S607"], "tests/**/*.py" = ["S101"], "app/service/git_operations.py" = ["S603", "S607"]}
+per-file-ignores = { "app/service/git.py" = ["S603", "S607"], "tests/**/*.py" = ["S101", "PLR2004"], "app/service/git_operations.py" = ["S603", "S607"], "app/legacy_migration/service.py" = ["S603", "S607"], "app/elan/validation.py" = ["PLR0912", "PLR0915"], "app/service/user.py" = ["PLR0913", "PLR0917"], "app/service/notification.py" = ["PLR0913", "PLR0917"] }
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-branches = 20
+max-returns = 8
+max-statements = 100

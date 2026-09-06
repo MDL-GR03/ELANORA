@@ -1,26 +1,26 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.effective_naming_standard_locations import (
+    EFFECTIVE_NAMING_STANDARD_LOCATIONS,
+)
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep
-from app.service.effective_naming_standard import (
-    assign_effective_standard,
-    unassign_effective_standard,
-    fetch_effective_standards,
-)
 from app.schema.requests.effective_naming_standard import (
     AssignEffectiveNamingStandardRequest,
 )
 from app.schema.responses.effective_naming_standard import (
     EffectiveNamingStandardResponse,
-    UnassignEffectiveNamingStandardResponse,
     GetEffectiveStandardsResponse,
+    UnassignEffectiveNamingStandardResponse,
 )
-from app.core.effective_naming_standard_locations import (
-    EFFECTIVE_NAMING_STANDARD_LOCATIONS,
+from app.service.effective_naming_standard import (
+    assign_effective_standard,
+    fetch_effective_standards,
+    unassign_effective_standard,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[get_admin_dep])
 
 
 @router.get("/locations")

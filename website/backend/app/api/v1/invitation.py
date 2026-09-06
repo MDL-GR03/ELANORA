@@ -2,11 +2,13 @@
 
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
+from app.dependency.project_access import authorize_project
 from app.dependency.user import get_user_dep
+from app.model.enums import ProjectPermission
 from app.model.user import User, UserRole
 from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.responses.invitation import (
@@ -22,16 +24,28 @@ router = APIRouter()
 @router.post("/send", response_model=InvitationSendResponse)
 async def send_invitation(
     request: InvitationSendRequest,
-    background_tasks: BackgroundTasks,
     user: User = get_user_dep,
     db: AsyncSession = get_db_dep,
 ) -> InvitationSendResponse:
-    """Send an invitation to a specific project (Admin only)."""
-    # Check if user is admin
-    if user.role != UserRole.ADMIN:
+    """Invite a member when the caller administers the target project."""
+    access = await authorize_project(
+        db,
+        user,
+        ProjectPermission.ADMIN,
+        project_name=request.project_name,
+    )
+    if request.project_permission == ProjectPermission.OWNER:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Owner is a reserved permission",
+        )
+    if (
+        access.permission == ProjectPermission.ADMIN
+        and request.project_permission == ProjectPermission.ADMIN
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can send invitations",
+            detail="Only an institution administrator can invite project administrators",
         )
 
     invitation_service = InvitationService()
@@ -111,12 +125,7 @@ async def get_project_invitations(
     db: AsyncSession = get_db_dep,
 ) -> InvitationListResponse:
     """Get invitations for a specific project (Admin only)."""
-    # Check if user is admin
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can view project invitations",
-        )
+    await authorize_project(db, user, ProjectPermission.ADMIN, project_id=project_id)
 
     invitation_service = InvitationService()
     return await invitation_service.get_project_invitations(

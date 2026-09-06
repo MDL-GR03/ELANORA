@@ -59,6 +59,31 @@ class FailedFileInfo(CustomBaseModel):
     error: str
 
 
+class EafValidationIssueResponse(CustomBaseModel):
+    """One machine-readable EAF validation issue returned to a researcher."""
+
+    code: str
+    message: str
+    location: str
+
+
+class RejectedEafFileResponse(CustomBaseModel):
+    """Validation summary for one quarantined source file."""
+
+    filename: str
+    sha256: str
+    issue_count: int
+    issues: list[EafValidationIssueResponse]
+
+
+class EafBatchValidationErrorResponse(CustomBaseModel):
+    """Stable API contract for a rejected EAF upload batch."""
+
+    code: str = "invalid_eaf_batch"
+    message: str
+    rejected_files: list[RejectedEafFileResponse]
+
+
 class DiffChange(CustomBaseModel):
     type: str  # "addition", "deletion", "context"
     line_number: int | None = None
@@ -80,7 +105,7 @@ class FileChanges(CustomBaseModel):
     filename: str
     added_lines: list[DiffChange]
     removed_lines: list[DiffChange]
-    modified_sections: list = []
+    modified_sections: list[dict[str, object]] = Field(default_factory=list)
     total_additions: int
     total_deletions: int
     hunks: list[DiffHunk]
@@ -92,9 +117,9 @@ class FileChanges(CustomBaseModel):
 class UploadSummary(CustomBaseModel):
     """Schema for upload file summary."""
 
-    new_files: list[str] = []
-    modified_files: list[str] = []
-    deleted_files: list[str] = []
+    new_files: list[str] = Field(default_factory=list)
+    modified_files: list[str] = Field(default_factory=list)
+    deleted_files: list[str] = Field(default_factory=list)
 
 
 class AdminInfo(CustomBaseModel):
@@ -108,6 +133,7 @@ class AdminInfo(CustomBaseModel):
 
 class BatchFileUploadResponse(CustomBaseModel):
     project_name: str
+    upload_id: int
     branch_name: str | None = None
     uploaded_files: list[UploadedFileInfo]
     failed_files: list[FailedFileInfo]
@@ -120,19 +146,20 @@ class BatchFileUploadResponse(CustomBaseModel):
     status: str  # "pending_admin_approval"
     requires_approval: bool = True
     has_differences: bool = False
+    auto_accepted: bool = False
 
     # Legacy fields for backward compatibility
     merge_status: str = "pending_admin_approval"  # Default value
     has_conflicts: bool = False  # No conflicts until admin tests merge
-    conflicts: list[FileChanges] = []  # Empty until admin tests merge
+    conflicts: list[FileChanges] = Field(default_factory=list)
 
     # New workflow fields
     upload_summary: UploadSummary | None = None
     admin_info: AdminInfo | None = None
 
     # Optional fields
-    new_files_in_merge: list[str] | None = []
-    modified_files_in_merge: list[str] | None = []
+    new_files_in_merge: list[str] | None = Field(default_factory=list)
+    modified_files_in_merge: list[str] | None = Field(default_factory=list)
     uploaded_at: str
     message: str | None = None
 
@@ -150,6 +177,9 @@ class ProjectInfo(CustomBaseModel):
     project_id: int
     project_name: str
     project_description: str | None = None
+    permission: str | None = None
+    auto_accept_new_files: bool = False
+    capabilities: list[str] = Field(default_factory=list)
 
 
 class ProjectListResponse(CustomBaseModel):
@@ -180,6 +210,12 @@ class ProjectSyncCheckResponse(CustomBaseModel):
     status: str | None = None
 
 
+class ProjectSyncExecutionResponse(ProjectSyncCheckResponse):
+    """Result linked to its durable cross-system operation record."""
+
+    operation_id: str
+
+
 class PendingUploadInfo(CustomBaseModel):
     """Schema for individual pending upload information."""
 
@@ -191,10 +227,15 @@ class PendingUploadInfo(CustomBaseModel):
     status: str
     uploaded_at: str | None = None
     uploaded_by: str | None = None
+    files: dict[str, list[str]] = Field(default_factory=dict)
+    file_counts: dict[str, int] = Field(default_factory=dict)
+    quality_checks: dict[str, str] = Field(default_factory=dict)
+    protocol_version_id: str | None = None
+    duplicate_of_upload_id: int | None = None
 
     # Real-time merge status (computed when requested)
     merge_status: str | None = None  # "ready_to_merge", "needs_resolution", "error"
-    conflicted_files: list[str] = []
+    conflicted_files: list[str] = Field(default_factory=list)
     conflicted_files_count: int = 0
     tested_at: str | None = None
 
@@ -220,11 +261,39 @@ class PendingUploadsResponse(CustomBaseModel):
     conflicts_count: int = 0
 
 
+class AnnotationReviewSnapshot(CustomBaseModel):
+    """One annotation state displayed in a semantic contribution review."""
+
+    annotation_id: str
+    tier_id: str
+    value: str
+    start_ms: int | None = None
+    end_ms: int | None = None
+    annotation_ref: str | None = None
+
+
+class AnnotationReviewChange(CustomBaseModel):
+    """A researcher-readable change to an EAF annotation."""
+
+    annotation_id: str
+    kinds: list[str]
+    before: AnnotationReviewSnapshot | None = None
+    after: AnnotationReviewSnapshot | None = None
+
+
+class EafReviewResponse(CustomBaseModel):
+    """Semantic comparison used by the read-only EAF review preview."""
+
+    changes: list[AnnotationReviewChange]
+    before_media_urls: list[str]
+    after_media_urls: list[str]
+
+
 class FileInfo(CustomBaseModel):
     name: str
     size: int
-    lastModified: str
-    lastUpdatedBy: str
+    last_modified: str = Field(alias="lastModified")
+    last_updated_by: str = Field(alias="lastUpdatedBy")
     type: str = "file"
 
 
@@ -233,11 +302,11 @@ class FileInfoWithMedia(CustomBaseModel):
 
     name: str
     size: int
-    lastModified: str
-    lastUpdatedBy: str
+    last_modified: str = Field(alias="lastModified")
+    last_updated_by: str = Field(alias="lastUpdatedBy")
     type: str = "file"
     elan_id: int | None = None  # Database ID for rename operations
-    media_filenames: list[str] = []  # Associated media filenames
+    media_filenames: list[str] = Field(default_factory=list)
 
 
 class ProjectFilesResponse(CustomBaseModel):

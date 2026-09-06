@@ -1,93 +1,164 @@
 <template>
   <div>
     <div class="project-standards-page">
-      <h1 class="project-standards-title">
-        <span class="project-standards-title-text">
-          {{ titleParts.before }}
-          <span class="project-standards-title-project-name">{{
-            projectName
-          }}</span>
-          {{ titleParts.after }}
-        </span>
-      </h1>
+      <WorkspaceHeader
+        :context="projectName"
+        :title="t('projectSettings.pageTitle')"
+        :description="t('projectSettings.subtitle')"
+      />
 
       <div
-        v-for="group in sectionGroups"
-        :key="group.key"
-        :class="['settings-section', { open: openGroup === group.key }]"
+        v-if="activeSection"
+        class="settings-workspace"
+        :class="{ 'navigation-collapsed': navigationCollapsed }"
       >
-        <div
-          class="settings-section-header group-header"
-          @click="toggleGroup(group.key)"
-        >
-          <span>{{ t(group.titleKey) }}</span>
-          <span :class="{ open: openGroup === group.key }">&#9660;</span>
-        </div>
-        <transition name="main-section-height">
-          <div v-show="openGroup === group.key">
-            <div
-              v-for="section in group.sections"
-              :key="section.key"
-              class="inner-section"
-            >
-              <div
-                class="settings-section-header inner-header"
-                @click="toggleSection(section.key)"
+        <aside class="settings-navigation" aria-label="Project settings">
+          <div class="settings-navigation-intro">
+            <div class="settings-navigation-intro-top">
+              <span class="eyebrow">Project settings</span>
+              <button
+                type="button"
+                class="settings-navigation-toggle"
+                :aria-label="
+                  navigationCollapsed
+                    ? 'Expand settings navigation'
+                    : 'Collapse settings navigation'
+                "
+                :title="
+                  navigationCollapsed
+                    ? 'Expand navigation'
+                    : 'Collapse navigation'
+                "
+                @click="toggleNavigation"
               >
-                <span>{{ t(section.titleKey) }}</span>
-                <span :class="{ open: openSections.includes(section.key) }"
-                  >&#9660;</span
-                >
-              </div>
-              <transition name="accordion">
-                <div
-                  v-show="openSections.includes(section.key)"
-                  class="settings-section-body"
-                >
-                  <component :is="section.component" />
-                </div>
-              </transition>
+                <font-awesome-icon
+                  :icon="
+                    navigationCollapsed
+                      ? 'fa-solid fa-angles-right'
+                      : 'fa-solid fa-angles-left'
+                  "
+                />
+              </button>
+            </div>
+            <div class="settings-navigation-intro-copy">
+              <h2>Configure your workspace</h2>
+              <p>Choose an area to manage without losing your place.</p>
             </div>
           </div>
-        </transition>
+
+          <nav>
+            <section v-for="group in sectionGroups" :key="group.key">
+              <h3>{{ t(group.titleKey) }}</h3>
+              <button
+                v-for="section in group.sections"
+                :key="section.key"
+                type="button"
+                :class="{ active: activeSection.key === section.key }"
+                :aria-current="
+                  activeSection.key === section.key ? 'page' : undefined
+                "
+                :title="navigationCollapsed ? t(section.titleKey) : undefined"
+                @click="selectSection(section.key)"
+              >
+                <span class="settings-navigation-icon">
+                  <font-awesome-icon :icon="section.icon" />
+                </span>
+                <span>
+                  <strong>{{ t(section.titleKey) }}</strong>
+                  <small>{{ section.description }}</small>
+                </span>
+                <font-awesome-icon
+                  class="settings-navigation-chevron"
+                  icon="fa-solid fa-chevron-right"
+                />
+              </button>
+            </section>
+          </nav>
+        </aside>
+
+        <main class="settings-content-panel">
+          <header class="settings-content-header">
+            <span class="settings-content-icon">
+              <font-awesome-icon :icon="activeSection.icon" />
+            </span>
+            <div>
+              <span class="eyebrow">{{ activeGroupTitle }}</span>
+              <h2>{{ t(activeSection.titleKey) }}</h2>
+              <p>{{ activeSection.description }}</p>
+            </div>
+          </header>
+          <div class="settings-section-body">
+            <KeepAlive>
+              <component
+                :is="activeSection.component"
+                :key="activeSection.key"
+              />
+            </KeepAlive>
+          </div>
+        </main>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import ConfigureNamingStandards from '@components/pageSpecific/projectConfiguration/ConfigureNamingStandards.vue';
-import ConfigureFileTypes from '@components/pageSpecific/projectConfiguration/ConfigureFileTypes.vue';
-import ConfigureProjectMembers from '@components/pageSpecific/projectConfiguration/ConfigureProjectMembers.vue';
-import ConfigurePendingInvitations from '@components/pageSpecific/projectConfiguration/ConfigurePendingInvitations.vue';
-import ConfigureEffectiveStandards from '@components/pageSpecific/projectConfiguration/ConfigureEffectiveStandards.vue';
-
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, defineAsyncComponent, watch } from 'vue';
 import { useProjectStore } from '@stores/project.js';
+import { useUserStore } from '@stores/user.js';
+import {
+  hasProjectCapability,
+  hasProjectPermission,
+} from '@/utils/authorization';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import '@/assets/css/ProjectConfigurationPage.css';
+import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 
-const openGroup = ref(null);
-const openSections = ref([]);
+const ConfigureNamingStandards = defineAsyncComponent(
+  () =>
+    import(
+      '@components/pageSpecific/projectConfiguration/ConfigureNamingStandards.vue'
+    )
+);
+const ConfigureFileTypes = defineAsyncComponent(
+  () =>
+    import(
+      '@components/pageSpecific/projectConfiguration/ConfigureFileTypes.vue'
+    )
+);
+const ConfigureProjectMembers = defineAsyncComponent(
+  () =>
+    import(
+      '@components/pageSpecific/projectConfiguration/ConfigureProjectMembers.vue'
+    )
+);
+const ConfigurePendingInvitations = defineAsyncComponent(
+  () =>
+    import(
+      '@components/pageSpecific/projectConfiguration/ConfigurePendingInvitations.vue'
+    )
+);
+const ConfigureEffectiveStandards = defineAsyncComponent(
+  () =>
+    import(
+      '@components/pageSpecific/projectConfiguration/ConfigureEffectiveStandards.vue'
+    )
+);
+const ConfigureProtocols = defineAsyncComponent(
+  () =>
+    import(
+      '@components/pageSpecific/projectConfiguration/ConfigureProtocols.vue'
+    )
+);
 
-function toggleGroup(group) {
-  openGroup.value = openGroup.value === group ? null : group;
-  openSections.value = [];
-}
-function toggleSection(section) {
-  const idx = openSections.value.indexOf(section);
-  if (idx === -1) {
-    openSections.value.push(section);
-  } else {
-    openSections.value.splice(idx, 1);
-  }
-}
 const route = useRoute();
+const router = useRouter();
 const { t } = useI18n();
 const projectStore = useProjectStore();
+const userStore = useUserStore();
 const projectId = computed(() => Number(route.params.projectId));
+const navigationCollapsed = ref(false);
 const projectName = computed(() => {
   const project = projectStore.projects.find(
     (p) => p.project_id === projectId.value
@@ -95,34 +166,44 @@ const projectName = computed(() => {
   return project ? project.project_name : '';
 });
 
-const titleParts = computed(() => {
-  // Get the translation with a unique placeholder
-  const raw = t('projectSettings.title', { projectName: '___PROJECT___' });
-  const [before, after] = raw.split('___PROJECT___');
-  return { before, after };
-});
-
-const sectionGroups = [
+const allSectionGroups = [
   {
     key: 'technical',
     titleKey: 'projectSettings.sectionNames.sections.technical',
     sections: [
       {
+        key: 'protocols',
+        titleKey: 'projectSettings.sectionNames.sections.subsections.protocols',
+        component: ConfigureProtocols,
+        icon: 'fa-solid fa-file-code',
+        description:
+          'Define and validate the linguistic structure expected across ELAN files.',
+      },
+      {
         key: 'filetypes',
         titleKey: 'projectSettings.sectionNames.sections.subsections.fileTypes',
         component: ConfigureFileTypes,
+        icon: 'fa-solid fa-file',
+        description:
+          'Manage the kinds of research files accepted by this project.',
       },
       {
         key: 'naming',
         titleKey:
           'projectSettings.sectionNames.sections.subsections.namingStandards',
         component: ConfigureNamingStandards,
+        icon: 'fa-solid fa-tag',
+        description:
+          'Create readable filename conventions for consistent corpus organization.',
       },
       {
         key: 'effectiveStandards',
         titleKey:
           'projectSettings.sectionNames.sections.subsections.effectiveStandards',
         component: ConfigureEffectiveStandards,
+        icon: 'fa-solid fa-gears',
+        description:
+          'Choose which naming convention applies to each file type and location.',
       },
     ],
   },
@@ -134,18 +215,91 @@ const sectionGroups = [
         key: 'members',
         titleKey: 'projectSettings.sectionNames.sections.subsections.members',
         component: ConfigureProjectMembers,
+        icon: 'fa-solid fa-circle-user',
+        description:
+          'Manage collaborators, access levels, and delegated responsibilities.',
       },
       {
         key: 'invitations',
         titleKey:
           'projectSettings.sectionNames.sections.subsections.invitations',
         component: ConfigurePendingInvitations,
+        icon: 'fa-solid fa-inbox',
+        description:
+          'Invite researchers and follow invitations that are awaiting a response.',
       },
     ],
   },
 ];
 
+const sectionGroups = computed(() => {
+  if (userStore.user?.role === 'admin') return allSectionGroups;
+  const groups = [];
+  const project = projectStore.projects.find(
+    (item) => item.project_id === projectId.value
+  );
+  if (hasProjectCapability(userStore.user, project, 'manage_protocols')) {
+    groups.push({
+      key: 'technical',
+      titleKey: 'projectSettings.sectionNames.sections.technical',
+      sections: allSectionGroups
+        .find((group) => group.key === 'technical')
+        .sections.filter((section) => section.key === 'protocols'),
+    });
+  }
+  if (hasProjectPermission(userStore.user, project, 'admin')) {
+    groups.push({
+      key: 'collaborators',
+      titleKey: 'projectSettings.sectionNames.sections.collaborators',
+      sections: allSectionGroups
+        .find((group) => group.key === 'collaborators')
+        .sections.filter((section) => section.key === 'members'),
+    });
+  }
+  return groups;
+});
+
+const availableSections = computed(() =>
+  sectionGroups.value.flatMap((group) =>
+    group.sections.map((section) => ({ ...section, group }))
+  )
+);
+const selectedSectionKey = ref(String(route.query.setting || ''));
+const activeSection = computed(
+  () =>
+    availableSections.value.find(
+      (section) => section.key === selectedSectionKey.value
+    ) || availableSections.value[0]
+);
+const activeGroupTitle = computed(() =>
+  activeSection.value ? t(activeSection.value.group.titleKey) : ''
+);
+
+function selectSection(key) {
+  selectedSectionKey.value = key;
+  void router.replace({ query: { ...route.query, setting: key } });
+}
+
+function toggleNavigation() {
+  navigationCollapsed.value = !navigationCollapsed.value;
+  window.localStorage.setItem(
+    'elanora-project-settings-navigation-collapsed',
+    String(navigationCollapsed.value)
+  );
+}
+
+watch(
+  () => route.query.setting,
+  (setting) => {
+    if (setting) selectedSectionKey.value = String(setting);
+  }
+);
+
 onMounted(() => {
   projectStore.initBroadcastChannel();
+  navigationCollapsed.value =
+    window.localStorage.getItem(
+      'elanora-project-settings-navigation-collapsed'
+    ) === 'true';
 });
 </script>

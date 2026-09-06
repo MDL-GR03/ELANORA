@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List
 
 
 class FileTypeLocationOut(BaseModel):
@@ -20,4 +19,4 @@ class RemoveFileTypeFromLocationResponse(BaseModel):
 
 
 class GetFileTypesForLocationResponse(BaseModel):
-    file_types: List[FileTypeLocationOut]
+    file_types: list[FileTypeLocationOut]

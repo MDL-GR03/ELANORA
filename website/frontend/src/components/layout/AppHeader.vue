@@ -10,17 +10,40 @@
           />
         </router-link>
         <InstanceSection />
-        <nav class="elanora-header-nav">
-          <a href="/projects" class="elanora-header-menu-link">
+        <button
+          class="mobile-menu-button"
+          type="button"
+          :aria-expanded="menuOpen"
+          aria-controls="primary-navigation"
+          aria-label="Toggle navigation"
+          @click="menuOpen = !menuOpen"
+        >
+          <span></span><span></span><span></span>
+        </button>
+        <nav
+          id="primary-navigation"
+          class="elanora-header-nav"
+          :class="{ open: menuOpen }"
+        >
+          <router-link to="/projects" class="elanora-header-menu-link">
             {{ t('appHeader.projects') }}
-          </a>
-          <a href="/upload" class="elanora-header-menu-link">
-            {{ t('appHeader.upload') }}
-          </a>
-          <a href="/contribution" class="elanora-header-menu-link">
-            {{ t('appHeader.contribution') }}
-          </a>
+          </router-link>
           <router-link
+            v-if="canWriteProject"
+            to="/upload"
+            class="elanora-header-menu-link"
+          >
+            {{ t('appHeader.upload') }}
+          </router-link>
+          <router-link
+            v-if="canReadProject"
+            to="/contribution"
+            class="elanora-header-menu-link"
+          >
+            {{ t('appHeader.contribution') }}
+          </router-link>
+          <router-link
+            v-if="canReadProject"
             :to="{ name: 'TiersPage' }"
             class="elanora-header-menu-link"
           >
@@ -28,17 +51,19 @@
           </router-link>
         </nav>
       </div>
-      <div class="elanora-header-right">
+      <div class="elanora-header-right" :class="{ open: menuOpen }">
         <ProjectSection />
         <!-- User Section with Notifications -->
-        <div v-if="userStore.isAuthenticated" class="elanora-header-user-section">
-          <NotificationBell />           
-
+        <div
+          v-if="userStore.isAuthenticated"
+          class="elanora-header-user-section"
+        >
+          <NotificationBell />
         </div>
         <div class="elanora-header-instance-logo-container">
           <img
-            src="/instance/images/logos/instance-logo.png"
-            alt="Instance Logo"
+            :src="instanceLogo"
+            :alt="`${instanceName} logo`"
             class="elanora-header-instance-logo"
           />
         </div>
@@ -48,49 +73,43 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import InstanceSection from '@/components/pageSpecific/appHeader/InstanceSection.vue'
-import ProjectSection from '@/components/pageSpecific/appHeader/ProjectSection.vue'
-import NotificationBell from '@/components/common/NotificationBell.vue'
+import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
+import { useUserStore } from '@/stores/user';
+import { useAppInfoStore } from '@/stores/appInfo';
+import { useProjectStore } from '@/stores/project';
+import { hasProjectPermission } from '@/utils/authorization';
+import InstanceSection from '@/components/pageSpecific/appHeader/InstanceSection.vue';
+import ProjectSection from '@/components/pageSpecific/appHeader/ProjectSection.vue';
+import NotificationBell from '@/components/common/NotificationBell.vue';
 
-const { t } = useI18n()
-const router = useRouter()
-const userStore = useUserStore()
-
-// User menu state
-const showUserMenu = ref(false)
-
-const toggleUserMenu = () => {
-  showUserMenu.value = !showUserMenu.value
-}
-
-const closeUserMenu = () => {
-  showUserMenu.value = false
-}
-
-const logout = async () => {
-  await userStore.logout()
-  closeUserMenu()
-  router.push('/login')
-}
-
-// Close user menu when clicking outside
-const handleClickOutside = (event) => {
-  if (showUserMenu.value && !event.target.closest('.elanora-header-user-menu')) {
-    closeUserMenu()
+const { t } = useI18n();
+const userStore = useUserStore();
+const appInfoStore = useAppInfoStore();
+const projectStore = useProjectStore();
+const route = useRoute();
+const menuOpen = ref(false);
+const instanceName = computed(
+  () => appInfoStore.instance?.instance_name || 'Institution'
+);
+const instanceLogo = computed(
+  () =>
+    appInfoStore.instance?.logo_url ||
+    '/instance/images/logos/instance-logo.png'
+);
+const canReadProject = computed(() =>
+  hasProjectPermission(userStore.user, projectStore.currentProject, 'read')
+);
+const canWriteProject = computed(() =>
+  hasProjectPermission(userStore.user, projectStore.currentProject, 'write')
+);
+watch(
+  () => route.fullPath,
+  () => {
+    menuOpen.value = false;
   }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
+);
 </script>
 
 <style scoped>
@@ -111,9 +130,9 @@ onUnmounted(() => {
 }
 
 .elanora-header-logo {
-  height: 5rem;
-  width: 5rem;
-  box-shadow: 0 1px 4px 0 #c9dbef;
+  height: 3rem;
+  width: 3rem;
+  border-radius: 0.65rem;
 }
 
 .elanora-header-logo-link {
@@ -124,6 +143,10 @@ onUnmounted(() => {
 
 .elanora-header-nav {
   display: flex;
+}
+
+.mobile-menu-button {
+  display: none;
 }
 
 .elanora-header-menu-link {
@@ -150,13 +173,14 @@ onUnmounted(() => {
 }
 
 .elanora-header-instance-logo-container {
-  height: 5rem;
-  width: 5rem;
+  height: 3rem;
+  width: 3rem;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #fbf9f6;
-  box-shadow: 0 1px 4px 0 #c9dbef;
+  border: 1px solid var(--color-border);
+  border-radius: 0.65rem;
   overflow: hidden;
 }
 
@@ -230,7 +254,9 @@ onUnmounted(() => {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 10%),
+    0 4px 6px -2px rgb(0 0 0 / 5%);
   min-width: 12rem;
   z-index: 50;
   overflow: hidden;
@@ -265,22 +291,82 @@ onUnmounted(() => {
   background: #fef2f2;
 }
 
-@media (width <= 900px) {
+@media (width <= 1024px) {
   .navbar-container {
-    flex-direction: column;
-    gap: 1rem;
-    padding: 0 0.5rem;
+    position: relative;
+    min-height: 4rem;
+    gap: 0.75rem;
   }
 
-  .elanora-header-left,
+  .elanora-header-logo,
+  .elanora-header-instance-logo-container {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .mobile-menu-button {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-left: auto;
+    place-content: center;
+    gap: 0.3rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.65rem;
+    background: #fff;
+  }
+
+  .mobile-menu-button span {
+    width: 1.25rem;
+    height: 2px;
+    background: #334155;
+  }
+
+  .elanora-header-nav,
   .elanora-header-right {
-    width: 100%;
-    justify-content: flex-start;
+    display: none;
+    position: absolute;
+    z-index: 40;
+    right: 0;
+    left: 0;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    box-shadow: 0 1rem 2rem rgb(15 23 42 / 12%);
   }
 
-  .elanora-header-nav {
+  .elanora-header-nav.open {
+    top: calc(100% + 0.5rem);
+    display: grid;
+  }
+
+  .elanora-header-right.open {
+    top: calc(100% + 13.5rem);
+    display: flex;
+    max-width: none;
     flex-wrap: wrap;
-    gap: 0.2rem;
+  }
+
+  .elanora-header-menu-link {
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .elanora-header-instance-logo-container {
+    margin-left: auto;
+  }
+}
+
+@media (width <= 560px) {
+  .elanora-header-left {
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .elanora-header-logo {
+    width: 3rem;
+    height: 3rem;
   }
 }
 </style>

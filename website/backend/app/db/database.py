@@ -1,5 +1,5 @@
-import os
-import urllib.parse
+"""Async SQLAlchemy engine and session lifecycle."""
+
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
@@ -8,67 +8,99 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 from app.core.centralized_logging import get_logger
+from app.core.settings import get_settings
 
 logger = get_logger()
 
 
-def build_database_url() -> str | None:
-    """Build the database URL from environment variables with proper encoding."""
-    user = os.getenv("DB_USER")
-    password = os.getenv("DB_PASSWORD")
-    host = os.getenv("DB_HOST")
-    port = os.getenv("DB_PORT")
-    name = os.getenv("DB_NAME")
+class Base(DeclarativeBase):
+    """Declarative base shared by all persisted models."""
 
-    if not all([user, password, host, port, name]):
+
+_engine: AsyncEngine | None = None
+_session_maker: async_sessionmaker[AsyncSession] | None = None
+
+
+def build_database_url() -> str | None:
+    """Resolve the configured URL while retaining the legacy optional contract."""
+    try:
+        return get_settings().resolved_database_url
+    except RuntimeError:
         return None
 
-    encoded_password = urllib.parse.quote_plus(password) if password else ""
-    return f"mysql+asyncmy://{user}:{encoded_password}@{host}:{port}/{name}"
+
+def create_engine(database_url: str) -> AsyncEngine:
+    """Create an engine without storing it in process-global state."""
+    return create_async_engine(
+        database_url,
+        echo=get_settings().db_echo,
+        pool_pre_ping=True,
+    )
 
 
-def get_engine(database_url: str | None = None, echo: bool = True) -> AsyncEngine:
-    """Lazily create and return an async SQLAlchemy engine."""
+def init_database(database_url: str | None = None) -> AsyncEngine:
+    """Initialize the process-wide engine and session factory exactly once."""
+    global _engine, _session_maker  # noqa: PLW0603 - application lifecycle state
+    if _engine is not None:
+        return _engine
     url = database_url or build_database_url()
     if not url:
         raise RuntimeError("DATABASE_URL is not set or incomplete")
-    engine = create_async_engine(url, echo=echo)
-    logger.debug(f"[ENGINE] Created AsyncEngine {id(engine)} with url: {url}")
-    return engine
+    _engine = create_engine(url)
+    _session_maker = async_sessionmaker(
+        bind=_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autoflush=False,
+    )
+    logger.info("Database engine initialized")
+    return _engine
+
+
+def get_engine(
+    database_url: str | None = None, echo: bool | None = None
+) -> AsyncEngine:
+    """Return the application engine or a caller-owned engine for an explicit URL."""
+    if database_url is not None:
+        return create_async_engine(
+            database_url,
+            echo=get_settings().db_echo if echo is None else echo,
+            pool_pre_ping=True,
+        )
+    return init_database()
 
 
 def get_session_maker(
     engine: AsyncEngine | None = None,
 ) -> async_sessionmaker[AsyncSession]:
-    """Return an async sessionmaker bound to the given engine."""
-    if engine is None:
-        engine = get_engine()
-    session_maker = async_sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-        autoflush=False,
-        autocommit=False,
-    )
-    logger.debug(
-        f"[SESSIONMAKER] Created async_sessionmaker {id(session_maker)} bound to engine {id(engine)}"
-    )
-    return session_maker
+    """Return a factory bound to a caller engine or the application engine."""
+    if engine is not None:
+        return async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
+    if _session_maker is None:
+        init_database()
+    if _session_maker is None:
+        raise RuntimeError("database session factory failed to initialize")
+    return _session_maker
 
 
-# Async session generator (for FastAPI dependency injection)
 async def get_db() -> AsyncGenerator[AsyncSession]:
-    """Yield an async database session for dependency injection."""
-    engine = get_engine()
-    session_local = get_session_maker(engine)
-    async with session_local() as session:
-        logger.debug(f"[SESSION] get_db: Yielding session {id(session)} from generator")
-        yield session
-        logger.debug(f"[SESSION] get_db: Session {id(session)} closed after yield")
+    """Yield one request-scoped session from the shared connection pool."""
+    session_maker = get_session_maker()
+    async with session_maker() as session:
+        try:
+            yield session
+        except BaseException:
+            await session.rollback()
+            raise
 
 
-# Base class for models
-Base = declarative_base()
+async def close_database() -> None:
+    """Dispose pooled connections during application shutdown."""
+    global _engine, _session_maker  # noqa: PLW0603 - application lifecycle state
+    if _engine is not None:
+        await _engine.dispose()
+    _engine = None
+    _session_maker = None

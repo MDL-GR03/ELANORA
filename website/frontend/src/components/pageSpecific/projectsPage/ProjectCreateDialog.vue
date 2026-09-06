@@ -202,7 +202,7 @@ onMounted(() => {
 }
 
 /* Responsive adjustments for smaller screens */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .project-create-modal-content {
     min-width: auto;
     max-width: 90vw;

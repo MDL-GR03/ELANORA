@@ -43,6 +43,7 @@ async def create_user_in_db(
         affiliation=user_data.affiliation,
         department=user_data.department,
         activation_code=user_data.activation_code,
+        instance_id=user_data.instance_id,
         address_id=user_data.address_id,
         is_verified_account=user_data.is_verified_account,
         role=UserRole.PUBLIC,
@@ -107,7 +108,7 @@ async def check_user_exists_by_email(db: AsyncSession, email: str) -> bool:
     return await DatabaseUtils.exists(db, User, "email", email)
 
 
-async def get_all_active_users(db: AsyncSession) -> list[User]:
-    """Get all active users."""
-    filters = {"is_active": True}
+async def get_all_active_users(db: AsyncSession, instance_id: int) -> list[User]:
+    """Get active users belonging to one institution installation."""
+    filters = {"is_active": True, "instance_id": instance_id}
     return await DatabaseUtils.get_by_filter(db, User, filters)

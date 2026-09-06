@@ -35,14 +35,18 @@
             @input="validatePassword"
           />
           <div v-if="passwordValidation.show" class="password-requirements">
-            <div class="requirements-title">{{ t('profile.security.change_password.requirements.title') }}</div>
-            <div 
-              v-for="requirement in passwordRequirements" 
+            <div class="requirements-title">
+              {{ t('profile.security.change_password.requirements.title') }}
+            </div>
+            <div
+              v-for="requirement in passwordRequirements"
               :key="requirement.key"
               class="requirement-item"
               :class="{ valid: requirement.valid }"
             >
-              <span class="requirement-icon">{{ requirement.valid ? '✓' : '✗' }}</span>
+              <span class="requirement-icon">{{
+                requirement.valid ? '✓' : '✗'
+              }}</span>
               <span class="requirement-text">{{ requirement.text }}</span>
             </div>
           </div>
@@ -60,11 +64,18 @@
             required
             autocomplete="new-password"
           />
-          <div v-if="form.confirmPassword && !passwordsMatch" class="error-message">
+          <div
+            v-if="form.confirmPassword && !passwordsMatch"
+            class="error-message"
+          >
             {{ t('profile.security.change_password.passwords_no_match') }}
           </div>
         </div>
-        <button type="submit" class="btn-primary reset-password-btn" :disabled="!isFormValid || loading">
+        <button
+          type="submit"
+          class="btn-primary reset-password-btn"
+          :disabled="!isFormValid || loading"
+        >
           <span v-if="loading">{{ t('resetPassword.submitting') }}</span>
           <span v-else>{{ t('resetPassword.submit') }}</span>
         </button>
@@ -95,7 +106,7 @@ const form = ref({
 const loading = ref(false);
 const email = ref('');
 const passwordValidation = ref({
-  show: false
+  show: false,
 });
 
 // Password validation requirements
@@ -103,28 +114,28 @@ const passwordRequirements = computed(() => [
   {
     key: 'length',
     text: t('profile.security.change_password.requirements.length'),
-    valid: form.value.newPassword.length >= 8
+    valid: form.value.newPassword.length >= 8,
   },
   {
     key: 'uppercase',
     text: t('profile.security.change_password.requirements.uppercase'),
-    valid: /[A-Z]/.test(form.value.newPassword)
+    valid: /[A-Z]/.test(form.value.newPassword),
   },
   {
     key: 'lowercase',
     text: t('profile.security.change_password.requirements.lowercase'),
-    valid: /[a-z]/.test(form.value.newPassword)
+    valid: /[a-z]/.test(form.value.newPassword),
   },
   {
     key: 'number',
     text: t('profile.security.change_password.requirements.number'),
-    valid: /\d/.test(form.value.newPassword)
+    valid: /\d/.test(form.value.newPassword),
   },
   {
     key: 'special',
     text: t('profile.security.change_password.requirements.special'),
-    valid: /[!@#$%^&*(),.?":{}|<>]/.test(form.value.newPassword)
-  }
+    valid: /[!@#$%^&*(),.?":{}|<>]/.test(form.value.newPassword),
+  },
 ]);
 
 const passwordsMatch = computed(() => {
@@ -132,16 +143,18 @@ const passwordsMatch = computed(() => {
 });
 
 const isPasswordValid = computed(() => {
-  return passwordRequirements.value.every(req => req.valid);
+  return passwordRequirements.value.every((req) => req.valid);
 });
 
 const isFormValid = computed(() => {
-  return form.value.code &&
-         /^\d{6}$/.test(form.value.code) &&
-         form.value.newPassword &&
-         form.value.confirmPassword &&
-         isPasswordValid.value &&
-         passwordsMatch.value;
+  return (
+    form.value.code &&
+    /^\d{6}$/.test(form.value.code) &&
+    form.value.newPassword &&
+    form.value.confirmPassword &&
+    isPasswordValid.value &&
+    passwordsMatch.value
+  );
 });
 
 onMounted(() => {
@@ -161,7 +174,10 @@ function validatePassword() {
 const handleSubmit = async () => {
   // Additional client-side validation before submit
   if (!isFormValid.value) {
-    eventMessageStore.addMessage(t('profile.security.change_password.form_invalid'), 'error');
+    eventMessageStore.addMessage(
+      t('profile.security.change_password.form_invalid'),
+      'error'
+    );
     return;
   }
 
@@ -182,9 +198,12 @@ const handleSubmit = async () => {
 };
 
 // Watch for password field changes
-watch(() => form.value.newPassword, (newVal) => {
-  if (!newVal) {
-    passwordValidation.value.show = false;
+watch(
+  () => form.value.newPassword,
+  (newVal) => {
+    if (!newVal) {
+      passwordValidation.value.show = false;
+    }
   }
-});
+);
 </script>

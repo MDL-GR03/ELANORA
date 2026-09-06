@@ -1,7 +1,8 @@
 from datetime import UTC, datetime, timedelta
 
+import jwt
 from fastapi import HTTPException, status
-from jose import ExpiredSignatureError, JWTError, jwt
+from jwt.exceptions import ExpiredSignatureError, PyJWTError
 
 from app.core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -98,7 +99,7 @@ def verify_token(token: str, expected_token_type: str = ACCESS_TOKEN_TYPE) -> To
             detail="Token has expired",
         ) from err
 
-    except JWTError as err:
+    except PyJWTError as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

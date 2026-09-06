@@ -30,8 +30,6 @@ BEST PRACTICES:
     4. Handle exceptions at appropriate levels in the call stack
 """
 
-from typing import Any
-
 
 class RenameConflictError(Exception):
     """Exception raised when a file rename conflicts with an existing file.
@@ -42,6 +40,7 @@ class RenameConflictError(Exception):
     Attributes:
         conflict_elan_id: The ID of the conflicting ELAN file (optional)
         message_key: A key for internationalization/localization (optional)
+
     """
 
     def __init__(

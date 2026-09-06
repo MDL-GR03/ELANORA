@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class CustomBaseModel(BaseModel):
     """Base model that forbids extra fields not defined in the schema and supports ORM serialization."""
 
-    class Config:
-        """Pydantic configuration to forbid extra fields and enable ORM serialization."""
-
-        extra = "forbid"
-        from_attributes = True
+    model_config = ConfigDict(
+        extra="forbid",
+        from_attributes=True,
+        populate_by_name=True,
+    )

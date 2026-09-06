@@ -33,13 +33,9 @@
         <p>{{ t('projectSettings.members.no_members') }}</p>
         <small>{{ t('projectSettings.members.no_members_desc') }}</small>
       </div>
-      
+
       <div v-else class="members-grid">
-        <div
-          v-for="user in users"
-          :key="user.user_id"
-          class="member-card"
-        >
+        <div v-for="user in users" :key="user.user_id" class="member-card">
           <div class="member-info">
             <div class="member-avatar">
               {{ user.username.charAt(0).toUpperCase() }}
@@ -49,7 +45,7 @@
               <div class="member-email">{{ user.email }}</div>
             </div>
           </div>
-          
+
           <div class="member-permission">
             <div v-if="canEditUser(user)" class="permission-selector">
               <select
@@ -68,15 +64,31 @@
                   {{ t(`projectSettings.permissions.${permission}`) }}
                 </option>
               </select>
-              <div v-if="updatingUsers.has(user.user_id)" class="update-spinner">
+              <div
+                v-if="updatingUsers.has(user.user_id)"
+                class="update-spinner"
+              >
                 <div class="spinner-small"></div>
               </div>
             </div>
             <span v-else class="permission-badge" :class="user.permission">
               {{ t(`projectSettings.permissions.${user.permission}`) }}
             </span>
+            <label
+              v-if="canEditUser(user)"
+              class="capability-toggle"
+              :title="t('projectSettings.members.protocol_manager_help')"
+            >
+              <input
+                type="checkbox"
+                :checked="user.capabilities?.includes('manage_protocols')"
+                :disabled="updatingCapabilities.has(user.user_id)"
+                @change="handleProtocolCapabilityChange(user, $event)"
+              />
+              {{ t('projectSettings.members.protocol_manager') }}
+            </label>
           </div>
-          
+
           <div class="member-actions">
             <button
               v-if="canRemoveUser(user)"
@@ -98,16 +110,50 @@
     </div>
 
     <!-- Add User Modal -->
-    <div v-if="showAddUserModal" class="modal-overlay" @click="closeAddUserModal">
-      <div class="modal-content" @click.stop>
+    <div
+      v-if="showAddUserModal"
+      class="modal-overlay"
+      role="presentation"
+      @click="closeAddUserModal"
+    >
+      <div
+        class="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-member-title"
+        @click.stop
+        @keydown.esc="closeAddUserModal"
+      >
         <div class="modal-header">
-          <h4>{{ t('projectSettings.members.add_modal.title') }}</h4>
-          <button class="modal-close" @click="closeAddUserModal">×</button>
+          <span class="modal-header-icon">
+            <font-awesome-icon icon="fa-solid fa-circle-user" />
+          </span>
+          <div>
+            <span class="modal-eyebrow">Project access</span>
+            <h4 id="add-member-title">
+              {{ t('projectSettings.members.add_modal.title') }}
+            </h4>
+          </div>
+          <button
+            type="button"
+            class="modal-close"
+            :aria-label="t('common.cancel')"
+            @click="closeAddUserModal"
+          >
+            <font-awesome-icon icon="fa-solid fa-xmark" />
+          </button>
         </div>
-        
+
         <form class="add-member-form" @submit.prevent="addUser">
+          <p class="modal-description">
+            Select a researcher and choose what they may do in this project.
+            Access can be changed later.
+          </p>
           <div class="form-group">
-            <label for="userId">{{ t('project.share.select_user') }} <span class="share-required">*</span></label>
+            <label for="userId"
+              >{{ t('project.share.select_user') }}
+              <span class="share-required">*</span></label
+            >
             <select
               id="userId"
               v-model="newUser.user_id"
@@ -116,33 +162,53 @@
               required
             >
               <option value="" disabled>
-                {{ loadingAvailableUsers ? t('common.loading') : t('project.share.choose_user') }}
+                {{
+                  loadingAvailableUsers
+                    ? t('common.loading')
+                    : t('project.share.choose_user')
+                }}
               </option>
               <option
                 v-for="user in filteredAvailableUsers"
                 :key="user.user_id"
                 :value="user.user_id"
               >
-                {{ user.first_name }} {{ user.last_name }} ({{ user.username }}) - {{ user.email }}
+                {{ user.first_name }} {{ user.last_name }} ({{ user.username }})
+                - {{ user.email }}
               </option>
             </select>
           </div>
-          
+
           <div class="form-group">
-            <label for="permission">{{ t('projectSettings.members.add_modal.permission') }}</label>
-            <select id="permission" v-model="newUser.permission" class="form-select" required>
-              <option value="read">{{ t('projectSettings.permissions.read') }}</option>
-              <option value="write">{{ t('projectSettings.permissions.write') }}</option>
-              <option value="admin">{{ t('projectSettings.permissions.admin') }}</option>
+            <label for="permission">{{
+              t('projectSettings.members.add_modal.permission')
+            }}</label>
+            <select
+              id="permission"
+              v-model="newUser.permission"
+              class="form-select"
+              required
+            >
+              <option value="read">
+                {{ t('projectSettings.permissions.read') }}
+              </option>
+              <option value="write">
+                {{ t('projectSettings.permissions.write') }}
+              </option>
+              <option value="admin">
+                {{ t('projectSettings.permissions.admin') }}
+              </option>
             </select>
           </div>
-          
+
           <div class="form-actions">
             <button type="button" class="btn-cancel" @click="closeAddUserModal">
               {{ t('common.cancel') }}
             </button>
             <button type="submit" class="btn-submit" :disabled="addingUser">
-              <span v-if="addingUser" class="loading-text">{{ t('common.adding') }}...</span>
+              <span v-if="addingUser" class="loading-text"
+                >{{ t('common.adding') }}...</span
+              >
               <span v-else>{{ t('common.add') }}</span>
             </button>
           </div>
@@ -162,11 +228,13 @@ import { useEventMessageStore } from '@/stores/eventMessage';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import {
   getProjectUsers,
+  getAvailableProjectUsers,
   addUserToProject,
   updateUserPermission,
-  removeUserFromProject
+  removeUserFromProject,
+  grantProtocolManager,
+  revokeProtocolManager,
 } from '@/api/service/projectAssociationService';
-import { fetchActiveUsers } from '@/api/service/userService';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -187,6 +255,7 @@ const showAddUserModal = ref(false);
 
 // Operation states
 const updatingUsers = ref(new Set());
+const updatingCapabilities = ref(new Set());
 const addingUser = ref(false);
 const removingUser = ref(false);
 const loadingAvailableUsers = ref(false);
@@ -194,7 +263,7 @@ const loadingAvailableUsers = ref(false);
 // Form data
 const newUser = reactive({
   user_id: '',
-  permission: 'read'
+  permission: 'read',
 });
 
 // Available users list for Add Member modal
@@ -206,12 +275,14 @@ const filteredAvailableUsers = computed(() => {
 
 // Computed properties
 const currentUserRole = computed(() => {
-  if (!userStore.user || !users.value.length) return null;
-  
-  const currentUser = users.value.find(user => user.user_id === userStore.user.user_id);
-  console.log('currentUser from project:', currentUser);
-  console.log('currentUserRole:', currentUser?.permission);
-  
+  if (!userStore.user) return null;
+  if (userStore.user.role === 'admin') return 'owner';
+  if (!users.value.length) return null;
+
+  const currentUser = users.value.find(
+    (user) => user.user_id === userStore.user.user_id
+  );
+
   return currentUser?.permission || null;
 });
 
@@ -228,7 +299,7 @@ const loadUsers = async () => {
 
   loading.value = true;
   error.value = '';
-  
+
   try {
     const response = await getProjectUsers(projectId.value);
     if (response.data) {
@@ -236,7 +307,8 @@ const loadUsers = async () => {
     }
   } catch (err) {
     console.error('Error loading users:', err);
-    error.value = err.response?.data?.detail || t('projectSettings.members.load_error');
+    error.value =
+      err.response?.data?.detail || t('projectSettings.members.load_error');
   } finally {
     loading.value = false;
   }
@@ -247,7 +319,7 @@ const loadActiveUsers = async () => {
   if (loadingAvailableUsers.value) return;
   loadingAvailableUsers.value = true;
   try {
-    const response = await fetchActiveUsers();
+    const response = await getAvailableProjectUsers(projectId.value);
     if (response.data && response.data.users) {
       availableUsers.value = response.data.users;
     }
@@ -262,10 +334,10 @@ const loadActiveUsers = async () => {
 const canEditUser = (user) => {
   // Only admin and owner can edit permissions
   if (!['admin', 'owner'].includes(currentUserRole.value)) return false;
-  
+
   // Owner cannot be edited
   if (user.permission === 'owner') return false;
-  
+
   // Admin cannot edit other admins (only owner can)
   return !(user.permission === 'admin' && currentUserRole.value !== 'owner');
 };
@@ -273,15 +345,15 @@ const canEditUser = (user) => {
 const canRemoveUser = (user) => {
   // Only admin and owner can remove users
   if (!['admin', 'owner'].includes(currentUserRole.value)) return false;
-  
+
   // Owner cannot be removed
   if (user.permission === 'owner') return false;
-  
+
   // Admins can remove read/write users, but only owner can remove admins
   if (user.permission === 'admin') {
     return currentUserRole.value === 'owner';
   }
-  
+
   return true;
 };
 
@@ -295,26 +367,26 @@ const getAvailablePermissions = () => {
     // Admins can only set read/write permissions
     return ['read', 'write'];
   }
-  
+
   return [];
 };
 
 const handlePermissionChange = async (user, changeEvent) => {
   const newPermission = changeEvent.target.value;
   if (user.permission === newPermission) return;
-  
+
   const oldPermission = user.permission;
   const confirmed = await userConfirm({
     title: t('projectSettings.members.confirm_permission_change.title'),
     message: t('projectSettings.members.confirm_permission_change.message', {
       username: user.username,
       oldPermission: t(`projectSettings.permissions.${oldPermission}`),
-      newPermission: t(`projectSettings.permissions.${newPermission}`)
+      newPermission: t(`projectSettings.permissions.${newPermission}`),
     }),
     confirmText: t('common.confirm'),
-    cancelText: t('common.cancel')
+    cancelText: t('common.cancel'),
   });
-  
+
   if (confirmed) {
     await updateUserPermissionHandler(user, newPermission);
   } else {
@@ -328,39 +400,73 @@ const handlePermissionChange = async (user, changeEvent) => {
 const updateUserPermissionHandler = async (user, newPermission = null) => {
   const permission = newPermission || user.permission;
   const oldPermission = user.permission;
-  
+
   // Optimistically update the UI
   user.permission = permission;
   updatingUsers.value.add(user.user_id);
-  
+
   try {
-    const response = await updateUserPermission(
-      projectId.value,
-      user.user_id,
-      { permission }
-    );
-    
+    const response = await updateUserPermission(projectId.value, user.user_id, {
+      permission,
+    });
+
     if (response.data) {
-      eventMessageStore.addMessage('projectSettings.members.permission_updated', 'success');
+      eventMessageStore.addMessage(
+        'projectSettings.members.permission_updated',
+        'success'
+      );
     }
   } catch (err) {
     console.error('Error updating user permission:', err);
     // Revert the change
     user.permission = oldPermission;
-    eventMessageStore.addMessage('projectSettings.members.permission_update_error', 'error');
+    eventMessageStore.addMessage(
+      'projectSettings.members.permission_update_error',
+      'error'
+    );
   } finally {
     updatingUsers.value.delete(user.user_id);
+  }
+};
+
+const handleProtocolCapabilityChange = async (user, changeEvent) => {
+  const enabled = changeEvent.target.checked;
+  updatingCapabilities.value.add(user.user_id);
+  try {
+    if (enabled) {
+      await grantProtocolManager(projectId.value, user.user_id);
+    } else {
+      await revokeProtocolManager(projectId.value, user.user_id);
+    }
+    const capabilities = new Set(user.capabilities || []);
+    if (enabled) capabilities.add('manage_protocols');
+    else capabilities.delete('manage_protocols');
+    user.capabilities = [...capabilities];
+    eventMessageStore.addMessage(
+      'projectSettings.members.capability_updated',
+      'success'
+    );
+  } catch {
+    changeEvent.target.checked = !enabled;
+    eventMessageStore.addMessage(
+      'projectSettings.members.capability_update_error',
+      'error'
+    );
+  } finally {
+    updatingCapabilities.value.delete(user.user_id);
   }
 };
 
 const confirmRemoveUser = async (user) => {
   const confirmed = await userConfirm({
     title: t('projectSettings.members.confirm_remove.title'),
-    message: t('projectSettings.members.confirm_remove.message', { username: user.username }),
+    message: t('projectSettings.members.confirm_remove.message', {
+      username: user.username,
+    }),
     confirmText: t('common.remove'),
-    cancelText: t('common.cancel')
+    cancelText: t('common.cancel'),
   });
-  
+
   if (confirmed) {
     await removeUser(user);
   }
@@ -374,13 +480,17 @@ const closeAddUserModal = () => {
 
 const addUser = async () => {
   addingUser.value = true;
-  
+
   try {
     const response = await addUserToProject(projectId.value, {
       user_id: parseInt(newUser.user_id, 10),
-      permission: newUser.permission
-    });    if (response.data) {
-      eventMessageStore.addMessage('projectSettings.members.user_added', 'success');
+      permission: newUser.permission,
+    });
+    if (response.data) {
+      eventMessageStore.addMessage(
+        'projectSettings.members.user_added',
+        'success'
+      );
       closeAddUserModal();
       await loadUsers(); // Refresh the list
     }
@@ -397,22 +507,25 @@ const addUser = async () => {
 
 const removeUser = async (user) => {
   if (!user) return;
-  
+
   removingUser.value = true;
-  
+
   try {
-    const response = await removeUserFromProject(
-      projectId.value,
-      user.user_id
-    );
-    
+    const response = await removeUserFromProject(projectId.value, user.user_id);
+
     if (response.data) {
-      eventMessageStore.addMessage('projectSettings.members.user_removed', 'success');
+      eventMessageStore.addMessage(
+        'projectSettings.members.user_removed',
+        'success'
+      );
       await loadUsers(); // Refresh the list
     }
   } catch (err) {
     console.error('Error removing user:', err);
-    eventMessageStore.addMessage('projectSettings.members.remove_error', 'error');
+    eventMessageStore.addMessage(
+      'projectSettings.members.remove_error',
+      'error'
+    );
   } finally {
     removingUser.value = false;
   }
@@ -447,7 +560,7 @@ watch(projectId, (newProjectId) => {
 // Expose methods for parent components if needed
 defineExpose({
   loadUsers,
-  users
+  users,
 });
 </script>
 
@@ -497,7 +610,8 @@ defineExpose({
   font-weight: bold;
 }
 
-.loading-state, .error-state {
+.loading-state,
+.error-state {
   text-align: center;
   padding: 2rem 1rem;
 }
@@ -513,8 +627,13 @@ defineExpose({
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -574,6 +693,16 @@ defineExpose({
   transition: all 0.2s ease;
 }
 
+.capability-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  color: #4b5563;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
 .member-card:hover {
   background: #f3f4f6;
   border-color: #d1d5db;
@@ -613,8 +742,6 @@ defineExpose({
   color: #6b7280;
 }
 
-
-
 .permission-select {
   padding: 0.5rem 2rem 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
@@ -633,13 +760,13 @@ defineExpose({
 
 .permission-select:hover:not(:disabled) {
   border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
 }
 
 .permission-select:focus {
   outline: none;
   border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
 }
 
 .permission-select:disabled {
@@ -670,8 +797,13 @@ defineExpose({
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .permission-badge {
@@ -764,47 +896,69 @@ defineExpose({
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  padding: 24px;
+  background: rgb(18 35 64 / 58%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
 }
 
 .modal-content {
   background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  width: 90%;
-  max-width: 480px;
-  max-height: 90vh;
+  border: 1px solid #d7e1f0;
+  border-radius: 18px;
+  padding: 0;
+  width: min(520px, 100%);
+  max-height: calc(100vh - 48px);
   overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 24px 70px rgb(15 35 70 / 28%);
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.85rem;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin: 0;
+  padding: 1.4rem 1.5rem 1.15rem;
+  background: linear-gradient(145deg, #fff, #f7faff);
+  border-bottom: 1px solid #e2e8f2;
 }
 
 .modal-header h4 {
   margin: 0;
   color: #1f2937;
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.modal-header-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: #2864e8;
+  background: #e8f0ff;
+  border-radius: 11px;
+}
+
+.modal-eyebrow {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #2864e8;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
 }
 
 .modal-close {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1rem;
   color: #6b7280;
   cursor: pointer;
   padding: 0;
@@ -813,7 +967,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 9px;
   transition: all 0.2s ease;
 }
 
@@ -825,7 +979,15 @@ defineExpose({
 .add-member-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.1rem;
+  padding: 1.4rem 1.5rem 1.5rem;
+}
+
+.modal-description {
+  margin: 0;
+  color: #647595;
+  font-size: 0.9rem;
+  line-height: 1.55;
 }
 
 .form-group {
@@ -840,7 +1002,8 @@ defineExpose({
   font-size: 0.875rem;
 }
 
-.form-input, .form-select {
+.form-input,
+.form-select {
   padding: 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -848,17 +1011,22 @@ defineExpose({
   transition: border-color 0.2s ease;
 }
 
-.form-input:focus, .form-select:focus {
+.form-input:focus,
+.form-select:focus {
   outline: none;
   border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
 }
 
-.form-actions, .modal-actions {
+.form-actions,
+.modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  margin-top: 1.5rem;
+  margin: 0.4rem -1.5rem -1.5rem;
+  padding: 1rem 1.5rem;
+  background: #f7f9fc;
+  border-top: 1px solid #e2e8f2;
 }
 
 .confirm-modal .modal-body {
@@ -866,7 +1034,7 @@ defineExpose({
 }
 
 .confirm-modal .modal-body p {
-  margin: 0 0 0.75rem 0;
+  margin: 0 0 0.75rem;
   color: #374151;
   line-height: 1.5;
 }
@@ -877,10 +1045,13 @@ defineExpose({
   font-weight: 500;
 }
 
-.btn-cancel, .btn-submit, .btn-danger {
+.btn-cancel,
+.btn-submit,
+.btn-danger {
   padding: 0.625rem 1.25rem;
   border: none;
-  border-radius: 8px;
+  min-height: 42px;
+  border-radius: 10px;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -888,6 +1059,25 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+@media (width <= 560px) {
+  .modal-overlay {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .modal-content {
+    border-radius: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
 }
 
 .btn-cancel {
@@ -936,7 +1126,7 @@ defineExpose({
   width: 16px;
   height: 16px;
   border: 2px solid transparent;
-  border-top: 2px solid currentColor;
+  border-top: 2px solid currentcolor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

@@ -69,7 +69,7 @@ async def get_elan_file_by_filename(db: AsyncSession, filename: str) -> ElanFile
     stmt = (
         select(ElanFile)
         .join(FileContent)
-        .where(FileContent.filename == filename)
+        .where(ElanFile.filename == filename)
         .options(selectinload(ElanFile.file_content))
     )
     result = await db.execute(stmt)
@@ -90,7 +90,7 @@ async def get_elan_files_by_user(db: AsyncSession, user_id: int) -> list[ElanFil
 
 async def check_elan_file_exists_by_filename(db: AsyncSession, filename: str) -> bool:
     """Check if an ELAN file with the given filename exists."""
-    stmt = select(ElanFile).join(FileContent).where(FileContent.filename == filename)
+    stmt = select(ElanFile).where(ElanFile.filename == filename)
     result = await db.execute(stmt)
     return result.scalar_one_or_none() is not None
 
@@ -102,7 +102,7 @@ async def get_elan_file_by_filename_and_project(
     stmt = (
         select(ElanFile)
         .join(FileContent)
-        .where(FileContent.filename == filename, ElanFile.project_id == project_id)
+        .where(ElanFile.filename == filename, ElanFile.project_id == project_id)
         .options(selectinload(ElanFile.file_content))
     )
     result = await db.execute(stmt)
@@ -116,7 +116,7 @@ async def check_elan_file_exists_by_filename_and_project(
     stmt = (
         select(ElanFile)
         .join(FileContent)
-        .where(FileContent.filename == filename, ElanFile.project_id == project_id)
+        .where(ElanFile.filename == filename, ElanFile.project_id == project_id)
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none() is not None
@@ -148,6 +148,7 @@ async def create_elan_file_in_db(
     elan_file = ElanFile(
         content_id=file_content.content_id,
         project_id=project_id,
+        filename=sanitized_filename,
         file_path=file_path,
         last_modified=last_modified,
     )
@@ -213,6 +214,7 @@ async def sync_elan_file_to_tiers(
         db: Database session
         elan_id: ID of the ELAN file
         new_tier_ids: List of tier IDs to associate with the file
+
     """
     current_tier_ids = set(await get_tiers_for_elan_file(db, elan_id))
     new_tier_ids_set = set(new_tier_ids)
@@ -257,18 +259,11 @@ async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
         # Delete associations (tiers, projects, etc.)
         await delete_elan_file_associations(db, elan_id)
 
-        # Check if file is still associated with any projects
-        remaining_projects = await get_projects_for_elan_file(db, elan_id)
-        if not remaining_projects:
-            logger.info(f"Deleting ELAN file row for elan_id={elan_id}")
-            await db.delete(elan_file_obj)
-            await db.flush()
-            logger.info(f"Deleted ELAN file elan_id={elan_id}")
-        else:
-            logger.info(
-                f"ELAN file elan_id={elan_id} still associated with projects {remaining_projects}, not deleting file row."
-            )
-            return False
+        # ELAN_FILE has a direct, non-null project foreign key. There is no
+        # many-to-many ownership relation to preserve after this point.
+        logger.info(f"Deleting ELAN file row for elan_id={elan_id}")
+        await db.delete(elan_file_obj)
+        await db.flush()
 
         # Clean up orphaned media
         deleted_count = await delete_orphaned_media(db)
@@ -297,6 +292,19 @@ async def store_elan_file_data_in_db(
             db, file_info["filename"], project_id
         )
         if existing_file:
+            file_content = await get_or_create_file_content(
+                db=db,
+                filename=file_info["filename"],
+                file_size=file_info["file_size"],
+                file_path=file_info["file_path"],
+                user_id=user_id,
+            )
+            existing_file.content_id = file_content.content_id
+            existing_file.filename = ValidationUtils.sanitize_filename(
+                file_info["filename"]
+            )
+            existing_file.file_path = file_info["file_path"]
+            existing_file.last_modified = file_info["last_modified"]
             # File already exists in this project, no need to add association
             # Sync media associations for existing file
             for media in file_info.get("media", []):
@@ -381,7 +389,7 @@ async def update_elan_file_name(
         logger.warning("ELAN file not found for elan_id=%s", elan_id)
         return None
 
-    old_filename = elan_file.file_content.filename
+    old_filename = elan_file.filename
     logger.info(
         "Changing filename from %s to %s for elan_id=%s",
         old_filename,
@@ -389,8 +397,7 @@ async def update_elan_file_name(
         elan_id,
     )
 
-    # Update the filename in the FileContent record
-    elan_file.file_content.filename = ValidationUtils.sanitize_filename(new_filename)
+    elan_file.filename = ValidationUtils.sanitize_filename(new_filename)
 
     # Update the file_path in the ElanFile record to reflect the new filename
     # Assuming file_path format is like "project/elan_files/filename.eaf"
@@ -422,10 +429,6 @@ async def update_elan_file_name(
 
 async def get_elan_file_name_by_id(db: AsyncSession, elan_id: int) -> str | None:
     """Get the current filename of an ELAN file."""
-    stmt = (
-        select(FileContent.filename)
-        .join(ElanFile, ElanFile.content_id == FileContent.content_id)
-        .where(ElanFile.elan_id == elan_id)
-    )
+    stmt = select(ElanFile.filename).where(ElanFile.elan_id == elan_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()

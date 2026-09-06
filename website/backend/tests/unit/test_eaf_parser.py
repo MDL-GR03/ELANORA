@@ -1,0 +1,129 @@
+"""Realistic tests for the typed, lossless EAF boundary."""
+
+import hashlib
+from pathlib import Path
+
+import pytest
+
+from app.elan import (
+    AlignableAnnotation,
+    EafValidationError,
+    ReferenceAnnotation,
+    parse_eaf,
+    parse_eaf_path,
+)
+
+FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
+CORPUS_ROOT = Path(__file__).parents[3] / "static"
+
+
+def test_complete_eaf_runs_official_and_semantic_validation() -> None:
+    """Parse a representative EAF without losing source or interpreted metadata."""
+    content = FIXTURE.read_bytes()
+
+    document = parse_eaf(content)
+
+    assert document.raw_xml == content
+    assert document.sha256 == hashlib.sha256(content).hexdigest()
+    assert document.format_version == "3.0"
+    assert document.header.time_units == "milliseconds"
+    assert (
+        document.header.media_descriptors[0].relative_media_url == "./session-001.mp4"
+    )
+    assert document.header.linked_file_descriptors[0].tag == "LINKED_FILE_DESCRIPTOR"
+    assert len(document.header.properties) == 2
+    assert len(document.linguistic_types) == 2
+    assert len(document.languages) == 2
+    assert len(document.controlled_vocabularies) == 1
+    assert len(document.external_references) == 1
+    assert len(document.licenses) == 1
+
+    parent, child = document.tiers
+    assert parent.tier_id == "utterance"
+    assert child.parent_ref == parent.tier_id
+    alignable = parent.annotations[0]
+    reference = child.annotations[0]
+    assert isinstance(alignable, AlignableAnnotation)
+    assert alignable.start_ms == 1000
+    assert alignable.end_ms == 2500
+    assert alignable.cv_entry_ref == "cve-greeting"
+    assert isinstance(reference, ReferenceAnnotation)
+    assert reference.annotation_ref == alignable.annotation_id
+    assert reference.value == "Bonjour"
+
+
+def test_parse_path_records_reproducibility_metadata() -> None:
+    """A path import records an absolute source path, size, and modification time."""
+    document = parse_eaf_path(FIXTURE)
+
+    assert document.source_path == FIXTURE.resolve()
+    assert document.source_size == FIXTURE.stat().st_size
+    assert document.source_modified_at is not None
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected_code"),
+    [
+        (b'ANNOTATION_REF="a1"', b'ANNOTATION_REF="missing"', "unknown_annotation_ref"),
+        (b'TIME_SLOT_REF2="ts2"', b'TIME_SLOT_REF2="missing"', "unknown_time_slot"),
+        (b'CVE_REF="cve-greeting"', b'CVE_REF="missing"', "unknown_cv_entry"),
+        (b'PARENT_REF="utterance"', b'PARENT_REF="missing"', "unknown_parent_tier"),
+    ],
+)
+def test_cross_reference_corruption_is_rejected(
+    old: bytes, new: bytes, expected_code: str
+) -> None:
+    """Reject dangling references that a shallow XML check would accept."""
+    content = FIXTURE.read_bytes().replace(old, new, 1)
+
+    with pytest.raises(EafValidationError) as error:
+        parse_eaf(content)
+
+    assert expected_code in {issue.code for issue in error.value.issues}
+
+
+def test_overlapping_annotations_on_one_tier_are_rejected() -> None:
+    """Reject an overlap that remains schema-valid but is not a valid ELAN tier."""
+    content = FIXTURE.read_bytes().replace(
+        b'<TIME_SLOT TIME_SLOT_ID="ts2" TIME_VALUE="2500"/>',
+        b'<TIME_SLOT TIME_SLOT_ID="ts3" TIME_VALUE="2000"/>'
+        b'<TIME_SLOT TIME_SLOT_ID="ts2" TIME_VALUE="2500"/>'
+        b'<TIME_SLOT TIME_SLOT_ID="ts4" TIME_VALUE="3000"/>',
+        1,
+    )
+    content = content.replace(
+        b"        </ANNOTATION>\n    </TIER>",
+        b"        </ANNOTATION>\n"
+        b'        <ANNOTATION><ALIGNABLE_ANNOTATION ANNOTATION_ID="a-overlap" '
+        b'TIME_SLOT_REF1="ts3" TIME_SLOT_REF2="ts4">'
+        b"<ANNOTATION_VALUE>Overlap</ANNOTATION_VALUE>"
+        b"</ALIGNABLE_ANNOTATION></ANNOTATION>\n    </TIER>",
+        1,
+    )
+
+    with pytest.raises(EafValidationError) as error:
+        parse_eaf(content)
+
+    assert "overlapping_annotations" in {issue.code for issue in error.value.issues}
+
+
+def test_empty_annotation_value_is_preserved() -> None:
+    """Empty annotation values are valid EAF data and must not disappear."""
+    content = FIXTURE.read_bytes().replace(
+        b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>",
+        b"<ANNOTATION_VALUE></ANNOTATION_VALUE>",
+    )
+
+    document = parse_eaf(content)
+
+    assert document.tiers[0].annotations[0].value == ""
+
+
+def test_real_repository_corpus_exercises_large_files() -> None:
+    """Validate and parse every real corpus file shipped with ELANORA."""
+    candidates = sorted(CORPUS_ROOT.rglob("*.eaf"))
+    documents = [parse_eaf_path(path) for path in candidates]
+
+    assert len(documents) == 12
+    assert sum(len(document.annotations) for document in documents) > 20_000
+    assert all(document.raw_xml for document in documents)

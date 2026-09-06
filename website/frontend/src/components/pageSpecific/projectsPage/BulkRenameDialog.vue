@@ -18,33 +18,55 @@
         </div>
 
         <div v-else class="files-list">
-          <div 
-            v-for="file in filesSuggestions" 
+          <div
+            v-for="file in filesSuggestions"
             :key="file.name"
             class="file-rename-item"
-            :class="{ 
-              'non-compliant': file.newName && file.newName.trim() && !isFileCompliant(file.newName),
-              'has-rename': file.newName && file.newName.trim() && file.newName !== file.name
+            :class="{
+              'non-compliant':
+                file.newName &&
+                file.newName.trim() &&
+                !isFileCompliant(file.newName),
+              'has-rename':
+                file.newName &&
+                file.newName.trim() &&
+                file.newName !== file.name,
             }"
           >
             <div class="file-current">
-              <strong>{{ t('bulkRenameDialog.current') }}:</strong> {{ file.name }}
+              <strong>{{ t('bulkRenameDialog.current') }}:</strong>
+              {{ file.name }}
             </div>
-            
+
             <div class="file-suggestion">
-              <strong>{{ t('bulkRenameDialog.suggested') }}:</strong> 
-              <input 
-                v-model="file.newName" 
+              <strong>{{ t('bulkRenameDialog.suggested') }}:</strong>
+              <input
+                v-model="file.newName"
                 class="suggestion-input"
-                :placeholder="file.suggestedName || t('bulkRenameDialog.enterNewName')"
+                :placeholder="
+                  file.suggestedName || t('bulkRenameDialog.enterNewName')
+                "
               />
             </div>
 
-            <div v-if="file.extractedComponents && file.mediaFiles" class="extracted-info">
-              <small>{{ t('bulkRenameDialog.extractedFrom') }}: {{ file.mediaFiles?.join(', ') }}</small>
+            <div
+              v-if="file.extractedComponents && file.mediaFiles"
+              class="extracted-info"
+            >
+              <small
+                >{{ t('bulkRenameDialog.extractedFrom') }}:
+                {{ file.mediaFiles?.join(', ') }}</small
+              >
             </div>
 
-            <div v-if="file.newName && file.newName.trim() && !isFileCompliant(file.newName)" class="compliance-warning">
+            <div
+              v-if="
+                file.newName &&
+                file.newName.trim() &&
+                !isFileCompliant(file.newName)
+              "
+              class="compliance-warning"
+            >
               <i class="fas fa-exclamation-triangle"></i>
               <small>{{ t('bulkRenameDialog.notCompliant') }}</small>
             </div>
@@ -56,15 +78,19 @@
         <button class="cancel-btn" @click="closeDialog">
           {{ t('common.cancel') }}
         </button>
-        <button 
-          class="apply-btn" 
+        <button
+          class="apply-btn"
           :disabled="!canApplyRenames"
           @click="applyRenames"
         >
           <i v-if="isRenaming" class="fas fa-spinner fa-spin"></i>
-          {{ isRenaming ? t('bulkRenameDialog.renaming') : t('bulkRenameDialog.renameAll') }}
+          {{
+            isRenaming
+              ? t('bulkRenameDialog.renaming')
+              : t('bulkRenameDialog.renameAll')
+          }}
         </button>
-        
+
         <div v-if="!allRenamesCompliant" class="compliance-error">
           <small>{{ t('bulkRenameDialog.complianceRequired') }}</small>
         </div>
@@ -76,9 +102,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { 
-  generateMediaBasedSuggestions 
-} from '@/utils/filenameFromMediaFile';
+import { generateMediaBasedSuggestions } from '@/utils/filenameFromMediaFile';
 import { isElanFilenameCompliant } from '@/utils/elanFilenameCompliance';
 import gitService from '@/api/service/gitService';
 
@@ -87,28 +111,28 @@ const { t } = useI18n();
 const props = defineProps({
   files: {
     type: Array,
-    required: true
+    required: true,
   },
   allFiles: {
     type: Array,
-    required: true
+    required: true,
   },
   projectId: {
     type: Number,
-    required: true
+    required: true,
   },
   projectName: {
     type: String,
-    required: true
+    required: true,
   },
   projectStandard: {
     type: Object,
-    default: null
+    default: null,
   },
   mediaStandard: {
     type: Object,
-    default: null
-  }
+    default: null,
+  },
 });
 
 const emit = defineEmits(['close', 'rename', 'conflict']);
@@ -120,12 +144,12 @@ const isRenaming = ref(false);
 
 // Initialize files with empty new names
 const initializeFiles = () => {
-  filesSuggestions.value = props.files.map(file => ({
+  filesSuggestions.value = props.files.map((file) => ({
     ...file,
     newName: '',
     suggestedName: null,
     extractedComponents: null,
-    mediaFiles: null
+    mediaFiles: null,
   }));
 };
 
@@ -136,25 +160,27 @@ const isFileCompliant = (filename) => {
 };
 
 const hasValidRenames = computed(() => {
-  return filesSuggestions.value.some(file => 
-    file.newName && file.newName.trim() && file.newName !== file.name
+  return filesSuggestions.value.some(
+    (file) => file.newName && file.newName.trim() && file.newName !== file.name
   );
 });
 
 const allRenamesCompliant = computed(() => {
   if (!props.projectStandard) return false; // Changed: require standard for compliance
-  
-  return filesSuggestions.value.every(file => {
+
+  return filesSuggestions.value.every((file) => {
     if (!file.newName || !file.newName.trim() || file.newName === file.name) {
       return true; // Skip files with no rename
     }
-    
+
     return isFileCompliant(file.newName);
   });
 });
 
 const canApplyRenames = computed(() => {
-  return hasValidRenames.value && allRenamesCompliant.value && !isRenaming.value;
+  return (
+    hasValidRenames.value && allRenamesCompliant.value && !isRenaming.value
+  );
 });
 
 async function generateSuggestions() {
@@ -168,7 +194,7 @@ async function generateSuggestions() {
 
     // Use the already-fetched files with media (passed as prop)
     const filesWithMedia = { files: props.allFiles };
-    
+
     // Generate suggestions using the passed standards
     const suggestions = generateMediaBasedSuggestions(
       filesWithMedia.files,
@@ -177,20 +203,19 @@ async function generateSuggestions() {
     );
 
     // Update files with suggestions
-    filesSuggestions.value = filesSuggestions.value.map(file => {
-      const suggestion = suggestions.find(s => s.currentName === file.name);
+    filesSuggestions.value = filesSuggestions.value.map((file) => {
+      const suggestion = suggestions.find((s) => s.currentName === file.name);
       if (suggestion) {
         return {
           ...file,
           suggestedName: suggestion.suggestedName,
           extractedComponents: suggestion.extractedComponents,
           mediaFiles: suggestion.mediaFiles,
-          newName: suggestion.suggestedName // Pre-fill with suggestion
+          newName: suggestion.suggestedName, // Pre-fill with suggestion
         };
       }
       return file;
     });
-
   } catch (error) {
     console.error('Error generating suggestions:', error);
   } finally {
@@ -204,38 +229,41 @@ function closeDialog() {
 
 async function applyRenames() {
   if (!canApplyRenames.value) return;
-  
+
   isRenaming.value = true;
   try {
     const renames = filesSuggestions.value
-      .filter(file => file.newName && file.newName.trim() && file.newName !== file.name)
-      .map(file => ({
+      .filter(
+        (file) =>
+          file.newName && file.newName.trim() && file.newName !== file.name
+      )
+      .map((file) => ({
         elan_id: file.elan_id,
-        new_filename: file.newName.trim()
+        new_filename: file.newName.trim(),
       }));
 
     if (renames.length > 0) {
       const result = await gitService.renameFiles(props.projectName, renames);
-      
+
       // Handle conflicts and other results
       if (result.conflicts_count > 0) {
         // Collect conflict files for future merge tool
-        const conflictFiles = result.results.filter(r => r.conflict_elan_id);
+        const conflictFiles = result.results.filter((r) => r.conflict_elan_id);
         console.log('Bulk rename conflicts detected:', conflictFiles);
-        
+
         // Emit conflict event with conflict information
         emit('conflict', {
           conflictFiles: conflictFiles,
           conflictsCount: result.conflicts_count,
           messageKey: result.message_key || 'rename.conflictMultiple',
           totalFiles: result.total_files,
-          successfulRenames: result.successful_renames
+          successfulRenames: result.successful_renames,
         });
       }
-      
+
       emit('rename', {
         renames: renames,
-        result: result
+        result: result,
       });
     }
     closeDialog();
@@ -257,11 +285,8 @@ onMounted(async () => {
 <style scoped>
 .bulk-rename-dialog-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgb(0 0 0 / 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -271,7 +296,7 @@ onMounted(async () => {
 .bulk-rename-dialog {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
   width: 90%;
   max-width: 800px;
   max-height: 80vh;
@@ -311,7 +336,8 @@ onMounted(async () => {
   padding: 1rem;
 }
 
-.loading, .no-suggestions {
+.loading,
+.no-suggestions {
   text-align: center;
   padding: 2rem;
   color: #666;
@@ -322,7 +348,7 @@ onMounted(async () => {
 }
 
 .generate-suggestions-btn {
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -349,7 +375,7 @@ onMounted(async () => {
 }
 
 .file-rename-item.has-rename {
-  border-color: #4CAF50;
+  border-color: #4caf50;
   background-color: #f8fff8;
 }
 
@@ -412,7 +438,8 @@ onMounted(async () => {
   margin-top: 0.5rem;
 }
 
-.cancel-btn, .apply-btn {
+.cancel-btn,
+.apply-btn {
   padding: 0.5rem 1rem;
   border-radius: 4px;
   cursor: pointer;

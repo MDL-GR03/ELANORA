@@ -31,21 +31,27 @@ export const useFileTypeStore = defineStore('fileType', {
     },
     async fetchFileTypesForLocation(projectId, locationId) {
       if (!locationId) return;
-      
+
       // Create unique key for this request
       const requestKey = `${projectId}-${locationId}`;
-      
+
       // Prevent duplicate calls
       if (this.ongoingRequests.has(requestKey)) {
         return;
       }
-      
+
       // Mark as ongoing
       this.ongoingRequests.add(requestKey);
-      
+
       try {
-        const { data } = await projectLocationFileTypeService.getFileTypesForLocation(projectId, locationId);
-        this.fileTypesByLocation[locationId] = data.file_types.map(ft => ft.project_file_type_id);
+        const { data } =
+          await projectLocationFileTypeService.getFileTypesForLocation(
+            projectId,
+            locationId
+          );
+        this.fileTypesByLocation[locationId] = data.file_types.map(
+          (ft) => ft.project_file_type_id
+        );
       } catch (err) {
         console.error('Error fetching file types for location:', err);
       } finally {
@@ -54,14 +60,22 @@ export const useFileTypeStore = defineStore('fileType', {
       }
     },
     async addFileTypeToLocation(projectId, locationId, fileTypeId) {
-      await projectLocationFileTypeService.addFileTypeToLocation(projectId, locationId, fileTypeId);
+      await projectLocationFileTypeService.addFileTypeToLocation(
+        projectId,
+        locationId,
+        fileTypeId
+      );
       // Clear the ongoing request flag before refetching
       const requestKey = `${projectId}-${locationId}`;
       this.ongoingRequests.delete(requestKey);
       await this.fetchFileTypesForLocation(projectId, locationId);
     },
     async removeFileTypeFromLocation(projectId, locationId, fileTypeId) {
-      await projectLocationFileTypeService.removeFileTypeFromLocation(projectId, locationId, fileTypeId);
+      await projectLocationFileTypeService.removeFileTypeFromLocation(
+        projectId,
+        locationId,
+        fileTypeId
+      );
       // Clear the ongoing request flag before refetching
       const requestKey = `${projectId}-${locationId}`;
       this.ongoingRequests.delete(requestKey);
@@ -75,8 +89,10 @@ export const useFileTypeStore = defineStore('fileType', {
       await fileTypeService.deleteProjectFileType(projectId, id);
       await this.fetchFileTypes(projectId);
       // Remove from all location associations
-      Object.keys(this.fileTypesByLocation).forEach(locationId => {
-        this.fileTypesByLocation[locationId] = this.fileTypesByLocation[locationId].filter(ftId => ftId !== id);
+      Object.keys(this.fileTypesByLocation).forEach((locationId) => {
+        this.fileTypesByLocation[locationId] = this.fileTypesByLocation[
+          locationId
+        ].filter((ftId) => ftId !== id);
       });
     },
     async updateFileType(id, update, projectId) {

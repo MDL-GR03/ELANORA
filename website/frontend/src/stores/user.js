@@ -4,6 +4,7 @@ import {
   login as authLogin,
   logout as authLogout,
 } from '@/api/service/authService';
+import { useProjectStore } from '@/stores/project';
 
 /* =========================
    Store Definition
@@ -18,7 +19,7 @@ export const useUserStore = defineStore('user', {
       initialized: false,
       isAuthenticated: false,
       loading: true,
-    }
+    },
   }),
 
   /* =========================
@@ -112,6 +113,7 @@ export const useUserStore = defineStore('user', {
         console.error('Logout error:', error);
       } finally {
         this.clearAuth();
+        useProjectStore().resetForSession();
       }
     },
     /**
@@ -124,7 +126,7 @@ export const useUserStore = defineStore('user', {
       if (document.cookie.indexOf(csrfCookieName) >= 0) {
         document.cookie = `${csrfCookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
       }
-    }
+    },
   },
 
   /* =========================

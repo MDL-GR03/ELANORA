@@ -2,7 +2,7 @@ import { extractComponentsFromFilename } from '@/utils/filenameCompliance';
 
 /**
  * Extract naming components from media filenames using a naming standard
- * @param {Array} mediaFilenames - Array of media filenames 
+ * @param {Array} mediaFilenames - Array of media filenames
  * @param {Object} mediaStandard - The naming standard for media files
  * @returns {Object|null} Extracted components or null if extraction fails
  */
@@ -13,38 +13,51 @@ export function extractComponentsFromMedia(mediaFilenames, mediaStandard) {
 
   // Try to extract from the first media file
   const firstMediaFile = mediaFilenames[0];
-  
+
   // Remove file extension to get the base filename
   const baseFilename = firstMediaFile.replace(/\.[^/.]+$/, '');
-  
+
   // Use the existing extraction function
-  const extractedComponents = extractComponentsFromFilename(mediaStandard, baseFilename);
-  
+  const extractedComponents = extractComponentsFromFilename(
+    mediaStandard,
+    baseFilename
+  );
+
   return extractedComponents;
 }
 
 /**
  * Get value for a component from various sources
  */
-function getComponentValue(componentName, targetComponent, extractedComponents) {
+function getComponentValue(
+  componentName,
+  targetComponent,
+  extractedComponents
+) {
   // Handle prefix: use project's accepted values
   if (componentName.includes('prefix')) {
-    if (targetComponent.accepted_values && targetComponent.accepted_values.length > 0) {
+    if (
+      targetComponent.accepted_values &&
+      targetComponent.accepted_values.length > 0
+    ) {
       return targetComponent.accepted_values[0];
     }
     return null;
   }
-  
+
   // Try to use value from media if component exists
   if (Object.hasOwn(extractedComponents, componentName)) {
     return extractedComponents[componentName];
   }
-  
+
   // Fallback to accepted values
-  if (targetComponent.accepted_values && targetComponent.accepted_values.length > 0) {
+  if (
+    targetComponent.accepted_values &&
+    targetComponent.accepted_values.length > 0
+  ) {
     return targetComponent.accepted_values[0];
   }
-  
+
   // Generate default based on regex pattern
   return generateDefaultValue(targetComponent);
 }
@@ -56,21 +69,21 @@ function generateDefaultValue(targetComponent) {
   if (!targetComponent.regex) {
     return 'DEFAULT';
   }
-  
+
   if (targetComponent.regex.includes('\\p{N}')) {
     // Numeric component - use zeros
     const numMatch = targetComponent.regex.match(/\{(\d+)\}/);
     const length = numMatch ? parseInt(numMatch[1]) : 2;
     return '0'.repeat(length);
   }
-  
+
   if (targetComponent.regex.includes('\\p{L}')) {
     // Letter component - use A
     const letterMatch = targetComponent.regex.match(/\{(\d+)\}/);
     const length = letterMatch ? parseInt(letterMatch[1]) : 1;
     return 'A'.repeat(length);
   }
-  
+
   return 'DEFAULT';
 }
 
@@ -85,22 +98,35 @@ function generateDefaultValue(targetComponent) {
  */
 function mapMediaToTargetComponents(extractedComponents, targetStandard) {
   const mappedComponents = {};
-  
-  console.log('mapMediaToTargetComponents: Input components', extractedComponents);
-  console.log('mapMediaToTargetComponents: Target standard components', targetStandard.components.map(c => c.name));
-  
+
+  console.log(
+    'mapMediaToTargetComponents: Input components',
+    extractedComponents
+  );
+  console.log(
+    'mapMediaToTargetComponents: Target standard components',
+    targetStandard.components.map((c) => c.name)
+  );
+
   // Process each component required by the target standard
   for (const targetComponent of targetStandard.components) {
     const componentName = targetComponent.name;
-    const value = getComponentValue(componentName, targetComponent, extractedComponents);
-    
+    const value = getComponentValue(
+      componentName,
+      targetComponent,
+      extractedComponents
+    );
+
     if (value) {
       mappedComponents[componentName] = value;
       console.log(`mapMediaToTargetComponents: ${componentName} = ${value}`);
     }
   }
-  
-  console.log('mapMediaToTargetComponents: Final mapped components', mappedComponents);
+
+  console.log(
+    'mapMediaToTargetComponents: Final mapped components',
+    mappedComponents
+  );
   return mappedComponents;
 }
 
@@ -111,35 +137,46 @@ function mapMediaToTargetComponents(extractedComponents, targetStandard) {
  * @param {string} extension - File extension (default: '.eaf')
  * @returns {string} Suggested filename
  */
-export function generateSuggestedFilename(extractedComponents, targetStandard, extension = '.eaf') {
+export function generateSuggestedFilename(
+  extractedComponents,
+  targetStandard,
+  extension = '.eaf'
+) {
   if (!extractedComponents || !targetStandard?.pattern) {
     return null;
   }
 
   // Intelligently map media components to target components
-  const mappedComponents = mapMediaToTargetComponents(extractedComponents, targetStandard);
+  const mappedComponents = mapMediaToTargetComponents(
+    extractedComponents,
+    targetStandard
+  );
 
   let suggestedName = targetStandard.pattern;
-  
+
   // Sort components by order to build filename correctly
-  const sortedComponents = [...targetStandard.components]
-    .sort((a, b) => a.order - b.order);
-  
+  const sortedComponents = [...targetStandard.components].sort(
+    (a, b) => a.order - b.order
+  );
+
   // Replace each component placeholder with mapped value
   for (const component of sortedComponents) {
     const value = mappedComponents[component.name];
     if (value) {
       // Replace component placeholder with actual value
       const placeholder = `{${component.name}}`;
-      suggestedName = suggestedName.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
+      suggestedName = suggestedName.replace(
+        new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'),
+        value
+      );
     }
   }
-  
+
   // If we still have placeholders, the extraction wasn't complete
   if (suggestedName.includes('{') && suggestedName.includes('}')) {
     return null;
   }
-  
+
   const result = suggestedName + extension;
   return result;
 }
@@ -151,13 +188,17 @@ export function generateSuggestedFilename(extractedComponents, targetStandard, e
  * @param {Object} targetStandard - Target naming standard for ELAN files
  * @returns {Array} Array of files with suggested names
  */
-export function generateMediaBasedSuggestions(filesWithMedia, mediaStandard, targetStandard) {
+export function generateMediaBasedSuggestions(
+  filesWithMedia,
+  mediaStandard,
+  targetStandard
+) {
   if (!filesWithMedia || !mediaStandard || !targetStandard) {
     return [];
   }
 
   const suggestions = [];
-  
+
   for (const file of filesWithMedia) {
     // Check if the file has media filenames (from the new API response format)
     if (!file.media_filenames || file.media_filenames.length === 0) {
@@ -165,24 +206,30 @@ export function generateMediaBasedSuggestions(filesWithMedia, mediaStandard, tar
     }
 
     // Extract components from media filenames
-    const extractedComponents = extractComponentsFromMedia(file.media_filenames, mediaStandard);
-    
+    const extractedComponents = extractComponentsFromMedia(
+      file.media_filenames,
+      mediaStandard
+    );
+
     if (extractedComponents) {
       // Generate suggested filename
-      const suggestedName = generateSuggestedFilename(extractedComponents, targetStandard);
-      
+      const suggestedName = generateSuggestedFilename(
+        extractedComponents,
+        targetStandard
+      );
+
       if (suggestedName) {
         suggestions.push({
           elan_id: file.elan_id,
           currentName: file.name,
           suggestedName: suggestedName,
           extractedComponents: extractedComponents,
-          mediaFiles: file.media_filenames
+          mediaFiles: file.media_filenames,
         });
       }
     }
   }
-  
+
   return suggestions;
 }
 
@@ -190,36 +237,53 @@ export function generateMediaBasedSuggestions(filesWithMedia, mediaStandard, tar
  * Get the media standard for a project (location 3 = elanMedia)
  * @param {number} projectId - Project ID
  * @param {Object} effectiveStandardStore - Store for effective standards
- * @param {Object} namingStandardStore - Store for naming standards  
+ * @param {Object} namingStandardStore - Store for naming standards
  * @returns {Object|null} Media naming standard or null
  */
-export async function getMediaStandardForProject(projectId, effectiveStandardStore, namingStandardStore) {
+export async function getMediaStandardForProject(
+  projectId,
+  effectiveStandardStore,
+  namingStandardStore,
+  fetchData = true
+) {
   const ELAN_MEDIA_LOCATION_ID = 3;
-  
+
   try {
     // Fetch effective standards for media location
-    await effectiveStandardStore.fetchEffectiveStandards(projectId, ELAN_MEDIA_LOCATION_ID);
-    
+    if (fetchData) {
+      await effectiveStandardStore.fetchEffectiveStandards(
+        projectId,
+        ELAN_MEDIA_LOCATION_ID
+      );
+    }
+
     // Get the effective standards for this location
-    const effectiveStandards = effectiveStandardStore.effectiveStandards[ELAN_MEDIA_LOCATION_ID];
-    
+    const effectiveStandards =
+      effectiveStandardStore.effectiveStandards[ELAN_MEDIA_LOCATION_ID];
+
     if (!effectiveStandards) {
       return null;
     }
-    
+
     // Find the first assigned standard (assuming one file type for now)
-    const assignedStandardId = Object.values(effectiveStandards).find(id => id && id !== "");
-    
+    const assignedStandardId = Object.values(effectiveStandards).find(
+      (id) => id && id !== ''
+    );
+
     if (!assignedStandardId) {
       return null;
     }
-    
+
     // Make sure we have the naming standards loaded
-    await namingStandardStore.fetchStandardsAndComponentNames(projectId);
-    
+    if (fetchData) {
+      await namingStandardStore.fetchStandardsAndComponentNames(projectId);
+    }
+
     // Find the actual standard
-    const mediaStandard = namingStandardStore.standards.find(std => std.id === parseInt(assignedStandardId));
-    
+    const mediaStandard = namingStandardStore.standards.find(
+      (std) => std.id === parseInt(assignedStandardId)
+    );
+
     return mediaStandard || null;
   } catch (error) {
     console.error('Error fetching media standard:', error);

@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
-from app.dependency.user import get_user_dep
+from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
 from app.schema.requests.notification import (
     NotificationCreateRequest,
@@ -58,11 +58,9 @@ async def get_notification_stats(
 async def create_notification(
     notification_data: NotificationCreateRequest,
     db: AsyncSession = get_db_dep,
-    current_user: User = get_user_dep,
+    current_user: User = get_admin_dep,
 ):
-    """Create a new notification. This endpoint is typically used by system processes."""
-    # Note: In a production system, you might want to restrict this endpoint
-    # to certain roles or services only
+    """Create a notification as an institution administrator."""
     return await NotificationService.create_notification(db, notification_data)
 
 

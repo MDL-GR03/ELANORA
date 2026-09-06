@@ -1,6 +1,7 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.model.project_location_file_type import ProjectLocationFileType
 from app.utils.database import DatabaseUtils
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def add_file_type_to_location(

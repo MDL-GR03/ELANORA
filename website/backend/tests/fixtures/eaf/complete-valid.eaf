@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ANNOTATION_DOCUMENT AUTHOR="researcher@example.org" DATE="2026-08-15T10:00:00+00:00"
+    FORMAT="3.0" VERSION="3.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://www.mpi.nl/tools/elan/EAFv3.0.xsd">
+    <LICENSE LICENSE_URL="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</LICENSE>
+    <HEADER MEDIA_FILE="" TIME_UNITS="milliseconds">
+        <MEDIA_DESCRIPTOR MEDIA_URL="file:///recordings/session-001.mp4"
+            RELATIVE_MEDIA_URL="./session-001.mp4" MIME_TYPE="video/mp4" TIME_ORIGIN="0"/>
+        <LINKED_FILE_DESCRIPTOR LINK_URL="file:///notes/session-001.txt"
+            RELATIVE_LINK_URL="./session-001.txt" MIME_TYPE="text/plain" TIME_ORIGIN="0"
+            ASSOCIATED_WITH="file:///recordings/session-001.mp4"/>
+        <PROPERTY NAME="URN">urn:nl-mpi-tools-elan-eaf:00000000-0000-4000-8000-000000000001</PROPERTY>
+        <PROPERTY NAME="study">ELANORA validation fixture</PROPERTY>
+    </HEADER>
+    <TIME_ORDER>
+        <TIME_SLOT TIME_SLOT_ID="ts1" TIME_VALUE="1000"/>
+        <TIME_SLOT TIME_SLOT_ID="ts2" TIME_VALUE="2500"/>
+    </TIME_ORDER>
+    <TIER TIER_ID="utterance" PARTICIPANT="P01" ANNOTATOR="A01"
+        LINGUISTIC_TYPE_REF="utterance-type" DEFAULT_LOCALE="eng" LANG_REF="en">
+        <ANNOTATION>
+            <ALIGNABLE_ANNOTATION ANNOTATION_ID="a1" TIME_SLOT_REF1="ts1"
+                TIME_SLOT_REF2="ts2" CVE_REF="cve-greeting" EXT_REF="er-concept">
+                <ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>
+            </ALIGNABLE_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+    <TIER TIER_ID="translation" PARTICIPANT="P01" ANNOTATOR="A02"
+        LINGUISTIC_TYPE_REF="translation-type" PARENT_REF="utterance"
+        DEFAULT_LOCALE="fra" LANG_REF="fr">
+        <ANNOTATION>
+            <REF_ANNOTATION ANNOTATION_ID="a2" ANNOTATION_REF="a1">
+                <ANNOTATION_VALUE>Bonjour</ANNOTATION_VALUE>
+            </REF_ANNOTATION>
+        </ANNOTATION>
+    </TIER>
+    <LINGUISTIC_TYPE LINGUISTIC_TYPE_ID="utterance-type" TIME_ALIGNABLE="true"
+        GRAPHIC_REFERENCES="false" CONTROLLED_VOCABULARY_REF="greetings"/>
+    <LINGUISTIC_TYPE LINGUISTIC_TYPE_ID="translation-type" TIME_ALIGNABLE="false"
+        CONSTRAINTS="Symbolic_Association" GRAPHIC_REFERENCES="false"/>
+    <LOCALE LANGUAGE_CODE="eng" COUNTRY_CODE="GB"/>
+    <LOCALE LANGUAGE_CODE="fra" COUNTRY_CODE="FR"/>
+    <LANGUAGE LANG_ID="en" LANG_DEF="https://iso639-3.sil.org/code/eng" LANG_LABEL="English"/>
+    <LANGUAGE LANG_ID="fr" LANG_DEF="https://iso639-3.sil.org/code/fra" LANG_LABEL="French"/>
+    <CONSTRAINT STEREOTYPE="Symbolic_Association"
+        DESCRIPTION="1-1 association with a parent annotation"/>
+    <CONTROLLED_VOCABULARY CV_ID="greetings">
+        <DESCRIPTION LANG_REF="en">Greeting values</DESCRIPTION>
+        <CV_ENTRY_ML CVE_ID="cve-greeting" EXT_REF="er-concept">
+            <CVE_VALUE LANG_REF="en" DESCRIPTION="An opening greeting">Hello</CVE_VALUE>
+            <CVE_VALUE LANG_REF="fr" DESCRIPTION="Salutation initiale">Bonjour</CVE_VALUE>
+        </CV_ENTRY_ML>
+    </CONTROLLED_VOCABULARY>
+    <EXTERNAL_REF EXT_REF_ID="er-concept" TYPE="iso12620"
+        VALUE="https://example.org/data-categories/greeting"/>
+</ANNOTATION_DOCUMENT>

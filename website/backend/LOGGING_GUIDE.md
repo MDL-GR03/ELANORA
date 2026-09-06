@@ -1,206 +1,57 @@
-# ELANORA Logging System Guide
+# ELANORA logging guide
 
-## Quick Start
+ELANORA writes application logs to standard error. Docker, systemd, or the
+institution's observability platform is responsible for collecting, rotating,
+retaining, and exporting them. Application processes must not create log files
+inside the source tree or mutable research-data directories.
 
-### Method 1: Auto-Detection (Recommended)
+## Application usage
 
-Just import and use - the logger will automatically detect your module name:
+Create one module logger at import time:
 
 ```python
 from app.core.centralized_logging import get_logger
 
-logger = get_logger()  # Auto-detects module name
-logger.info("This works in any file!")
+logger = get_logger()
 ```
 
-### Method 2: Directory-Wide Logging
-
-Use one logger for all files in a directory:
+Use parameterized messages so formatting only occurs when the level is active:
 
 ```python
-from app.core.centralized_logging import get_directory_logger
-
-# All files in 'api' directory can use this same logger
-api_logger = get_directory_logger("api")
-api_logger.info("Shared logger for entire directory")
+logger.info("Revision %s accepted for project %s", revision_id, project_id)
 ```
 
-## How to Run Examples
+Set `LOG_LEVEL` for ELANORA loggers, `CONSOLE_LOG_LEVEL` when the emitted level
+must differ, and `ROOT_LOG_LEVEL` for third-party libraries. Production normally
+uses `INFO` or `WARNING`; development may use `DEBUG` temporarily.
 
-### Option 1: Using the helper script (Easiest)
+## Container operations
 
-```powershell
-cd C:\Users\Laffineur\Documents\GitHub\ELANORA\website\backend
-python run_logging_examples.py
-```
-
-### Option 2: As a Python module
-
-```powershell
-cd C:\Users\Laffineur\Documents\GitHub\ELANORA\website\backend
-python -m app.examples.logging_examples
-```
-
-### Option 3: Direct execution
-
-```powershell
-cd C:\Users\Laffineur\Documents\GitHub\ELANORA\website\backend
-python app/examples/logging_examples.py
-```
-
-## Log File Organization
-
-Your logs are automatically organized by module:
+Follow development output with:
 
 ```bash
-app/logs/
-├── api/
-│   └── api.log                  # Directory-wide API logs
-├── core/
-│   └── centralized_logging.log # Core module logs
-├── examples/
-│   └── custom.log              # Custom logger example
-├── exceptions/
-│   ├── validation.log          # Validation errors
-│   ├── rate_limit.log          # Rate limit violations
-│   └── general.log             # Unexpected errors
-└── main.log                    # Main application logs
+make dev-logs
 ```
 
-## Environment Configuration
-
-Add these to your `.env` file:
+Inspect a single process with:
 
 ```bash
-# Logging Configuration
-LOG_LEVEL=DEBUG                 # DEBUG, INFO, WARNING, ERROR, CRITICAL
-CONSOLE_LOG_LEVEL=INFO         # Separate level for console output
-ROOT_LOG_LEVEL=WARNING         # Third-party library noise control
-EXCEPTION_LOG_LEVEL=WARNING    # Exception handler log level
-EXCEPTION_LOG_DIR=app/logs/exceptions
-LOG_DIR=app/logs
-APP_NAME=elanora
+docker compose -f website/docker/website-dev/docker-compose.yml logs backend
+docker compose -f website/docker/website-dev/docker-compose.yml logs outbox-worker
 ```
 
-## Usage in Your FastAPI Files
+Production retention belongs in the deployment platform. Configure limits and
+off-host export there rather than adding a Python file handler. This prevents
+root-owned bind-mount files, avoids competing rotation across worker processes,
+and keeps container instances disposable.
 
-### In any API file
+## Security rules
 
-```python
-# api/auth.py
-from app.core.centralized_logging import get_logger
-
-logger = get_logger()  # Becomes "elanora.api.auth"
-
-async def login(user_data):
-    logger.info("User login attempt", extra={
-        "user_email": user_data.email,
-        "ip_address": "192.168.1.100"
-    })
-    
-    try:
-        # Authentication logic
-        logger.info("Login successful")
-    except Exception as e:
-        logger.error("Login failed", exc_info=True)
-```
-
-### In your main FastAPI app
-
-```python
-# main.py
-from app.core.centralized_logging import get_logger
-from app.core.logging import setup_application_logging
-
-# Setup logging FIRST
-setup_application_logging()
-
-logger = get_logger()  # Becomes "elanora.main"
-
-app = FastAPI()
-
-@app.on_event("startup")
-async def startup():
-    logger.info("Application starting up")
-```
-
-## Integration with Exception Handlers
-
-The exception handlers are already configured to use structured logging:
-
-```python
-# In your main.py
-from app.core.exception_handler import (
-    validation_exception_handler,
-    rate_limit_exception_handler,
-    add_general_exception_handler
-)
-
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
-app.add_exception_handler(Exception, add_general_exception_handler())
-```
-
-## Structured Logging
-
-Use the `extra` parameter for structured data:
-
-```python
-logger.info(
-    "User action performed",
-    extra={
-        "user_id": "12345",
-        "action": "login",
-        "ip_address": "192.168.1.100",
-        "success": True,
-        "processing_time": 0.345
-    }
-)
-```
-
-## Log Output Format
-
-Each log entry includes:
-
-- Timestamp
-- Logger name (auto-detected module)
-- Log level
-- Function and line number
-- Message
-- Extra structured data (when provided)
-
-Example:
-
-``` bash
-2025-07-08 17:39:15 | elanora.api.auth | INFO | auth.login:25 | User login successful
-```
-
-## Troubleshooting
-
-### ModuleNotFoundError: No module named 'core'
-
-**Solution**: Always run from the backend directory:
-
-```powershell
-cd C:\Users\Laffineur\Documents\GitHub\ELANORA\website\backend
-```
-
-### Logs not appearing
-
-1. Check your LOG_LEVEL environment variable
-2. Ensure you're calling `setup_application_logging()` once at startup
-3. Verify the log directory exists and is writable
-
-### Import issues
-
-Use the helper script `run_logging_examples.py` which handles all path setup automatically.
-
-## Best Practices
-
-1. **Call `setup_application_logging()` once** at application startup
-2. **Use auto-detection** - just import `get_logger()` and use it
-3. **Use structured logging** with the `extra` parameter for important data
-4. **Set appropriate log levels** per environment (DEBUG for dev, INFO/WARNING for prod)
-5. **Use correlation IDs** for request tracing (automatic in exception handlers)
-
-That's it! Your logging system is now production-ready with automatic organization, structured data, and minimal configuration required.
+- Never log passwords, bearer tokens, reset or verification codes, cookies,
+  complete email payloads, EAF contents, or participant-identifying metadata.
+- Prefer stable identifiers and event names over filenames or human names.
+- Preserve the request correlation ID on errors.
+- Use `logger.exception(...)` or `exc_info=True` for unexpected internal errors,
+  while returning a generic response to the client.
+- Treat IP addresses and user-agent strings as personal data in retention and
+  access policies.

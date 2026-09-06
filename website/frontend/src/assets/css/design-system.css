@@ -1,0 +1,166 @@
+:root {
+  --color-canvas: #f4f7fa;
+  --color-surface: #fff;
+  --color-surface-subtle: #f8fafc;
+  --color-text: #172033;
+  --color-text-muted: #64748b;
+  --color-border: #dfe6ee;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 5%);
+  --shadow-md: 0 10px 30px rgb(15 23 42 / 7%);
+  --content-width: 80rem;
+
+  color: var(--color-text);
+  font-family: 'Nunito Sans Variable', system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizelegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  color: var(--color-text);
+  background-color: #c7d2fe;
+  background-image: var(--main-bg-gradient);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+  overscroll-behavior-y: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:where(.content)
+  :where(input:not([type='checkbox'], [type='radio']), select, textarea) {
+  border-color: #cbd5e1;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+:where(.content)
+  :where(input:not([type='checkbox'], [type='radio']), select, textarea):focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 24%, transparent);
+  outline-offset: 2px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--color-text);
+  font-family: inherit;
+  letter-spacing: -0.02em;
+}
+
+:where(
+  .project-page-section-card,
+  .upload-page-root,
+  .tiers-container,
+  .admin-invitations-container,
+  .pending-uploads-container,
+  .profile-container
+) {
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+  background: var(--color-surface) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+:where(button, .btn-primary, .btn-secondary) {
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+:where(
+  .project-page-root,
+  .upload-page-root,
+  .tiers-page,
+  .pending-uploads-page,
+  .admin-invitations-page
+) {
+  color: var(--color-text);
+}
+
+:where(
+  .project-page-title,
+  .upload-title,
+  .tiers-title,
+  .pending-uploads-title
+) {
+  margin: 0 0 1.5rem !important;
+  color: var(--color-text) !important;
+  font-size: clamp(1.8rem, 4vw, 2.5rem) !important;
+  font-weight: 720 !important;
+}
+
+:where(.modal-content, .dialog-content, .confirm-dialog, .prompt-dialog) {
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 18%) !important;
+}
+
+:where(.loading-spinner, .spinner) {
+  border-top-color: var(--primary-color) !important;
+}
+
+:where(.empty-state, .project-page-no-projects, .project-page-loading) {
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted) !important;
+  background: var(--color-surface-subtle) !important;
+}
+
+:where(button, .btn-primary, .btn-secondary):active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+@media (width <= 768px) {
+  :root {
+    --radius-lg: 0.8rem;
+  }
+
+  h1 {
+    font-size: clamp(1.65rem, 8vw, 2.15rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

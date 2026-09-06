@@ -1,10 +1,11 @@
 <template>
   <div class="admin-invitation-page">
     <div class="admin-container">
-      <div class="admin-header">
-        <h1 class="admin-title">{{ t('invitation.send_title') }}</h1>
-        <p class="admin-description">{{ t('invitation.send_description') }}</p>
-      </div>
+      <WorkspaceHeader
+        :title="t('invitation.send_title')"
+        :description="t('invitation.send_description')"
+        :context="t('invitation.context')"
+      />
 
       <!-- Send Invitation Form -->
       <div class="invitation-form-card">
@@ -128,6 +129,7 @@
 </template>
 
 <script setup>
+import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';

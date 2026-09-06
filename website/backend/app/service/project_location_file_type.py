@@ -1,9 +1,10 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.crud.project_location_file_type import (
     add_file_type_to_location,
-    remove_file_type_from_location,
     get_file_types_for_location,
+    remove_file_type_from_location,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def service_add_file_type_to_location(

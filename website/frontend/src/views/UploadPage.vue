@@ -1,272 +1,481 @@
 <template>
-  <div>
-    <div class="upload-page-root">
-      <h1 class="upload-title">{{ $t('uploadPage.title') }}</h1>
+  <div class="upload-page-root">
+    <WorkspaceHeader
+      embedded
+      :context="currentProjectName"
+      :title="t('uploadPage.title')"
+      :description="t('uploadPage.pageDescription')"
+    />
 
-      <!-- Project Selection -->
-      <div class="project-selection">
-        <label for="projectSelect" class="project-label">{{ $t('uploadPage.projectSelection.label') }}</label>
-        <select
-          id="projectSelect"
-          v-model="selectedProject"
-          class="project-select"
-          :disabled="loading"
-        >
-          <option value="">{{ $t('uploadPage.projectSelection.placeholder') }}</option>
-          <option
-            v-for="project in projects"
-            :key="project.project_id"
-            :value="project.project_id"
-          >
-            {{ project.project_name }}
-          </option>
-        </select>
+    <section v-if="correctionCase" class="correction-context" role="status">
+      <div class="correction-context-icon">
+        <font-awesome-icon icon="fa-solid fa-rotate" />
       </div>
-
-      <!-- Upload Component -->
-      <div v-if="selectedProject">
-        <UploadFolder
-          v-model="selectedFiles"
-          :title="$t('uploadPage.uploadZone.title')"
-          :subtitle="$t('uploadPage.uploadZone.subtitle')"
-          :files-with-compliance="filesWithCompliance"
-        />
-
-        <!-- Upload Actions -->
-        <div v-if="selectedFiles.length > 0" class="upload-actions">
-          <button
-            class="upload-btn"
-            :disabled="uploading || selectedFiles.length === 0"
-            @click="uploadFiles"
-          >
-            <span v-if="uploading" class="spinner"></span>
-            {{ uploading ? $t('uploadPage.uploadingFiles', { count: selectedFiles.length }) : $t('uploadPage.uploadButton') }}
-          </button>
-        </div>
+      <div>
+        <span>Corrected contribution</span>
+        <strong>{{ correctionCase.title }}</strong>
+        <p>
+          Upload the corrected ELAN file(s). The completed contribution will be
+          linked to this request automatically.
+        </p>
       </div>
+      <router-link
+        :to="{
+          name: 'PendingUpload',
+          query: {
+            project: selectedProject,
+            view: 'reviews',
+            case: correctionCase.case_id,
+          },
+        }"
+        >View discussion</router-link
+      >
+    </section>
 
-      <!-- Upload Results -->
-      <div v-if="uploadResults.length > 0" class="upload-results">
-        <h3>{{ $t('uploadPage.uploadResults') }}</h3>
-        <div class="results-list">
-          <div
-            v-for="result in uploadResults"
-            :key="result.filename"
-            class="result-item"
-            :class="{ success: result.success, error: !result.success }"
-          >
-            <span class="result-filename">{{ result.filename }}</span>
-            <span class="result-status">
-              {{ result.success ? $t('uploadPage.resultSuccess') : $t('uploadPage.resultFailed') }}
+    <div class="upload-workflow">
+      <section class="upload-step" aria-labelledby="upload-project-heading">
+        <div class="upload-step-marker">1</div>
+        <div class="upload-step-content">
+          <div class="upload-step-heading">
+            <div>
+              <h2 id="upload-project-heading">
+                {{ t('uploadPage.projectStep.title') }}
+              </h2>
+              <p>{{ t('uploadPage.projectStep.description') }}</p>
+            </div>
+            <span v-if="selectedProject" class="upload-step-complete">
+              <font-awesome-icon icon="fa-solid fa-check" />
+              {{ t('uploadPage.ready') }}
             </span>
-            <span v-if="result.error" class="result-error">{{ result.error }}</span>
+          </div>
+          <label for="projectSelect" class="project-label">
+            {{ t('uploadPage.projectSelection.label') }}
+          </label>
+          <select
+            id="projectSelect"
+            v-model="selectedProject"
+            class="project-select"
+            :disabled="loading || uploading"
+          >
+            <option value="">
+              {{ t('uploadPage.projectSelection.placeholder') }}
+            </option>
+            <option
+              v-for="project in projects"
+              :key="project.project_id"
+              :value="project.project_id"
+            >
+              {{ project.project_name }}
+            </option>
+          </select>
+        </div>
+      </section>
+
+      <section
+        class="upload-step"
+        :class="{ 'upload-step--disabled': !selectedProject }"
+        aria-labelledby="upload-files-heading"
+      >
+        <div class="upload-step-marker">2</div>
+        <div class="upload-step-content">
+          <div class="upload-step-heading">
+            <div>
+              <h2 id="upload-files-heading">
+                {{ t('uploadPage.filesStep.title') }}
+              </h2>
+              <p>{{ t('uploadPage.filesStep.description') }}</p>
+            </div>
+            <span v-if="selectedFiles.length" class="upload-file-total">
+              {{
+                t('uploadPage.selectedCount', { count: selectedFiles.length })
+              }}
+            </span>
+          </div>
+
+          <div v-if="selectedProject">
+            <UploadFolder
+              v-model="selectedFiles"
+              :title="t('uploadPage.uploadZone.title')"
+              :subtitle="t('uploadPage.uploadZone.subtitle')"
+              :files-with-compliance="filesWithCompliance"
+              :disabled="uploading || standardsLoading || standardsLoadFailed"
+              @error="error = $event"
+            />
+
+            <div
+              v-if="selectedFiles.length && nonCompliantCount > 0"
+              class="upload-compliance-banner upload-compliance-banner--warning"
+              role="status"
+            >
+              <font-awesome-icon icon="fa-solid fa-triangle-exclamation" />
+              <span>
+                {{
+                  t('uploadPage.nonCompliantSummary', {
+                    count: nonCompliantCount,
+                  })
+                }}
+              </span>
+            </div>
+            <div
+              v-else-if="selectedFiles.length && hasEffectiveStandard"
+              class="upload-compliance-banner upload-compliance-banner--success"
+              role="status"
+            >
+              <font-awesome-icon icon="fa-solid fa-circle-check" />
+              {{ t('uploadPage.compliantSummary') }}
+            </div>
+
+            <div v-if="selectedFiles.length" class="upload-submit-bar">
+              <div>
+                <strong>{{ t('uploadPage.submitTitle') }}</strong>
+                <span>{{ t('uploadPage.submitDescription') }}</span>
+              </div>
+              <button
+                type="button"
+                class="upload-btn"
+                :disabled="
+                  uploading ||
+                  standardsLoading ||
+                  standardsLoadFailed ||
+                  nonCompliantCount > 0
+                "
+                @click="uploadFiles"
+              >
+                <span
+                  v-if="uploading"
+                  class="spinner"
+                  aria-hidden="true"
+                ></span>
+                <font-awesome-icon v-else icon="fa-solid fa-cloud-arrow-up" />
+                {{
+                  uploading
+                    ? t('uploadPage.uploadingFiles', {
+                        count: selectedFiles.length,
+                      })
+                    : t('uploadPage.uploadButton')
+                }}
+              </button>
+            </div>
+          </div>
+          <div v-else class="upload-step-placeholder">
+            <font-awesome-icon icon="fa-solid fa-arrow-up" />
+            {{ t('uploadPage.selectProjectFirst') }}
           </div>
         </div>
-      </div>
-
-      <!-- Error Messages -->
-      <div v-if="error" class="error-message">
-        {{ error }}
-      </div>
+      </section>
     </div>
+
+    <section
+      v-if="uploadResults.length"
+      class="upload-results"
+      aria-labelledby="upload-results-heading"
+      aria-live="polite"
+    >
+      <div class="upload-results-heading">
+        <div>
+          <span>{{ t('uploadPage.complete') }}</span>
+          <h2 id="upload-results-heading">
+            {{ t('uploadPage.uploadResults') }}
+          </h2>
+        </div>
+        <strong>{{ successfulResultCount }}/{{ uploadResults.length }}</strong>
+      </div>
+      <ul class="results-list">
+        <li
+          v-for="result in uploadResults"
+          :key="result.filename"
+          class="result-item"
+          :class="{ success: result.success, error: !result.success }"
+        >
+          <font-awesome-icon
+            :icon="
+              result.success
+                ? 'fa-solid fa-circle-check'
+                : 'fa-solid fa-circle-xmark'
+            "
+          />
+          <span class="result-filename">{{ result.filename }}</span>
+          <span class="result-status">
+            {{
+              result.success
+                ? t('uploadPage.resultSuccess')
+                : t('uploadPage.resultFailed')
+            }}
+          </span>
+          <span v-if="result.error" class="result-error">{{
+            result.error
+          }}</span>
+        </li>
+      </ul>
+      <router-link
+        v-if="correctionCase && completedUploadId"
+        class="finish-correction-link"
+        :to="{
+          name: 'PendingUpload',
+          query: {
+            project: selectedProject,
+            view: 'reviews',
+            case: correctionCase.case_id,
+            resubmission: completedUploadId,
+          },
+        }"
+      >
+        Finish linking this contribution to the correction request
+        <font-awesome-icon icon="fa-solid fa-arrow-right" />
+      </router-link>
+    </section>
+
+    <div v-if="error" class="error-message" role="alert">{{ error }}</div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import UploadFolder from '@/components/common/UploadFolder.vue';
+import { useRoute, useRouter } from 'vue-router';
 import gitService from '@/api/service/gitService';
-import "@/assets/css/upload-page.css";
-import { useUserStore } from '@/stores/user';
-import { useProjectStore } from '@/stores/project';
+import reviewService from '@/api/service/reviewService';
+import UploadFolder from '@/components/common/UploadFolder.vue';
+import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
-import { useNamingStandardStore } from '@/stores/namingStandard';
-import { isFilenameCompliant } from '@/utils/filenameCompliance';
 import { useEventMessageStore } from '@/stores/eventMessage';
+import { useNamingStandardStore } from '@/stores/namingStandard';
+import { useProjectStore } from '@/stores/project';
+import { useUserStore } from '@/stores/user';
+import { formatEafUploadError } from '@/utils/eafValidationError';
+import { isFilenameCompliant } from '@/utils/filenameCompliance';
+import '@/assets/css/upload-page.css';
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
+const userStore = useUserStore();
+const projectStore = useProjectStore();
+const effectiveStandardStore = useEffectiveStandardStore();
+const namingStandardStore = useNamingStandardStore();
+const eventMessageStore = useEventMessageStore();
+
 const selectedProject = ref('');
 const selectedFiles = ref([]);
 const uploading = ref(false);
 const loading = ref(true);
 const uploadResults = ref([]);
+const completedUploadId = ref(null);
+const correctionCase = ref(null);
 const error = ref('');
-const userStore = useUserStore();
-const projectStore = useProjectStore();
-
-// Stores and Composables
-const effectiveStandardStore = useEffectiveStandardStore();
-const namingStandardStore = useNamingStandardStore();
-const eventMessageStore = useEventMessageStore();
-
-// State for Standards
 const hasEffectiveStandard = ref(false);
 const standard = ref(null);
+const standardsLoading = ref(false);
+const standardsLoadFailed = ref(false);
+let standardsRequest = 0;
 
-// Flag to prevent duplicate fetch on initial load
-const isInitialLoad = ref(true);
-
-// Computed for Username from User Store
 const username = computed(() => userStore.user?.username || '');
-
-// Computed for Projects from Store
 const projects = computed(() => projectStore.projects || []);
+const currentProjectName = computed(
+  () =>
+    projects.value.find(
+      (project) => project.project_id === Number(selectedProject.value)
+    )?.project_name ||
+    projectStore.currentProject?.project_name ||
+    ''
+);
+
+const filesWithCompliance = computed(() =>
+  selectedFiles.value.map((file) => ({
+    ...file,
+    isCompliant:
+      !hasEffectiveStandard.value || !standard.value
+        ? true
+        : isFilenameCompliant(standard.value, file.name),
+  }))
+);
+const nonCompliantCount = computed(
+  () => filesWithCompliance.value.filter((file) => !file.isCompliant).length
+);
+const successfulResultCount = computed(
+  () => uploadResults.value.filter((result) => result.success).length
+);
 
 onMounted(async () => {
-  // Ensure store is initialized (loads from localStorage if needed)
   projectStore.initializeFromStorage();
-  
-  // Set default selected project to current active project's ID
-  selectedProject.value = projectStore.currentProject?.project_id || '';
-  
-  // Initial fetch if a project is selected
+  await projectStore.ensureProjects();
+  const requestedProjectId = Number(route.query.project);
+  selectedProject.value = projects.value.some(
+    (project) => project.project_id === requestedProjectId
+  )
+    ? requestedProjectId
+    : projectStore.currentProject?.project_id || '';
   if (selectedProject.value) {
-    await fetchStandards();
+    await Promise.all([fetchStandards(), loadCorrectionContext()]);
   }
-  
-  // Mark initial load as complete to allow watcher fetches
-  isInitialLoad.value = false;
-  
-  // Set loading to false after standards are fetched
   loading.value = false;
-  // Initialize Broadcast Channel for project updates
   projectStore.initBroadcastChannel();
 });
 
-// Updated: Watcher to fetch standards only after initial load
+watch(
+  () => projectStore.currentProject?.project_id,
+  (projectId) => {
+    if (projectId !== selectedProject.value) {
+      selectedProject.value = projectId || '';
+    }
+  }
+);
+
 watch(selectedProject, async (newProjectId, oldProjectId) => {
-  if (!isInitialLoad.value && newProjectId && newProjectId !== oldProjectId) {
-    await fetchStandards();
-  } else if (!newProjectId) {
-    // Reset if no project selected
+  if (newProjectId === oldProjectId) return;
+  const project = projects.value.find(
+    (candidate) => candidate.project_id === Number(newProjectId)
+  );
+  if (
+    project &&
+    project.project_id !== projectStore.currentProject?.project_id
+  ) {
+    projectStore.setCurrentProject(project);
+  } else if (!newProjectId && projectStore.currentProject) {
+    projectStore.clearCurrentProject();
+  }
+  selectedFiles.value = [];
+  uploadResults.value = [];
+  completedUploadId.value = null;
+  correctionCase.value = null;
+  error.value = '';
+  if (newProjectId)
+    await Promise.all([fetchStandards(), loadCorrectionContext()]);
+  else {
     hasEffectiveStandard.value = false;
     standard.value = null;
+    standardsLoadFailed.value = false;
   }
 });
 
 async function fetchStandards() {
-  const UPLOAD_PAGE_LOCATION_ID = 4;
-
-  if (!selectedProject.value) {
-    console.warn('No project selected, skipping standards fetch');
-    hasEffectiveStandard.value = false;
-    return;
-  }
-
+  const request = ++standardsRequest;
+  const projectId = selectedProject.value;
+  const uploadLocationId = 4;
+  if (!projectId) return;
+  standardsLoading.value = true;
+  standardsLoadFailed.value = false;
   try {
-    await effectiveStandardStore.fetchEffectiveStandards(selectedProject.value, UPLOAD_PAGE_LOCATION_ID);
-    await namingStandardStore.fetchStandardsAndComponentNames(selectedProject.value);
-
-    // Get the standard ID
-    let standardId;
-    const standardsObj = effectiveStandardStore.effectiveStandards[UPLOAD_PAGE_LOCATION_ID];
-    if (standardsObj && typeof standardsObj === 'object') {
-      const ids = Object.values(standardsObj).filter(id => !!id);
-      standardId = ids.length > 0 ? ids[0] : undefined;
-    } else if (typeof standardsObj === 'string' || typeof standardsObj === 'number') {
-      standardId = standardsObj;
+    await Promise.all([
+      effectiveStandardStore.fetchEffectiveStandards(
+        projectId,
+        uploadLocationId
+      ),
+      namingStandardStore.fetchStandardsAndComponentNames(projectId),
+    ]);
+    if (request !== standardsRequest || projectId !== selectedProject.value)
+      return;
+    const standardsAtLocation =
+      effectiveStandardStore.effectiveStandards[uploadLocationId];
+    const standardId =
+      standardsAtLocation && typeof standardsAtLocation === 'object'
+        ? Object.values(standardsAtLocation).find(Boolean)
+        : standardsAtLocation;
+    standard.value = namingStandardStore.standards.find(
+      (candidate) => candidate.id === standardId
+    );
+    hasEffectiveStandard.value = Boolean(standardId);
+  } catch {
+    if (request === standardsRequest) {
+      hasEffectiveStandard.value = false;
+      standard.value = null;
+      standardsLoadFailed.value = true;
+      error.value = t('uploadPage.errors.standardsFailed');
     }
-
-    hasEffectiveStandard.value = !!standardId;
-    standard.value = namingStandardStore.standards.find(std => std.id === standardId);
-  } catch (e) {
-    console.error('Error fetching standards:', e);
-    hasEffectiveStandard.value = false;
+  } finally {
+    if (request === standardsRequest) standardsLoading.value = false;
   }
 }
 
-// Computed for Files with Compliance
-const filesWithCompliance = computed(() => {
-  if (!hasEffectiveStandard.value || !standard.value) {
-    return selectedFiles.value.map(file => ({ ...file, isCompliant: true }));
+async function loadCorrectionContext() {
+  correctionCase.value = null;
+  const caseId = String(route.query.correction || '');
+  if (!caseId || !selectedProject.value) return;
+  try {
+    const cases = await reviewService.list(selectedProject.value);
+    correctionCase.value =
+      cases.find(
+        (item) => item.case_id === caseId && item.state === 'changes_requested'
+      ) || null;
+    if (!correctionCase.value) {
+      error.value =
+        'This correction request is no longer available for resubmission.';
+    }
+  } catch (requestError) {
+    error.value =
+      requestError?.response?.data?.detail ||
+      'The correction request could not be loaded.';
   }
-  return selectedFiles.value.map(file => ({
-    ...file,
-    isCompliant: isFilenameCompliant(standard.value, file.name),
-  }));
-});
+}
 
-// UploadFiles to show event message and prevent upload for non-compliant files
 async function uploadFiles() {
-  if (!selectedProject.value || selectedFiles.value.length === 0) {
+  if (!selectedProject.value || !selectedFiles.value.length) {
     error.value = t('uploadPage.errors.selectProjectAndFiles');
     return;
   }
-
-  // Check for non-compliant files and show event message
-    const nonCompliantFiles = filesWithCompliance.value.filter(f => !f.isCompliant);
-    if (nonCompliantFiles.length > 0) {
+  if (nonCompliantCount.value) {
     eventMessageStore.addMessage('uploadPage.complianceWarning', 'warning');
     return;
   }
-
+  if (standardsLoading.value || standardsLoadFailed.value) {
+    error.value = t('uploadPage.errors.standardsFailed');
+    return;
+  }
   uploading.value = true;
   uploadResults.value = [];
   error.value = '';
-
   try {
     const response = await gitService.uploadElanFiles(
       selectedProject.value,
       selectedFiles.value,
       username.value
     );
-
-    uploadResults.value = response.files || [];
+    completedUploadId.value = response.upload_id;
+    uploadResults.value = [
+      ...(response.uploaded_files || []).map((file) => ({
+        ...file,
+        success: true,
+      })),
+      ...(response.failed_files || []).map((file) => ({
+        ...file,
+        success: false,
+      })),
+    ];
     selectedFiles.value = [];
-  } catch (e) {
-    error.value = e?.response?.data?.detail || t('uploadPage.errors.uploadFailed');
-    console.error('Upload error:', e);
+    if (correctionCase.value && response.upload_id) {
+      try {
+        const linkedCase = await reviewService.resubmit(
+          selectedProject.value,
+          correctionCase.value.case_id,
+          response.upload_id
+        );
+        completedUploadId.value = null;
+        eventMessageStore.addMessage(
+          'uploadPage.correctionLinked',
+          'success',
+          6000
+        );
+        await router.push({
+          name: 'PendingUpload',
+          query: {
+            project: selectedProject.value,
+            view: 'reviews',
+            case: linkedCase.case_id,
+          },
+        });
+      } catch (linkError) {
+        error.value =
+          linkError?.response?.data?.detail ||
+          'The contribution was created, but could not be linked automatically. Use the action below to finish linking it.';
+      }
+    }
+  } catch (uploadError) {
+    error.value = formatEafUploadError(
+      uploadError?.response?.data?.detail,
+      t('uploadPage.errors.uploadFailed')
+    );
   } finally {
     uploading.value = false;
   }
 }
 </script>
-
-<style scoped>
-.upload-actions {
-  margin-top: 16px;
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-
-.upload-btn {
-  background: #1976d2;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.upload-btn:hover:not(:disabled) {
-  background: #1565c0;
-}
-
-.upload-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ffffff40;
-  border-top: 2px solid #ffffff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-</style>

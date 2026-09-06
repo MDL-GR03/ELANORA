@@ -36,8 +36,6 @@ async def create_standard(
     pattern: str,
     description: str | None,
 ):
-    from app.model.project_naming_standard import ProjectNamingStandard
-
     standard = ProjectNamingStandard(
         project_id=project_id,
         name=name,

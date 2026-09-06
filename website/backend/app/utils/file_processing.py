@@ -1,13 +1,14 @@
 """File processing utilities for ELAN files."""
 
-from decimal import Decimal
-from pathlib import Path
 import os
 from datetime import datetime
+from decimal import Decimal
+from pathlib import Path
 
 from lxml import etree
 
 from app.core.centralized_logging import get_logger
+from app.core.config import ELAN_PROJECTS_BASE_PATH
 
 logger = get_logger()
 
@@ -15,9 +16,6 @@ logger = get_logger()
 def get_elanora_projects_base_path() -> str:
     """Get the base path for elanora_projects directory."""
     try:
-        # Try to use config if available
-        from app.core.config import ELAN_PROJECTS_BASE_PATH
-
         configured_path = ELAN_PROJECTS_BASE_PATH
         logger.debug(f"Using configured base path: {configured_path}")
 

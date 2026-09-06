@@ -1,4 +1,3 @@
-import os
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud import elan_file_media as elan_media_crud

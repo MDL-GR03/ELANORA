@@ -1,4 +1,4 @@
-@import './style.css';
+@import url('./style.css');
 
 /* Profile Overview Styles */
 .profile-overview {
@@ -29,8 +29,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .profile-error {
@@ -52,7 +57,7 @@
 }
 
 .profile-error h3 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.5rem;
   font-size: 1.5rem;
   font-weight: 600;
   color: #dc2626;
@@ -75,14 +80,14 @@
 .profile-card {
   background: var(--card-bg);
   border-radius: var(--border-radius);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
   border: 1px solid #e5e7eb;
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
 .profile-card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 25px rgb(0 0 0 / 12%);
   transform: translateY(-2px);
 }
 
@@ -108,7 +113,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-color-dark) 100%
+  );
   border-radius: 12px;
   color: white;
 }
@@ -306,7 +315,7 @@
 .modern-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
   background: var(--card-bg);
 }
 
@@ -327,7 +336,8 @@
   justify-content: flex-end;
 }
 
-.modern-save-btn, .modern-cancel-btn {
+.modern-save-btn,
+.modern-cancel-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -345,12 +355,12 @@
 .modern-save-btn {
   background: #16a34a;
   color: white;
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 2px 8px rgb(22 163 74 / 20%);
 }
 
 .modern-save-btn:hover:not(:disabled) {
   background: #15803d;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+  box-shadow: 0 4px 12px rgb(22 163 74 / 30%);
   transform: translateY(-1px);
 }
 
@@ -371,7 +381,8 @@
   border-color: #9ca3af;
 }
 
-.modern-save-btn svg, .modern-cancel-btn svg {
+.modern-save-btn svg,
+.modern-cancel-btn svg {
   width: 16px;
   height: 16px;
 }
@@ -380,7 +391,7 @@
   width: 16px;
   height: 16px;
   border: 2px solid transparent;
-  border-top: 2px solid currentColor;
+  border-top: 2px solid currentcolor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -456,7 +467,7 @@
 
 .statistic-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 25px rgb(0 0 0 / 8%);
 }
 
 .statistic-icon {
@@ -478,80 +489,81 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .profile-overview {
     padding: 1rem;
   }
-  
+
   .profile-card-header {
     flex-direction: column;
     gap: 1rem;
     align-items: flex-start;
     padding: 1.25rem 1.5rem;
   }
-  
+
   .profile-card-content {
     padding: 1.5rem;
   }
-  
+
   .card-title-section {
     width: 100%;
   }
-  
+
   .modern-edit-btn {
     align-self: flex-start;
   }
-  
+
   .edit-actions {
     justify-content: stretch;
   }
-  
-  .modern-save-btn, .modern-cancel-btn {
+
+  .modern-save-btn,
+  .modern-cancel-btn {
     flex: 1;
   }
-  
+
   .statistics-cards {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   .field-content {
     padding: 0.875rem;
   }
-  
+
   .input-container {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
   }
-  
+
   .input-icon {
     align-self: flex-start;
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .profile-overview {
     padding: 0.5rem;
   }
-  
+
   .profile-card {
     border-radius: 12px;
   }
-  
+
   .profile-card-header {
     padding: 1rem;
   }
-  
+
   .profile-card-content {
     padding: 1rem;
   }
-  
+
   .card-icon {
     width: 40px;
     height: 40px;
   }
-  
+
   .card-icon svg {
     width: 20px;
     height: 20px;

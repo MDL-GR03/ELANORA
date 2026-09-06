@@ -2,13 +2,17 @@
   <div class="relative notification-bell">
     <!-- Notification Bell Button -->
     <button
-      @click="toggleDropdown"
       class="relative p-3 text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105"
-      :class="{ 
+      :class="{
         'text-blue-600 bg-blue-50': hasUnreadNotifications,
-        'hover:bg-gray-100': !hasUnreadNotifications
+        'hover:bg-gray-100': !hasUnreadNotifications,
       }"
-      :title="unreadCount > 0 ? t('notificationBell.unread_notifications', { count: unreadCount }) : t('notificationBell.title')"
+      :title="
+        unreadCount > 0
+          ? t('notificationBell.unread_notifications', { count: unreadCount })
+          : t('notificationBell.title')
+      "
+      @click="toggleDropdown"
     >
       <!-- Bell Icon -->
       <svg
@@ -26,7 +30,7 @@
           d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
         />
       </svg>
-      
+
       <!-- Unread Count Badge -->
       <transition name="badge-bounce">
         <span
@@ -46,26 +50,49 @@
         @click.stop
       >
         <!-- Dropdown Header -->
-        <div class="px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+        <div
+          class="px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200"
+        >
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
               <div class="p-2 bg-blue-100 rounded-lg">
-                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                <svg
+                  class="w-5 h-5 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
                 </svg>
               </div>
-              <h3 class="text-lg font-semibold text-gray-900">{{ t('notificationBell.title') }}</h3>
+              <h3 class="text-lg font-semibold text-gray-900">
+                {{ t('notificationBell.title') }}
+              </h3>
             </div>
             <button
               v-if="unreadCount > 0"
-              @click="markAllAsRead"
               class="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors duration-200"
               :disabled="loading"
+              @click="markAllAsRead"
             >
               <span class="flex items-center space-x-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 <span>{{ t('notificationBell.mark_all_read') }}</span>
               </span>
@@ -73,7 +100,9 @@
           </div>
           <div class="flex items-center justify-between mt-2">
             <p class="text-sm text-gray-600">
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+              >
                 {{ t('notificationBell.unread_badge', { count: unreadCount }) }}
               </span>
             </p>
@@ -83,21 +112,42 @@
         <!-- Notifications List -->
         <div class="max-h-96 overflow-y-auto">
           <div v-if="loading" class="p-8 text-center">
-            <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4">
-              <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"></div>
+            <div
+              class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4"
+            >
+              <div
+                class="animate-spin rounded-full h-6 w-6 border-2 border-blue-600 border-t-transparent"
+              ></div>
             </div>
-            <p class="text-sm text-gray-600 font-medium">{{ t('notificationBell.loading_notifications') }}</p>
+            <p class="text-sm text-gray-600 font-medium">
+              {{ t('notificationBell.loading_notifications') }}
+            </p>
           </div>
 
           <div v-else-if="notifications.length === 0" class="p-8 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-              <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            <div
+              class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4"
+            >
+              <svg
+                class="w-8 h-8 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
               </svg>
             </div>
-            <p class="text-gray-500 font-medium">{{ t('notificationBell.no_notifications') }}</p>
-            <p class="text-xs text-gray-400 mt-1">{{ t('notificationBell.up_to_date') }}</p>
+            <p class="text-gray-500 font-medium">
+              {{ t('notificationBell.no_notifications') }}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+              {{ t('notificationBell.up_to_date') }}
+            </p>
           </div>
 
           <div v-else class="divide-y divide-gray-100">
@@ -105,66 +155,124 @@
               v-for="notification in notifications"
               :key="notification.notification_id"
               class="px-4 py-4 hover:bg-gray-50 cursor-pointer transition-all duration-200 group"
-              :class="{ 
-                'bg-gradient-to-r from-blue-50 to-transparent border-l-4 border-blue-400': !notification.is_read,
-                'hover:transform hover:scale-[1.01]': true
+              :class="{
+                'bg-gradient-to-r from-blue-50 to-transparent border-l-4 border-blue-400':
+                  !notification.is_read,
+                'hover:transform hover:scale-[1.01]': true,
               }"
               @click="handleNotificationClick(notification)"
             >
               <div class="flex items-start space-x-3">
                 <!-- Notification Icon -->
                 <div class="flex-shrink-0 mt-1">
-                  <div class="w-8 h-8 rounded-full flex items-center justify-center"
-                       :class="!notification.is_read ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  <div
+                    class="w-8 h-8 rounded-full flex items-center justify-center"
+                    :class="
+                      !notification.is_read
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'bg-gray-100 text-gray-500'
+                    "
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                   </div>
                 </div>
-                
+
                 <!-- Notification Content -->
                 <div class="flex-1 min-w-0">
                   <div class="flex items-start justify-between">
-                    <h4 class="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200"
-                        :class="{ 'text-blue-800': !notification.is_read }">
+                    <h4
+                      class="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200"
+                      :class="{ 'text-blue-800': !notification.is_read }"
+                    >
                       {{ notification.title }}
                     </h4>
                     <!-- Unread indicator -->
                     <div v-if="!notification.is_read" class="ml-2 mt-1">
-                      <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></div>
+                      <div
+                        class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"
+                      ></div>
                     </div>
                   </div>
-                  <p class="text-sm text-gray-600 mt-1 line-clamp-2 leading-relaxed">
+                  <p
+                    class="text-sm text-gray-600 mt-1 line-clamp-2 leading-relaxed"
+                  >
                     {{ notification.message }}
                   </p>
                   <div class="flex items-center justify-between mt-2">
-                    <p class="text-xs text-gray-500 flex items-center space-x-1">
-                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    <p
+                      class="text-xs text-gray-500 flex items-center space-x-1"
+                    >
+                      <svg
+                        class="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                       <span>{{ formatDate(notification.created_at) }}</span>
                     </p>
 
                     <!-- Action Buttons -->
-                    <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div
+                      class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    >
                       <button
                         v-if="!notification.is_read"
-                        @click.stop="markAsRead(notification.notification_id)"
                         class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition-all duration-200"
                         :title="t('notificationBell.mark_as_read')"
+                        @click.stop="markAsRead(notification.notification_id)"
                       >
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        <svg
+                          class="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
                       </button>
                       <button
-                        @click.stop="deleteNotification(notification.notification_id)"
                         class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full transition-all duration-200"
                         :title="t('notificationBell.delete')"
+                        @click.stop="
+                          deleteNotification(notification.notification_id)
+                        "
                       >
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        <svg
+                          class="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
                         </svg>
                       </button>
                     </div>
@@ -182,9 +290,24 @@
             class="flex items-center justify-center space-x-2 w-full px-4 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white hover:bg-blue-50 border border-blue-200 rounded-lg transition-all duration-200 transform hover:scale-105"
             @click="closeDropdown"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
             </svg>
             <span>{{ t('notificationBell.view_all_notifications') }}</span>
           </router-link>
@@ -202,137 +325,140 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useNotificationStore } from '@/stores/notification'
-import { formatDistanceToNow } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+import { useNotificationStore } from '@/stores/notification';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-const router = useRouter()
-const notificationStore = useNotificationStore()
-const { t } = useI18n()
+const router = useRouter();
+const notificationStore = useNotificationStore();
+const { t } = useI18n();
 
 // Local state
-const showDropdown = ref(false)
+const showDropdown = ref(false);
 
 // Computed properties
-const notifications = computed(() => notificationStore.unreadNotifications)
-const unreadCount = computed(() => notificationStore.unreadCount)
-const hasUnreadNotifications = computed(() => notificationStore.hasUnreadNotifications)
-const loading = computed(() => notificationStore.loading)
+const notifications = computed(() => notificationStore.unreadNotifications);
+const unreadCount = computed(() => notificationStore.unreadCount);
+const hasUnreadNotifications = computed(
+  () => notificationStore.hasUnreadNotifications
+);
+const loading = computed(() => notificationStore.loading);
 
 // Methods
 const toggleDropdown = async () => {
-  showDropdown.value = !showDropdown.value
-  
+  showDropdown.value = !showDropdown.value;
+
   if (showDropdown.value) {
     try {
       // Fetch latest notifications when opening dropdown
-      await notificationStore.fetchUnreadNotifications({ limit: 10 })
-      await notificationStore.fetchNotificationStats()
+      await notificationStore.fetchUnreadNotifications({ limit: 10 });
+      await notificationStore.fetchNotificationStats();
     } catch (error) {
-      console.error('Failed to fetch notifications for dropdown:', error)
+      console.error('Failed to fetch notifications for dropdown:', error);
     }
   }
-}
+};
 
 const closeDropdown = () => {
-  showDropdown.value = false
-}
+  showDropdown.value = false;
+};
 
 const markAsRead = async (notificationId) => {
   try {
-    await notificationStore.markNotificationAsRead(notificationId)
+    await notificationStore.markNotificationAsRead(notificationId);
   } catch (error) {
-    console.error('Failed to mark notification as read:', error)
+    console.error('Failed to mark notification as read:', error);
   }
-}
+};
 
 const markAllAsRead = async () => {
   try {
-    await notificationStore.markAllNotificationsAsRead()
+    await notificationStore.markAllNotificationsAsRead();
   } catch (error) {
-    console.error('Failed to mark all notifications as read:', error)
+    console.error('Failed to mark all notifications as read:', error);
   }
-}
+};
 
 const deleteNotification = async (notificationId) => {
   try {
-    await notificationStore.deleteNotification(notificationId)
+    await notificationStore.deleteNotification(notificationId);
   } catch (error) {
-    console.error('Failed to delete notification:', error)
+    console.error('Failed to delete notification:', error);
   }
-}
+};
 
 const handleNotificationClick = async (notification) => {
   try {
     // Mark as read if not already read
     if (!notification.is_read) {
-      await markAsRead(notification.notification_id)
+      await markAsRead(notification.notification_id);
     }
-    
+
     // Navigate to action URL if available
     if (notification.action_url) {
-      closeDropdown()
-      router.push(notification.action_url)
+      closeDropdown();
+      router.push(notification.action_url);
     }
   } catch (error) {
-    console.error('Failed to handle notification click:', error)
+    console.error('Failed to handle notification click:', error);
   }
-}
+};
 
 const formatDate = (dateString) => {
-  const date = new Date(dateString)
-  return formatDistanceToNow(date, { 
-    addSuffix: true, 
-    locale: fr 
-  })
-}
+  const date = new Date(dateString);
+  return formatDistanceToNow(date, {
+    addSuffix: true,
+    locale: fr,
+  });
+};
+
+let notificationInterval;
 
 // Lifecycle
 onMounted(async () => {
   try {
     // Fetch initial notification stats
-    await notificationStore.fetchNotificationStats()
-    
+    await notificationStore.fetchNotificationStats();
+
     // Set up polling for new notifications every 60 seconds
-    const interval = setInterval(async () => {
+    notificationInterval = setInterval(async () => {
+      if (document.visibilityState !== 'visible') return;
       try {
-        await notificationStore.fetchNotificationStats()
+        await notificationStore.fetchNotificationStats();
       } catch (error) {
-        console.warn('Failed to fetch notification stats in interval:', error)
+        console.warn('Failed to fetch notification stats in interval:', error);
       }
-    }, 60000)
-    
+    }, 60000);
+
     // Store interval ID for cleanup
-    window.notificationInterval = interval
   } catch (error) {
-    console.error('Failed to initialize notification bell:', error)
+    console.error('Failed to initialize notification bell:', error);
   }
-})
+});
 
 onUnmounted(() => {
-  if (window.notificationInterval) {
-    clearInterval(window.notificationInterval)
-    delete window.notificationInterval
+  if (notificationInterval) {
+    clearInterval(notificationInterval);
   }
-})
+});
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
   if (showDropdown.value && !event.target.closest('.notification-bell')) {
-    closeDropdown()
+    closeDropdown();
   }
-}
+};
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
+  document.addEventListener('click', handleClickOutside);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style scoped>
@@ -395,7 +521,7 @@ onUnmounted(() => {
 button:focus {
   outline: 2px solid transparent;
   outline-offset: 2px;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 2px rgb(59 130 246 / 50%);
 }
 
 /* Loading animation */
@@ -411,9 +537,11 @@ button:focus {
 
 /* Pulse animation for unread indicators */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -425,10 +553,12 @@ button:focus {
 
 /* Bounce animation for notification badge */
 @keyframes bounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0);
     animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
   }
+
   50% {
     transform: translateY(-25%);
     animation-timing-function: cubic-bezier(0, 0, 0.2, 1);

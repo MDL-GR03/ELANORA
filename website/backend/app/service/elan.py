@@ -4,13 +4,11 @@ import time
 from decimal import Decimal
 from pathlib import Path
 
-from lxml import etree as ET
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.crud.annotation import (
     bulk_create_annotations,
-    delete_annotations_by_file,
     delete_annotations_by_tier,
     get_annotations_by_tier,
     get_annotations_by_time_range,
@@ -18,13 +16,12 @@ from app.crud.annotation import (
 from app.crud.annotation_value import bulk_get_or_create_annotation_values
 from app.crud.association import (
     get_elan_ids_for_project,
-    has_any_project_for_elan_file,
-    remove_elan_file_from_project,
 )
+from app.crud.eaf_revision import append_eaf_revision
 from app.crud.elan_file import (
     delete_elan_file_full,
     get_all_elan_files,
-    get_elan_file_by_filename,
+    get_elan_file_by_filename_and_project,
     get_elan_files_by_user,
     store_elan_file_data_in_db,
     sync_elan_file_to_tiers,
@@ -40,8 +37,9 @@ from app.crud.tier import (
     update_parent_tier,
 )
 from app.crud.tier_group import delete_tier_groups_for_project_and_elan
+from app.elan import LegacyEafFile, document_to_legacy, parse_eaf_path
 from app.model.tier import Tier
-from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
+from app.utils.file_processing import ElanFileProcessor
 
 # Get logger for this module
 logger = get_logger()
@@ -53,85 +51,18 @@ class ElanService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.file_processor = ElanFileProcessor()
-        self.xml_extractor = XmlAttributeExtractor()
 
-    def parse_elan_file(self, file_path: str) -> dict:
+    def parse_elan_file(self, file_path: str) -> LegacyEafFile:
         logger.info(f"Starting to parse ELAN file: {file_path}")
         t0 = time.perf_counter()
 
-        # Use utility for validation
         file_path_obj = ElanFileProcessor.validate_elan_file(file_path)
-
-        t_parse_start = time.perf_counter()
-        parser = ET.XMLParser(resolve_entities=False, no_network=True, recover=False)
-        tree = ET.parse(file_path_obj, parser=parser)
-        root = tree.getroot()
-        t_parse_end = time.perf_counter()
-        logger.info(f"XML parsing took {t_parse_end - t_parse_start:.3f}s")
-
-        t_info_start = time.perf_counter()
-        file_info = ElanFileProcessor.get_file_info(file_path_obj)
-        file_info.update(
-            {
-                "tiers": [],
-                "time_slots": ElanFileProcessor.extract_time_slots(root),
-                "media": ElanFileProcessor.extract_media_descriptors(root),
-            }
-        )
-        t_info_end = time.perf_counter()
-        logger.info(f"File info extraction took {t_info_end - t_info_start:.3f}s")
-
-        t_tiers_start = time.perf_counter()
-        self._extract_tiers(root, file_info)
-        t_tiers_end = time.perf_counter()
-        logger.info(
-            f"Tier and annotation extraction took {t_tiers_end - t_tiers_start:.3f}s"
-        )
+        document = parse_eaf_path(file_path_obj)
+        file_info = document_to_legacy(document)
 
         total_time = time.perf_counter() - t0
         logger.info(f"Total parse_elan_file time: {total_time:.3f}s")
         return file_info
-
-    def _extract_tiers(self, root: ET._Element, file_info: dict) -> None:
-        """Extract tiers using utility functions."""
-        tier_count = 0
-        for tier_element in root.findall(".//TIER", namespaces=None):
-            tier_info = self.xml_extractor.get_tier_attributes(tier_element)
-            tier_info["annotations"] = self._extract_annotations(
-                tier_element, file_info["time_slots"]
-            )
-            file_info["tiers"].append(tier_info)
-            tier_count += 1
-
-        logger.debug(f"Extracted {tier_count} tiers with annotations")
-
-    def _extract_annotations(
-        self, tier_element: ET._Element, time_slots: dict[str, int]
-    ) -> list[dict]:
-        """Extract annotations for a tier using utility functions."""
-        annotations = []
-
-        # Extract alignable annotations
-        for annotation_elem in tier_element.findall(
-            ".//ANNOTATION/ALIGNABLE_ANNOTATION",
-            namespaces=None,
-        ):
-            ann_info = self.xml_extractor.get_alignable_annotation_attributes(
-                annotation_elem, time_slots
-            )
-            if ann_info:
-                annotations.append(ann_info)
-
-        # Extract reference annotations
-        for annotation_elem in tier_element.findall(
-            ".//ANNOTATION/REF_ANNOTATION", namespaces=None
-        ):
-            ann_info = self.xml_extractor.get_ref_annotation_attributes(annotation_elem)
-            if ann_info:
-                annotations.append(ann_info)
-
-        logger.debug(f"Extracted {len(annotations)} annotations from tier")
-        return annotations
 
     def get_files_in_directory(self, directory_path: str) -> list[Path]:
         """Get all ELAN files in a flat directory using utility."""
@@ -158,11 +89,14 @@ class ElanService:
         tier_name_to_id = {}
         t_tier_start = time.perf_counter()
         for tier_data in tiers_data:
-            tier_obj = await get_tier_by_name(self.db, tier_data["tier_name"])
+            tier_obj = await get_tier_by_name(self.db, tier_data["tier_name"], elan_id)
             if not tier_obj:
                 tier_obj = await create_tier_in_db(
                     db=self.db,
                     tier_name=tier_data["tier_name"],
+                    elan_id=elan_id,
+                    linguistic_type_ref=tier_data["linguistic_type_ref"],
+                    eaf_attributes=tier_data["eaf_attributes"],
                     parent_tier_id=None,
                 )
                 logger.debug(
@@ -199,26 +133,6 @@ class ElanService:
         total_time = time.perf_counter() - t0
         logger.info(f"Total _store_tiers_and_annotations time: {total_time:.3f}s")
 
-    async def _get_or_create_tier(self, tier_data: dict) -> Tier:
-        """Get existing tier or create new one using CRUD."""
-        tier_obj = await get_tier_by_name(self.db, tier_data["tier_name"])
-
-        if not tier_obj:
-            tier_obj = await create_tier_in_db(
-                db=self.db,
-                tier_name=tier_data["tier_name"],
-                parent_tier_id=tier_data.get("parent_tier_id"),
-            )
-            logger.debug(
-                f"Created new tier: {tier_data['tier_name']} (ID: {tier_obj.tier_id})"
-            )
-        else:
-            logger.debug(
-                f"Using existing tier: {tier_data['tier_name']} (ID: {tier_data['tier_id']})"
-            )
-
-        return tier_obj
-
     async def store_elan_file_data(
         self, file_info: dict, user_id: int, project_id: int
     ) -> int:
@@ -229,6 +143,13 @@ class ElanService:
             # Store all ELAN file data and associations using CRUD
             elan_id = await store_elan_file_data_in_db(
                 self.db, file_info, user_id, project_id
+            )
+            await append_eaf_revision(
+                self.db,
+                elan_id=elan_id,
+                sha256=file_info["sha256"],
+                raw_xml=file_info["raw_xml"],
+                created_by=user_id,
             )
 
             # Store tiers and annotations (this sets tier["tier_id"])
@@ -255,21 +176,25 @@ class ElanService:
         """Store parsed ELAN file data in the database and sync associations."""
         logger.info(f"Storing ELAN file data: {file_info['filename']}")
         try:
-            existing_file = await get_elan_file_by_filename(
-                self.db, file_info["filename"]
+            existing_file = await get_elan_file_by_filename_and_project(
+                self.db, file_info["filename"], project_id
             )
             if existing_file:
                 logger.info(f"Updating existing ELAN file: {existing_file.elan_id}")
-                await delete_elan_file_full(self.db, existing_file.elan_id)
             else:
                 logger.info(f"No existing ELAN file found for {file_info['filename']}")
             # Store all ELAN file data and associations using CRUD
             elan_id = await store_elan_file_data_in_db(
                 self.db, file_info, user_id, project_id
             )
-            # Delete all existing annotations for this file before inserting new ones
-            await delete_annotations_by_file(self.db, elan_id)
-            logger.info(f"Deleted existing annotations for ELAN file ID: {elan_id}")
+            await append_eaf_revision(
+                self.db,
+                elan_id=elan_id,
+                sha256=file_info["sha256"],
+                raw_xml=file_info["raw_xml"],
+                created_by=user_id,
+            )
+            await delete_tiers_for_elan_file(self.db, elan_id)
 
             # Store tiers and annotations (this sets tier["tier_id"])
             await self._store_tiers_and_annotations(file_info["tiers"], elan_id)
@@ -304,7 +229,9 @@ class ElanService:
         filename = Path(file_path).name
 
         # Check if this file was already processed for this project
-        existing_file = await get_elan_file_by_filename(self.db, filename)
+        existing_file = await get_elan_file_by_filename_and_project(
+            self.db, filename, project.project_id
+        )
         if existing_file:
             # Check if it's associated with this project
             project_elan_ids = await get_elan_ids_for_project(
@@ -422,12 +349,14 @@ class ElanService:
 
         return {f.filename: tier_names for f in files}
 
-    async def get_file_structure(self, filename: str) -> dict | None:
+    async def get_file_structure(self, filename: str, project_id: int) -> dict | None:
         """Get complete structure for a specific file."""
         logger.debug(f"Retrieving file structure for: {filename}")
 
         # Get file using CRUD
-        elan_file_obj = await get_elan_file_by_filename(self.db, filename)
+        elan_file_obj = await get_elan_file_by_filename_and_project(
+            self.db, filename, project_id
+        )
 
         if not elan_file_obj:
             logger.warning(f"File not found in database: {filename}")
@@ -567,7 +496,9 @@ class ElanService:
 
         # Get the ELAN file by base filename
         base_filename = Path(filename).name
-        elan_file_obj = await get_elan_file_by_filename(self.db, base_filename)
+        elan_file_obj = await get_elan_file_by_filename_and_project(
+            self.db, base_filename, project.project_id
+        )
         if not elan_file_obj:
             logger.info(
                 f"[ELAN-DELETE] ELAN file '{base_filename}' not found in DB for deletion."
@@ -583,10 +514,6 @@ class ElanService:
             return False
 
         try:
-            # Remove the association
-            await remove_elan_file_from_project(
-                self.db, elan_file_obj.elan_id, project.project_id
-            )
             await delete_tier_groups_for_project_and_elan(
                 self.db, project.project_id, elan_file_obj.elan_id
             )
@@ -594,21 +521,9 @@ class ElanService:
                 f"[ELAN-DELETE] Removed associations for ELAN file '{base_filename}' and project '{project_name}'."
             )
 
-            # If no more associations, delete the ELAN file and related data
-            if not await has_any_project_for_elan_file(self.db, elan_file_obj.elan_id):
-                logger.info(
-                    f"[ELAN-DELETE] No remaining project associations for ELAN file '{base_filename}'. Deleting file and related data..."
-                )
-                await delete_tiers_for_elan_file(self.db, elan_file_obj.elan_id)
-                await delete_elan_file_full(self.db, elan_file_obj.elan_id)
-                logger.info(
-                    f"[ELAN-DELETE] Deleted ELAN file '{base_filename}' and all related data from DB (project: {project_name})."
-                )
-                await self.db.commit()
-            else:
-                logger.info(
-                    f"[ELAN-DELETE] ELAN file '{base_filename}' still associated with other projects. Not deleting file data."
-                )
+            await delete_tiers_for_elan_file(self.db, elan_file_obj.elan_id)
+            await delete_elan_file_full(self.db, elan_file_obj.elan_id)
+            await self.db.commit()
             return True
 
         except Exception as e:

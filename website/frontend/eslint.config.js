@@ -36,6 +36,9 @@ const commonParserOptions = {
 };
 
 export default [
+  {
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
+  },
   js.configs.recommended,
   ...vue.configs['flat/recommended'],
   prettierConfig,

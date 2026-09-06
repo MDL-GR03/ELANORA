@@ -10,11 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.centralized_logging import get_logger
 from app.model.enums import InvitationStatus, ProjectPermission
 from app.model.invitation import Invitation
+from app.utils.database import DatabaseUtils
 
 # Password context for hashing codes
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-from app.utils.database import DatabaseUtils
 
 logger = get_logger()
 
@@ -37,6 +36,8 @@ async def create_invitation(
     project_id: int,
     project_permission: ProjectPermission = ProjectPermission.READ,
     expires_in_days: int = 7,
+    *,
+    commit: bool = True,
 ) -> tuple[Invitation, str]:
     """Create a new invitation in the database.
 
@@ -61,18 +62,22 @@ async def create_invitation(
     )
 
     db.add(invitation)
-    await db.commit()
+    if commit:
+        await db.commit()
+    else:
+        await db.flush()
     await db.refresh(invitation)
     return invitation, raw_code
 
 
 async def get_invitation_by_id(
-    db: AsyncSession, invitation_id: int
+    db: AsyncSession, invitation_id: int, *, for_update: bool = False
 ) -> Invitation | None:
     """Retrieve an invitation by ID."""
-    result = await db.execute(
-        select(Invitation).filter(Invitation.invitation_id == invitation_id)
-    )
+    query = select(Invitation).filter(Invitation.invitation_id == invitation_id)
+    if for_update:
+        query = query.with_for_update()
+    result = await db.execute(query)
     return result.scalar_one_or_none()
 
 
@@ -85,15 +90,18 @@ async def get_invitations_by_email(db: AsyncSession, email: str) -> list[Invitat
 
 
 async def get_pending_invitations_by_email(
-    db: AsyncSession, email: str
+    db: AsyncSession, email: str, project_id: int | None = None
 ) -> list[Invitation]:
-    """Get pending invitations for a specific email."""
-    result = await db.execute(
+    """Get pending invitations for an email, optionally within one project."""
+    query = (
         select(Invitation)
         .filter(Invitation.receiver_email == email)
         .filter(Invitation.status == InvitationStatus.PENDING)
         .filter(Invitation.expires_at > datetime.now())
     )
+    if project_id is not None:
+        query = query.filter(Invitation.project_id == project_id)
+    result = await db.execute(query)
     return list(result.scalars().all())
 
 
@@ -102,6 +110,8 @@ async def update_invitation_status(
     invitation_id: int,
     status: InvitationStatus,
     receiver_id: int | None = None,
+    *,
+    commit: bool = True,
 ) -> bool:
     """Update invitation status and optionally set receiver_id."""
     invitation = await get_invitation_by_id(db, invitation_id)
@@ -113,7 +123,10 @@ async def update_invitation_status(
     if receiver_id:
         invitation.receiver = receiver_id
 
-    await db.commit()
+    if commit:
+        await db.commit()
+    else:
+        await db.flush()
     return True
 
 

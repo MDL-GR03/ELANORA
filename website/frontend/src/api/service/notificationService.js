@@ -1,4 +1,4 @@
-import apiClient from '../apiClient'
+import apiClient from '../apiClient';
 
 const notificationService = {
   /**
@@ -10,8 +10,8 @@ const notificationService = {
    * @returns {Promise} Promise that resolves to the notifications
    */
   async getNotifications(params = {}) {
-    const response = await apiClient.get('/notifications/', { params })
-    return response.data
+    const response = await apiClient.get('/notifications/', { params });
+    return response.data;
   },
 
   /**
@@ -19,8 +19,8 @@ const notificationService = {
    * @returns {Promise} Promise that resolves to the notification stats
    */
   async getNotificationStats() {
-    const response = await apiClient.get('/notifications/stats')
-    return response.data
+    const response = await apiClient.get('/notifications/stats');
+    return response.data;
   },
 
   /**
@@ -33,8 +33,8 @@ const notificationService = {
    * @returns {Promise} Promise that resolves to the created notification
    */
   async createNotification(notificationData) {
-    const response = await apiClient.post('/notifications/', notificationData)
-    return response.data
+    const response = await apiClient.post('/notifications/', notificationData);
+    return response.data;
   },
 
   /**
@@ -44,9 +44,9 @@ const notificationService = {
    */
   async markNotificationAsRead(notificationId) {
     const response = await apiClient.put(`/notifications/${notificationId}`, {
-      is_read: true
-    })
-    return response.data
+      is_read: true,
+    });
+    return response.data;
   },
 
   /**
@@ -55,7 +55,7 @@ const notificationService = {
    * @returns {Promise} Promise that resolves when the notification is deleted
    */
   async deleteNotification(notificationId) {
-    await apiClient.delete(`/notifications/${notificationId}`)
+    await apiClient.delete(`/notifications/${notificationId}`);
   },
 
   /**
@@ -63,8 +63,8 @@ const notificationService = {
    * @returns {Promise} Promise that resolves to the result
    */
   async markAllNotificationsAsRead() {
-    const response = await apiClient.post('/notifications/mark-all-read')
-    return response.data
+    const response = await apiClient.post('/notifications/mark-all-read');
+    return response.data;
   },
 
   /**
@@ -72,8 +72,8 @@ const notificationService = {
    * @returns {Promise} Promise that resolves to the notification preferences
    */
   async getNotificationPreferences() {
-    const response = await apiClient.get('/notifications/preferences')
-    return response.data
+    const response = await apiClient.get('/notifications/preferences');
+    return response.data;
   },
 
   /**
@@ -83,26 +83,28 @@ const notificationService = {
    * @returns {Promise} Promise that resolves to the updated preferences
    */
   async updateNotificationPreferences(preferences) {
-    
     // Ensure email_enabled is a boolean
     const formattedPreferences = {
-      email_enabled: Boolean(preferences.email_enabled)
-    }
-    
+      email_enabled: Boolean(preferences.email_enabled),
+    };
+
     try {
-      const response = await apiClient.put('/notifications/preferences', formattedPreferences)
-      return response.data
+      const response = await apiClient.put(
+        '/notifications/preferences',
+        formattedPreferences
+      );
+      return response.data;
     } catch (error) {
       console.error('Service: Error details:', {
         message: error.message,
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
-        headers: error.response?.headers
-      })
-      throw error
+        headers: error.response?.headers,
+      });
+      throw error;
     }
-  }
-}
+  },
+};
 
-export default notificationService
+export default notificationService;

@@ -1,25 +1,25 @@
 <template>
   <div>
     <div class="project-page-root">
-      <h1 class="project-page-title">
-        {{ t('projectsPage.title', { instanceName: instanceName }) }}
-      </h1>
-
       <!-- Section 1: Project List as Card Grid -->
       <div class="project-page-section project-page-section-card">
-        <div class="project-list-header">
-          <span class="project-list-title">{{
-            t('projectsPage.projectListTitle')
-          }}</span>
-          <button
-            v-if="isAdmin"
-            class="project-page-create-btn"
-            @click="showCreateDialog = true"
-          >
-            <font-awesome-icon icon="fa-solid fa-plus" />
-            {{ t('projectsPage.createProject') }}
-          </button>
-        </div>
+        <WorkspaceHeader
+          embedded
+          :context="instanceName"
+          :title="t('projectsPage.pageTitle')"
+          :description="t('projectsPage.pageDescription')"
+        >
+          <template #actions>
+            <button
+              v-if="isAdmin"
+              class="project-page-create-btn"
+              @click="showCreateDialog = true"
+            >
+              <font-awesome-icon icon="fa-solid fa-plus" />
+              {{ t('projectsPage.createProject') }}
+            </button>
+          </template>
+        </WorkspaceHeader>
         <template v-if="(projectStore.projects?.length || 0) === 0">
           <div class="project-page-no-projects">
             {{ t('projectsPage.noProjects') }}
@@ -53,8 +53,12 @@
                     {{ project.project_name }}
                   </span>
                 </div>
-                <div v-if="isAdmin" class="project-card-actions">
+                <div
+                  v-if="isAdmin || canConfigureProject(project)"
+                  class="project-card-actions"
+                >
                   <button
+                    v-if="isAdmin"
                     class="project-card-action-btn edit"
                     :title="t('projectsPage.project.buttons.rename')"
                     @click.stop="openEditDialog(project)"
@@ -62,6 +66,7 @@
                     <font-awesome-icon icon="fa-regular fa-pen-to-square" />
                   </button>
                   <button
+                    v-if="canAdministerProject(project)"
                     class="project-card-action-btn share"
                     :title="t('projectsPage.project.buttons.share')"
                     @click.stop="openShareModal(project)"
@@ -69,6 +74,7 @@
                     <font-awesome-icon icon="fa-regular fa-share-from-square" />
                   </button>
                   <button
+                    v-if="canConfigureProject(project)"
                     class="project-card-action-btn config"
                     :title="t('projectsPage.project.buttons.settings')"
                     @click.stop="goToStandardsPage(project)"
@@ -76,6 +82,7 @@
                     <font-awesome-icon icon="fa-solid fa-gears" />
                   </button>
                   <button
+                    v-if="isAdmin"
                     class="project-card-action-btn project-card-delete-btn"
                     :title="t('projectsPage.project.buttons.delete')"
                     @click.stop="deleteProject(project.project_name)"
@@ -148,6 +155,46 @@
         class="project-page-section project-page-section-card"
       >
         <div class="project-page-files-tree-section">
+          <section
+            class="project-selected-overview"
+            :aria-labelledby="`selected-project-${currentProjectId}`"
+          >
+            <div class="project-selected-overview-icon" aria-hidden="true">
+              <font-awesome-icon icon="fa-diagram-project" />
+            </div>
+            <div class="project-selected-overview-content">
+              <span class="project-selected-overview-context">
+                {{ t('projectsPage.selectedProject') }}
+              </span>
+              <h2 :id="`selected-project-${currentProjectId}`">
+                {{ currentProjectName }}
+              </h2>
+              <p
+                class="project-selected-description"
+                :class="{
+                  'project-selected-description--collapsed':
+                    descriptionIsLong && !descriptionExpanded,
+                }"
+              >
+                {{
+                  selectedProjectDescription || t('projectsPage.noDescription')
+                }}
+              </p>
+              <button
+                v-if="descriptionIsLong"
+                type="button"
+                class="project-description-toggle"
+                :aria-expanded="descriptionExpanded"
+                @click="descriptionExpanded = !descriptionExpanded"
+              >
+                {{
+                  descriptionExpanded
+                    ? t('projectsPage.showLessDescription')
+                    : t('projectsPage.readFullDescription')
+                }}
+              </button>
+            </div>
+          </section>
           <div class="project-page-files-tree-title-row">
             <div class="project-page-files-tree-title">
               {{
@@ -182,9 +229,11 @@
               v-if="isAdmin"
               class="project-page-files-info-banner"
               :class="{
-                'info-banner-compliant': hasEffectiveStandard && nonCompliantCount === 0,
-                'info-banner-noncompliant': hasEffectiveStandard && nonCompliantCount > 0,
-                'info-banner-no-standard': !hasEffectiveStandard
+                'info-banner-compliant':
+                  hasEffectiveStandard && nonCompliantCount === 0,
+                'info-banner-noncompliant':
+                  hasEffectiveStandard && nonCompliantCount > 0,
+                'info-banner-no-standard': !hasEffectiveStandard,
               }"
             >
               <font-awesome-icon
@@ -203,7 +252,11 @@
                   {{ t('projectsPage.infoBanner.noEffectiveStandard3') }}
                 </template>
                 <template v-else-if="nonCompliantCount > 0">
-                  {{ t('projectsPage.infoBanner.nonCompliant', { count: nonCompliantCount }) }} 
+                  {{
+                    t('projectsPage.infoBanner.nonCompliant', {
+                      count: nonCompliantCount,
+                    })
+                  }}
                   <button
                     class="info-banner-bulk-rename-link"
                     tabindex="0"
@@ -218,9 +271,15 @@
                 </template>
               </span>
             </div>
-            <div v-if="projectFiles && projectFiles.files && projectFiles.files.length > 0">
-              <FileTree 
-                :files="projectFiles.files" 
+            <div
+              v-if="
+                projectFiles &&
+                projectFiles.files &&
+                projectFiles.files.length > 0
+              "
+            >
+              <FileTree
+                :files="projectFiles.files"
                 :show-compliance="isAdmin && hasEffectiveStandard"
                 :project-id="currentProjectId"
                 :project-name="currentProjectName"
@@ -253,8 +312,13 @@
 
       <!-- Project Share Modal (admin only) -->
       <ProjectShareModal
-        v-if="isAdmin"
+        v-if="
+          showShareModal &&
+          selectedShareProject &&
+          canAdministerProject(selectedShareProject)
+        "
         :show="showShareModal"
+        :project-id="selectedShareProject.project_id"
         :project-name="shareProjectName"
         @close="closeShareModal"
         @success="onShareSuccess"
@@ -296,8 +360,13 @@ import FileTree from '@components/common/FileTree.vue';
 import ProjectCreateDialog from '@/components/pageSpecific/projectsPage/ProjectCreateDialog.vue';
 import ProjectShareModal from '@components/common/ProjectShareModal.vue';
 import ProjectSyncDialog from '@/components/pageSpecific/projectsPage/ProjectSyncDialog.vue';
+import {
+  hasProjectCapability,
+  hasProjectPermission,
+} from '@/utils/authorization';
 import ProjectEditDialog from '@/components/pageSpecific/projectsPage/ProjectEditDialog.vue';
 import BulkRenameDialog from '@/components/pageSpecific/projectsPage/BulkRenameDialog.vue';
+import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserConfirm } from '@/composables/useUserConfirm';
@@ -336,12 +405,20 @@ const showCreateDialog = ref(false);
 
 const projectFiles = ref(null);
 const filesLoading = ref(false);
+let projectFilesRequest = 0;
 
 const currentProjectId = computed(
   () => projectStore.currentProject?.project_id
 );
 const currentProjectName = computed(
   () => projectStore.currentProject?.project_name
+);
+const selectedProjectDescription = computed(
+  () => projectStore.currentProject?.project_description?.trim() || ''
+);
+const descriptionExpanded = ref(false);
+const descriptionIsLong = computed(
+  () => selectedProjectDescription.value.length > 180
 );
 
 const syncing = ref(false);
@@ -353,6 +430,16 @@ const shareProjectName = ref('');
 
 // Check if user is admin
 const isAdmin = computed(() => userStore.user?.role === 'admin');
+const selectedShareProject = computed(() =>
+  projectStore.projects.find(
+    (project) => project.project_name === shareProjectName.value
+  )
+);
+const canAdministerProject = (project) =>
+  hasProjectPermission(userStore.user, project, 'admin');
+const canConfigureProject = (project) =>
+  canAdministerProject(project) ||
+  hasProjectCapability(userStore.user, project, 'manage_protocols');
 
 // Standard state
 const hasEffectiveStandard = ref(false);
@@ -375,7 +462,9 @@ const paginatedProjects = computed(() => {
 // Banner computed properties
 const getBannerIcon = computed(() => {
   if (!hasEffectiveStandard.value) return 'fa-solid fa-circle-info';
-  return nonCompliantCount.value > 0 ? 'fa-solid fa-square-xmark' : 'fa-solid fa-square-check';
+  return nonCompliantCount.value > 0
+    ? 'fa-solid fa-square-xmark'
+    : 'fa-solid fa-square-check';
 });
 
 const getBannerIconClass = computed(() => {
@@ -411,6 +500,14 @@ watch(currentPage, (val) => {
   if (val > totalPages.value) currentPage.value = totalPages.value;
 });
 
+watch(currentProjectId, () => {
+  descriptionExpanded.value = false;
+  projectFiles.value = null;
+  hasEffectiveStandard.value = false;
+  projectStandard.value = null;
+  mediaStandard.value = null;
+});
+
 async function fetchProjects() {
   loading.value = true;
   try {
@@ -431,42 +528,48 @@ function selectProject(project) {
 }
 
 async function fetchProjectFiles() {
-  if (!currentProjectName.value) {
+  const request = ++projectFilesRequest;
+  const projectId = currentProjectId.value;
+  const projectName = currentProjectName.value;
+  if (!projectName || !projectId) {
     projectFiles.value = null;
     hasEffectiveStandard.value = false;
+    filesLoading.value = false;
     return;
   }
-  
-  // Prevent duplicate calls
-  if (filesLoading.value) {
-    return;
-  }
-  
+
   filesLoading.value = true;
   try {
-    const res = await gitService.listProjectFiles(currentProjectName.value, true); // Always include media info
-
     const PROJECT_FILES_LOCATION_ID = 1;
 
     // Fetch standards for this project/location
     const effectiveStandardStore = useEffectiveStandardStore();
-    await effectiveStandardStore.fetchEffectiveStandards(
-      projectStore.currentProject.project_id,
-      PROJECT_FILES_LOCATION_ID
-    );
-
-    // Fetch naming standards
     const namingStandardStore = useNamingStandardStore();
-    await namingStandardStore.fetchStandardsAndComponentNames(currentProjectId.value);
+    const [res] = await Promise.all([
+      gitService.listProjectFiles(projectName, true),
+      effectiveStandardStore.fetchEffectiveStandards(
+        projectId,
+        PROJECT_FILES_LOCATION_ID
+      ),
+      namingStandardStore.fetchStandardsAndComponentNames(projectId),
+      effectiveStandardStore.fetchEffectiveStandards(projectId, 3),
+    ]);
+
+    if (request !== projectFilesRequest || projectId !== currentProjectId.value)
+      return;
 
     // Get the first naming standard ID assigned for this location
     let standardId;
-    const standardsObj = effectiveStandardStore.effectiveStandards[PROJECT_FILES_LOCATION_ID];
+    const standardsObj =
+      effectiveStandardStore.effectiveStandards[PROJECT_FILES_LOCATION_ID];
     if (standardsObj && typeof standardsObj === 'object') {
       // Get the first available naming_standard_id
-      const ids = Object.values(standardsObj).filter(id => !!id);
+      const ids = Object.values(standardsObj).filter((id) => !!id);
       standardId = ids.length > 0 ? ids[0] : undefined;
-    } else if (typeof standardsObj === 'string' || typeof standardsObj === 'number') {
+    } else if (
+      typeof standardsObj === 'string' ||
+      typeof standardsObj === 'number'
+    ) {
       standardId = standardsObj;
     }
 
@@ -474,31 +577,40 @@ async function fetchProjectFiles() {
     hasEffectiveStandard.value = !!standardId;
 
     // Check compliance for each file and add isCompliant property
-    const standard = namingStandardStore.standards.find(std => std.id === standardId);
+    const standard = namingStandardStore.standards.find(
+      (std) => std.id === standardId
+    );
     standardName.value = standard ? standard.name : '';
-    
+
     // Store the project standard for use in FileTree suggestions
     projectStandard.value = standard;
-    
+
     // Get media standard for suggestions
     mediaStandard.value = await getMediaStandardForProject(
-      currentProjectId.value, 
-      effectiveStandardStore, 
-      namingStandardStore
+      projectId,
+      effectiveStandardStore,
+      namingStandardStore,
+      false
     );
-    
+
+    if (request !== projectFilesRequest || projectId !== currentProjectId.value)
+      return;
+
     // Only check compliance if there's a standard and user is admin
-    res.files = res.files.map(file => {
-      const isCompliant = (standard && isAdmin.value) ? isFilenameCompliant(standard, file.name) : true;
+    res.files = res.files.map((file) => {
+      const isCompliant =
+        standard && isAdmin.value
+          ? isFilenameCompliant(standard, file.name)
+          : true;
       return {
         ...file,
         isCompliant,
       };
     });
-    
+
     projectFiles.value = res;
   } finally {
-    filesLoading.value = false;
+    if (request === projectFilesRequest) filesLoading.value = false;
   }
 }
 
@@ -518,7 +630,7 @@ const userConfirm = useUserConfirm();
 
 async function deleteProject(projectName) {
   if (!isAdmin.value) return;
-  
+
   const confirmed = await userConfirm({
     title: t('projectsPage.deleteTitle'),
     message: t('projectsPage.deleteMessage', { projectName }),
@@ -561,17 +673,19 @@ async function onProjectEdited() {
 function handleFileRename({ file, newName }) {
   // Update the file in the local files array to reflect the rename
   if (projectFiles.value && projectFiles.value.files) {
-    const fileIndex = projectFiles.value.files.findIndex(f => f.elan_id === file.elan_id);
+    const fileIndex = projectFiles.value.files.findIndex(
+      (f) => f.elan_id === file.elan_id
+    );
     if (fileIndex !== -1) {
       // Update the filename only - DO NOT update lastModified since content hasn't changed
       projectFiles.value.files[fileIndex].name = newName;
-      
+
       // Update compliance status if standards are available
       if (projectStandard.value) {
         const isCompliant = isFilenameCompliant(projectStandard.value, newName);
         projectFiles.value.files[fileIndex].isCompliant = isCompliant;
       }
-      
+
       // Show success message
       eventMessageStore.addMessage('rename.success', 'success', 4000);
     }
@@ -579,7 +693,7 @@ function handleFileRename({ file, newName }) {
 }
 
 function openShareModal(project) {
-  if (!isAdmin.value) return;
+  if (!canAdministerProject(project)) return;
   shareProjectName.value = project.project_name;
   showShareModal.value = true;
 }
@@ -608,16 +722,16 @@ watch(
   { immediate: true }
 );
 
-onMounted(() => {
-  if (projectStore.projects.length === 0) {
-    fetchProjects();
+onMounted(async () => {
+  if (!projectStore.initialized) {
+    await projectStore.ensureProjects();
   }
   projectStore.initBroadcastChannel();
   projectStore.loadCurrentProject();
 });
 
 function goToStandardsPage(project) {
-  if (!isAdmin.value) return;
+  if (!canConfigureProject(project)) return;
   router.push({
     name: 'ProjectConfigurationPage',
     params: { projectId: project.project_id },
@@ -630,8 +744,8 @@ function onProjectCreated() {
 }
 
 const nonCompliantFiles = computed(() =>
-  (isAdmin.value && hasEffectiveStandard.value) 
-    ? (projectFiles.value?.files?.filter(f => f.isCompliant === false) || [])
+  isAdmin.value && hasEffectiveStandard.value
+    ? projectFiles.value?.files?.filter((f) => f.isCompliant === false) || []
     : []
 );
 const nonCompliantCount = computed(() => nonCompliantFiles.value.length);
@@ -646,116 +760,185 @@ function handleBulkRename(eventData) {
   // Extract renames from the event data
   const renames = eventData.renames || eventData;
   const result = eventData.result;
-  
+
   // Debug logging
   console.log('handleBulkRename called with result:', result);
   console.log('Requested renames:', renames?.length || 0);
   console.log('Backend successful renames:', result?.successful_renames || 0);
   console.log('Backend conflicts:', result?.conflicts_count || 0);
-  
+
   // Update files locally instead of refetching everything
-  if (projectFiles.value && projectFiles.value.files && renames && renames.length > 0) {
+  if (
+    projectFiles.value &&
+    projectFiles.value.files &&
+    renames &&
+    renames.length > 0
+  ) {
     // Only update files that were successfully renamed (no conflicts)
-    const successfulRenames = result && result.results ? 
-      renames.filter(rename => {
-        // Find the current filename for this elan_id to match with backend results
-        const currentFile = projectFiles.value.files.find(f => f.elan_id === rename.elan_id);
-        if (!currentFile) {
-          console.warn(`Could not find file with elan_id ${rename.elan_id} in current project files`);
-          return false;
-        }
-        
-        // Match by current filename in the backend results
-        const renameResult = result.results.find(r => r.old_filename === currentFile.name);
-        const success = renameResult && renameResult.success && !renameResult.conflict_elan_id;
-        console.log(`File ${currentFile.name} (elan_id: ${rename.elan_id}) -> ${rename.new_filename}: ${success ? 'SUCCESS' : 'FAILED/CONFLICT'}`);
-        return success;
-      }) : 
-      renames; // If no result data, assume all were successful
-    
+    const successfulRenames =
+      result && result.results
+        ? renames.filter((rename) => {
+            // Find the current filename for this elan_id to match with backend results
+            const currentFile = projectFiles.value.files.find(
+              (f) => f.elan_id === rename.elan_id
+            );
+            if (!currentFile) {
+              console.warn(
+                `Could not find file with elan_id ${rename.elan_id} in current project files`
+              );
+              return false;
+            }
+
+            // Match by current filename in the backend results
+            const renameResult = result.results.find(
+              (r) => r.old_filename === currentFile.name
+            );
+            const success =
+              renameResult &&
+              renameResult.success &&
+              !renameResult.conflict_elan_id;
+            console.log(
+              `File ${currentFile.name} (elan_id: ${rename.elan_id}) -> ${rename.new_filename}: ${success ? 'SUCCESS' : 'FAILED/CONFLICT'}`
+            );
+            return success;
+          })
+        : renames; // If no result data, assume all were successful
+
     console.log('Successfully renamed files to update:', successfulRenames);
-    
-    successfulRenames.forEach(rename => {
-      const fileIndex = projectFiles.value.files.findIndex(f => f.elan_id === rename.elan_id);
-      console.log(`Updating file with elan_id ${rename.elan_id}: found at index ${fileIndex}`);
-      
+
+    successfulRenames.forEach((rename) => {
+      const fileIndex = projectFiles.value.files.findIndex(
+        (f) => f.elan_id === rename.elan_id
+      );
+      console.log(
+        `Updating file with elan_id ${rename.elan_id}: found at index ${fileIndex}`
+      );
+
       if (fileIndex !== -1) {
         const oldName = projectFiles.value.files[fileIndex].name;
         // Update the filename only - DO NOT update lastModified since content hasn't changed
         projectFiles.value.files[fileIndex].name = rename.new_filename;
-        
-        console.log(`Updated file name from "${oldName}" to "${rename.new_filename}"`);
-        
+
+        console.log(
+          `Updated file name from "${oldName}" to "${rename.new_filename}"`
+        );
+
         // Update compliance status if standards are available
         if (projectStandard.value) {
-          const isCompliant = isFilenameCompliant(projectStandard.value, rename.new_filename);
+          const isCompliant = isFilenameCompliant(
+            projectStandard.value,
+            rename.new_filename
+          );
           projectFiles.value.files[fileIndex].isCompliant = isCompliant;
           console.log(`Updated compliance status to: ${isCompliant}`);
         }
       } else {
-        console.error(`Could not find file with elan_id ${rename.elan_id} in project files`);
+        console.error(
+          `Could not find file with elan_id ${rename.elan_id} in project files`
+        );
       }
     });
-    
+
     // Log successful updates
-    console.log(`Updated ${successfulRenames.length} files in the UI after bulk rename`);
-    
+    console.log(
+      `Updated ${successfulRenames.length} files in the UI after bulk rename`
+    );
+
     // Show appropriate success message based on results
     if (result) {
       const totalRequested = renames.length;
       const successful = successfulRenames.length;
       const conflicts = result.conflicts_count || 0;
       const failed = totalRequested - successful;
-      
+
       if (successful === totalRequested && conflicts === 0) {
         // All files renamed successfully
         eventMessageStore.addMessage('rename.bulkSuccess', 'success', 4000);
       } else if (successful > 0 && conflicts > 0) {
         // Mixed results: some success, some conflicts - choose message based on singular/plural
         if (successful === 1 && conflicts === 1) {
-          eventMessageStore.addMessage('rename.bulkMixedSingular', 'warning', 6000);
+          eventMessageStore.addMessage(
+            'rename.bulkMixedSingular',
+            'warning',
+            6000
+          );
         } else if (successful === 1) {
-          eventMessageStore.addMessage('rename.bulkMixedOneSuccess', 'warning', 6000, { failed: conflicts });
+          eventMessageStore.addMessage(
+            'rename.bulkMixedOneSuccess',
+            'warning',
+            6000,
+            { failed: conflicts }
+          );
         } else if (conflicts === 1) {
-          eventMessageStore.addMessage('rename.bulkMixedOneConflict', 'warning', 6000, { successful: successful });
+          eventMessageStore.addMessage(
+            'rename.bulkMixedOneConflict',
+            'warning',
+            6000,
+            { successful: successful }
+          );
         } else {
-          eventMessageStore.addMessage('rename.bulkMixed', 'warning', 6000, { 
+          eventMessageStore.addMessage('rename.bulkMixed', 'warning', 6000, {
             successful: successful,
-            failed: conflicts
+            failed: conflicts,
           });
         }
       } else if (successful === 0 && conflicts > 0) {
         // All failed due to conflicts
         if (conflicts === 1) {
-          eventMessageStore.addMessage('rename.bulkAllConflictsSingular', 'warning', 6000);
+          eventMessageStore.addMessage(
+            'rename.bulkAllConflictsSingular',
+            'warning',
+            6000
+          );
         } else {
-          eventMessageStore.addMessage('rename.bulkAllConflicts', 'warning', 6000, { 
-            count: conflicts
-          });
+          eventMessageStore.addMessage(
+            'rename.bulkAllConflicts',
+            'warning',
+            6000,
+            {
+              count: conflicts,
+            }
+          );
         }
       } else if (successful > 0) {
         // Some succeeded, some failed for other reasons
         if (successful === 1 && failed === 1) {
-          eventMessageStore.addMessage('rename.bulkPartialSingular', 'warning', 6000);
+          eventMessageStore.addMessage(
+            'rename.bulkPartialSingular',
+            'warning',
+            6000
+          );
         } else if (successful === 1) {
-          eventMessageStore.addMessage('rename.bulkPartialOneSuccess', 'warning', 6000, { failed: failed });
+          eventMessageStore.addMessage(
+            'rename.bulkPartialOneSuccess',
+            'warning',
+            6000,
+            { failed: failed }
+          );
         } else if (failed === 1) {
-          eventMessageStore.addMessage('rename.bulkPartialOneFailed', 'warning', 6000, { successful: successful });
+          eventMessageStore.addMessage(
+            'rename.bulkPartialOneFailed',
+            'warning',
+            6000,
+            { successful: successful }
+          );
         } else {
-          eventMessageStore.addMessage('rename.bulkPartial', 'warning', 6000, { 
+          eventMessageStore.addMessage('rename.bulkPartial', 'warning', 6000, {
             successful: successful,
-            failed: failed
+            failed: failed,
           });
         }
       }
-      
-      console.log(`Bulk rename summary: ${successful}/${totalRequested} successful, ${conflicts} conflicts`);
+
+      console.log(
+        `Bulk rename summary: ${successful}/${totalRequested} successful, ${conflicts} conflicts`
+      );
     } else if (successfulRenames.length > 0) {
       // Fallback: All files renamed successfully (no result data)
       eventMessageStore.addMessage('rename.bulkSuccess', 'success', 4000);
     }
   }
-  
+
   // Close the dialog
   bulkRenameDialogVisible.value = false;
 }
@@ -763,12 +946,14 @@ function handleBulkRename(eventData) {
 function handleBulkRenameConflict(conflictData) {
   // Handle bulk rename conflicts - log them for debugging
   console.log('Bulk rename conflicts detected:', conflictData);
-  console.warn(`${conflictData.conflictsCount} files had naming conflicts and were not renamed.`);
+  console.warn(
+    `${conflictData.conflictsCount} files had naming conflicts and were not renamed.`
+  );
   console.log('Conflicting files:', conflictData.conflictFiles);
-  
+
   // TODO: When merge tool is implemented, you can collect these conflicts
   // and present them to the user for resolution
-  
+
   // Note: Don't show message here - let handleBulkRename show a single comprehensive message
   // Note: Don't close the dialog here - let handleBulkRename handle that after updating files
 }

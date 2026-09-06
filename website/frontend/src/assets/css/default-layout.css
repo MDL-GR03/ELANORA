@@ -1,48 +1,46 @@
 .navbar {
   background: white;
-  border-bottom: 1px solid #e1e8ed;
-  box-shadow: 0 2px 4px rgb(0 0 0 / 10%);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 0 rgb(15 23 42 / 3%);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
 .content {
-  margin: 3rem auto;
-  max-width: 1504px;
-  width: clamp(320px, 90vw, 1504px);
-  padding: 32px;
+  margin: clamp(1rem, 3vw, 2.25rem) auto;
+  max-width: var(--content-width);
+  width: calc(100% - clamp(1.5rem, 6vw, 4rem));
+  padding: 0;
   flex: 1 1 auto;
   flex-direction: column;
   box-sizing: border-box;
 }
 
 .footer {
-  background: #2d3748;
+  background: #17243a;
   color: #e2e8f0;
-  padding: 3rem 0 1rem;
+  padding: 2rem 0 1rem;
   margin-top: auto;
 }
 
 .navbar-container {
-  max-width: 1504px;
-  width: clamp(320px, 90vw, 1504px);
+  max-width: var(--content-width);
+  width: calc(100% - clamp(1.5rem, 6vw, 4rem));
   margin-left: auto;
   margin-right: auto;
-  padding-left: 32px;
-  padding-right: 32px;
+  padding: 0.65rem 0;
   display: flex;
   align-items: center;
   box-sizing: border-box;
 }
 
 .footer-container {
-  max-width: 1504px;
-  width: clamp(320px, 90vw, 1504px);
+  max-width: var(--content-width);
+  width: calc(100% - clamp(1.5rem, 6vw, 4rem));
   margin-left: auto;
   margin-right: auto;
-  padding-left: 32px;
-  padding-right: 32px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;

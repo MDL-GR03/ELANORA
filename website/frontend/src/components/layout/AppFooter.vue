@@ -2,63 +2,37 @@
   <footer>
     <div class="footer-container">
       <div class="footer-content">
-        <div class="footer-section">
+        <div class="footer-section footer-intro">
           <h4>ELANORA</h4>
           <p>{{ t('appFooter.platform_description') }}</p>
-          <div class="footer-social">
-            <a href="#" class="social-link">📧</a>
-            <a href="#" class="social-link">🌐</a>
-            <a href="#" class="social-link">📚</a>
-          </div>
+        </div>
+
+        <div class="footer-section">
+          <h4>Workspace</h4>
+          <ul class="footer-links">
+            <li>
+              <router-link to="/projects">{{
+                t('appHeader.projects')
+              }}</router-link>
+            </li>
+            <li>
+              <router-link to="/upload">{{
+                t('appHeader.upload')
+              }}</router-link>
+            </li>
+            <li>
+              <router-link to="/tiers">{{ t('appHeader.tiers') }}</router-link>
+            </li>
+          </ul>
         </div>
 
         <div class="footer-section">
           <h4>{{ t('appFooter.resources') }}</h4>
           <ul class="footer-links">
             <li>
-              <a href="/docs">{{ t('appFooter.documentation') }}</a>
-            </li>
-            <li>
-              <a href="/api">{{ t('appFooter.api_reference') }}</a>
-            </li>
-            <li>
-              <a href="/tutorials">{{ t('appFooter.tutorials') }}</a>
-            </li>
-            <li>
-              <a href="/support">{{ t('appFooter.support') }}</a>
-            </li>
-          </ul>
-        </div>
-
-        <div class="footer-section">
-          <h4>{{ t('appFooter.community') }}</h4>
-          <ul class="footer-links">
-            <li>
-              <a href="/about">{{ t('appFooter.about') }}</a>
-            </li>
-            <li>
-              <a href="/research">{{ t('appFooter.research') }}</a>
-            </li>
-            <li>
-              <a href="/partnerships">{{ t('appFooter.partnerships') }}</a>
-            </li>
-            <li>
-              <a href="/contact">{{ t('appFooter.contact') }}</a>
-            </li>
-          </ul>
-        </div>
-
-        <div class="footer-section">
-          <h4>{{ t('appFooter.legal') }}</h4>
-          <ul class="footer-links">
-            <li>
-              <a href="/privacy">{{ t('appFooter.privacy_policy') }}</a>
-            </li>
-            <li>
-              <a href="/terms">{{ t('appFooter.terms_of_service') }}</a>
-            </li>
-            <li>
-              <a href="/cookies">{{ t('appFooter.cookie_policy') }}</a>
+              <router-link to="/contact">{{
+                t('appFooter.contact')
+              }}</router-link>
             </li>
           </ul>
         </div>
@@ -96,16 +70,22 @@ const { t } = useI18n();
 <style scoped>
 .footer-content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: minmax(16rem, 2fr) repeat(2, minmax(9rem, 1fr));
   gap: 2rem;
   margin-bottom: 2rem;
 }
 
+.footer-intro {
+  max-width: 34rem;
+}
+
 .footer-section h4 {
-  color: #1a73e8;
-  font-size: 1.2rem;
+  color: #bfdbfe;
+  font-size: 0.82rem;
   margin-bottom: 1rem;
-  font-weight: 600;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .footer-section p {
@@ -131,30 +111,6 @@ const { t } = useI18n();
 
 .footer-links a:hover {
   color: #1a73e8;
-}
-
-.footer-social {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.social-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: #4a5568;
-  border-radius: 50%;
-  text-decoration: none;
-  font-size: 1.2rem;
-  transition: all 0.2s;
-}
-
-.social-link:hover {
-  background: #1a73e8;
-  transform: translateY(-2px);
 }
 
 .footer-bottom {
@@ -193,7 +149,7 @@ const { t } = useI18n();
 }
 
 .instance {
-  color: #1a73e8;
+  color: #bfdbfe;
   font-weight: 500;
 }
 

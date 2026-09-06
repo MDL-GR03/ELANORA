@@ -9,10 +9,16 @@
         :aria-expanded="dropdownOpen"
         @click="toggleDropdown"
       >
-        <FontAwesomeIcon
-          :icon="faCircleUser"
+        <svg
           class="instance-section-usericon"
-        />
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            fill="currentColor"
+            d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z"
+          />
+        </svg>
         <span class="instance-section-username">{{ username }}</span>
         <svg
           class="instance-section-chevron"
@@ -43,11 +49,6 @@
               :type="option.type || 'button'"
               @click="handleAction(option)"
             >
-              <FontAwesomeIcon
-                v-if="option.icon"
-                :icon="option.icon"
-                class="instance-section-menuicon"
-              />
               {{ option.label }}
             </button>
             <router-link
@@ -56,11 +57,6 @@
               class="instance-section-link"
               @click="closeDropdown"
             >
-              <FontAwesomeIcon
-                v-if="option.icon"
-                :icon="option.icon"
-                class="instance-section-menuicon"
-              />
               {{ option.label }}
             </router-link>
           </li>
@@ -71,10 +67,16 @@
         class="instance-section-login"
         @click="login"
       >
-        <FontAwesomeIcon
-          :icon="faCircleUser"
+        <svg
           class="instance-section-usericon"
-        />
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            fill="currentColor"
+            d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z"
+          />
+        </svg>
         {{ t('common.login') || 'Login' }}
       </button>
     </div>
@@ -87,12 +89,6 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useUserStore } from '@/stores/user';
 import { useAppInfoStore } from '@/stores/appInfo';
-import {
-  faCircleUser,
-  faRightFromBracket,
-  faUser,
-} from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 defineProps({
   options: {
@@ -101,12 +97,10 @@ defineProps({
       {
         label: 'Profile',
         to: '/profile',
-        icon: faUser,
       },
       {
         label: 'Logout',
         action: 'logout',
-        icon: faRightFromBracket,
       },
     ],
   },
@@ -220,7 +214,8 @@ onBeforeUnmount(() => {
 }
 
 .instance-section-usericon {
-  font-size: 1.2em;
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .instance-section-username {

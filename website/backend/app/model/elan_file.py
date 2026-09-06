@@ -27,6 +27,7 @@ class ElanFile(Base):
     project_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
     )
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     last_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
@@ -43,20 +44,6 @@ class ElanFile(Base):
     media_links: Mapped[list["ElanFileToMedia"]] = relationship(
         "ElanFileToMedia", back_populates="elan_file", cascade="all, delete-orphan"
     )
-
-    # Convenience properties to access file content data
-    @property
-    def filename(self) -> str:
-        """Get the filename from the associated file content."""
-        return self.file_content.filename
-
-    @filename.setter
-    def filename(self, value: str) -> None:
-        """Set the filename in the associated file content."""
-        if self.file_content:
-            self.file_content.filename = value
-        else:
-            raise ValueError("No file_content associated with this ElanFile")
 
     @property
     def file_size(self) -> int:

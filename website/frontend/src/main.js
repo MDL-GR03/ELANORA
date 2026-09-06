@@ -1,13 +1,14 @@
-import { createApp } from 'vue';
+import { createApp, defineAsyncComponent } from 'vue';
 import App from './App.vue';
 import { createPinia } from 'pinia';
 import { setupI18n } from '@plugins/i18n';
-import FontAwesomeIcon from '@plugins/fontawesome';
 import { createHead } from '@unhead/vue/client';
+import '@fontsource-variable/nunito-sans';
 
 import '@css/tailwind.css';
 import '@css/style.css';
 import '@css/app.css';
+import '@css/design-system.css';
 
 import router from '@/router/router.js';
 
@@ -15,6 +16,9 @@ const app = createApp(App);
 const pinia = createPinia();
 const i18n = setupI18n();
 const head = createHead();
+const FontAwesomeIcon = defineAsyncComponent(
+  () => import('@plugins/fontawesome')
+);
 
 app.use(pinia);
 app.use(i18n);

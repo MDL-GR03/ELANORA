@@ -8,6 +8,7 @@
     "confirm": "確認",
     "cancel": "キャンセル",
     "save": "保存",
+    "close": "閉じる",
     "saving": "保存中...",
     "or": "または",
     "loading": "読み込み中...",
@@ -74,6 +75,7 @@
     }
   },
   "appHeader": {
+    "reviews": "レビュー",
     "projects": "プロジェクト",
     "dashboard": "ダッシュボード",
     "upload": "ファイルアップロード",
@@ -106,6 +108,11 @@
   },
   "login": {
     "platform_subtitle": "言語学のための協調アノテーションプラットフォーム。",
+    "instance_label": "研究機関",
+    "default_instance": "ELANORA インスタンス",
+    "institution_fallback": "機関研究ワークスペース",
+    "welcome_back": "おかえりなさい",
+    "sign_in_instruction": "研究ワークスペースに進むにはログインしてください。",
     "connect_to_access": "インスタンスへのアクセス：{instanceName}",
     "login_placeholder": "ログイン名を入力",
     "password": "パスワード",
@@ -201,7 +208,7 @@
     "invitation_code_required": "招待コードが必要です",
     "validating_invitation": "招待を検証中...",
     "invitation_valid": "招待が有効です！",
-    "invitation_auto_accepted": "アカウントがプロジェクトに追加されました！ログインページにリダイレクトします。",
+    "invitation_existing_user": "すでにアカウントがあります。ログインして招待を確認し、承認してください。",
     "invitation_invalid": "無効または期限切れの招待コード",
     "invitation_validation_error": "招待の検証エラー",
     "first_name_label": "名",
@@ -331,6 +338,10 @@
       "load_error": "ユーザーの読み込みエラー",
       "permission_updated": "権限の更新が完了しました",
       "permission_update_error": "権限の更新エラー",
+      "protocol_manager": "プロトコル管理",
+      "protocol_manager_help": "このプロジェクトのプロトコル版を編集、公開、割り当てできます",
+      "capability_updated": "プロトコル権限を更新しました",
+      "capability_update_error": "プロトコル権限を更新できませんでした",
       "user_added": "ユーザーの追加が完了しました",
       "add_error": "ユーザーの追加エラー",
       "user_removed": "ユーザーの削除が完了しました",
@@ -424,13 +435,17 @@
 
   "projectsPage": {
     "pageTitle": "プロジェクト",
+    "pageDescription": "言語研究プロジェクトを管理し、共同作業を行います",
     "title": "{instanceName}のプロジェクト",
     "projectListTitle": "プロジェクト",
     "noProjects": "このインスタンスには現在のプロジェクトがありません。\n「新しいプロジェクトを作成」ボタンをクリックして作成を開始できます。",
     "noDescription": "説明なし",
+    "selectedProject": "選択中のプロジェクト",
+    "readFullDescription": "説明をすべて読む",
+    "showLessDescription": "折りたたむ",
     "filesInProject": "{projectName}のファイル",
     "synchronizing": "同期中...",
-    "synchronize": "同期",
+    "synchronize": "サーバー変更を確認",
     "loadingFiles": "ファイルを読み込み中...",
     "noFilesFound": "ファイルが見つかりません。",
     "deleteTitle": "プロジェクトの削除",
@@ -448,8 +463,34 @@
       }
     },
     "syncDialog": {
-      "title": "プロジェクトの同期",
+      "eyebrow": "サーバー復旧",
+      "title": "サーバー変更を確認",
+      "description": "{project}の管理外のファイル変更を、採用または破棄する前に確認します。",
+      "missingTitle": "プロジェクトストレージの確認が必要です",
+      "changeCount": "{count}件のELANファイル変更について管理者の判断が必要です。",
+      "safetyTitle": "変更はまだ採用されていません",
+      "safetyDescription": "採用時には変更されたすべてのEAFを検証し、研究データベースを更新してGitコミットを1件作成します。リポジトリ版を維持するとサーバー変更は完全に破棄されます。",
+      "acceptServerChanges": "検証して変更を採用",
+      "keepRepositoryVersion": "サーバー変更を破棄",
+      "acceptConfirm": "検出された{count}件のサーバー変更を検証して採用しますか？無効なEAFは拒否され、同期コミットは作成されません。",
+      "retry": "再確認",
+      "historyTitle": "復旧履歴",
+      "historyRetained": "成功後30日間証拠を保持",
+      "operationChanges": "{count}件の変更",
+      "recover": "復旧",
+      "recoveryFailed": "操作を自動復旧できませんでした。",
+      "states": {
+        "preparing": "準備中",
+        "prepared": "検証済み",
+        "committing": "記録中",
+        "completed": "完了",
+        "discarded": "安全に破棄済み",
+        "failed": "安全に失敗",
+        "recovery_required": "復旧が必要"
+      },
       "checkingStatus": "ステータスを確認中...",
+      "recoveryTitle": "中断された同期の復旧が必要です",
+      "recoveryDescription": "Gitには承認済み操作がありますが、データベースへの反映が完了していません。下の操作履歴から復旧してください。",
       "missingFolder": "プロジェクトフォルダーが見つかりません。バックアップから復元するか、プロジェクトを削除できます。",
       "missingGit": "プロジェクトの.gitフォルダーが見つかりません。バックアップから復元するか、プロジェクトを削除できます。",
       "missingElanFiles": "プロジェクトのelan_filesフォルダーが見つかりません。バックアップから復元するか、プロジェクトを削除できます。",
@@ -477,7 +518,8 @@
         "succesfullyDeleted": "プロジェクトは正常に削除されました。",
         "succesfullyDiscarded": "ローカルの変更は正常に破棄されました。",
         "succesfullySynced": "プロジェクトは正常に同期され、データベースが更新されました。",
-        "alreadyUpToDate": "変更は検出されませんでした。プロジェクトは既に同期されています。"
+        "alreadyUpToDate": "変更は検出されませんでした。プロジェクトは既に同期されています。",
+        "recovered": "正規のGit履歴からデータベースを復旧しました。"
       }
     },
     "createDialog": {
@@ -541,9 +583,23 @@
           "namingStandards": "命名規則",
           "effectiveStandards": "有効な基準",
           "members": "メンバーとアクセス",
-          "invitations": "招待"
+          "invitations": "招待",
+          "protocols": "版管理されたプロトコル"
         }
       }
+    },
+    "protocols": {
+      "description": "変更不可の研究ルールを公開し、このプロジェクトで使用する版を指定します。",
+      "name": "プロトコル名",
+      "required_tiers": "必須階層（カンマ区切り）",
+      "tier_parents": "必須の親階層（JSON）",
+      "linguistic_types": "必須言語タイプ（JSON）",
+      "vocabularies": "必須統制語彙",
+      "media_required": "リンクされたメディアを必須にする",
+      "media_types": "許可するメディアMIMEタイプ",
+      "create": "下書きを作成",
+      "publish": "公開",
+      "pin": "このプロジェクトで使用"
     },
     "members": {
       "title": "メンバー管理",
@@ -650,7 +706,7 @@
     "deleteTitle": "ファイル形式を削除",
     "deleteMessage": "このファイル形式を削除してもよろしいですか？この操作は取り消せません。"
   },
-  
+
   "configureNamingStandards": {
     "title": "プロジェクトの命名規則を設定",
     "loading": "命名規則を読み込み中...",
@@ -950,7 +1006,159 @@
     }
   },
 
+  "pendingUploads": {
+    "title": "保留中の投稿",
+    "pageDescription": "投稿内容を確認し、競合を調査して、検証済みの注釈作業を統合します。",
+    "queueTitle": "投稿レビューキュー",
+    "queueDescription": "共有研究プロジェクトへ統合する前に、受信した作業をテストします。",
+    "loading": "保留中の投稿を読み込み中...",
+    "noProjectSelected": {
+      "title": "プロジェクトが選択されていません",
+      "message": "保留中の投稿を表示するプロジェクトを選択してください。",
+      "selectProject": "プロジェクトを選択"
+    },
+    "noUploads": {
+      "title": "保留中の投稿はありません",
+      "message": "このプロジェクトの投稿はすべて処理済みです。"
+    },
+    "summary": {
+      "totalPending": "保留中の合計",
+      "readyToMerge": "統合可能",
+      "needResolution": "解決が必要"
+    },
+    "uploadedBy": "投稿者：{user}",
+    "fileTypes": { "new": "新規", "modified": "変更", "deleted": "削除" },
+    "conflictedFiles": "競合ファイル",
+    "actions": {
+      "viewDetails": "詳細を表示",
+      "mergeNow": "今すぐ統合",
+      "merging": "統合中...",
+      "resolveConflicts": "競合を解決",
+      "testMerge": "統合をテスト",
+      "testing": "テスト中...",
+      "refresh": "更新",
+      "mergeAllReady": "統合可能な項目をすべて統合（{count}件）",
+      "mergingAll": "すべて統合中..."
+    },
+    "modal": {
+      "uploadDetails": "投稿の詳細",
+      "resolveConflicts": "投稿の競合を解決"
+    },
+    "mergeConfirmation": {
+      "title": "投稿を統合しますか？",
+      "message": "{branch}を共有プロジェクトへ統合し、プロジェクト履歴を変更します。"
+    },
+    "status": {
+      "readyToMerge": "統合可能",
+      "needsResolution": "解決が必要",
+      "error": "エラー",
+      "pendingReview": "レビュー待ち"
+    },
+    "uploadTypes": {
+      "newFiles": "新規ファイル",
+      "withModifications": "変更あり",
+      "withDeletions": "削除あり"
+    },
+    "errors": {
+      "loadFailed": "保留中の投稿を読み込めませんでした",
+      "testMergeFailed": "統合テストに失敗しました",
+      "notReadyToMerge": "投稿はまだ統合できません。先に統合をテストしてください。",
+      "mergeFailed": "投稿の統合に失敗しました",
+      "noReadyUploads": "統合可能な投稿はありません",
+      "batchMergeFailed": "投稿の一括統合に失敗しました"
+    },
+    "unknown": "不明"
+  },
+  "upload": {
+    "selectedFiles": "選択したファイル（{count}件）",
+    "addMoreFiles": "ファイルを追加",
+    "clearAllFiles": "すべて消去",
+    "removeFile": "ファイルを削除",
+    "removeNamedFile": "{name}を削除",
+    "chooseFiles": "ファイルを選択",
+    "chooseFolder": "フォルダーを選択",
+    "totalSize": "合計：{size}",
+    "filesExceedLimit": "一部のファイルが{maxSize}を超えています",
+    "noFilesSelected": "ファイルが選択されていません",
+    "filesSkipped": ".eaf以外のファイル{count}件を除外しました",
+    "noEafFiles": ".eafファイルがありません",
+    "filesTooLarge": "サイズ制限（{maxSize}）を超えるファイル：{files}",
+    "duplicatesSkipped": "重複ファイル{count}件を除外しました",
+    "noNewFiles": "追加できる新しいファイルがありません",
+    "filesAddedFromFolder": "フォルダーから{count}件追加しました",
+    "fileAdded": "追加：{fileName}",
+    "filesAdded": "{count}件追加しました",
+    "zone": {
+      "title": "ELANファイルをドロップするか選択してください",
+      "subtitle": ".eafファイルのみ使用できます"
+    }
+  },
+  "uploadPage": {
+    "title": "ELANファイルのアップロード",
+    "pageDescription": "プロジェクトへ提出する前に命名規則とELAN構造を検証します。",
+    "projectSelection": {
+      "label": "プロジェクト",
+      "placeholder": "プロジェクトを選択..."
+    },
+    "uploadZone": {
+      "title": "ELANファイルをここにドロップ",
+      "subtitle": ".eafファイルのみ（1件50MBまで）"
+    },
+    "projectStep": {
+      "title": "プロジェクトを選択",
+      "description": "提出先の研究プロジェクトを選びます。"
+    },
+    "filesStep": {
+      "title": "ELANファイルを選択・検証",
+      "description": "共同レビューに入る前にファイルを検査します。"
+    },
+    "ready": "準備完了",
+    "selectedCount": "{count}件選択",
+    "selectProjectFirst": "先にプロジェクトを選択してください。",
+    "nonCompliantSummary": "{count}件のファイル名が命名規則に違反しています。",
+    "compliantSummary": "選択したファイル名はすべて命名規則に適合しています。",
+    "submitTitle": "貢献を提出",
+    "submitDescription": "検証済みファイルはマージ前のレビューに送られます。",
+    "uploadButton": "ファイルをアップロード",
+    "uploadingFiles": "{count}件をアップロード中...",
+    "complete": "提出完了",
+    "uploadResults": "アップロード結果",
+    "resultSuccess": "成功",
+    "resultFailed": "失敗",
+    "complianceWarning": "命名規則に違反するファイルがあります。",
+    "errors": {
+      "selectProjectAndFiles": "プロジェクトとファイルを選択してください",
+      "uploadFailed": "アップロードに失敗しました",
+      "standardsFailed": "命名規則を読み込めないため、未検証の提出を防ぐ目的でアップロードを停止しました。"
+    }
+  },
   "tiersPage": {
-    "pageTitle": "階層"
+    "pageTitle": "階層",
+    "pageDescription": "プロジェクトのELANファイルに含まれる注釈階層を確認・整理します。",
+    "sectionsTitle": "コーパスの整理",
+    "sectionsDescription": "ELANファイルを研究用のセクションに分類します。",
+    "newSectionName": "新しいセクション名",
+    "createSection": "セクションを作成",
+    "renameSection": "セクション名を変更",
+    "deleteSection": "セクションを削除",
+    "deleteConfirmation": "セクション「{name}」を削除しますか？ファイルは未分類に戻ります。",
+    "unsectioned": "未分類",
+    "fileCount": "ELANファイル {count}件",
+    "tierCount": "ルート階層 {count}件",
+    "moveGuidance": "グリップをドラッグしてセクション間を移動できます。キーボードやタッチ操作では移動先メニューも使用できます。",
+    "moveTo": "移動先",
+    "dragHandle": "別のセクションへドラッグ",
+    "dragFile": "{name}を別のセクションへドラッグ",
+    "dropHere": "ここにELANファイルをドロップ",
+    "noUnsectioned": "すべてのELANファイルがセクションに所属しています。",
+    "noTiers": "このファイルには階層がありません。",
+    "loading": "階層を読み込んでいます...",
+    "noProject": "階層を確認するプロジェクトを選択してください。",
+    "loadFailed": "階層を読み込めませんでした。",
+    "operationFailed": "変更を保存できませんでした。サーバーの最新状態に戻しました。",
+    "sectionCreated": "セクションを作成しました。",
+    "sectionRenamed": "セクション名を変更しました。",
+    "sectionDeleted": "セクションを削除しました。",
+    "groupMoved": "ELANファイルを移動しました。"
   }
 }

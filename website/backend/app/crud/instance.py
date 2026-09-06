@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model.instance import Instance
@@ -13,13 +14,14 @@ async def create_instance(db: AsyncSession, data: dict):
     return await DatabaseUtils.create(db, instance)
 
 
-async def get_instance_by_name(db: AsyncSession, name: str):
-    return await DatabaseUtils.get_one_by_filter(db, Instance, {"instance_name": name})
+async def get_installation_profile(db: AsyncSession) -> Instance | None:
+    """Return the only institution profile configured for this installation."""
+    return await db.scalar(select(Instance))
 
 
-async def get_first_instance(db: AsyncSession):
-    result = await DatabaseUtils.get_all(db, Instance)
-    return result[0] if result else None
+async def get_first_instance(db: AsyncSession) -> Instance | None:
+    """Compatibility alias while callers adopt installation terminology."""
+    return await get_installation_profile(db)
 
 
 async def update_instance(db: AsyncSession, instance_id: int, data: dict):

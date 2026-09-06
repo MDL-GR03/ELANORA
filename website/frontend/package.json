@@ -19,19 +19,19 @@
     "i18n:extract": "vue-i18n-extract extract --vueFiles \"src/**/*.vue\" --languageFiles \"src/locales/*.json\" --add",
     "i18n:clean-empty": "node scripts/clean-vue-i18n-extraction.js",
     "i18n:extract-clean": "npm run i18n:extract && npm run i18n:clean-empty",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "prepare": "husky"
   },
   "dependencies": {
     "@fontsource-variable/nunito-sans": "^5.2.5",
-    "@fontsource-variable/rubik": "^5.2.5",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/vue-fontawesome": "^3.0.8",
-    "@unhead/vue": "^2.0.14",
-    "axios": "^1.7.9",
+    "@unhead/vue": "^2.1.17",
+    "axios": "^1.20.0",
     "date-fns": "^4.1.0",
     "pinia": "^3.0.1",
     "tailwindcss": "^4.1.11",
@@ -62,6 +62,10 @@
     "vite": "^6.1.0",
     "vitest": "^3.1.4",
     "vue-i18n-extract": "^2.0.7"
+  },
+  "overrides": {
+    "nanoid": "3.3.18",
+    "postcss": "8.5.27"
   },
   "lint-staged": {
     "src/**/*.{js,jsx,ts,tsx,vue}": [

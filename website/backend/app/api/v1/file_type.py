@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
+from app.dependency.user import get_admin_dep
 from app.schema.requests.file_type import (
     FileTypeCreateRequest,
     FileTypeImportSelectedRequest,
@@ -10,7 +11,7 @@ from app.schema.requests.file_type import (
 from app.schema.responses.file_type import FileTypeResponse
 from app.service.file_type import FileTypeService
 
-router = APIRouter()
+router = APIRouter(dependencies=[get_admin_dep])
 
 
 @router.get("/project/{project_id}", response_model=list[FileTypeResponse])

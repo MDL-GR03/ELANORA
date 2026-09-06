@@ -1,10 +1,11 @@
-# Use python:alpine which is a stripped-down version of Python using Alpine Linux
-FROM python:3.13-alpine3.21
+FROM python:3.13-slim AS runtime
 
-# APK is the package manager for Alpine Linux, and musl-dev/gcc are required for building some Python packages
-# Also installing Poetry in the same layer
-RUN apk add --no-cache gcc musl-dev && \
-    pip install poetry
+# Git is an application runtime dependency: each research project is a Git
+# repository. Poetry is used only to install the locked Python environment.
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir poetry==2.4.2
 
 # Set workdir
 WORKDIR /app
@@ -14,13 +15,19 @@ COPY pyproject.toml poetry.lock ./
 
 # Install dependencies (no venv, system-wide for Docker)
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi --only main
+    && poetry install --no-interaction --no-ansi --only main --no-root
 
 # Copy the rest of your app
 COPY . .
+
+RUN addgroup --system --gid 10001 elanora \
+    && adduser --system --uid 10001 --ingroup elanora elanora \
+    && chown -R elanora:elanora /app
+
+USER elanora
 
 # Expose port
 EXPOSE 8010
 
 # Start FastAPI
-CMD ["fastapi", "run", "app/main.py", "--host", "0.0.0.0", "--port", "8010"]
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8010"]

@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
+    JSON,
     DateTime,
     ForeignKey,
     Integer,
     String,
     Text,
-    JSON,
     func,
 )
 from sqlalchemy import (
@@ -47,7 +47,15 @@ class PendingUpload(Base):
     resolved_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("USER.user_id"), nullable=True
     )
+    submitted_by: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("USER.user_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     branch_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    base_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    accepted_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
     git_details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     project_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
@@ -59,6 +67,9 @@ class PendingUpload(Base):
     )
     resolver: Mapped[Optional["User"]] = relationship(
         "User", foreign_keys=[resolved_by], back_populates="resolved_uploads"
+    )
+    submitter: Mapped[Optional["User"]] = relationship(
+        "User", foreign_keys=[submitted_by], back_populates="submitted_uploads"
     )
 
     def __repr__(self) -> str:

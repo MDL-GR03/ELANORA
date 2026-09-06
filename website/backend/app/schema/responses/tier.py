@@ -26,7 +26,7 @@ class TierGroupInfo(CustomBaseModel):
     tier_group_id: int
     elan_file_name: str
     section_id: int | None
-    tiers: list[TierNode] = []
+    tiers: list[TierNode] = Field(default_factory=list)
 
 
 class SectionsAndGroupsResponse(CustomBaseModel):

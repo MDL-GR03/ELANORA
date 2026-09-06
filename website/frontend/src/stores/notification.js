@@ -1,161 +1,171 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import notificationService from '@/api/service/notificationService'
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import notificationService from '@/api/service/notificationService';
 
 export const useNotificationStore = defineStore('notification', () => {
   // State
-  const notifications = ref([])
+  const notifications = ref([]);
   const stats = ref({
     total_notifications: 0,
     unread_notifications: 0,
-    read_notifications: 0
-  })
+    read_notifications: 0,
+  });
   const preferences = ref({
-    email_enabled: true
-  })
-  const loading = ref(false)
-  const error = ref(null)
+    email_enabled: true,
+  });
+  const loading = ref(false);
+  const error = ref(null);
 
   // Getters
-  const unreadNotifications = computed(() => 
-    notifications.value.filter(notification => !notification.is_read)
-  )
+  const unreadNotifications = computed(() =>
+    notifications.value.filter((notification) => !notification.is_read)
+  );
 
-  const unreadCount = computed(() => stats.value.unread_notifications || 0)
+  const unreadCount = computed(() => stats.value.unread_notifications || 0);
 
-  const hasUnreadNotifications = computed(() => unreadCount.value > 0)
+  const hasUnreadNotifications = computed(() => unreadCount.value > 0);
 
   // Actions
   const fetchNotifications = async (params = {}) => {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
-      const data = await notificationService.getNotifications(params)
-      notifications.value = data
+      const data = await notificationService.getNotifications(params);
+      notifications.value = data;
     } catch (err) {
-      error.value = err.message || 'Failed to fetch notifications'
-      console.error('Error fetching notifications:', err)
+      error.value = err.message || 'Failed to fetch notifications';
+      console.error('Error fetching notifications:', err);
     } finally {
-      loading.value = false
+      loading.value = false;
     }
-  }
+  };
 
   const fetchUnreadNotifications = async (params = {}) => {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
     try {
       const data = await notificationService.getNotifications({
         ...params,
-        unread_only: true
-      })
+        unread_only: true,
+      });
       // Update existing notifications with unread ones
-      const existingIds = new Set(notifications.value.map(n => n.notification_id))
-      const newNotifications = data.filter(n => !existingIds.has(n.notification_id))
-      notifications.value = [...notifications.value, ...newNotifications]
+      const existingIds = new Set(
+        notifications.value.map((n) => n.notification_id)
+      );
+      const newNotifications = data.filter(
+        (n) => !existingIds.has(n.notification_id)
+      );
+      notifications.value = [...notifications.value, ...newNotifications];
     } catch (err) {
-      error.value = err.message || 'Failed to fetch unread notifications'
-      console.error('Error fetching unread notifications:', err)
+      error.value = err.message || 'Failed to fetch unread notifications';
+      console.error('Error fetching unread notifications:', err);
     } finally {
-      loading.value = false
+      loading.value = false;
     }
-  }
+  };
 
   const fetchNotificationStats = async () => {
     try {
-      const data = await notificationService.getNotificationStats()
-      stats.value = data
+      const data = await notificationService.getNotificationStats();
+      stats.value = data;
     } catch (err) {
-      error.value = err.message || 'Failed to fetch notification stats'
-      console.error('Error fetching notification stats:', err)
+      error.value = err.message || 'Failed to fetch notification stats';
+      console.error('Error fetching notification stats:', err);
     }
-  }
+  };
 
   const markNotificationAsRead = async (notificationId) => {
     try {
-      const updatedNotification = await notificationService.markNotificationAsRead(notificationId)
-      const index = notifications.value.findIndex(n => n.notification_id === notificationId)
+      const updatedNotification =
+        await notificationService.markNotificationAsRead(notificationId);
+      const index = notifications.value.findIndex(
+        (n) => n.notification_id === notificationId
+      );
       if (index !== -1) {
-        notifications.value[index] = updatedNotification
+        notifications.value[index] = updatedNotification;
       }
       // Update stats
-      await fetchNotificationStats()
+      await fetchNotificationStats();
     } catch (err) {
-      error.value = err.message || 'Failed to mark notification as read'
-      console.error('Error marking notification as read:', err)
+      error.value = err.message || 'Failed to mark notification as read';
+      console.error('Error marking notification as read:', err);
     }
-  }
+  };
 
   const markAllNotificationsAsRead = async () => {
     try {
-      await notificationService.markAllNotificationsAsRead()
+      await notificationService.markAllNotificationsAsRead();
       // Mark all notifications as read in the store
-      notifications.value.forEach(notification => {
-        notification.is_read = true
-      })
+      notifications.value.forEach((notification) => {
+        notification.is_read = true;
+      });
       // Update stats
-      await fetchNotificationStats()
+      await fetchNotificationStats();
     } catch (err) {
-      error.value = err.message || 'Failed to mark all notifications as read'
-      console.error('Error marking all notifications as read:', err)
+      error.value = err.message || 'Failed to mark all notifications as read';
+      console.error('Error marking all notifications as read:', err);
     }
-  }
+  };
 
   const deleteNotification = async (notificationId) => {
     try {
-      await notificationService.deleteNotification(notificationId)
-      notifications.value = notifications.value.filter(n => n.notification_id !== notificationId)
+      await notificationService.deleteNotification(notificationId);
+      notifications.value = notifications.value.filter(
+        (n) => n.notification_id !== notificationId
+      );
       // Update stats
-      await fetchNotificationStats()
+      await fetchNotificationStats();
     } catch (err) {
-      error.value = err.message || 'Failed to delete notification'
-      console.error('Error deleting notification:', err)
+      error.value = err.message || 'Failed to delete notification';
+      console.error('Error deleting notification:', err);
     }
-  }
+  };
 
   const fetchNotificationPreferences = async () => {
     try {
-      const data = await notificationService.getNotificationPreferences()
-      preferences.value = data
+      const data = await notificationService.getNotificationPreferences();
+      preferences.value = data;
     } catch (err) {
-      error.value = err.message || 'Failed to fetch notification preferences'
-      console.error('Error fetching notification preferences:', err)
+      error.value = err.message || 'Failed to fetch notification preferences';
+      console.error('Error fetching notification preferences:', err);
     }
-  }
+  };
 
   const updateNotificationPreferences = async (newPreferences) => {
     try {
-      console.log('Store: Updating preferences with:', newPreferences)
-      const data = await notificationService.updateNotificationPreferences(newPreferences)
-      console.log('Store: Received updated preferences:', data)
-      preferences.value = data
-      error.value = null // Clear any previous errors
+      console.log('Store: Updating preferences with:', newPreferences);
+      const data =
+        await notificationService.updateNotificationPreferences(newPreferences);
+      console.log('Store: Received updated preferences:', data);
+      preferences.value = data;
+      error.value = null; // Clear any previous errors
     } catch (err) {
-      error.value = err.message || 'Failed to update notification preferences'
-      console.error('Error updating notification preferences:', err)
-      throw err // Re-throw to allow component to handle if needed
+      error.value = err.message || 'Failed to update notification preferences';
+      console.error('Error updating notification preferences:', err);
+      throw err; // Re-throw to allow component to handle if needed
     }
-  }
+  };
 
   const addNotification = (notification) => {
     // Add a new notification to the beginning of the list
-    notifications.value.unshift(notification)
+    notifications.value.unshift(notification);
     // Update stats (increment unread count)
-    stats.value.unread_notifications += 1
-    stats.value.total_notifications += 1
-  }
+    stats.value.unread_notifications += 1;
+    stats.value.total_notifications += 1;
+  };
 
   const clearError = () => {
-    error.value = null
-  }
+    error.value = null;
+  };
 
   const clearNotifications = () => {
-    notifications.value = []
+    notifications.value = [];
     stats.value = {
       total_notifications: 0,
       unread_notifications: 0,
-      read_notifications: 0
-    }
-  }
+      read_notifications: 0,
+    };
+  };
 
   return {
     // State
@@ -164,12 +174,12 @@ export const useNotificationStore = defineStore('notification', () => {
     preferences,
     loading,
     error,
-    
+
     // Getters
     unreadNotifications,
     unreadCount,
     hasUnreadNotifications,
-    
+
     // Actions
     fetchNotifications,
     fetchUnreadNotifications,
@@ -181,6 +191,6 @@ export const useNotificationStore = defineStore('notification', () => {
     updateNotificationPreferences,
     addNotification,
     clearError,
-    clearNotifications
-  }
-})
+    clearNotifications,
+  };
+});

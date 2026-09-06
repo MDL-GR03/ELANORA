@@ -3,17 +3,17 @@
 This module contains all enum definitions used across models.
 """
 
-from enum import Enum
+from enum import StrEnum
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """Enum for user roles."""
 
     ADMIN = "admin"
     PUBLIC = "public"
 
 
-class ProjectPermission(str, Enum):
+class ProjectPermission(StrEnum):
     """Enumeration for project permissions."""
 
     READ = "read"
@@ -30,7 +30,34 @@ class ProjectPermission(str, Enum):
         return None
 
 
-class InvitationStatus(str, Enum):
+class ProjectCapability(StrEnum):
+    """Optional project capabilities independent of the access hierarchy."""
+
+    MANAGE_PROTOCOLS = "manage_protocols"
+
+
+class ProtocolVersionStatus(StrEnum):
+    """Lifecycle states for an immutable protocol snapshot."""
+
+    DRAFT = "draft"
+    PUBLISHED = "published"
+
+
+class ValidationOutcome(StrEnum):
+    """Persisted result of validating one immutable EAF revision."""
+
+    PASSED = "passed"
+    FAILED = "failed"
+
+
+class ValidationSeverity(StrEnum):
+    """Severity attached to a protocol validation issue."""
+
+    ERROR = "error"
+    WARNING = "warning"
+
+
+class InvitationStatus(StrEnum):
     """Enumeration for invitation status."""
 
     PENDING = "pending"
@@ -39,7 +66,7 @@ class InvitationStatus(str, Enum):
     EXPIRED = "expired"
 
 
-class Type(str, Enum):
+class Type(StrEnum):
     """Enumeration for conflict types."""
 
     # Original ELAN conflict types
@@ -57,7 +84,7 @@ class Type(str, Enum):
     UPLOAD_MIXED_CHANGES = "upload_mixed_changes"
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     """Enumeration for conflict severity levels."""
 
     LOW = "low"
@@ -66,7 +93,7 @@ class Severity(str, Enum):
     CRITICAL = "critical"
 
 
-class Status(str, Enum):
+class Status(StrEnum):
     """Enumeration for conflict status."""
 
     PENDING_ADMIN_APPROVAL = "pending_admin_approval"
@@ -78,11 +105,11 @@ class Status(str, Enum):
     DISMISSED = "dismissed"  # Rejected/cancelled
 
 
-class CommentTargetType(str, Enum):
-    """Enumeration for comment target types."""
+class ReviewCaseState(StrEnum):
+    """Lifecycle of a researcher-facing contribution review case."""
 
-    PROJECT = "project"
-    ELAN_FILE = "elan_file"
-    CONFLICT = "conflict"
-    TIER = "tier"
-    ANNOTATION = "annotation"
+    OPEN = "open"
+    CHANGES_REQUESTED = "changes_requested"
+    RESUBMITTED = "resubmitted"
+    RESOLVED = "resolved"
+    CLOSED = "closed"

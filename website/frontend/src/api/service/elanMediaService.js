@@ -5,7 +5,9 @@ const elanMediaService = {
    * Get project files with their associated media for rename suggestions
    */
   async getProjectFilesWithMedia(projectId) {
-    const response = await apiClient.get(`/elan-file-media/projects/${projectId}/files-with-media`);
+    const response = await apiClient.get(
+      `/elan-file-media/projects/${projectId}/files-with-media`
+    );
     return response.data;
   },
 };

@@ -1,55 +1,62 @@
 import os
 import re
-import subprocess
+import tempfile
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import aiofiles
 from fastapi import UploadFile
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
-from app.core.config import ELAN_PROJECTS_BASE_PATH
+from app.core.config import ELAN_MAX_FILE_SIZE_MB, ELAN_PROJECTS_BASE_PATH
+from app.core.effective_naming_standard_locations import get_location_id_by_name
+from app.core.exceptions import RenameConflictError
+from app.crud import elan_file_media as elan_media_crud
+from app.crud.effective_naming_standard import get_effective_standards_for_project
+from app.crud.elan_file import (
+    get_elan_file_by_filename_and_project,
+    get_elan_file_name_by_id,
+    get_elan_files_by_project,
+    update_elan_file_name,
+)
 from app.crud.pending_upload import (
-    save_pending_upload,
     get_pending_uploads,
+    mark_upload_processed,
+    save_pending_upload,
 )
 from app.crud.project import (
     create_project_db,
     delete_project_db,
+    get_project_by_id,
     get_project_by_name,
     get_project_id_by_name,
     list_projects_by_instance,
     list_projects_by_user,
     project_exists_by_name,
-    get_project_by_id,
-    get_project_name_by_id,
+    restore_project_db,
 )
-from app.crud.elan_file import (
-    get_elan_files_by_project,
-    get_elan_file_name_by_id,
-    get_elan_file_by_filename_and_project,
-    update_elan_file_name,
-)
-from app.service.database_rename_handler import DatabaseRenameHandler
-from app.service.git_status_parser import GitStatusParser, GitFileStatusAnalyzer
-from app.crud import elan_file_media as elan_media_crud
-from app.crud.effective_naming_standard import get_effective_standards_for_project
+from app.crud.project_naming_standard import get_standard_with_components_full
+from app.elan.validation import validate_eaf
+from app.model.association import ProjectCapabilityGrant, UserToProject
+from app.model.audit_event import AuditEvent
+from app.model.enums import ProjectPermission, ReviewCaseState, Status
+from app.model.notification import Notification
+from app.model.review import ReviewCase
+from app.schema.common.git import FileStatus
 from app.schema.responses.git import (
-    FileRenameResponse,
     BulkRenameResponse,
+    FileRenameResponse,
+    ProjectInfo,
+    ProjectSyncCheckResponse,
     RenameResult,
 )
-
-
-from app.core.exceptions import RenameConflictError
-from app.crud.project_naming_standard import get_standard_with_components_full
-from app.core.effective_naming_standard_locations import get_location_id_by_name
-from app.schema.common.git import FileStatus
-from app.schema.responses.git import ProjectInfo, ProjectSyncCheckResponse
+from app.service.database_rename_handler import DatabaseRenameHandler
+from app.service.eaf_review import validate_repository_eafs
 from app.service.elan import ElanService
-from app.utils.project_backup import restore_project_backup
 from app.service.git_operations import (
     FileUploadProcessor,
     GitBranchManager,
@@ -57,12 +64,17 @@ from app.service.git_operations import (
     GitDiffAnalyzer,
     delete_project_folder,
 )
-from app.utils.file_processing import list_untracked_contents
+from app.service.git_status_parser import GitFileStatusAnalyzer, GitStatusParser
+from app.service.protocol import (
+    get_pinned_protocol_version,
+    validate_content_against_protocol,
+)
+from app.storage.paths import safe_project_path
 from app.utils.project_backup import (
-    create_project_backup_structure,
     remove_project_backup,
-    restore_project_backup,
     rename_project_backup_folder,
+    restore_project_backup,
+    update_backup,
 )
 from app.utils.project_setup_utils import (
     copy_githooks,
@@ -74,6 +86,31 @@ from app.utils.project_setup_utils import (
 from app.utils.validation import ValidationUtils
 
 logger = get_logger()
+EXPECTED_LOG_FIELDS = 4
+
+
+@dataclass(frozen=True, slots=True)
+class SubmissionContext:
+    """Authenticated provenance and validation evidence for one upload batch."""
+
+    username: str
+    user_id: int
+    base_commit: str
+    protocol_validation: dict[str, str | None]
+
+
+class DuplicatePendingContributionError(ValueError):
+    """Raised when an identical project snapshot is already awaiting review."""
+
+    def __init__(self, upload_id: int) -> None:
+        self.upload_id = upload_id
+        super().__init__(
+            f"This exact contribution is already awaiting review as contribution #{upload_id}."
+        )
+
+
+class ContributionAlreadyCurrentError(ValueError):
+    """Raised when submitted files do not change the accepted project state."""
 
 
 class GitService:
@@ -116,13 +153,15 @@ class GitService:
     async def create_project(
         self,
         project_name: str,
-        description: str,
+        description: str | None,
         db: AsyncSession,
         user_id: int,
-        instance_id: int = 1,
+        instance_id: int,
     ) -> dict[str, Any]:
         """Create a new project with Git repository and description."""
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
+        staging_path: Path | None = None
+        published = False
 
         logger.info(f"Checking if project folder exists: {project_path}")
         logger.info(f"Folder exists? {project_path.exists()}")
@@ -138,25 +177,28 @@ class GitService:
             raise ValueError(f"Project '{project_name}' already exists")
 
         try:
-            # Create project directory and structure
-            create_project_structure(project_path)
-            create_project_backup_structure(project_name)
-            runner = GitCommandRunner(project_path)
+            # Assemble the complete repository out of sight, on the same
+            # filesystem as its final location so publication is atomic.
+            staging_path = Path(
+                tempfile.mkdtemp(prefix=f".{project_name}.staging-", dir=self.base_path)
+            )
+            create_project_structure(staging_path)
+            runner = GitCommandRunner(staging_path, maintain_backup=False)
             runner.init_repo()
 
             # Create .gitignore and README
-            create_gitignore(project_path)
-            create_readme(project_path, project_name)
+            create_gitignore(staging_path)
+            create_readme(staging_path, project_name)
 
             # Copy githooks
-            copy_githooks(project_path, project_name)
+            copy_githooks(staging_path, project_name)
 
             # Initial commit
             runner.add_all()
             runner.commit("Initial project setup")
 
             # Paths
-            hooks_dir = project_path / ".git" / "hooks"
+            hooks_dir = staging_path / ".git" / "hooks"
             hooks_dir.mkdir(parents=True, exist_ok=True)
 
             # Save to database
@@ -168,7 +210,21 @@ class GitService:
                 instance_id=instance_id,
                 creator_user_id=user_id,
             )
+            # Flush has succeeded in create_project_db, but PostgreSQL remains
+            # uncommitted while the ready repository is atomically published.
+            staging_path.rename(project_path)
+            published = True
             await db.commit()
+
+            # The recovery cache is derived state. Build it only after both
+            # authoritative stores have accepted the project.
+            try:
+                update_backup(project_name, self.base_path)
+            except Exception:
+                logger.exception(
+                    "Project %r was created, but its recovery cache could not be updated",
+                    project_name,
+                )
 
             return {
                 "project_name": project_name,
@@ -180,13 +236,26 @@ class GitService:
 
         except Exception as e:
             await db.rollback()
+            logger.exception("Project creation failed for %r", project_name)
+            # The path and recovery cache were created by this request. Remove
+            # both on failure so filesystem and database state cannot diverge.
+            try:
+                if published:
+                    delete_project_folder(project_path)
+                elif staging_path is not None:
+                    delete_project_folder(staging_path)
+                remove_project_backup(project_name)
+            except Exception:
+                logger.exception(
+                    "Unable to clean up failed project creation for %r", project_name
+                )
             raise RuntimeError(f"Project creation failed: {e}") from e
 
     def commit_changes(
         self, project_name: str, commit_message: str, user_name: str = "user"
     ) -> dict[str, Any]:
         """Commit changes to a project."""
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
 
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
@@ -219,13 +288,14 @@ class GitService:
         except Exception as e:
             raise RuntimeError(f"Commit failed: {e}") from e
 
-    async def add_elan_files(
+    async def add_elan_files(  # noqa: PLR0912
         self,
         project_id: int,
         files: list[UploadFile],
         db: AsyncSession,
         user_id: int,
         user_name: str,
+        protocol_validation: dict[str, str | None],
     ) -> dict[str, Any]:
         """Add multiple ELAN files to the project with branch-based workflow."""
         # Fetch project details by ID
@@ -237,7 +307,7 @@ class GitService:
             f"Fetched project: project_id={project.project_id}, project_name={project.project_name}"
         )
 
-        project_path = self.base_path / project.project_name
+        project_path = safe_project_path(self.base_path, project.project_name)
         logger.info(
             f"Starting add_elan_files for project ID: {project_id}, user: {user_name}, files: {[f.filename for f in files]}"
         )
@@ -325,6 +395,8 @@ class GitService:
         self._validate_upload_request(project_path, files)
         logger.info("Upload request validated successfully")
 
+        branch_name: str | None = None
+        contribution_recorded = False
         try:
             # Setup Git environment
             self._configure_git_user(project_path, user_name)
@@ -336,6 +408,10 @@ class GitService:
             diff_analyzer = GitDiffAnalyzer(project_path)
 
             # Create branch and process files
+            branch_manager.switch_to_master()
+            base_commit = GitCommandRunner(
+                project_path, maintain_backup=False
+            ).get_commit_hash()
             branch_name = branch_manager.create_upload_branch(user_name, len(files))
             uploaded_files, failed_files = await file_processor.process_files(
                 files, existing_files
@@ -351,9 +427,40 @@ class GitService:
                 diff_analyzer,
                 branch_name,
                 db=db,
-                username=user_name,
+                context=SubmissionContext(
+                    username=user_name,
+                    user_id=user_id,
+                    base_commit=base_commit,
+                    protocol_validation=protocol_validation,
+                ),
                 project_path=project_path,
             )
+            contribution_recorded = True
+            auto_accepted = False
+            if (
+                project.auto_accept_new_files
+                and not upload_info["modified_files"]
+                and not upload_info["deleted_files"]
+                and not failed_files
+            ):
+                try:
+                    await self.complete_pending_upload(
+                        project.project_name,
+                        upload_info["branch_name"],
+                        "auto",
+                        db,
+                        user_id,
+                    )
+                    auto_accepted = True
+                    upload_info["status"] = "accepted_automatically"
+                    upload_info["message"] = (
+                        "The valid new files were accepted automatically by project policy."
+                    )
+                except Exception:
+                    logger.exception(
+                        "Automatic acceptance failed; contribution remains pending"
+                    )
+            upload_info["auto_accepted"] = auto_accepted
 
             # Build response
             logger.info(
@@ -367,11 +474,26 @@ class GitService:
                 upload_info,
             )
 
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to add ELAN files: {e}") from e
+        except (DuplicatePendingContributionError, ContributionAlreadyCurrentError):
+            if branch_name and not contribution_recorded:
+                self._discard_failed_submission(project_path, branch_name)
+            raise
         except Exception as e:
+            if branch_name and not contribution_recorded:
+                self._discard_failed_submission(project_path, branch_name)
             logger.error(f"Batch file operation failed: {e}")
             raise RuntimeError(f"Failed to add ELAN files: {e}") from e
+
+    @staticmethod
+    def _discard_failed_submission(project_path: Path, branch_name: str) -> None:
+        """Return to accepted work and remove branches from a failed submission."""
+        runner = GitCommandRunner(project_path, maintain_backup=False)
+        try:
+            runner.checkout(runner.canonical_branch())
+            runner.delete_branch_localy(branch_name)
+            runner.delete_branch_localy(f"{branch_name}_pending_approval")
+        except Exception:
+            logger.exception("Unable to clean up failed contribution %s", branch_name)
 
     async def _save_upload_for_admin_approval(
         self,
@@ -379,11 +501,38 @@ class GitService:
         diff_analyzer: GitDiffAnalyzer,
         branch_name: str,
         db: AsyncSession,
-        username: str,
+        context: SubmissionContext,
         project_path: Path,
     ) -> dict[str, Any]:
         """Save upload for admin approval instead of attempting immediate merge."""
         logger.info(f"Saving upload branch '{branch_name}' for admin approval")
+
+        project = await get_project_by_name(db, project_path.name)
+        if project is None:
+            raise FileNotFoundError("Project disappeared while recording contribution")
+
+        # A Git tree identifies the complete submitted content without being
+        # affected by author, timestamp, or commit-message differences. Prevent
+        # repeated clicks/retries from creating indistinguishable review work.
+        runner = GitCommandRunner(project_path)
+        submitted_tree = runner.get_tree_hash(branch_name)
+        if submitted_tree == runner.get_tree_hash(runner.canonical_branch()):
+            raise ContributionAlreadyCurrentError(
+                "These files are already the current accepted version; no contribution was created."
+            )
+        for pending in await get_pending_uploads(db, project.project_id):
+            if not pending.branch_name:
+                continue
+            try:
+                if runner.get_tree_hash(pending.branch_name) == submitted_tree:
+                    raise DuplicatePendingContributionError(pending.upload_id)
+            except DuplicatePendingContributionError:
+                raise
+            except Exception:
+                logger.warning(
+                    "Could not inspect pending contribution branch %s",
+                    pending.branch_name,
+                )
 
         # Analyze what was uploaded
         branch_manager.switch_to_master()
@@ -394,8 +543,6 @@ class GitService:
 
         # Always save for admin approval (no immediate merging)
         approval_branch_name = f"{branch_name}_pending_approval"
-        runner = GitCommandRunner(project_path)
-
         try:
             # Rename upload branch to indicate it's pending approval
             runner.run(["branch", "-m", branch_name, approval_branch_name], check=True)
@@ -418,12 +565,19 @@ class GitService:
                 "analysis": analysis,
                 "message": f"Upload saved for admin approval. {len(analysis.new_files)} new files, {len(analysis.modified_files)} modified files.",
                 "pending_approval_since": datetime.now().isoformat(),
-                "uploaded_by": username,
+                "uploaded_by": context.username,
+                "base_commit": context.base_commit,
+                "protocol_validation": context.protocol_validation,
             }
 
             # Save upload info to database for admin dashboard
             await self._save_pending_upload_to_db(
-                upload_info, project_path, db, username
+                upload_info,
+                project_path,
+                db,
+                context.username,
+                context.user_id,
+                context.base_commit,
             )
 
             return upload_info
@@ -433,59 +587,64 @@ class GitService:
             # Cleanup on error
             try:
                 runner.run(["branch", "-D", approval_branch_name], check=False)
-            except:
-                pass
+            except Exception:
+                logger.exception(
+                    "Failed to clean up approval branch %s", approval_branch_name
+                )
             raise RuntimeError(f"Failed to save upload for approval: {e}") from e
 
     async def _save_pending_upload_to_db(
-        self, upload_info: dict, project_path: Path, db: AsyncSession, username: str
-    ):
+        self,
+        upload_info: dict,
+        project_path: Path,
+        db: AsyncSession,
+        username: str,
+        user_id: int,
+        base_commit: str,
+    ) -> None:
         """Save pending upload info to database for admin review."""
-        try:
-            project = await get_project_by_name(db, project_path.name)
-            if project:
-                # Create a pending upload record using the existing conflicts table
-                # We'll use this as a "pending upload" entry
-                upload_record = {
-                    "type": "PENDING_UPLOAD",
-                    "status": "PENDING_ADMIN_APPROVAL",
-                    "upload_data": {
-                        "branch_name": upload_info["branch_name"],
-                        "original_branch": upload_info["original_branch"],
-                        "uploaded_by": username,
-                        "new_files_count": len(upload_info["new_files"]),
-                        "modified_files_count": len(upload_info["modified_files"]),
-                        "deleted_files_count": len(upload_info["deleted_files"]),
-                        "new_files": upload_info["new_files"],
-                        "modified_files": upload_info["modified_files"],
-                        "deleted_files": upload_info["deleted_files"],
-                        "pending_since": upload_info["pending_approval_since"],
-                        "has_differences": upload_info["has_differences"],
-                        "has_conflicts": upload_info["has_conflicts"],
-                    },
-                    "resolution_info": {
-                        "can_auto_resolve": False,
-                        "requires_admin_approval": True,
-                        "suggested_action": "admin_test_merge",
-                        "available_strategies": ["test_merge"],
-                    },
-                    "detected_at": upload_info["pending_approval_since"],
-                }
+        project = await get_project_by_name(db, project_path.name)
+        if project is None:
+            raise FileNotFoundError("Project disappeared while recording contribution")
+        upload_record = {
+            "type": "PENDING_UPLOAD",
+            "status": "PENDING_ADMIN_APPROVAL",
+            "upload_data": {
+                "branch_name": upload_info["branch_name"],
+                "original_branch": upload_info["original_branch"],
+                "uploaded_by": username,
+                "new_files_count": len(upload_info["new_files"]),
+                "modified_files_count": len(upload_info["modified_files"]),
+                "deleted_files_count": len(upload_info["deleted_files"]),
+                "new_files": upload_info["new_files"],
+                "modified_files": upload_info["modified_files"],
+                "deleted_files": upload_info["deleted_files"],
+                "pending_since": upload_info["pending_approval_since"],
+                "has_differences": upload_info["has_differences"],
+                "has_conflicts": upload_info["has_conflicts"],
+                "protocol_validation": upload_info["protocol_validation"],
+            },
+            "resolution_info": {
+                "can_auto_resolve": False,
+                "requires_admin_approval": True,
+                "suggested_action": "admin_test_merge",
+                "available_strategies": ["test_merge"],
+            },
+            "detected_at": upload_info["pending_approval_since"],
+        }
+        pending_upload = await save_pending_upload(
+            db,
+            project.project_id,
+            upload_info["branch_name"],
+            upload_record,
+            submitted_by=user_id,
+            base_commit=base_commit,
+        )
+        upload_info["upload_id"] = pending_upload.upload_id
 
-                # Save to conflicts table as "pending upload"
-                await save_pending_upload(
-                    db,
-                    project.project_id,
-                    upload_info["branch_name"],
-                    upload_record,
-                )
-
-                logger.info(
-                    f"Saved pending upload info for admin review: {upload_info['branch_name']}"
-                )
-
-        except Exception as e:
-            logger.error(f"Failed to save pending upload to DB: {e}")
+        logger.info(
+            f"Saved pending upload info for admin review: {upload_info['branch_name']}"
+        )
 
     async def list_projects(
         self, db: AsyncSession, instance_id: int
@@ -506,6 +665,7 @@ class GitService:
                 project_id=p.project_id,
                 project_name=p.project_name,
                 project_description=p.description,
+                auto_accept_new_files=p.auto_accept_new_files,
             )
             for p in projects
         ]
@@ -515,11 +675,37 @@ class GitService:
     ) -> list[ProjectInfo]:
         """List projects that a specific user has access to."""
         projects = await list_projects_by_user(db, user_id, instance_id)
+        permission_rows = await db.execute(
+            select(UserToProject.project_id, UserToProject.permission).where(
+                UserToProject.user_id == user_id,
+                UserToProject.project_id.in_(
+                    [project.project_id for project in projects]
+                ),
+            )
+        )
+        permissions = dict(permission_rows.all())
+        capability_rows = await db.execute(
+            select(
+                ProjectCapabilityGrant.project_id,
+                ProjectCapabilityGrant.capability,
+            ).where(
+                ProjectCapabilityGrant.user_id == user_id,
+                ProjectCapabilityGrant.project_id.in_(
+                    [project.project_id for project in projects]
+                ),
+            )
+        )
+        capabilities: dict[int, list[str]] = {}
+        for project_id, capability in capability_rows.all():
+            capabilities.setdefault(project_id, []).append(str(capability))
         return [
             ProjectInfo(
                 project_id=p.project_id,
                 project_name=p.project_name,
                 project_description=p.description,
+                auto_accept_new_files=p.auto_accept_new_files,
+                permission=str(permissions.get(p.project_id, ProjectPermission.READ)),
+                capabilities=capabilities.get(p.project_id, []),
             )
             for p in projects
         ]
@@ -531,6 +717,7 @@ class GitService:
         files: list[UploadFile],
         db: AsyncSession,
         user_id: int,
+        instance_id: int,
     ) -> dict:
         """Initialize a new project from a folder upload, saving .eaf files, creating a git repository, and updating the database.
 
@@ -555,7 +742,7 @@ class GitService:
         logger.info("User ID: %s, Files count: %d", user_id, len(files))
         logger.debug("Files: %s", [f.filename for f in files])
 
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
         elan_files_dir = project_path / "elan_files"
         logger.debug("Project path: %s", project_path)
         logger.debug("ELAN files directory: %s", elan_files_dir)
@@ -621,7 +808,7 @@ class GitService:
                 project_name=project_name,
                 description=description,
                 project_path=str(project_path),
-                instance_id=1,
+                instance_id=instance_id,
                 creator_user_id=user_id,
             )
             await db.commit()
@@ -702,6 +889,35 @@ class GitService:
                 str(elan_file), user_id, project_name
             )
 
+    async def rebuild_project_database(
+        self, project_name: str, db: AsyncSession, user_id: int
+    ) -> None:
+        """Rebuild the mutable database projection from canonical validated EAFs."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        project_path = safe_project_path(self.base_path, project_name)
+        files = sorted((project_path / "elan_files").glob("*.eaf"))
+        for file_path in files:
+            validate_eaf(file_path.read_bytes())
+        existing = await get_elan_files_by_project(db, project.project_id)
+        existing_names = {item.filename for item in existing}
+        canonical_names = {item.name for item in files}
+        elan_service = ElanService(db)
+        for file_path in files:
+            if file_path.name in existing_names:
+                await elan_service.process_single_file_and_update(
+                    str(file_path), user_id, project_name
+                )
+            else:
+                await elan_service.process_single_file(
+                    str(file_path), user_id, project_name
+                )
+        for filename in existing_names - canonical_names:
+            if not await elan_service.delete_elan_files_from_db(filename, project_name):
+                raise RuntimeError(f"Could not remove stale database file {filename}")
+        await db.commit()
+
     def _validate_upload_request(
         self, project_path: Path, files: list[UploadFile]
     ) -> None:
@@ -732,12 +948,33 @@ class GitService:
         self, project_name: str, db: AsyncSession
     ) -> dict[str, Any]:
         """Get pending uploads and compute their merge readiness in real-time."""
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
 
         # Get pending uploads from DB
         project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError(f"Project '{project_name}' not found")
         pending_uploads = await get_pending_uploads(db, project.project_id)
+
+        tree_groups: dict[str, list[int]] = {}
+        for upload in pending_uploads:
+            if not upload.branch_name:
+                continue
+            try:
+                tree_hash = runner.get_tree_hash(upload.branch_name)
+                tree_groups.setdefault(tree_hash, []).append(upload.upload_id)
+            except Exception:
+                logger.warning(
+                    "Could not determine content identity for contribution %s",
+                    upload.upload_id,
+                )
+        duplicate_of = {
+            upload_id: min(upload_ids)
+            for upload_ids in tree_groups.values()
+            for upload_id in upload_ids
+            if upload_id != min(upload_ids)
+        }
 
         upload_status = []
         ready_count = 0
@@ -745,29 +982,75 @@ class GitService:
 
         for upload in pending_uploads:
             branch_name = upload.branch_name
+            upload_data = (upload.git_details or {}).get("upload_data") or {}
+            protocol_validation = upload_data.get("protocol_validation") or {}
+            current_protocol_id = (
+                str(project.protocol_version_id)
+                if project.protocol_version_id is not None
+                else None
+            )
+            recorded_protocol_id = protocol_validation.get("protocol_version_id")
+            protocol_outcome = (
+                "not_configured"
+                if current_protocol_id is None
+                else (
+                    "passed"
+                    if protocol_validation.get("outcome") == "passed"
+                    and recorded_protocol_id == current_protocol_id
+                    else "recheck_required"
+                )
+            )
+
+            if upload.upload_id in duplicate_of:
+                upload_status.append(
+                    {
+                        "upload_id": upload.upload_id,
+                        "branch_name": branch_name,
+                        "original_branch": upload_data.get(
+                            "original_branch",
+                            branch_name.replace("_pending_approval", ""),
+                        ),
+                        "upload_type": upload.upload_type.value,
+                        "description": upload.upload_description,
+                        "status": upload.status.value,
+                        "uploaded_at": (
+                            upload.detected_at.isoformat()
+                            if upload.detected_at
+                            else None
+                        ),
+                        "uploaded_by": upload_data.get("uploaded_by"),
+                        "files": {
+                            "new": upload_data.get("new_files", []),
+                            "modified": upload_data.get("modified_files", []),
+                            "deleted": upload_data.get("deleted_files", []),
+                        },
+                        "file_counts": {
+                            "new": upload_data.get("new_files_count", 0),
+                            "modified": upload_data.get("modified_files_count", 0),
+                            "deleted": upload_data.get("deleted_files_count", 0),
+                        },
+                        "quality_checks": {
+                            "eaf": "passed",
+                            "naming": "passed",
+                            "protocol": protocol_outcome,
+                        },
+                        "protocol_version_id": recorded_protocol_id,
+                        "duplicate_of_upload_id": duplicate_of[upload.upload_id],
+                        "git_details": upload.git_details,
+                        "merge_status": "duplicate",
+                    }
+                )
+                continue
 
             # Test merge in real-time to check status
             try:
-                runner.checkout("master")
-                merge_test = runner.run(
-                    ["merge", "--no-commit", "--no-ff", branch_name], check=False
-                )
-
-                if merge_test.returncode == 0:
-                    # Clean merge - ready to go
-                    runner.run(["merge", "--abort"], check=False)
-                    status = "ready_to_merge"
-                    conflicts = []
+                readiness = runner.preview_merge(branch_name)
+                status = readiness.status
+                conflicts = readiness.conflicted_files
+                if readiness.can_merge:
                     ready_count += 1
                 else:
-                    # Has conflicts - get details
-                    conflicted_files = runner.get_conflicted_files()
-                    runner.run(["merge", "--abort"], check=False)
-                    status = "needs_resolution"
-                    conflicts = conflicted_files
                     conflicts_count += 1
-
-                upload_data = upload.git_details.get("upload_data")
 
                 upload_status.append(
                     {
@@ -792,6 +1075,25 @@ class GitService:
                         if hasattr(upload, "detected_at") and upload.detected_at
                         else upload.get("uploaded_at"),
                         "uploaded_by": upload_data.get("uploaded_by"),
+                        "files": {
+                            "new": upload_data.get("new_files", []),
+                            "modified": upload_data.get("modified_files", []),
+                            "deleted": upload_data.get("deleted_files", []),
+                        },
+                        "file_counts": {
+                            "new": upload_data.get("new_files_count", 0),
+                            "modified": upload_data.get("modified_files_count", 0),
+                            "deleted": upload_data.get("deleted_files_count", 0),
+                        },
+                        "quality_checks": {
+                            "eaf": "passed",
+                            "naming": "passed",
+                            "protocol": protocol_outcome,
+                        },
+                        "protocol_version_id": protocol_validation.get(
+                            "protocol_version_id"
+                        ),
+                        "git_details": upload.git_details,
                         "merge_status": status,
                         "conflicted_files": conflicts,
                         "conflicted_files_count": len(conflicts),
@@ -799,7 +1101,7 @@ class GitService:
                     }
                 )
 
-            except Exception as e:
+            except Exception:
                 upload_status.append(
                     {
                         "upload_id": upload.upload_id
@@ -824,7 +1126,7 @@ class GitService:
                         else upload.get("uploaded_at"),
                         "uploaded_by": None,
                         "merge_status": "error",
-                        "error": str(e),
+                        "error": "Unable to inspect this pending upload",
                         "can_auto_merge": False,
                     }
                 )
@@ -835,6 +1137,199 @@ class GitService:
             "total_pending": len(upload_status),
             "ready_count": ready_count,
             "conflicts_count": conflicts_count,
+        }
+
+    def test_pending_upload(
+        self, project_name: str, branch_name: str
+    ) -> dict[str, Any]:
+        """Test a contribution against master without retaining working-tree changes."""
+        project_path = safe_project_path(self.base_path, project_name)
+        if not project_path.exists():
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+        runner = GitCommandRunner(project_path)
+        readiness = runner.preview_merge(branch_name)
+        return {
+            "status": readiness.status,
+            "conflicted_files": readiness.conflicted_files,
+            "conflicts_count": len(readiness.conflicted_files),
+            "can_auto_merge": readiness.can_merge,
+            "tested_at": datetime.now().isoformat(),
+        }
+
+    async def complete_pending_upload(
+        self,
+        project_name: str,
+        branch_name: str,
+        resolution_strategy: str,
+        db: AsyncSession,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Merge a reviewed contribution, synchronize it, and close its queue record."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+        pending = await get_pending_uploads(db, project.project_id)
+        pending_upload = next(
+            (upload for upload in pending if upload.branch_name == branch_name), None
+        )
+        if pending_upload is None:
+            raise FileNotFoundError("Pending contribution not found")
+
+        blocking_review = await db.scalar(
+            select(ReviewCase.case_id).where(
+                ReviewCase.upload_id == pending_upload.upload_id,
+                ReviewCase.state.in_(
+                    [
+                        ReviewCaseState.OPEN.value,
+                        ReviewCaseState.CHANGES_REQUESTED.value,
+                        ReviewCaseState.RESUBMITTED.value,
+                    ]
+                ),
+            )
+        )
+        if blocking_review is not None:
+            raise ValueError(
+                "Resolve the contribution's open review cases before accepting it"
+            )
+
+        project_path = safe_project_path(self.base_path, project_name)
+        submitted_eafs = validate_repository_eafs(project_path, branch_name)
+        current_protocol = await get_pinned_protocol_version(db, project)
+        protocol_errors = [
+            (filename, finding)
+            for filename, content in submitted_eafs.items()
+            for finding in (
+                validate_content_against_protocol(content, current_protocol)
+                if current_protocol is not None
+                else ()
+            )
+        ]
+        if protocol_errors:
+            filename, finding = protocol_errors[0]
+            additional = len(protocol_errors) - 1
+            suffix = f" and {additional} more issue(s)" if additional else ""
+            raise ValueError(
+                f"{filename}: {finding.message}{suffix}. Correct the file in ELAN and submit it again."
+            )
+        runner = GitCommandRunner(project_path)
+        result = runner.complete_pending_merge(branch_name, resolution_strategy)
+        accepted_commit = runner.get_commit_hash()
+        await self._sync_elan_files_with_db(project_path, db, user_id, project_name)
+        await mark_upload_processed(
+            db,
+            project.project_id,
+            branch_name,
+            user_id,
+            accepted_commit,
+        )
+        db.add(
+            AuditEvent(
+                actor_user_id=user_id,
+                project_id=project.project_id,
+                action="contribution.accepted",
+                resource_type="pending_upload",
+                resource_id=str(pending_upload.upload_id),
+                details={
+                    "branch_name": branch_name,
+                    "base_commit": pending_upload.base_commit,
+                    "accepted_commit": accepted_commit,
+                    "resolution_strategy": resolution_strategy,
+                    "merge_status": result["status"],
+                    "protocol_version_id": (
+                        str(current_protocol.protocol_version_id)
+                        if current_protocol is not None
+                        else None
+                    ),
+                },
+            )
+        )
+        if pending_upload.submitted_by not in {None, user_id}:
+            db.add(
+                Notification(
+                    user_id=pending_upload.submitted_by,
+                    title="Contribution accepted",
+                    message=f"Your contribution to {project_name} is now part of the project.",
+                    action_url=f"/contribution?project={project.project_id}",
+                )
+            )
+        await db.commit()
+        runner.delete_branch_localy(branch_name)
+        update_backup(project_path.name, project_path.parent)
+        return {
+            "project_name": project_name,
+            **result,
+            "accepted_commit": accepted_commit,
+            "resolved_at": datetime.now().isoformat(),
+        }
+
+    async def dismiss_duplicate_upload(
+        self,
+        project_name: str,
+        upload_id: int,
+        db: AsyncSession,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Dismiss a verified duplicate while retaining its audit record."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+        pending = await get_pending_uploads(db, project.project_id)
+        upload = next((item for item in pending if item.upload_id == upload_id), None)
+        if upload is None or not upload.branch_name:
+            raise FileNotFoundError("Pending contribution not found")
+
+        project_path = safe_project_path(self.base_path, project_name)
+        runner = GitCommandRunner(project_path)
+        submitted_tree = runner.get_tree_hash(upload.branch_name)
+        original = next(
+            (
+                item
+                for item in sorted(pending, key=lambda item: item.upload_id)
+                if item.upload_id < upload.upload_id
+                and item.branch_name
+                and runner.get_tree_hash(item.branch_name) == submitted_tree
+            ),
+            None,
+        )
+        if original is None:
+            raise ValueError("This contribution is not a duplicate of an earlier pending contribution")
+
+        upload.status = Status.DISMISSED
+        upload.resolved_at = datetime.now()
+        upload.resolved_by = user_id
+        db.add(
+            AuditEvent(
+                actor_user_id=user_id,
+                project_id=project.project_id,
+                action="contribution.duplicate_dismissed",
+                resource_type="pending_upload",
+                resource_id=str(upload.upload_id),
+                details={"duplicate_of_upload_id": original.upload_id},
+            )
+        )
+        if upload.submitted_by not in {None, user_id}:
+            db.add(
+                Notification(
+                    user_id=upload.submitted_by,
+                    title="Duplicate contribution dismissed",
+                    message=(
+                        f"Your contribution to {project_name} matched contribution "
+                        f"#{original.upload_id}; no research data was lost."
+                    ),
+                    action_url=f"/contribution?project={project.project_id}",
+                )
+            )
+        await db.commit()
+        try:
+            runner.delete_branch_localy(upload.branch_name)
+        except Exception:
+            logger.exception(
+                "Could not remove dismissed duplicate branch %s", upload.branch_name
+            )
+        return {
+            "status": "dismissed",
+            "upload_id": upload.upload_id,
+            "duplicate_of_upload_id": original.upload_id,
         }
 
     def _build_upload_response(
@@ -848,6 +1343,7 @@ class GitService:
         """Build the upload response for the admin approval workflow."""
         return {
             "project_name": project_name,
+            "upload_id": upload_info.get("upload_id"),
             "branch_name": upload_info.get("branch_name"),  # Use approval branch name
             "uploaded_files": [self._convert_upload_result(f) for f in uploaded_files],
             "failed_files": [self._convert_upload_result(f) for f in failed_files],
@@ -859,6 +1355,7 @@ class GitService:
             "status": upload_info["status"],  # "pending_admin_approval"
             "requires_approval": upload_info.get("requires_approval", True),
             "has_differences": upload_info.get("has_differences", False),
+            "auto_accepted": upload_info.get("auto_accepted", False),
             # Upload summary
             "upload_summary": {
                 "new_files": upload_info.get("new_files", []),
@@ -890,7 +1387,7 @@ class GitService:
 
     def get_branches(self, project_name: str) -> dict[str, Any]:
         """Get all branches for a project."""
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
 
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
@@ -927,7 +1424,7 @@ class GitService:
         user_id: int,
     ) -> dict[str, Any]:
         """Resolve conflicts and merge a branch, then sync ELAN files with DB."""
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
 
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
@@ -951,65 +1448,6 @@ class GitService:
     def _configure_git_user(self, project_path: Path, instance_name: str) -> None:
         runner = GitCommandRunner(project_path)
         runner.configure_user(instance_name)
-
-    def _detect_merge_conflicts(self, project_path: Path) -> list[dict[str, str]]:
-        """Detect and parse merge conflicts."""
-        try:
-            # Get files with conflicts
-            result = subprocess.run(
-                ["git", "diff", "--name-only", "--diff-filter=U"],
-                cwd=project_path,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            conflicts = []
-            if result.stdout:
-                for filename in result.stdout.strip().split("\n"):
-                    if filename.strip():
-                        # Get conflict details for each file
-                        conflict_details = self._get_conflict_details(
-                            project_path, filename.strip()
-                        )
-                        conflicts.append(
-                            {
-                                "filename": filename.strip(),
-                                "type": "content_conflict",
-                                "details": conflict_details,
-                            }
-                        )
-
-            return conflicts
-
-        except subprocess.CalledProcessError:
-            return []
-
-    def _get_conflict_details(
-        self, project_path: Path, filename: str
-    ) -> dict[str, Any]:
-        """Get detailed information about a specific conflict."""
-        try:
-            # Get the conflict markers and content
-            file_path = project_path / filename
-            if file_path.exists():
-                with open(file_path, encoding="utf-8", errors="ignore") as f:
-                    content = f.read()
-
-                # Count conflict markers
-                conflict_markers = content.count("<<<<<<< HEAD")
-
-                return {
-                    "conflict_markers_count": conflict_markers,
-                    "file_size": len(content),
-                    "has_binary_conflict": "<<<<<<< HEAD"
-                    not in content,  # Binary files won't have text markers
-                }
-
-            return {"error": "File not found"}
-
-        except Exception as e:
-            return {"error": str(e)}
 
     def _create_readme(self, project_name: str) -> str:
         """Generate README content for a new project."""
@@ -1038,7 +1476,7 @@ class GitService:
         commits = []
         for line in result.strip().splitlines():
             parts = line.split("|", 3)
-            if len(parts) == 4:
+            if len(parts) == EXPECTED_LOG_FIELDS:
                 commits.append(
                     {
                         "hash": parts[0],
@@ -1049,13 +1487,9 @@ class GitService:
                 )
         return commits
 
-    def _check_for_conflicts(self, project_path: Path) -> list[dict[str, str]]:
-        """Check for merge conflicts in the project."""
-        return self._detect_merge_conflicts(project_path)
-
     def checkout_branch(self, project_name: str, branch_name: str) -> dict[str, str]:
         """Switch to a different branch in the given project."""
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
         try:
@@ -1131,23 +1565,21 @@ class GitService:
         return {"files": enriched_files}
 
     async def synchronize_project(
-        self, project_name: str, db: AsyncSession, user_id: int
+        self,
+        project_name: str,
+        db: AsyncSession,
+        user_id: int,
+        operation_id: str | None = None,
     ) -> dict:
         """Idempotently synchronize the project's elan_files with the database."""
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
 
         logger.info(f"Starting synchronization for project: {project_name}")
 
-        # Add all changes to staging area
-        runner.add_all()
-
-        # Get file statuses directly (not via sync check to avoid serialization)
+        # Inspect first. Nothing is staged until every changed EAF passes preflight.
         elan_files_dir = project_path / "elan_files"
-
-        # Stage all changes first to enable rename detection for filesystem renames
-        logger.info("Staging all changes to detect filesystem renames...")
-        status_output = runner.get_status_with_renames()
+        status_output = runner.get_status()
 
         logger.info(f"Git status output: '{status_output}'")
 
@@ -1172,6 +1604,11 @@ class GitService:
         deleted_files = []
 
         logger.info(f"Processing {len(files_status)} file status changes")
+
+        self._validate_sync_candidates(project_path, files_status)
+
+        # Establish the Git snapshot only after the complete batch passes validation.
+        runner.add_all()
 
         for file_status in files_status:
             filename = file_status.filename
@@ -1245,7 +1682,8 @@ class GitService:
                 logger.error(
                     f"Failed to process file {filename} with status {status}: {e}"
                 )
-                # Continue processing other files instead of failing completely
+                await db.rollback()
+                raise RuntimeError(f"Failed to synchronize {filename}") from e
 
         # Commit database changes if any were made
         await db.commit()
@@ -1254,7 +1692,10 @@ class GitService:
         # Commit changes if any
         status_output = runner.get_status()
         if status_output.strip():
-            runner.commit(f"Synchronized project '{project_name}' with ELAN files")
+            message = f"Synchronized project '{project_name}' with ELAN files"
+            if operation_id:
+                message += f"\n\nELANORA-Sync-Operation: {operation_id}"
+            runner.commit(message)
 
         logger.info(f"Synchronization complete for project: {project_name}")
 
@@ -1273,6 +1714,36 @@ class GitService:
                 for f in deleted_files
             ],
         ).model_dump()
+
+    def validate_sync_changes(
+        self, project_name: str, changes: list[dict[str, object]]
+    ) -> None:
+        """Apply the canonical EAF preflight to a serialized preview."""
+        project_path = safe_project_path(self.base_path, project_name)
+        self._validate_sync_candidates(
+            project_path, [FileStatus.model_validate(change) for change in changes]
+        )
+
+    @staticmethod
+    def _validate_sync_candidates(
+        project_path: Path, files_status: list[FileStatus]
+    ) -> None:
+        """Reject a recovery batch before staging if any changed EAF is unsafe."""
+        for file_status in files_status:
+            if file_status.status == "deleted":
+                continue
+            candidate = project_path / file_status.filename
+            if not candidate.exists() and file_status.new_filename:
+                candidate = project_path / file_status.new_filename
+            if not candidate.is_file():
+                raise ValueError(
+                    f"Changed ELAN file is missing: {file_status.filename}"
+                )
+            if candidate.stat().st_size > ELAN_MAX_FILE_SIZE_MB * 1024 * 1024:
+                raise ValueError(
+                    f"Changed ELAN file exceeds {ELAN_MAX_FILE_SIZE_MB}MB: {candidate.name}"
+                )
+            validate_eaf(candidate.read_bytes())
 
     async def delete_project(self, project_name: str, db: AsyncSession):
         """Delete a project by its ID."""
@@ -1293,7 +1764,7 @@ class GitService:
         if not project_name:
             logger.error(f"Project name not found for project_name: {project_name}")
             raise ValueError(f"Project name not found for project_name: {project_name}")
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
         delete_project_folder(project_path)
 
     async def edit_project(
@@ -1329,11 +1800,11 @@ class GitService:
             logger.error(f"Project '{old_project_name}' not found in DB")
             raise ValueError(f"Project '{old_project_name}' not found in DB")
 
-        old_path = Path(self.base_path) / old_project_name
+        old_path = safe_project_path(self.base_path, old_project_name)
 
         # Only rename if the name is actually changed
         if new_project_name != old_project_name:
-            new_path = Path(self.base_path) / new_project_name
+            new_path = safe_project_path(self.base_path, new_project_name)
             if not old_path.exists():
                 logger.error(
                     f"Project folder '{old_project_name}' not found at {old_path}"
@@ -1387,7 +1858,7 @@ class GitService:
             Dictionary containing project sync status and file change information
 
         """
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
         elan_files_dir = project_path / "elan_files"
         git_dir = project_path / ".git"
 
@@ -1419,9 +1890,8 @@ class GitService:
 
         runner = GitCommandRunner(project_path)
 
-        # Stage all changes first to enable rename detection for filesystem renames
-        logger.info("Staging all changes to detect filesystem renames...")
-        status_output = runner.get_status_with_renames()
+        # Preview must not stage or otherwise alter administrator edits.
+        status_output = runner.get_status()
 
         logger.info(f"Git status output: '{status_output}'")
 
@@ -1449,7 +1919,7 @@ class GitService:
         ).model_dump()
 
     def discard_local_changes(self, project_name: str) -> str:
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
         remotes = runner.run(["remote", "-v"]).stdout.strip()
         if "origin" in remotes:
@@ -1470,8 +1940,13 @@ class GitService:
         and update the database to match the restored state.
         """
         restore_project_backup(project_name, self.base_path)
-
-        await self.synchronize_project(project_name, db, user_id)
+        try:
+            await restore_project_db(db, project_name)
+            await self.synchronize_project(project_name, db, user_id)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
 
         return (
             f"Project '{project_name}' restored from backup and database synchronized."
@@ -1483,7 +1958,7 @@ class GitService:
         remove_project_backup(project_name)
 
         # Determine if the project folder exists
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
         if project_path.exists():
             delete_project_folder(project_path)
 
@@ -1495,7 +1970,7 @@ class GitService:
         self, project_name: str, elan_id: int, new_filename: str, db: AsyncSession
     ) -> FileRenameResponse:
         """Rename a single file in the project using elan_id."""
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
 
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
@@ -1595,7 +2070,7 @@ class GitService:
         self, project_name: str, renames: list[dict], db: AsyncSession
     ) -> BulkRenameResponse:
         """Rename multiple files in the project using elan_ids."""
-        project_path = self.base_path / project_name
+        project_path = safe_project_path(self.base_path, project_name)
 
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
@@ -1793,3 +2268,7 @@ class GitService:
             logger.warning("No files were successfully renamed")
 
         return commit_hash
+
+    def command_runner(self, project_name: str) -> GitCommandRunner:
+        """Return a path-safe runner for coordination services."""
+        return GitCommandRunner(safe_project_path(self.base_path, project_name))

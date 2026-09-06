@@ -5,15 +5,21 @@
       <div class="settings-card-header">
         <div class="settings-icon">🌐</div>
         <div class="settings-header-content">
-          <h3 class="settings-section-title">{{ t('profile.settings.language.title') }}</h3>
-          <p class="settings-section-description">{{ t('profile.settings.language.description') }}</p>
+          <h3 class="settings-section-title">
+            {{ t('profile.settings.language.title') }}
+          </h3>
+          <p class="settings-section-description">
+            {{ t('profile.settings.language.description') }}
+          </p>
         </div>
       </div>
-      
+
       <div class="settings-card-body">
         <div class="setting-item">
           <div class="setting-header">
-            <span class="setting-label">{{ t('profile.settings.language.label') }}</span>
+            <span class="setting-label">{{
+              t('profile.settings.language.label')
+            }}</span>
             <div class="current-selection">
               <span class="current-flag">{{ currentLanguageInfo.flag }}</span>
               <span class="current-name">{{ currentLanguageInfo.name }}</span>
@@ -25,22 +31,23 @@
               :key="lang.code"
               class="language-option"
               :class="{ active: currentLanguage === lang.code }"
-              @click="changeLanguage(lang.code)"
               :aria-pressed="currentLanguage === lang.code"
               :disabled="currentLanguage === lang.code"
+              @click="changeLanguage(lang.code)"
             >
               <span class="language-flag">{{ lang.flag }}</span>
               <div class="language-info">
                 <span class="language-name">{{ lang.name }}</span>
                 <span class="language-native">{{ lang.nativeName }}</span>
               </div>
-              <div v-if="currentLanguage === lang.code" class="check-icon">✓</div>
+              <div v-if="currentLanguage === lang.code" class="check-icon">
+                ✓
+              </div>
             </button>
           </div>
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -58,25 +65,30 @@ const currentLanguage = computed(() => languageStore.language);
 
 // Dynamic generation of available languages based on available locales
 const availableLanguages = computed(() => {
-  return availableLocales.map(locale => {
+  return availableLocales.map((locale) => {
     const langInfo = messages.value[locale]?.language || {};
     return {
       code: locale,
       name: langInfo.name || locale,
       nativeName: langInfo.nativeName || locale,
-      flag: langInfo.flag || '🏳️'
+      flag: langInfo.flag || '🏳️',
     };
   });
 });
 
 const currentLanguageInfo = computed(() => {
-  return availableLanguages.value.find(lang => lang.code === currentLanguage.value) || (availableLanguages.value.length > 0 ? availableLanguages.value[0] : {});
+  return (
+    availableLanguages.value.find(
+      (lang) => lang.code === currentLanguage.value
+    ) ||
+    (availableLanguages.value.length > 0 ? availableLanguages.value[0] : {})
+  );
 });
 
 function changeLanguage(langCode) {
   if (langCode !== currentLanguage.value) {
     languageStore.setLanguage(langCode);
-    const langInfo = availableLanguages.value.find(l => l.code === langCode);
+    const langInfo = availableLanguages.value.find((l) => l.code === langCode);
     eventMessageStore.addMessage(
       t('profile.settings.language.changed', { language: langInfo?.name }),
       'success'
@@ -86,5 +98,5 @@ function changeLanguage(langCode) {
 </script>
 
 <style scoped>
-@import '../../../assets/css/profile-settings.css';
+@import url('../../../assets/css/profile-settings.css');
 </style>
