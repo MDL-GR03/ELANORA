@@ -91,4 +91,4 @@ async def mark_upload_processed(
         upload_record.resolved_at = func.now()
         upload_record.resolved_by = user_id
         upload_record.accepted_commit = accepted_commit
-        await db.commit()
+        await db.flush()

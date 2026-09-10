@@ -3,12 +3,14 @@
 from pathlib import Path
 
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.pending_upload import get_pending_uploads, save_pending_upload
 from app.model.enums import Status, UserRole
 from app.model.instance import Instance
 from app.model.project import Project
+from app.model.project_revision import ProjectRevision
 from app.model.user import User
 from app.service.git import GitService
 from app.service.git_operations import GitCommandRunner
@@ -191,6 +193,21 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
     assert upload_a.status == Status.RESOLVED
     assert upload_b.status == Status.RESOLVED
     assert await get_pending_uploads(session, project.project_id) == []
+    revisions = list(
+        (
+            await session.scalars(
+                select(ProjectRevision)
+                .where(ProjectRevision.project_id == project.project_id)
+                .order_by(ProjectRevision.ordinal)
+            )
+        ).all()
+    )
+    assert [revision.ordinal for revision in revisions] == [1, 2]
+    assert [revision.contribution_id for revision in revisions] == [
+        upload_a.upload_id,
+        upload_b.upload_id,
+    ]
+    assert revisions[1].parent_git_commit == revisions[0].git_commit
     assert (
         b"Researcher A video 11"
         in (project_path / "elan_files" / "video-11.eaf").read_bytes()

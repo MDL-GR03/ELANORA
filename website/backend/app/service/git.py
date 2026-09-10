@@ -77,6 +77,7 @@ from app.service.git_operations import (
     delete_project_folder,
 )
 from app.service.git_status_parser import GitFileStatusAnalyzer, GitStatusParser
+from app.service.project_revision import append_project_revision
 from app.service.protocol import (
     get_pinned_protocol_version,
     validate_content_against_protocol,
@@ -452,6 +453,18 @@ class GitService:
                         "reason": reason.strip(),
                     },
                 )
+            )
+            await append_project_revision(
+                db,
+                project_id=project.project_id,
+                git_commit=restored,
+                parent_git_commit=previous,
+                source_type="restoration",
+                actor_user_id=user_id,
+                details={
+                    "target_commit": target,
+                    "reason": reason.strip(),
+                },
             )
             pending = await get_pending_uploads(db, project.project_id)
             notified_users = {
@@ -1852,6 +1865,7 @@ class GitService:
                 f"{filename}: {finding.message}{suffix}. Correct the file in ELAN and submit it again."
             )
         runner = GitCommandRunner(project_path)
+        parent_commit = runner.get_commit_hash()
         result = runner.complete_pending_merge(branch_name, resolution_strategy)
         accepted_commit = runner.get_commit_hash()
         await self._sync_elan_files_with_db(project_path, db, user_id, project_name)
@@ -1861,6 +1875,20 @@ class GitService:
             branch_name,
             user_id,
             accepted_commit,
+        )
+        await append_project_revision(
+            db,
+            project_id=project.project_id,
+            git_commit=accepted_commit,
+            parent_git_commit=parent_commit,
+            source_type="contribution",
+            actor_user_id=user_id,
+            contribution_id=pending_upload.upload_id,
+            details={
+                "branch_name": branch_name,
+                "base_commit": pending_upload.base_commit or "",
+                "resolution_strategy": resolution_strategy,
+            },
         )
         db.add(
             AuditEvent(
