@@ -10,7 +10,7 @@ Install its browser once on a new development machine with:
 
 ```bash
 cd website/frontend
-npx playwright install chromium
+npx playwright install chromium firefox
 ```
 
 The browser suite intercepts the documented API contracts and does not alter a

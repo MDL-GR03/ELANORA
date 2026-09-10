@@ -14,6 +14,16 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    {
+      name: 'mobile-firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: { width: 412, height: 915 },
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
   ],
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1',
