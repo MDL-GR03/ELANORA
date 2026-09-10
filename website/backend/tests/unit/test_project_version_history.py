@@ -65,12 +65,18 @@ async def test_restore_creates_descendant_and_keeps_forward_version(
     async def project_lookup(*_args: object) -> object:
         return project
 
-    monkeypatch.setattr("app.service.git.get_project_by_name", project_lookup)
     monkeypatch.setattr(
-        "app.service.git.get_pending_uploads", AsyncMock(return_value=[])
+        "app.service.project_history.get_project_by_name", project_lookup
     )
-    monkeypatch.setattr("app.service.git.append_project_revision", AsyncMock())
-    monkeypatch.setattr("app.service.git.update_backup", lambda *_args: None)
+    monkeypatch.setattr(
+        "app.service.project_history.get_pending_uploads", AsyncMock(return_value=[])
+    )
+    monkeypatch.setattr(
+        "app.service.project_history.append_project_revision", AsyncMock()
+    )
+    monkeypatch.setattr(
+        "app.service.project_history.update_backup", lambda *_args: None
+    )
     db = AsyncMock()
     db.add = MagicMock()
 
@@ -124,7 +130,9 @@ async def test_restore_rejects_stale_preview_and_wrong_confirmation(
     async def project_lookup(*_args: object) -> object:
         return SimpleNamespace(project_id=12, project_name="test-project")
 
-    monkeypatch.setattr("app.service.git.get_project_by_name", project_lookup)
+    monkeypatch.setattr(
+        "app.service.project_history.get_project_by_name", project_lookup
+    )
     db = AsyncMock()
 
     with pytest.raises(ValueError, match="Type"):
@@ -166,12 +174,18 @@ async def test_restore_resets_git_when_database_commit_fails(
     async def project_lookup(*_args: object) -> object:
         return SimpleNamespace(project_id=12, project_name="test-project")
 
-    monkeypatch.setattr("app.service.git.get_project_by_name", project_lookup)
     monkeypatch.setattr(
-        "app.service.git.get_pending_uploads", AsyncMock(return_value=[])
+        "app.service.project_history.get_project_by_name", project_lookup
     )
-    monkeypatch.setattr("app.service.git.append_project_revision", AsyncMock())
-    monkeypatch.setattr("app.service.git.update_backup", lambda *_args: None)
+    monkeypatch.setattr(
+        "app.service.project_history.get_pending_uploads", AsyncMock(return_value=[])
+    )
+    monkeypatch.setattr(
+        "app.service.project_history.append_project_revision", AsyncMock()
+    )
+    monkeypatch.setattr(
+        "app.service.project_history.update_backup", lambda *_args: None
+    )
     db = AsyncMock()
     db.add = MagicMock()
     db.commit.side_effect = RuntimeError("simulated database commit failure")

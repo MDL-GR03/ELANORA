@@ -41,7 +41,7 @@ from app.crud.project import (
     restore_project_db,
 )
 from app.crud.project_naming_standard import get_standard_with_components_full
-from app.elan import compare_eaf, parse_eaf
+from app.elan import parse_eaf
 from app.elan.persistence import document_to_persistence
 from app.elan.validation import EafValidationError, validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
@@ -84,7 +84,7 @@ from app.service.git_operations import (
     delete_project_folder,
 )
 from app.service.git_status_parser import GitFileStatusAnalyzer, GitStatusParser
-from app.service.project_history import ProjectHistoryService
+from app.service.project_history import ProjectHistoryService, ProjectRestoreCommand
 from app.service.project_revision import (
     append_project_revision,
     verify_project_revision_manifest,
@@ -160,7 +160,7 @@ class GitService:
             self.base_path = Path(base_path)
 
         self.base_path.mkdir(parents=True, exist_ok=True)
-        self.project_history = ProjectHistoryService()
+        self.project_history = ProjectHistoryService(self.base_path)
 
     def check_git_availability(self) -> dict[str, Any]:
         """Check if Git is available on the system."""
@@ -190,82 +190,9 @@ class GitService:
         self, project_name: str, target_commit: str, db: AsyncSession
     ) -> dict[str, Any]:
         """Preview files, EAF meaning, and open work affected by a restoration."""
-        project = await get_project_by_name(db, project_name)
-        if project is None:
-            raise FileNotFoundError("Project not found")
-        runner = GitCommandRunner(safe_project_path(self.base_path, project_name))
-        target, _ = self.project_history.resolve_export_commit(runner, target_commit)
-        current = runner.get_commit_hash()
-        if target == current:
-            raise ValueError("The selected version is already current")
-        diff = runner.run(
-            ["diff", "--name-status", "--find-renames", current, target], check=True
-        ).stdout
-        files: list[dict[str, str]] = []
-        summary = {
-            "files": 0,
-            "annotations": 0,
-            "added": 0,
-            "removed": 0,
-            "value_changed": 0,
-            "timing_changed": 0,
-            "tier_changed": 0,
-            "reference_changed": 0,
-            "media_changed": 0,
-        }
-        for line in diff.splitlines():
-            parts = line.split("\t")
-            if len(parts) < MIN_NAME_STATUS_FIELDS:
-                continue
-            status, filename = parts[0], parts[-1]
-            files.append({"status": status, "filename": filename})
-            if not filename.lower().endswith(".eaf"):
-                continue
-            documents = []
-            for revision in (current, target):
-                blob = runner.run(["show", f"{revision}:{filename}"], check=False)
-                documents.append(
-                    parse_eaf(blob.stdout.encode()) if blob.returncode == 0 else None
-                )
-            comparison = compare_eaf(documents[0], documents[1])
-            summary["files"] += 1
-            summary["annotations"] += len(comparison.changes)
-            for change in comparison.changes:
-                for kind in change.kinds:
-                    summary[kind.value] += 1
-            if comparison.before_media_urls != comparison.after_media_urls:
-                summary["media_changed"] += 1
-        pending = await get_pending_uploads(db, project.project_id)
-        affected_ids = [item.upload_id for item in pending]
-        review_rows = (
-            (
-                await db.execute(
-                    select(ReviewCase.case_id).where(
-                        ReviewCase.project_id == project.project_id,
-                        ReviewCase.state.in_(
-                            [
-                                ReviewCaseState.OPEN.value,
-                                ReviewCaseState.CHANGES_REQUESTED.value,
-                                ReviewCaseState.RESUBMITTED.value,
-                            ]
-                        ),
-                    )
-                )
-            )
-            .scalars()
-            .all()
+        return await self.project_history.preview_restore(
+            project_name, target_commit, db
         )
-        return {
-            "project_name": project_name,
-            "current_commit": current,
-            "target_commit": target,
-            "files": files,
-            "semantic_summary": summary,
-            "affected_pending_contributions": len(affected_ids),
-            "affected_pending_upload_ids": affected_ids,
-            "active_review_cases": len(review_rows),
-            "active_review_case_ids": [str(case_id) for case_id in review_rows],
-        }
 
     async def restore_project_version(
         self,
@@ -279,115 +206,19 @@ class GitService:
         actor_name: str | None = None,
     ) -> dict[str, Any]:
         """Restore an accepted tree as a new commit without rewriting history."""
-        project = await get_project_by_name(db, project_name)
-        if project is None:
-            raise FileNotFoundError("Project not found")
-        if confirmation != f"RESTORE {project_name}":
-            raise ValueError(f'Type "RESTORE {project_name}" to confirm')
-        project_path = safe_project_path(self.base_path, project_name)
-        runner = GitCommandRunner(project_path)
-        branch = runner.canonical_branch()
-        runner.checkout(branch)
-        previous = runner.get_commit_hash()
-        if previous != expected_head:
-            raise ValueError(
-                "Accepted project history changed. Refresh the preview before restoring"
-            )
-        target, _ = self.project_history.resolve_export_commit(runner, target_commit)
-        if target == previous:
-            raise ValueError("The selected version is already current")
-        if runner.run(["status", "--porcelain"], check=True).stdout.strip():
-            raise ValueError("The project working tree is not clean")
-        eaf_paths = runner.run(
-            ["ls-tree", "-r", "--name-only", target, "--", "elan_files"], check=True
-        ).stdout.splitlines()
-        for filename in eaf_paths:
-            if filename.lower().endswith(".eaf"):
-                content = runner.run_bytes(
-                    ["show", f"{target}:{filename}"], check=True
-                ).stdout
-                validate_eaf(content)
-        runner.run(["read-tree", "--reset", "-u", f"{target}^{{tree}}"], check=True)
-        commit_args = [
-            "commit",
-            "-m",
-            f"Restore accepted project version {target[:8]}",
-            "-m",
-            f"Reason: {reason.strip()}",
-        ]
-        if actor_name:
-            safe_email_name = re.sub(r"[^a-z0-9._-]+", "-", actor_name.lower())
-            commit_args = [
-                "-c",
-                f"user.name={actor_name}",
-                "-c",
-                f"user.email={safe_email_name}@elanora.local",
-                *commit_args,
-            ]
-        runner.run(commit_args, check=True)
-        restored = runner.get_commit_hash()
-        try:
-            await self.rebuild_project_database(
-                project_name, db, user_id, commit_changes=False
-            )
-            db.add(
-                AuditEvent(
-                    actor_user_id=user_id,
-                    project_id=project.project_id,
-                    action="project.version.restored",
-                    resource_type="project",
-                    resource_id=str(project.project_id),
-                    details={
-                        "previous_commit": previous,
-                        "target_commit": target,
-                        "restored_commit": restored,
-                        "reason": reason.strip(),
-                    },
-                )
-            )
-            await append_project_revision(
-                db,
-                project_id=project.project_id,
-                git_commit=restored,
-                parent_git_commit=previous,
-                source_type="restoration",
-                actor_user_id=user_id,
-                details={
-                    "target_commit": target,
-                    "reason": reason.strip(),
-                },
-            )
-            pending = await get_pending_uploads(db, project.project_id)
-            notified_users = {
-                upload.submitted_by
-                for upload in pending
-                if upload.submitted_by not in {None, user_id}
-            }
-            for submitted_by in notified_users:
-                db.add(
-                    Notification(
-                        user_id=submitted_by,
-                        title="Accepted project version changed",
-                        message=(
-                            f"An administrator restored an earlier state of {project_name}. "
-                            "Your open contribution was preserved and its compatibility was re-evaluated."
-                        ),
-                        action_url=f"/contribution?project={project.project_id}&view=queue",
-                    )
-                )
-            await db.commit()
-        except Exception:
-            await db.rollback()
-            runner.reset_hard(previous)
-            raise
-        update_backup(project_path.name, project_path.parent)
-        return {
-            "project_name": project_name,
-            "previous_commit": previous,
-            "target_commit": target,
-            "restored_commit": restored,
-            "status": "restored_as_new_version",
-        }
+        return await self.project_history.restore(
+            ProjectRestoreCommand(
+                project_name=project_name,
+                target_commit=target_commit,
+                expected_head=expected_head,
+                reason=reason,
+                confirmation=confirmation,
+                user_id=user_id,
+                actor_name=actor_name,
+            ),
+            db,
+            self.rebuild_project_database,
+        )
 
     async def create_project(
         self,
