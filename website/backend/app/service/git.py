@@ -9,7 +9,7 @@ from typing import Any
 
 import aiofiles
 from fastapi import UploadFile
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -46,6 +46,8 @@ from app.elan.persistence import document_to_persistence
 from app.elan.validation import EafValidationError, validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
 from app.model.audit_event import AuditEvent
+from app.model.eaf_revision import EafRevision
+from app.model.elan_file import ElanFile
 from app.model.enums import ProjectPermission, ReviewCaseState, Status
 from app.model.notification import Notification
 from app.model.pending_upload import PendingUpload
@@ -109,6 +111,7 @@ from app.utils.validation import ValidationUtils
 logger = get_logger()
 EXPECTED_LOG_FIELDS = 4
 MIN_DECLINE_REASON_LENGTH = 3
+MIN_RECOVERY_REASON_LENGTH = 10
 MIN_NAME_STATUS_FIELDS = 2
 
 
@@ -1302,6 +1305,8 @@ class GitService:
         revision_id: object,
         db: AsyncSession,
         user_id: int,
+        *,
+        commit_changes: bool = True,
     ) -> dict[str, Any]:
         """Rebuild the mutable query projection from the verified current manifest."""
         project = await db.scalar(
@@ -1356,7 +1361,10 @@ class GitService:
                     project.project_id,
                     commit_changes=False,
                 )
-            await db.commit()
+            if commit_changes:
+                await db.commit()
+            else:
+                await db.flush()
         except Exception:
             await db.rollback()
             raise
@@ -1368,12 +1376,115 @@ class GitService:
             "status": "rebuilt",
         }
 
+    async def get_current_revision_health(
+        self, project_name: str, db: AsyncSession
+    ) -> dict[str, Any]:
+        """Compare the accepted ledger with disk and the mutable DB projection."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        project_path = safe_project_path(self.base_path, project_name)
+        runner = GitCommandRunner(project_path)
+        git_commit = runner.get_commit_hash()
+        revision = await db.scalar(
+            select(ProjectRevision).where(
+                ProjectRevision.project_id == project.project_id,
+                ProjectRevision.git_commit == git_commit,
+            )
+        )
+        if revision is None:
+            return {
+                "project_name": project_name,
+                "git_commit": git_commit,
+                "status": "ledger_missing",
+                "recoverable": False,
+            }
+
+        try:
+            manifest = await verify_project_revision_manifest(db, revision.revision_id)
+        except RuntimeError as exc:
+            return {
+                "project_name": project_name,
+                "revision_id": str(revision.revision_id),
+                "git_commit": git_commit,
+                "status": "ledger_invalid",
+                "recoverable": False,
+                "detail": str(exc),
+            }
+        expected = {entry.filename: entry.sha256 for entry in manifest}
+        disk_paths = {
+            path.name: path for path in (project_path / "elan_files").glob("*.eaf")
+        }
+        disk_hashes = {
+            name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for name, path in disk_paths.items()
+        }
+        latest = (
+            select(
+                EafRevision.elan_id,
+                func.max(EafRevision.revision_number).label("revision_number"),
+            )
+            .join(ElanFile, ElanFile.elan_id == EafRevision.elan_id)
+            .where(ElanFile.project_id == project.project_id)
+            .group_by(EafRevision.elan_id)
+            .subquery()
+        )
+        database = dict(
+            (
+                await db.execute(
+                    select(ElanFile.filename, EafRevision.sha256)
+                    .join(latest, latest.c.elan_id == ElanFile.elan_id)
+                    .join(
+                        EafRevision,
+                        (EafRevision.elan_id == latest.c.elan_id)
+                        & (EafRevision.revision_number == latest.c.revision_number),
+                    )
+                    .where(ElanFile.project_id == project.project_id)
+                )
+            ).all()
+        )
+        result: dict[str, Any] = {
+            "project_name": project_name,
+            "revision_id": str(revision.revision_id),
+            "git_commit": git_commit,
+            "recoverable": True,
+            "missing_files": sorted(expected.keys() - disk_hashes.keys()),
+            "unexpected_files": sorted(disk_hashes.keys() - expected.keys()),
+            "checksum_mismatches": sorted(
+                name
+                for name in expected.keys() & disk_hashes.keys()
+                if expected[name] != disk_hashes[name]
+            ),
+            "database_missing_files": sorted(expected.keys() - database.keys()),
+            "database_unexpected_files": sorted(database.keys() - expected.keys()),
+            "database_checksum_mismatches": sorted(
+                name
+                for name in expected.keys() & database.keys()
+                if expected[name] != database[name]
+            ),
+        }
+        issue_keys = (
+            "missing_files",
+            "unexpected_files",
+            "checksum_mismatches",
+            "database_missing_files",
+            "database_unexpected_files",
+            "database_checksum_mismatches",
+        )
+        result["status"] = (
+            "recovery_required" if any(result[key] for key in issue_keys) else "healthy"
+        )
+        return result
+
     async def recover_current_revision_from_manifest(
         self,
         project_name: str,
         revision_id: object,
         db: AsyncSession,
         user_id: int,
+        *,
+        reason: str,
+        confirmation: str,
     ) -> dict[str, Any]:
         """Recover current EAF files and their query projection from the ledger."""
         project = await db.scalar(
@@ -1383,6 +1494,10 @@ class GitService:
         )
         if project is None:
             raise FileNotFoundError("Project not found")
+        if confirmation != f"RECOVER {project_name}":
+            raise ValueError(f'Type "RECOVER {project_name}" to confirm')
+        if len(reason.strip()) < MIN_RECOVERY_REASON_LENGTH:
+            raise ValueError("A recovery reason of at least 10 characters is required")
         revision = await db.get(ProjectRevision, revision_id)
         if revision is None or revision.project_id != project.project_id:
             raise ValueError("Project revision not found")
@@ -1425,8 +1540,27 @@ class GitService:
                         "Recovered EAF files do not match the current Git revision"
                     )
                 rebuilt = await self.rebuild_current_revision_projection(
-                    project_name, revision.revision_id, db, user_id
+                    project_name,
+                    revision.revision_id,
+                    db,
+                    user_id,
+                    commit_changes=False,
                 )
+                db.add(
+                    AuditEvent(
+                        actor_user_id=user_id,
+                        project_id=project.project_id,
+                        action="project.revision.recovered",
+                        resource_type="project_revision",
+                        resource_id=str(revision.revision_id),
+                        details={
+                            "git_commit": revision.git_commit,
+                            "manifest_sha256": revision.manifest_sha256,
+                            "reason": reason.strip(),
+                        },
+                    )
+                )
+                await db.commit()
             except Exception:
                 await db.rollback()
                 for path in elan_directory.glob("*.eaf"):

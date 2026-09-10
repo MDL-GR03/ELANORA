@@ -11,6 +11,62 @@
       </div>
     </header>
 
+    <aside
+      v-if="health && health.status !== 'healthy'"
+      class="recovery-panel"
+      aria-labelledby="recovery-title"
+    >
+      <font-awesome-icon icon="fa-solid fa-triangle-exclamation" />
+      <div class="recovery-content">
+        <h3 id="recovery-title">Accepted project data needs repair</h3>
+        <p v-if="health.recoverable">
+          ELANORA found differences between the accepted revision, its EAF
+          files, and the searchable database. Review the affected filenames
+          below, then recover the exact accepted state from the immutable
+          ledger.
+        </p>
+        <p v-else>
+          The recovery manifest is unavailable or failed its integrity checks.
+          Do not modify the project; an administrator must investigate the
+          revision ledger.
+        </p>
+        <p v-if="health.detail" class="recovery-detail">{{ health.detail }}</p>
+        <ul v-if="healthIssues.length" class="health-issues">
+          <li v-for="issue in healthIssues" :key="issue.label">
+            <strong>{{ issue.label }}</strong>
+            <span>{{ issue.files.join(', ') }}</span>
+          </li>
+        </ul>
+        <template v-if="health.recoverable">
+          <div class="confirmation-grid">
+            <label>
+              Recovery reason
+              <textarea
+                v-model="recoveryReason"
+                rows="2"
+                placeholder="Explain why this accepted state must be repaired"
+              ></textarea>
+            </label>
+            <label>
+              Type <strong>RECOVER {{ projectName }}</strong>
+              <input
+                v-model="recoveryConfirmation"
+                :placeholder="`RECOVER ${projectName}`"
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            class="danger-button"
+            :disabled="!canRecover || busy"
+            @click="recover"
+          >
+            Recover accepted project data
+          </button>
+        </template>
+      </div>
+    </aside>
+
     <div v-if="loading" class="history-state">Loading project history…</div>
     <div v-else-if="error" class="history-state error-state">{{ error }}</div>
     <ol v-else class="version-list">
@@ -149,10 +205,13 @@ const props = defineProps({ projectName: { type: String, required: true } });
 const emit = defineEmits(['restored']);
 const eventMessages = useEventMessageStore();
 const history = ref({ current_commit: '', versions: [] });
+const health = ref(null);
 const selected = ref(null);
 const previewData = ref(null);
 const reason = ref('');
 const confirmation = ref('');
+const recoveryReason = ref('');
+const recoveryConfirmation = ref('');
 const loading = ref(false);
 const busy = ref(false);
 const error = ref('');
@@ -161,6 +220,24 @@ const canRestore = computed(
     reason.value.trim().length >= 10 &&
     confirmation.value === `RESTORE ${props.projectName}`
 );
+const canRecover = computed(
+  () =>
+    recoveryReason.value.trim().length >= 10 &&
+    recoveryConfirmation.value === `RECOVER ${props.projectName}`
+);
+const healthIssues = computed(() => {
+  if (!health.value) return [];
+  return [
+    ['Missing EAF files', health.value.missing_files],
+    ['Unexpected EAF files', health.value.unexpected_files],
+    ['Changed EAF contents', health.value.checksum_mismatches],
+    ['Missing database records', health.value.database_missing_files],
+    ['Unexpected database records', health.value.database_unexpected_files],
+    ['Database content mismatches', health.value.database_checksum_mismatches],
+  ]
+    .filter(([, files]) => files?.length)
+    .map(([label, files]) => ({ label, files }));
+});
 
 function apiError(value) {
   return (
@@ -193,6 +270,18 @@ async function loadHistory() {
     error.value = apiError(value);
   } finally {
     loading.value = false;
+  }
+}
+async function loadHealth() {
+  health.value = await gitService.getCurrentProjectRevisionHealth(
+    props.projectName
+  );
+}
+async function loadAll() {
+  try {
+    await Promise.all([loadHistory(), loadHealth()]);
+  } catch (value) {
+    error.value = apiError(value);
   }
 }
 async function preview(version) {
@@ -236,8 +325,30 @@ async function restore() {
   }
 }
 
-watch(() => props.projectName, loadHistory);
-onMounted(loadHistory);
+async function recover() {
+  if (!canRecover.value) return;
+  busy.value = true;
+  try {
+    await gitService.recoverCurrentProjectRevision(props.projectName, {
+      revision_id: health.value.revision_id,
+      reason: recoveryReason.value.trim(),
+      confirmation: recoveryConfirmation.value,
+    });
+    recoveryReason.value = '';
+    recoveryConfirmation.value = '';
+    eventMessages.addMessage('Accepted project data recovered.', 'success');
+    await loadAll();
+    emit('restored');
+  } catch (value) {
+    error.value = apiError(value);
+    eventMessages.addMessage(error.value, 'error');
+  } finally {
+    busy.value = false;
+  }
+}
+
+watch(() => props.projectName, loadAll);
+onMounted(loadAll);
 </script>
 
 <style scoped>
@@ -269,6 +380,57 @@ onMounted(loadHistory);
 .restore-actions p {
   margin: 0;
   color: #60718c;
+}
+
+.recovery-panel {
+  display: flex;
+  gap: 0.9rem;
+  margin: 1.25rem 0 0;
+  padding: 1rem;
+  border: 1px solid #dfa93f;
+  border-left: 4px solid #b86f00;
+  border-radius: 0.7rem;
+  background: #fff9e9;
+  color: #684300;
+}
+
+.recovery-panel > svg {
+  margin-top: 0.2rem;
+}
+
+.recovery-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.recovery-content h3,
+.recovery-content p {
+  margin: 0 0 0.45rem;
+}
+
+.health-issues {
+  margin: 0.8rem 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #ecd7aa;
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 65%);
+}
+
+.health-issues li {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.35fr) 1fr;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid #eee1c5;
+}
+
+.health-issues li:last-child {
+  border-bottom: 0;
+}
+
+.health-issues span {
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
@@ -477,6 +639,11 @@ button:disabled {
 }
 
 @media (width <= 720px) {
+  .health-issues li {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
   .history-heading,
   .version-summary,
   .preview-title,

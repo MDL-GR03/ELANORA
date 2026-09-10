@@ -38,6 +38,7 @@ from app.schema.requests.git import (
     ProjectCheckoutRequest,
     ProjectCreateRequest,
     ProjectEditRequest,
+    ProjectRevisionRecoveryRequest,
     ProjectVersionPreviewRequest,
     ProjectVersionRestoreRequest,
 )
@@ -54,6 +55,8 @@ from app.schema.responses.git import (
     ProjectCreateResponse,
     ProjectEditResponse,
     ProjectListResponse,
+    ProjectRevisionHealthResponse,
+    ProjectRevisionRecoveryResponse,
     ProjectSyncCheckResponse,
     ProjectSyncExecutionResponse,
     ProjectVersionPreviewResponse,
@@ -821,6 +824,52 @@ async def get_accepted_project_history(
         return AcceptedProjectHistoryResponse(**result)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get(
+    "/projects/{project_name}/accepted-history/health",
+    response_model=ProjectRevisionHealthResponse,
+    dependencies=[get_project_admin_dep],
+)
+async def get_current_project_revision_health(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+) -> ProjectRevisionHealthResponse:
+    """Diagnose the current accepted EAF files and mutable database projection."""
+    try:
+        result = await git_service.get_current_revision_health(project_name, db)
+        return ProjectRevisionHealthResponse(**result)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post(
+    "/projects/{project_name}/accepted-history/recover",
+    response_model=ProjectRevisionRecoveryResponse,
+    dependencies=[get_project_admin_dep, project_lock_dep],
+)
+async def recover_current_project_revision(
+    project_name: str,
+    request: ProjectRevisionRecoveryRequest,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+) -> ProjectRevisionRecoveryResponse:
+    """Repair the current accepted EAF state from its immutable ledger manifest."""
+    try:
+        result = await git_service.recover_current_revision_from_manifest(
+            project_name,
+            request.revision_id,
+            db,
+            access.user.user_id,
+            reason=request.reason,
+            confirmation=request.confirmation,
+        )
+        return ProjectRevisionRecoveryResponse(**result)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (ValueError, RuntimeError, EafValidationError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.post(

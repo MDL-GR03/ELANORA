@@ -105,6 +105,21 @@ const gitService = {
     return data;
   },
 
+  async getCurrentProjectRevisionHealth(projectName) {
+    const { data } = await axiosInstance.get(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/accepted-history/health`
+    );
+    return data;
+  },
+
+  async recoverCurrentProjectRevision(projectName, payload) {
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/accepted-history/recover`,
+      payload
+    );
+    return data;
+  },
+
   async previewProjectVersionRestore(projectName, targetCommit) {
     const { data } = await axiosInstance.post(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/accepted-history/preview`,

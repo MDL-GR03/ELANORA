@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.elan_file import get_elan_files_by_project
 from app.crud.pending_upload import get_pending_uploads, save_pending_upload
+from app.model.audit_event import AuditEvent
 from app.model.enums import Status, UserRole
 from app.model.instance import Instance
 from app.model.project import Project
@@ -228,6 +229,8 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
             revisions[0].revision_id,
             session,
             admin_id,
+            reason="Recover the accepted project state",
+            confirmation=f"RECOVER {project_name}",
         )
     first_rebuild = await service.rebuild_current_revision_projection(
         project_name,
@@ -268,6 +271,16 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
         )
     await session.commit()
 
+    unhealthy = await service.get_current_revision_health(project_name, session)
+    assert unhealthy["status"] == "recovery_required"
+    assert unhealthy["missing_files"] == ["session-12.eaf"]
+    assert unhealthy["unexpected_files"] == ["unexpected.eaf"]
+    assert unhealthy["checksum_mismatches"] == ["video-11.eaf"]
+    assert sorted(unhealthy["database_missing_files"]) == [
+        "session-12.eaf",
+        "video-11.eaf",
+    ]
+
     with (
         patch.object(
             service,
@@ -281,6 +294,8 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
             current_revision_id,
             session,
             admin_id,
+            reason="Recover the accepted project state",
+            confirmation=f"RECOVER {project_name}",
         )
     assert (project_path / "elan_files" / "video-11.eaf").read_bytes() == b"damaged"
     assert not (project_path / "elan_files" / "session-12.eaf").exists()
@@ -291,6 +306,8 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
         current_revision_id,
         session,
         admin_id,
+        reason="Recover the accepted project state",
+        confirmation=f"RECOVER {project_name}",
     )
     assert recovered["status"] == "recovered"
     assert recovered["file_count"] == 2
@@ -304,6 +321,13 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
         "session-12.eaf",
     }
     assert not runner.run(["status", "--porcelain"], check=True).stdout.strip()
+    healthy = await service.get_current_revision_health(project_name, session)
+    assert healthy["status"] == "healthy"
+    audit = await session.scalar(
+        select(AuditEvent).where(AuditEvent.action == "project.revision.recovered")
+    )
+    assert audit is not None
+    assert audit.resource_id == str(current_revision_id)
 
 
 @pytest.mark.asyncio

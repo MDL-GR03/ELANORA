@@ -313,6 +313,29 @@ class ProjectVersionRestoreResponse(CustomBaseModel):
     status: str
 
 
+class ProjectRevisionHealthResponse(CustomBaseModel):
+    project_name: str
+    revision_id: str | None = None
+    git_commit: str
+    status: str
+    recoverable: bool
+    detail: str | None = None
+    missing_files: list[str] = Field(default_factory=list)
+    unexpected_files: list[str] = Field(default_factory=list)
+    checksum_mismatches: list[str] = Field(default_factory=list)
+    database_missing_files: list[str] = Field(default_factory=list)
+    database_unexpected_files: list[str] = Field(default_factory=list)
+    database_checksum_mismatches: list[str] = Field(default_factory=list)
+
+
+class ProjectRevisionRecoveryResponse(CustomBaseModel):
+    project_name: str
+    revision_id: str
+    manifest_sha256: str
+    file_count: int
+    status: str
+
+
 class AnnotationReviewSnapshot(CustomBaseModel):
     """One annotation state displayed in a semantic contribution review."""
 

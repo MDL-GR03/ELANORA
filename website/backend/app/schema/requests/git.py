@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import Field
 
 from app.schema.common.base import CustomBaseModel
@@ -85,5 +87,13 @@ class ProjectVersionRestoreRequest(ProjectVersionPreviewRequest):
     """Create a new canonical commit whose tree matches an earlier revision."""
 
     expected_head: str = Field(min_length=40, max_length=64)
+    reason: str = Field(min_length=10, max_length=2000)
+    confirmation: str = Field(min_length=1, max_length=200)
+
+
+class ProjectRevisionRecoveryRequest(CustomBaseModel):
+    """Explicit authorization to repair the current accepted project state."""
+
+    revision_id: uuid.UUID
     reason: str = Field(min_length=10, max_length=2000)
     confirmation: str = Field(min_length=1, max_length=200)
