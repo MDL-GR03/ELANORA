@@ -34,7 +34,7 @@ from app.crud.project import (
     restore_project_db,
 )
 from app.crud.project_naming_standard import get_standard_with_components_full
-from app.elan.validation import EafValidationError, validate_eaf
+from app.elan.validation import validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
 from app.model.audit_event import AuditEvent
 from app.model.enums import ProjectPermission, ReviewCaseState, Status
@@ -54,6 +54,7 @@ from app.schema.responses.git import (
     ProjectSyncCheckResponse,
     RenameResult,
 )
+from app.service.contribution_inspection import ContributionInspectionService
 from app.service.contribution_intake import (
     ContributionAlreadyCurrentError,
     ContributionIntakeService,
@@ -61,11 +62,7 @@ from app.service.contribution_intake import (
     SubmissionContext,
 )
 from app.service.database_rename_handler import DatabaseRenameHandler
-from app.service.eaf_review import (
-    EafReviewUnavailableError,
-    compare_repository_eaf,
-    validate_repository_eafs,
-)
+from app.service.eaf_review import validate_repository_eafs
 from app.service.elan import ElanService
 from app.service.git_operations import (
     FileUploadProcessor,
@@ -123,6 +120,7 @@ class GitService:
         self.project_integrity = ProjectIntegrityService(self.base_path)
         self.project_lifecycle = ProjectLifecycleService(self.base_path)
         self.contribution_intake = ContributionIntakeService()
+        self.contribution_inspection = ContributionInspectionService(self.base_path)
 
     def check_git_availability(self) -> dict[str, Any]:
         """Check if Git is available on the system."""
@@ -672,7 +670,7 @@ class GitService:
                 )
             )
             semantic_summary, semantic_targets, changed_tiers = (
-                self._pending_semantic_analysis(
+                self.contribution_inspection.semantic_analysis(
                     project_name, branch_name, upload_data, upload.base_commit
                 )
             )
@@ -909,88 +907,13 @@ class GitService:
             "conflicts_count": conflicts_count,
         }
 
-    def _pending_semantic_analysis(
-        self,
-        project_name: str,
-        branch_name: str,
-        upload_data: dict[str, Any],
-        base_commit: str | None,
-    ) -> tuple[dict[str, int], dict[str, dict[str, tuple[Any, ...]]], set[str]]:
-        """Summarize EAF changes and retain targets for concurrency warnings."""
-        filenames = {
-            filename
-            for key in ("new_files", "modified_files", "deleted_files")
-            for filename in upload_data.get(key, [])
-            if filename.lower().endswith(".eaf")
-        }
-        summary = {
-            "files": 0,
-            "annotations": 0,
-            "added": 0,
-            "removed": 0,
-            "value_changed": 0,
-            "timing_changed": 0,
-            "tier_changed": 0,
-            "reference_changed": 0,
-            "media_changed": 0,
-        }
-        targets: dict[str, dict[str, tuple[Any, ...]]] = {}
-        changed_tiers: set[str] = set()
-        for filename in sorted(filenames):
-            try:
-                comparison = compare_repository_eaf(
-                    self.base_path,
-                    project_name,
-                    branch_name,
-                    filename,
-                    accepted_revision=base_commit,
-                )
-            except (FileNotFoundError, EafReviewUnavailableError, EafValidationError):
-                logger.warning(
-                    "Could not summarize semantic changes for %s on %s",
-                    filename,
-                    branch_name,
-                )
-                continue
-            summary["files"] += 1
-            summary["annotations"] += len(comparison.changes)
-            targets[filename] = {}
-            for change in comparison.changes:
-                after = change.after
-                if change.before is not None:
-                    changed_tiers.add(change.before.tier_id)
-                if after is not None:
-                    changed_tiers.add(after.tier_id)
-                targets[filename][change.annotation_id] = (
-                    tuple(change.kinds),
-                    after.tier_id if after else None,
-                    after.value if after else None,
-                    after.start_ms if after else None,
-                    after.end_ms if after else None,
-                    after.annotation_ref if after else None,
-                )
-                for kind in change.kinds:
-                    summary[kind.value] += 1
-            if comparison.before_media_urls != comparison.after_media_urls:
-                summary["media_changed"] += 1
-        return summary, targets, changed_tiers
-
     def test_pending_upload(
         self, project_name: str, branch_name: str
     ) -> dict[str, Any]:
-        """Test a contribution against master without retaining working-tree changes."""
-        project_path = safe_project_path(self.base_path, project_name)
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-        runner = GitCommandRunner(project_path)
-        readiness = runner.preview_merge(branch_name)
-        return {
-            "status": readiness.status,
-            "conflicted_files": readiness.conflicted_files,
-            "conflicts_count": len(readiness.conflicted_files),
-            "can_auto_merge": readiness.can_merge,
-            "tested_at": datetime.now().isoformat(),
-        }
+        """Test a contribution without changing accepted project state."""
+        return self.contribution_inspection.test_compatibility(
+            project_name, branch_name
+        )
 
     async def set_contribution_research_topic(
         self,
@@ -1018,7 +941,7 @@ class GitService:
         details = dict(upload.git_details or {})
         upload_data = dict(details.get("upload_data") or {})
         context = dict(upload_data.get("research_context") or {})
-        _summary, _targets, changed_tiers = self._pending_semantic_analysis(
+        _summary, _targets, changed_tiers = self.contribution_inspection.semantic_analysis(
             project_name, upload.branch_name, upload_data, upload.base_commit
         )
 

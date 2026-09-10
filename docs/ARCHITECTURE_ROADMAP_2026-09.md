@@ -284,4 +284,8 @@ setup, failed-branch cleanup, and API response construction now live in
 accepted or an already-pending tree, analyzes and finalizes the review branch,
 and records submission provenance in PostgreSQL. The remaining intake
 orchestration is naming-policy lookup, file transfer and optional automatic
-acceptance; contribution inspection is the next larger service boundary.
+acceptance. Read-only EAF semantic summaries, changed-tier detection,
+annotation-level comparison targets, and Git compatibility previews now live in
+`ContributionInspectionService`. Queue presentation still composes these
+results in `GitService`; moving that composition completes the inspection
+boundary before review decisions are extracted.
