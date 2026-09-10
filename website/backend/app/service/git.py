@@ -42,8 +42,6 @@ from app.model.notification import Notification
 from app.model.pending_upload import PendingUpload
 from app.model.research_topic import (
     ProjectBaselineTier,
-    ResearchTopic,
-    ResearchTopicTier,
 )
 from app.model.review import ReviewCase
 from app.schema.common.git import FileStatus
@@ -61,6 +59,7 @@ from app.service.contribution_intake import (
     DuplicatePendingContributionError,
     SubmissionContext,
 )
+from app.service.contribution_review import ContributionReviewService
 from app.service.database_rename_handler import DatabaseRenameHandler
 from app.service.eaf_review import validate_repository_eafs
 from app.service.elan import ElanService
@@ -80,7 +79,6 @@ from app.service.protocol import (
     get_pinned_protocol_version,
     validate_content_against_protocol,
 )
-from app.service.research_topics import require_distinct_topic_name
 from app.storage.paths import safe_project_path
 from app.utils.project_backup import (
     remove_project_backup,
@@ -121,6 +119,9 @@ class GitService:
         self.project_lifecycle = ProjectLifecycleService(self.base_path)
         self.contribution_intake = ContributionIntakeService()
         self.contribution_inspection = ContributionInspectionService(self.base_path)
+        self.contribution_review = ContributionReviewService(
+            self.contribution_inspection
+        )
 
     def check_git_availability(self) -> dict[str, Any]:
         """Check if Git is available on the system."""
@@ -745,82 +746,9 @@ class GitService:
         db: AsyncSession,
     ) -> dict[str, Any]:
         """Resolve a contribution's topic while retaining its declared evidence."""
-        project = await get_project_by_name(db, project_name)
-        if project is None:
-            raise FileNotFoundError("Project not found")
-        upload = await db.get(PendingUpload, upload_id)
-        if (
-            upload is None
-            or upload.project_id != project.project_id
-            or upload.status != Status.PENDING_ADMIN_APPROVAL
-            or not upload.branch_name
-        ):
-            raise FileNotFoundError("Pending contribution not found")
-        if topic_id is not None and new_topic_name:
-            raise ValueError("Choose an existing topic or create a new one, not both")
-
-        details = dict(upload.git_details or {})
-        upload_data = dict(details.get("upload_data") or {})
-        context = dict(upload_data.get("research_context") or {})
-        _summary, _targets, changed_tiers = self.contribution_inspection.semantic_analysis(
-            project_name, upload.branch_name, upload_data, upload.base_commit
+        return await self.contribution_review.assign_research_topic(
+            project_name, upload_id, topic_id, new_topic_name, db
         )
-
-        topic = None
-        if topic_id is not None:
-            topic = await db.scalar(
-                select(ResearchTopic).where(
-                    ResearchTopic.topic_id == topic_id,
-                    ResearchTopic.project_id == project.project_id,
-                )
-            )
-            if topic is None:
-                raise ValueError("Research topic not found")
-        elif new_topic_name:
-            cleaned_name = " ".join(new_topic_name.split())
-            project_topics = list(
-                (
-                    await db.scalars(
-                        select(ResearchTopic).where(
-                            ResearchTopic.project_id == project.project_id
-                        )
-                    )
-                ).all()
-            )
-            require_distinct_topic_name(cleaned_name, project_topics)
-            if not changed_tiers:
-                raise ValueError(
-                    "A topic cannot be created because no changed tiers were detected"
-                )
-            topic = ResearchTopic(
-                project_id=project.project_id,
-                name=cleaned_name,
-                description=f"Created while classifying contribution #{upload.upload_id}.",
-                allow_new_tiers=False,
-                tiers=[
-                    ResearchTopicTier(tier_name=name) for name in sorted(changed_tiers)
-                ],
-            )
-            db.add(topic)
-            await db.flush()
-
-        context.update(
-            {
-                "declared_topic_id": topic.topic_id if topic else None,
-                "declared_topic_name": topic.name if topic else None,
-                "declared_tiers": (
-                    sorted(item.tier_name for item in topic.tiers) if topic else []
-                ),
-                "proposed_topic_name": None,
-                "topic_review_status": "verified",
-                "topic_match": "administrator_decision",
-            }
-        )
-        upload_data["research_context"] = context
-        details["upload_data"] = upload_data
-        upload.git_details = details
-        await db.commit()
-        return context
 
     async def complete_pending_upload(
         self,

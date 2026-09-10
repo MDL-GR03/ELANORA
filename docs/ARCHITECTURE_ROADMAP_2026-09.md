@@ -293,4 +293,8 @@ topic-versus-baseline scope evaluation now live with the inspection rules.
 The stable administrator queue representation, including ready, duplicate,
 superseded and inspection-error variants, now lives there as well. `GitService`
 still coordinates the database query and per-item loop through compatibility
-delegates; administrator review decisions are the next service boundary.
+delegates. Administrator assignment of an existing research topic or explicit
+approval of a distinct proposed topic now lives in `ContributionReviewService`;
+it preserves the researcher's summary and derives a new topic's tiers from the
+inspected contribution. Decline, duplicate dismissal, correction decisions and
+acceptance eligibility remain the next review boundaries to extract.
