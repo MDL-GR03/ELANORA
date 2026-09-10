@@ -26,6 +26,15 @@ def commit_file(repo: Path, content: str, message: str) -> str:
     return git(repo, "rev-parse", "HEAD")
 
 
+def git_bytes(repo: Path, *args: str) -> bytes:
+    return subprocess.run(  # noqa: S603
+        ["git", *args],  # noqa: S607
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    ).stdout
+
+
 @pytest.mark.asyncio
 async def test_restore_creates_descendant_and_keeps_forward_version(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -35,6 +44,17 @@ async def test_restore_creates_descendant_and_keeps_forward_version(
     git(repo, "init", "--initial-branch=main")
     git(repo, "config", "user.name", "ELANORA test")
     git(repo, "config", "user.email", "test@elanora.local")
+    latin_eaf = (
+        '<?xml version="1.0" encoding="ISO-8859-1"?>\n'
+        '<ANNOTATION_DOCUMENT AUTHOR="caf\xe9" '
+        'DATE="2026-09-10T00:00:00+00:00" FORMAT="3.0" VERSION="3.0">\n'
+        '  <HEADER MEDIA_FILE="" TIME_UNITS="milliseconds"/>\n'
+        "  <TIME_ORDER/>\n"
+        "</ANNOTATION_DOCUMENT>\n"
+    ).encode("latin-1")
+    (repo / "elan_files").mkdir()
+    (repo / "elan_files" / "latin.eaf").write_bytes(latin_eaf)
+    git(repo, "add", "elan_files/latin.eaf")
     first = commit_file(repo, "first\n", "Initial state")
     second = commit_file(repo, "second\n", "Accepted contribution")
 
@@ -64,6 +84,7 @@ async def test_restore_creates_descendant_and_keeps_forward_version(
     )
     third = restored_first["restored_commit"]
     assert git(repo, "show", "HEAD:README.md") == "first"
+    assert git_bytes(repo, "show", "HEAD:elan_files/latin.eaf") == latin_eaf
     assert git(repo, "merge-base", "--is-ancestor", second, third) == ""
     assert git(repo, "rev-parse", f"{third}^{{tree}}") == git(
         repo, "rev-parse", f"{first}^{{tree}}"

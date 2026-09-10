@@ -411,10 +411,10 @@ class GitService:
         ).stdout.splitlines()
         for filename in eaf_paths:
             if filename.lower().endswith(".eaf"):
-                content = runner.run(
+                content = runner.run_bytes(
                     ["show", f"{target}:{filename}"], check=True
                 ).stdout
-                validate_eaf(content.encode())
+                validate_eaf(content)
         runner.run(["read-tree", "--reset", "-u", f"{target}^{{tree}}"], check=True)
         commit_args = [
             "commit",

@@ -29,6 +29,19 @@ def test_git_commands_trust_only_the_resolved_project_directory(
     assert command[5:] == ["status", "--porcelain"]
 
 
+def test_git_blob_commands_can_preserve_arbitrary_bytes(tmp_path: Path) -> None:
+    runner = GitCommandRunner(tmp_path, maintain_backup=False)
+
+    with patch(
+        "app.service.git_operations.subprocess.run",
+        return_value=CompletedProcess([], 0, stdout=b"\xffEAF", stderr=b""),
+    ) as run:
+        result = runner.run_bytes(["show", "main:file.eaf"], check=True)
+
+    assert result.stdout == b"\xffEAF"
+    assert run.call_args.kwargs.get("text") is None
+
+
 def test_get_status_does_not_hide_git_failures(tmp_path: Path) -> None:
     runner = GitCommandRunner(tmp_path, maintain_backup=False)
 

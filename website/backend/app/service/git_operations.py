@@ -549,6 +549,25 @@ class GitCommandRunner:
             check=check,
         )
 
+    def run_bytes(
+        self, args: list[str], check: bool = False
+    ) -> subprocess.CompletedProcess[bytes]:
+        """Run Git without decoding output, for byte-exact repository blobs."""
+        safe_directory = self.project_path.resolve()
+        return subprocess.run(
+            [
+                "git",
+                "-c",
+                f"safe.directory={safe_directory}",
+                "-c",
+                "core.quotepath=false",
+                *args,
+            ],
+            cwd=self.project_path,
+            capture_output=True,
+            check=check,
+        )
+
     def get_status(self) -> str:
         return self.run(["status", "--porcelain"], check=True).stdout
 
