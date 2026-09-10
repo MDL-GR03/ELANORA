@@ -29,13 +29,11 @@ def upgrade() -> None:
         "PROJECT_REVISION_EAF",
         sa.Column("project_revision_id", sa.Uuid(), nullable=False),
         sa.Column("filename", sa.String(length=255), nullable=False),
-        sa.Column("eaf_revision_id", sa.Uuid(), nullable=False),
+        sa.Column("eaf_revision_id", sa.Uuid(), nullable=True),
         sa.Column("sha256", sa.String(length=64), nullable=False),
+        sa.Column("raw_xml", sa.LargeBinary(), nullable=False),
         sa.CheckConstraint(
             "length(sha256) = 64", name="ck_project_revision_eaf_sha256"
-        ),
-        sa.ForeignKeyConstraint(
-            ["eaf_revision_id"], ["EAF_REVISION.revision_id"], ondelete="RESTRICT"
         ),
         sa.ForeignKeyConstraint(
             ["project_revision_id"],

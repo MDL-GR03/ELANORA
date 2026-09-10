@@ -209,6 +209,30 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
         upload_b.upload_id,
     ]
     assert revisions[1].parent_git_commit == revisions[0].git_commit
+    current_revision_id = revisions[1].revision_id
+    project_name = project.project_name
+    admin_id = admin.user_id
+    with pytest.raises(ValueError, match="current accepted"):
+        await service.rebuild_current_revision_projection(
+            project_name,
+            revisions[0].revision_id,
+            session,
+            admin_id,
+        )
+    first_rebuild = await service.rebuild_current_revision_projection(
+        project_name,
+        current_revision_id,
+        session,
+        admin_id,
+    )
+    second_rebuild = await service.rebuild_current_revision_projection(
+        project_name,
+        current_revision_id,
+        session,
+        admin_id,
+    )
+    assert first_rebuild["manifest_sha256"] == second_rebuild["manifest_sha256"]
+    assert first_rebuild["file_count"] == second_rebuild["file_count"] == 2
     assert (
         b"Researcher A video 11"
         in (project_path / "elan_files" / "video-11.eaf").read_bytes()

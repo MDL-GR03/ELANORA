@@ -9,6 +9,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    LargeBinary,
     String,
     UniqueConstraint,
     Uuid,
@@ -80,10 +81,10 @@ class ProjectRevisionEaf(Base):
         primary_key=True,
     )
     filename: Mapped[str] = mapped_column(String(255), primary_key=True)
-    eaf_revision_id: Mapped[uuid.UUID] = mapped_column(
+    eaf_revision_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True),
-        ForeignKey("EAF_REVISION.revision_id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    raw_xml: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)

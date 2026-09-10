@@ -6,6 +6,7 @@ is the single typed adapter for the dictionary-based CRUD interface.
 
 from datetime import datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import NotRequired, TypedDict
 
 from app.elan.domain import AlignableAnnotation, EafDocument, ReferenceAnnotation
@@ -86,9 +87,16 @@ def _resolved_times(
     return resolved
 
 
-def document_to_persistence(document: EafDocument) -> PersistedEafFile:
+def document_to_persistence(
+    document: EafDocument,
+    *,
+    persistence_path: Path | None = None,
+    modified_at: datetime | None = None,
+) -> PersistedEafFile:
     """Adapt a validated typed document to the existing CRUD contract."""
-    if document.source_path is None or document.source_modified_at is None:
+    path = persistence_path or document.source_path
+    timestamp = modified_at or document.source_modified_at
+    if path is None or timestamp is None:
         raise ValueError("persistence requires a document parsed from a file path")
     times = _resolved_times(document)
     tiers: list[PersistedTier] = []
@@ -123,12 +131,11 @@ def document_to_persistence(document: EafDocument) -> PersistedEafFile:
             )
         )
 
-    path = document.source_path
     return PersistedEafFile(
         filename=path.name,
         file_path=make_path_relative_to_projects(str(path)),
-        file_size=document.source_size,
-        last_modified=document.source_modified_at,
+        file_size=len(document.raw_xml),
+        last_modified=timestamp,
         sha256=document.sha256,
         raw_xml=document.raw_xml,
         tiers=tiers,

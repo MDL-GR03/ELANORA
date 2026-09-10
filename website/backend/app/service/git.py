@@ -1,3 +1,4 @@
+import hashlib
 import os
 import re
 import tempfile
@@ -41,12 +42,15 @@ from app.crud.project import (
 )
 from app.crud.project_naming_standard import get_standard_with_components_full
 from app.elan import compare_eaf, parse_eaf
+from app.elan.persistence import document_to_persistence
 from app.elan.validation import EafValidationError, validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
 from app.model.audit_event import AuditEvent
 from app.model.enums import ProjectPermission, ReviewCaseState, Status
 from app.model.notification import Notification
 from app.model.pending_upload import PendingUpload
+from app.model.project import Project
+from app.model.project_revision import ProjectRevision
 from app.model.research_topic import (
     ProjectBaselineTier,
     ResearchTopic,
@@ -77,7 +81,10 @@ from app.service.git_operations import (
     delete_project_folder,
 )
 from app.service.git_status_parser import GitFileStatusAnalyzer, GitStatusParser
-from app.service.project_revision import append_project_revision
+from app.service.project_revision import (
+    append_project_revision,
+    verify_project_revision_manifest,
+)
 from app.service.protocol import (
     get_pinned_protocol_version,
     validate_content_against_protocol,
@@ -1288,6 +1295,78 @@ class GitService:
                 raise RuntimeError(f"Could not remove stale database file {filename}")
         if commit_changes:
             await db.commit()
+
+    async def rebuild_current_revision_projection(
+        self,
+        project_name: str,
+        revision_id: object,
+        db: AsyncSession,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Rebuild the mutable query projection from the verified current manifest."""
+        project = await db.scalar(
+            select(Project)
+            .where(Project.project_name == project_name, Project.deleted_at.is_(None))
+            .with_for_update()
+        )
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        revision = await db.get(ProjectRevision, revision_id)
+        if revision is None or revision.project_id != project.project_id:
+            raise ValueError("Project revision not found")
+        project_path = safe_project_path(self.base_path, project_name)
+        runner = GitCommandRunner(project_path)
+        if runner.get_commit_hash() != revision.git_commit:
+            raise ValueError(
+                "Only the current accepted project revision can be rebuilt"
+            )
+        if runner.run(["status", "--porcelain"], check=True).stdout.strip():
+            raise ValueError("The project working tree is not clean")
+
+        manifest = await verify_project_revision_manifest(db, revision.revision_id)
+        disk_files = sorted((project_path / "elan_files").glob("*.eaf"))
+        if [item.name for item in disk_files] != [item.filename for item in manifest]:
+            raise RuntimeError("The working tree does not match the revision manifest")
+        for path, entry in zip(disk_files, manifest, strict=True):
+            if hashlib.sha256(path.read_bytes()).hexdigest() != entry.sha256:
+                raise RuntimeError(
+                    f"Working-tree checksum mismatch for {entry.filename}"
+                )
+
+        elan_service = ElanService(db)
+        try:
+            existing = await get_elan_files_by_project(db, project.project_id)
+            for elan_file, _username in existing:
+                if not await elan_service.delete_elan_files_from_db(
+                    elan_file.filename, project_name, commit_changes=False
+                ):
+                    raise RuntimeError(
+                        f"Could not remove existing projection for {elan_file.filename}"
+                    )
+            for entry in manifest:
+                document = parse_eaf(entry.raw_xml)
+                file_info = document_to_persistence(
+                    document,
+                    persistence_path=project_path / "elan_files" / entry.filename,
+                    modified_at=revision.created_at.replace(tzinfo=None),
+                )
+                await elan_service.store_elan_file_data(
+                    file_info,
+                    user_id,
+                    project.project_id,
+                    commit_changes=False,
+                )
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
+        return {
+            "project_name": project_name,
+            "revision_id": str(revision.revision_id),
+            "manifest_sha256": revision.manifest_sha256,
+            "file_count": len(manifest),
+            "status": "rebuilt",
+        }
 
     def _validate_upload_request(
         self, project_path: Path, files: list[UploadFile]

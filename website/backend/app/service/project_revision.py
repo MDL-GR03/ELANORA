@@ -67,35 +67,41 @@ def _manifest_checksum(entries: list[tuple[str, EafRevision]]) -> str:
 
 async def verify_project_revision_manifest(
     db: AsyncSession, revision_id: object
-) -> None:
+) -> list[ProjectRevisionEaf]:
     """Raise when a stored manifest no longer matches its immutable EAF bytes."""
     revision = await db.get(ProjectRevision, revision_id)
     if revision is None:
         raise ValueError("Project revision not found")
-    rows = (
-        await db.execute(
-            select(ProjectRevisionEaf, EafRevision)
-            .join(
-                EafRevision,
-                EafRevision.revision_id == ProjectRevisionEaf.eaf_revision_id,
+    manifest = list(
+        (
+            await db.scalars(
+                select(ProjectRevisionEaf)
+                .where(ProjectRevisionEaf.project_revision_id == revision.revision_id)
+                .order_by(ProjectRevisionEaf.filename)
             )
-            .where(ProjectRevisionEaf.project_revision_id == revision.revision_id)
-            .order_by(ProjectRevisionEaf.filename)
-        )
-    ).all()
-    entries: list[tuple[str, EafRevision]] = []
-    for manifest_entry, eaf_revision in rows:
-        actual_sha256 = hashlib.sha256(eaf_revision.raw_xml).hexdigest()
-        if (
-            actual_sha256 != eaf_revision.sha256
-            or actual_sha256 != manifest_entry.sha256
-        ):
+        ).all()
+    )
+    canonical_entries: list[dict[str, str]] = []
+    for manifest_entry in manifest:
+        actual_sha256 = hashlib.sha256(manifest_entry.raw_xml).hexdigest()
+        if actual_sha256 != manifest_entry.sha256:
             raise RuntimeError(
                 f"EAF revision checksum mismatch for {manifest_entry.filename}"
             )
-        entries.append((manifest_entry.filename, eaf_revision))
-    if revision.manifest_sha256 != _manifest_checksum(entries):
+        canonical_entries.append(
+            {"filename": manifest_entry.filename, "sha256": manifest_entry.sha256}
+        )
+    checksum = hashlib.sha256(
+        json.dumps(
+            canonical_entries,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    if revision.manifest_sha256 != checksum:
         raise RuntimeError("Project revision manifest checksum mismatch")
+    return manifest
 
 
 async def append_project_revision(
@@ -152,6 +158,7 @@ async def append_project_revision(
                 filename=filename,
                 eaf_revision_id=eaf_revision.revision_id,
                 sha256=eaf_revision.sha256,
+                raw_xml=eaf_revision.raw_xml,
             )
             for filename, eaf_revision in manifest
         ]
