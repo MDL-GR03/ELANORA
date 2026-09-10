@@ -270,9 +270,10 @@ in a dedicated `ProjectHistoryService`. Revision projection rebuilding,
 integrity diagnosis and incident notifications, installation-wide scanning, and
 administrator-confirmed manifest recovery now live in
 `ProjectIntegrityService`. `GitService` retains thin compatibility delegates so
-API and CLI callers do not change. Atomic empty-project creation now lives in a
-dedicated `ProjectLifecycleService`. Folder import remains separate for the next
-slice because its legacy transaction commits the project row before parsing and
-recording the initial revision; that consistency flaw should be repaired while
-it is moved. Contribution intake follows, then contribution inspection should
-be split from review and publication decisions.
+API and CLI callers do not change. Atomic empty-project creation and folder
+import now live in a dedicated `ProjectLifecycleService`. Folder import builds a
+hidden repository, publishes it at the canonical path, projects every EAF and
+records the initial revision within one database transaction, and removes the
+repository if projection or commit fails. The next slice is contribution intake;
+contribution inspection should then be split from review and publication
+decisions.

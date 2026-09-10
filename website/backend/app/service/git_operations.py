@@ -673,7 +673,7 @@ class GitCommandRunner:
     def checkout(self, branch: str):
         self.run(["checkout", branch], check=True)
 
-    def add_all(self):
+    def add_all(self) -> None:
         self.run(["add", "."], check=True)
         self._update_backup()
 

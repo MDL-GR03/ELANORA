@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import aiofiles
 from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +27,6 @@ from app.crud.pending_upload import (
     save_pending_upload,
 )
 from app.crud.project import (
-    create_project_db,
     delete_project_db,
     get_project_by_id,
     get_project_by_name,
@@ -89,11 +87,7 @@ from app.utils.project_backup import (
     restore_project_backup,
     update_backup,
 )
-from app.utils.project_setup_utils import (
-    create_gitignore,
-    create_readme,
-    update_project_githooks,
-)
+from app.utils.project_setup_utils import update_project_githooks
 from app.utils.validation import ValidationUtils
 
 logger = get_logger()
@@ -664,174 +658,16 @@ class GitService:
         db: AsyncSession,
         user_id: int,
         instance_id: int,
-    ) -> dict:
-        """Initialize a new project from a folder upload, saving .eaf files, creating a git repository, and updating the database.
-
-        Args:
-            project_name (str): The name of the new project.
-            description (str): Description of the project.
-            files (list[UploadFile]): List of uploaded files.
-            db (AsyncSession): Database session.
-            user_id (int): ID of the user creating the project.
-
-        Returns:
-            dict: Information about the initialized project.
-
-        Raises:
-            ValueError: If the project already exists.
-
-        """
-        logger.info(
-            "Starting project initialization from folder upload for project: %s",
+    ) -> dict[str, Any]:
+        """Initialize a project atomically from uploaded EAF files."""
+        return await self.project_lifecycle.import_project(
             project_name,
+            description,
+            files,
+            db,
+            user_id,
+            instance_id,
         )
-        logger.info("User ID: %s, Files count: %d", user_id, len(files))
-        logger.debug("Files: %s", [f.filename for f in files])
-
-        project_path = safe_project_path(self.base_path, project_name)
-        elan_files_dir = project_path / "elan_files"
-        logger.debug("Project path: %s", project_path)
-        logger.debug("ELAN files directory: %s", elan_files_dir)
-
-        if project_path.exists():
-            logger.error("Project path already exists: %s", project_path)
-            raise ValueError(f"Project '{project_name}' already exists")
-
-        logger.info("Creating project directories")
-        project_path.mkdir(parents=True, exist_ok=True)
-        elan_files_dir.mkdir(parents=True, exist_ok=True)
-        logger.debug("Directories created successfully")
-
-        # Create README.md and .gitignore
-        logger.info("Creating gitignore and README files")
-        create_gitignore(project_path)
-        create_readme(project_path, project_name)
-        logger.debug("Project files created")
-
-        # Save only .eaf files, directly in elan_files directory
-        logger.info("Processing uploaded files")
-        saved_files = []
-        for file in files:
-            logger.debug("Processing file: %s", file.filename)
-            if not file.filename or not file.filename.lower().endswith(".eaf"):
-                logger.debug("Skipping non-.eaf file: %s", file.filename)
-                continue
-
-            dest_path = elan_files_dir / Path(file.filename).name
-            logger.debug("Saving .eaf file: %s to %s", file.filename, dest_path)
-
-            try:
-                file_content = await file.read()
-                logger.debug("Read %d bytes from %s", len(file_content), file.filename)
-
-                async with aiofiles.open(dest_path, "wb") as f:
-                    await f.write(file_content)
-
-                logger.debug("Successfully saved: %s", dest_path)
-                saved_files.append(file.filename)
-            except Exception as e:
-                logger.error("Failed to save file %s: %s", file.filename, e)
-                raise
-
-        logger.info("Saved %d .eaf files: %s", len(saved_files), saved_files)
-
-        # Git operations
-        logger.info("Initializing Git repository")
-        runner = GitCommandRunner(project_path)
-        runner.init_repo()
-        logger.debug("Git repository initialized")
-
-        runner.add_all()
-        logger.debug("Files added to Git")
-
-        runner.commit("Initial commit from uploaded folder")
-        logger.debug("Initial commit created")
-
-        try:
-            logger.info("Creating project in database")
-            project = await create_project_db(
-                db=db,
-                project_name=project_name,
-                description=description,
-                project_path=str(project_path),
-                instance_id=instance_id,
-                creator_user_id=user_id,
-            )
-            await db.commit()
-            logger.debug("Project created in database successfully")
-
-            logger.info("Processing ELAN files for database")
-            elan_service = ElanService(db)
-            elan_files = list(elan_files_dir.rglob("*.eaf"))
-            logger.info(
-                "Found %d .eaf files to process: %s",
-                len(elan_files),
-                [f.name for f in elan_files],
-            )
-
-            processed_files = []
-            skipped_files = []
-            failed_files = []
-
-            for elan_file in elan_files:
-                logger.debug("Processing ELAN file: %s", elan_file)
-                try:
-                    result = await elan_service.process_single_file(
-                        str(elan_file), user_id, project_name
-                    )
-
-                    if result["status"] == "processed":
-                        processed_files.append(result["filename"])
-                    elif result["status"] == "skipped":
-                        skipped_files.append(result["filename"])
-                    elif result["status"] == "failed":
-                        failed_files.append(result["filename"])
-
-                except Exception as e:
-                    logger.error("Failed to process ELAN file %s: %s", elan_file, e)
-                    failed_files.append(elan_file.name)
-                    raise
-
-            await append_project_revision(
-                db,
-                project_id=project.project_id,
-                git_commit=runner.get_commit_hash(),
-                parent_git_commit=None,
-                source_type="migration",
-                actor_user_id=user_id,
-                details={"message": "Initial imported project revision"},
-            )
-            await db.commit()
-            logger.info(
-                "ELAN processing complete. Processed: %d, Skipped: %d, Failed: %d",
-                len(processed_files),
-                len(skipped_files),
-                len(failed_files),
-            )
-
-            if skipped_files:
-                logger.info("Skipped files (already in database): %s", skipped_files)
-            if failed_files:
-                logger.warning("Failed files: %s", failed_files)
-
-        except Exception as e:
-            await db.rollback()
-            logger.error("Failed to initialize project from folder: %s", e)
-            logger.error("Rolling back database changes")
-            raise
-
-        result = {
-            "project_name": project_name,
-            "path": str(project_path),
-            "status": "initialized",
-            "git_initialized": True,
-            "created_at": datetime.now().isoformat(),
-        }
-
-        logger.info("Project initialization completed successfully")
-        logger.debug("Result: %s", result)
-
-        return result
 
     async def _sync_elan_files_with_db(
         self, project_path: Path, db: AsyncSession, user_id: int, project_name: str
