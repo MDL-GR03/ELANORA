@@ -84,6 +84,9 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    test: {
+      exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+    },
     server: {
       watch: {
         // Bind mounts need polling in Docker; native host development does not.

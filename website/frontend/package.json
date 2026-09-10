@@ -21,6 +21,8 @@
     "i18n:clean-empty": "node scripts/clean-vue-i18n-extraction.js",
     "i18n:extract-clean": "npm run i18n:extract && npm run i18n:clean-empty",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "prepare": "husky"
@@ -43,6 +45,7 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.1.11",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitest/coverage-v8": "^3.1.4",
