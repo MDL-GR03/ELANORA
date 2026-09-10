@@ -136,6 +136,41 @@ services:
     restart: unless-stopped
     container_name: elanora-outbox-worker-dev
 
+  change-set-worker:
+    build:
+      context: ../../backend
+      dockerfile: ../backend/docker/Dockerfile.dev
+    env_file:
+      - path: ../../env/.env.dev.docker
+        required: false
+    environment:
+      DOCKER: "true"
+      ENVIRONMENT: dev
+      DB_NAME: elanora
+      DB_USER: elanora
+      DB_PASSWORD: ${ELANORA_DEV_DB_PASSWORD:-elanora-local-only}
+      DB_HOST: db
+      DB_PORT: "5432"
+      JWT_SECRET_KEY: ${ELANORA_DEV_JWT_SECRET:-elanora-local-jwt-secret-not-for-production}
+      SETUP_TOKEN: ${ELANORA_DEV_SETUP_TOKEN:-elanora-local-setup}
+      OUTBOX_ENCRYPTION_KEYS: svzSYyqHlCqGnZmcGdjsp3qNN6HvwqEAAkhiJCMdrtk=
+      ELAN_PROJECTS_BASE_PATH: /app/website/data/elanora_projects
+      ELAN_BACKUPS_BASE_PATH: /app/website/data/recovery-cache
+      INSTANCE_ASSETS_BASE_PATH: /app/website/data/instance-assets
+      SYNC_STAGING_BASE_PATH: /app/website/data/sync-staging
+    user: "${ELANORA_DEV_UID:-1000}:${ELANORA_DEV_GID:-1000}"
+    volumes:
+      - ../../backend:/app
+      - backend_venv:/app/.venv
+      - ../../data:/app/website/data
+      - ../../static:/static:ro
+    command: ["python", "-m", "app.cli.dispatch_change_sets"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    container_name: elanora-change-set-worker-dev
+
   mailpit:
     image: axllent/mailpit:v1.31.0
     environment:

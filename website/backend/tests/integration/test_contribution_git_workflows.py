@@ -1,5 +1,6 @@
 """End-to-end contribution decisions using PostgreSQL and real Git history."""
 
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.elan_file import get_elan_files_by_project
 from app.crud.pending_upload import get_pending_uploads, save_pending_upload
 from app.model.audit_event import AuditEvent
+from app.model.contribution_change_set import ContributionChangeSet
 from app.model.enums import Status, UserRole
 from app.model.instance import Instance
 from app.model.notification import Notification
@@ -17,6 +19,7 @@ from app.model.project import Project
 from app.model.project_integrity import ProjectIntegrityStatus
 from app.model.project_revision import ProjectRevision
 from app.model.user import User
+from app.service.contribution_change_set import ContributionChangeSetCoordinator
 from app.service.elan import ElanService
 from app.service.git import GitService
 from app.service.git_operations import GitCommandRunner
@@ -657,3 +660,179 @@ async def test_identical_two_researcher_submissions_are_marked_as_duplicates(
     assert by_id[upload_a.upload_id]["merge_status"] == "ready_to_merge"
     assert by_id[upload_b.upload_id]["merge_status"] == "duplicate"
     assert by_id[upload_b.upload_id]["duplicate_of_upload_id"] == upload_a.upload_id
+
+
+@pytest.mark.asyncio
+async def test_contribution_publication_is_recorded_before_it_is_executed(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    project, admin, researcher, _, project_path, runner = await _domain(
+        session, tmp_path, "durable-change-set"
+    )
+    _branch_with_changes(
+        runner,
+        project_path,
+        "researcher-change",
+        {
+            "video-11.eaf": (
+                b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>",
+                b"<ANNOTATION_VALUE>Durable publication</ANNOTATION_VALUE>",
+            )
+        },
+    )
+    upload = await _pending(
+        session,
+        project,
+        researcher,
+        runner,
+        "researcher-change",
+        ["video-11.eaf"],
+    )
+    coordinator = ContributionChangeSetCoordinator(GitService(base_path=str(tmp_path)))
+
+    change_set = await coordinator.request(
+        session,
+        project_name=project.project_name,
+        branch_name="researcher-change",
+        resolution_strategy="auto",
+        requested_by=admin.user_id,
+    )
+
+    assert change_set.state == "queued"
+    assert change_set.upload_id == upload.upload_id
+    assert (
+        await session.get(ContributionChangeSet, change_set.change_set_id) is not None
+    )
+    change_set.state = "running"
+    change_set.attempts = 1
+    change_set.updated_at = datetime.now(UTC) - timedelta(hours=2)
+    await session.commit()
+    assert await coordinator.requeue_interrupted(session) == 1
+    await session.refresh(change_set)
+    assert change_set.state == "failed"
+    change_set = await coordinator.request(
+        session,
+        project_name=project.project_name,
+        branch_name="researcher-change",
+        resolution_strategy="auto",
+        requested_by=admin.user_id,
+    )
+    assert change_set.state == "queued"
+    result = await coordinator.execute(session, change_set.change_set_id)
+    await session.refresh(change_set)
+    await session.refresh(upload)
+    assert result["change_set_state"] == "completed"
+    assert change_set.state == "completed"
+    assert change_set.resulting_commit == upload.accepted_commit
+    assert upload.status == Status.RESOLVED
+
+
+@pytest.mark.asyncio
+async def test_queued_change_set_requires_review_when_project_head_moves(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    project, admin, researcher, _, project_path, runner = await _domain(
+        session, tmp_path, "stale-change-set"
+    )
+    _branch_with_changes(
+        runner,
+        project_path,
+        "researcher-change",
+        {
+            "video-11.eaf": (
+                b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>",
+                b"<ANNOTATION_VALUE>Queued interpretation</ANNOTATION_VALUE>",
+            )
+        },
+    )
+    upload = await _pending(
+        session,
+        project,
+        researcher,
+        runner,
+        "researcher-change",
+        ["video-11.eaf"],
+    )
+    coordinator = ContributionChangeSetCoordinator(GitService(base_path=str(tmp_path)))
+    change_set = await coordinator.request(
+        session,
+        project_name=project.project_name,
+        branch_name="researcher-change",
+        resolution_strategy="auto",
+        requested_by=admin.user_id,
+    )
+    (project_path / "README.md").write_text("new accepted state\n", encoding="utf-8")
+    runner.run(["add", "README.md"], check=True)
+    runner.run(["commit", "-m", "concurrent accepted change"], check=True)
+
+    with pytest.raises(ValueError, match="accepted project changed"):
+        await coordinator.execute(session, change_set.change_set_id)
+
+    await session.refresh(change_set)
+    await session.refresh(upload)
+    assert change_set.state == "review_needed"
+    assert upload.status == Status.PENDING_ADMIN_APPROVAL
+
+    retried = await coordinator.request(
+        session,
+        project_name=project.project_name,
+        branch_name="researcher-change",
+        resolution_strategy="auto",
+        requested_by=admin.user_id,
+    )
+    assert retried.change_set_id == change_set.change_set_id
+    assert retried.state == "queued"
+    result = await coordinator.execute(session, retried.change_set_id)
+    await session.refresh(upload)
+    assert result["change_set_state"] == "completed"
+    assert upload.status == Status.RESOLVED
+
+
+@pytest.mark.asyncio
+async def test_worker_reconciles_a_git_merge_completed_before_database_commit(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    project, admin, researcher, _, project_path, runner = await _domain(
+        session, tmp_path, "interrupted-change-set"
+    )
+    _branch_with_changes(
+        runner,
+        project_path,
+        "researcher-change",
+        {
+            "video-11.eaf": (
+                b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>",
+                b"<ANNOTATION_VALUE>Interrupted publication</ANNOTATION_VALUE>",
+            )
+        },
+    )
+    upload = await _pending(
+        session,
+        project,
+        researcher,
+        runner,
+        "researcher-change",
+        ["video-11.eaf"],
+    )
+    coordinator = ContributionChangeSetCoordinator(GitService(base_path=str(tmp_path)))
+    change_set = await coordinator.request(
+        session,
+        project_name=project.project_name,
+        branch_name="researcher-change",
+        resolution_strategy="auto",
+        requested_by=admin.user_id,
+    )
+    runner.complete_pending_merge("researcher-change", "auto")
+
+    result = await coordinator.execute(session, change_set.change_set_id)
+
+    await session.refresh(upload)
+    revision = await session.scalar(
+        select(ProjectRevision).where(
+            ProjectRevision.contribution_id == upload.upload_id
+        )
+    )
+    assert result["change_set_state"] == "completed"
+    assert upload.status == Status.RESOLVED
+    assert revision is not None
+    assert revision.parent_git_commit == change_set.expected_commit

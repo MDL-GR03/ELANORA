@@ -59,6 +59,17 @@
       "lastChecked": "Last checked {date}",
       "notChecked": "No project integrity scan has been recorded yet."
     },
+    "publication": {
+      "context": "Contribution workflow",
+      "title": "Publication queue",
+      "healthy": "Operating normally",
+      "attention": "Needs attention",
+      "queued": "Queued",
+      "running": "Publishing",
+      "reviewNeeded": "Review needed",
+      "failed": "Retrying",
+      "explanation": "Publication requests are recorded before Git and database updates begin. Interrupted work can be retried without losing the administrator's decision."
+    },
     "recovery": {
       "context": "Disaster recovery",
       "title": "Backup evidence",

@@ -59,6 +59,17 @@
       "lastChecked": "Dernière vérification : {date}",
       "notChecked": "Aucune vérification d'intégrité n'a encore été enregistrée."
     },
+    "publication": {
+      "context": "Flux des contributions",
+      "title": "File de publication",
+      "healthy": "Fonctionnement normal",
+      "attention": "Attention requise",
+      "queued": "En attente",
+      "running": "Publication",
+      "reviewNeeded": "Nouvelle vérification",
+      "failed": "Nouvelle tentative",
+      "explanation": "Les demandes de publication sont enregistrées avant les mises à jour Git et de la base de données. Une opération interrompue peut être relancée sans perdre la décision de l'administrateur."
+    },
     "recovery": {
       "context": "Reprise après sinistre",
       "title": "Preuves de sauvegarde",

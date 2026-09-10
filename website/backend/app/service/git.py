@@ -2231,6 +2231,7 @@ class GitService:
         resolution_strategy: str,
         db: AsyncSession,
         user_id: int,
+        expected_parent_commit: str | None = None,
     ) -> dict[str, Any]:
         """Merge a reviewed contribution, synchronize it, and close its queue record."""
         project = await get_project_by_name(db, project_name)
@@ -2300,7 +2301,7 @@ class GitService:
                 f"{filename}: {finding.message}{suffix}. Correct the file in ELAN and submit it again."
             )
         runner = GitCommandRunner(project_path)
-        parent_commit = runner.get_commit_hash()
+        parent_commit = expected_parent_commit or runner.get_commit_hash()
         result = runner.complete_pending_merge(branch_name, resolution_strategy)
         accepted_commit = runner.get_commit_hash()
         try:

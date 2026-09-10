@@ -27,6 +27,7 @@ from .audit_event import AuditEvent, OutboxEvent
 from .city import City
 from .component_accepted_value import ComponentAcceptedValue
 from .component_template import ComponentTemplate
+from .contribution_change_set import ContributionChangeSet
 from .country import Country
 from .eaf_ingestion_attempt import EafIngestionAttempt
 from .eaf_revision import EafRevision
@@ -97,6 +98,7 @@ __all__ = [
     "City",
     "ComponentAcceptedValue",
     "ComponentTemplate",
+    "ContributionChangeSet",
     "Country",
     "EafIngestionAttempt",
     "EafRevision",

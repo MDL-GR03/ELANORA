@@ -8,7 +8,7 @@ export ELANORA_DEV_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-recovery test-e2e legacy-validate legacy-status legacy-down backend-check frontend-check check
+.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-dispatch-change-sets dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-recovery test-e2e legacy-validate legacy-status legacy-down backend-check frontend-check check
 
 help:
 	@echo "ELANORA development commands"
@@ -16,6 +16,7 @@ help:
 	@echo "  make dev-bootstrap  Create the first local institution administrator"
 	@echo "  make dev-reset-password  Set a new password for ELANORA_USER (default: MDL)"
 	@echo "  make dev-dispatch-outbox  Immediately retry queued outbound messages"
+	@echo "  make dev-dispatch-change-sets  Immediately retry queued contribution publications"
 	@echo "  make dev-email-smoke  Send a test message to Mailpit at localhost:8025"
 	@echo "  make dev-check-integrity  Scan accepted project data without repairing it"
 	@echo "  make recovery-verify RECOVERY_BUNDLE=/path/file.elanora"
@@ -87,6 +88,9 @@ dev-reset-password:
 
 dev-dispatch-outbox:
 	$(COMPOSE) exec backend python -m app.cli.dispatch_outbox --once
+
+dev-dispatch-change-sets:
+	$(COMPOSE) exec backend python -m app.cli.dispatch_change_sets --once
 
 dev-email-smoke:
 	$(COMPOSE) exec backend python -m app.cli.queue_test_account_emails

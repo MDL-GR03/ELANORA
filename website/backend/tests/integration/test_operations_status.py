@@ -65,3 +65,7 @@ async def test_operations_status_counts_unhealthy_and_unscanned_projects(
     assert result.integrity.unhealthy_projects == 1
     assert result.integrity.unscanned_projects == 1
     assert result.integrity.latest_check_at == checked_at
+    assert result.publication_queue.queued == 0
+    assert result.publication_queue.running == 0
+    assert result.publication_queue.review_needed == 0
+    assert result.publication_queue.failed == 0

@@ -249,3 +249,11 @@ state.
 
 This sequence keeps the working prototype usable while moving the strongest
 research guarantees into explicit, testable domain boundaries.
+
+**Item 5 progress, 10 September 2026:** reviewed contribution publications now
+create a durable PostgreSQL change set before execution. Publication is prepared
+in an isolated Git worktree, guarded by the expected accepted commit, retried by
+a dedicated worker, reconciled after an interrupted Git publication, and exposed
+in the administrator operations status. The remaining transition is to make the
+immutable revision/object records the publication authority and generate Git
+history only as an idempotent compatibility export.

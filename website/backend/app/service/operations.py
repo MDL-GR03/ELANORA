@@ -8,11 +8,13 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.settings import Settings, get_settings
+from app.model.contribution_change_set import ContributionChangeSet
 from app.model.project import Project
 from app.model.project_integrity import ProjectIntegrityStatus
 from app.schema.responses.operations import (
     IntegrityStatusResponse,
     OperationsStatusResponse,
+    PublicationQueueStatusResponse,
     RecoveryStatusResponse,
     StorageCheckResponse,
     StorageStatusResponse,
@@ -67,6 +69,16 @@ async def operations_status(db: AsyncSession) -> OperationsStatusResponse:
     ).one()
     tracked = int(row[0] or 0)
     healthy = int(row[1] or 0)
+    publication_counts = (
+        await db.execute(
+            select(
+                func.count(case((ContributionChangeSet.state == "queued", 1))),
+                func.count(case((ContributionChangeSet.state == "running", 1))),
+                func.count(case((ContributionChangeSet.state == "review_needed", 1))),
+                func.count(case((ContributionChangeSet.state == "failed", 1))),
+            )
+        )
+    ).one()
     return OperationsStatusResponse(
         storage=storage_status(get_settings()),
         integrity=IntegrityStatusResponse(
@@ -81,6 +93,12 @@ async def operations_status(db: AsyncSession) -> OperationsStatusResponse:
             responsibility="deployment_operator",
             latest_drill_at=None,
             state="not_reported",
+        ),
+        publication_queue=PublicationQueueStatusResponse(
+            queued=int(publication_counts[0] or 0),
+            running=int(publication_counts[1] or 0),
+            review_needed=int(publication_counts[2] or 0),
+            failed=int(publication_counts[3] or 0),
         ),
     )
 

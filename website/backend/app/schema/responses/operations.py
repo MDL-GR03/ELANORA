@@ -27,10 +27,18 @@ class RecoveryStatusResponse(BaseModel):
     state: str
 
 
+class PublicationQueueStatusResponse(BaseModel):
+    queued: int
+    running: int
+    review_needed: int
+    failed: int
+
+
 class OperationsStatusResponse(BaseModel):
     storage: StorageStatusResponse
     integrity: IntegrityStatusResponse
     recovery: RecoveryStatusResponse
+    publication_queue: PublicationQueueStatusResponse
 
 
 class StorageCheckResponse(BaseModel):

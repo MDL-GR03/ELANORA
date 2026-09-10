@@ -121,6 +121,49 @@
       <section class="operations-card wide">
         <div class="card-heading">
           <span class="card-icon"
+            ><font-awesome-icon icon="fa-solid fa-code-merge"
+          /></span>
+          <div>
+            <p class="eyebrow">{{ t('operations.publication.context') }}</p>
+            <h2>{{ t('operations.publication.title') }}</h2>
+          </div>
+          <span
+            :class="[
+              'status-pill',
+              publicationNeedsAttention ? 'warning' : 'healthy',
+            ]"
+          >
+            {{
+              publicationNeedsAttention
+                ? t('operations.publication.attention')
+                : t('operations.publication.healthy')
+            }}
+          </span>
+        </div>
+        <div class="metrics four">
+          <div>
+            <strong>{{ status.publication_queue.queued }}</strong
+            ><span>{{ t('operations.publication.queued') }}</span>
+          </div>
+          <div>
+            <strong>{{ status.publication_queue.running }}</strong
+            ><span>{{ t('operations.publication.running') }}</span>
+          </div>
+          <div>
+            <strong>{{ status.publication_queue.review_needed }}</strong
+            ><span>{{ t('operations.publication.reviewNeeded') }}</span>
+          </div>
+          <div>
+            <strong>{{ status.publication_queue.failed }}</strong
+            ><span>{{ t('operations.publication.failed') }}</span>
+          </div>
+        </div>
+        <p class="guidance">{{ t('operations.publication.explanation') }}</p>
+      </section>
+
+      <section class="operations-card wide">
+        <div class="card-heading">
+          <span class="card-icon"
             ><font-awesome-icon icon="fa-solid fa-clock-rotate-left"
           /></span>
           <div>
@@ -193,6 +236,11 @@ const integrityNeedsAttention = computed(
   () =>
     Boolean(status.value?.integrity.unhealthy_projects) ||
     Boolean(status.value?.integrity.unscanned_projects)
+);
+const publicationNeedsAttention = computed(
+  () =>
+    Boolean(status.value?.publication_queue.review_needed) ||
+    Boolean(status.value?.publication_queue.failed)
 );
 
 function formatDate(value) {
@@ -381,6 +429,10 @@ onMounted(loadStatus);
   margin: 1rem 0;
 }
 
+.metrics.four {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .metrics div {
   display: grid;
   gap: 0.2rem;
@@ -464,6 +516,11 @@ code {
   .card-heading > .status-pill {
     grid-column: 1 / -1;
     width: fit-content;
+  }
+
+  .metrics,
+  .metrics.four {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .facts div {

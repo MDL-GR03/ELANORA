@@ -1,4 +1,5 @@
 import uuid
+from typing import Literal
 
 from pydantic import Field
 
@@ -55,7 +56,7 @@ class BulkRenameRequest(CustomBaseModel):
 class PendingUploadMergeRequest(CustomBaseModel):
     """An administrator's explicit strategy for a reviewed contribution."""
 
-    resolution_strategy: str = "auto"
+    resolution_strategy: Literal["auto", "accept_incoming", "accept_current"] = "auto"
 
 
 class PendingUploadDeclineRequest(CustomBaseModel):

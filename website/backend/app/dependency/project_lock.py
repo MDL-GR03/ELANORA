@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import HTTPException, Request, status
@@ -28,6 +29,28 @@ def ensure_lock_root(lock_root: Path) -> None:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Project storage is not writable; contact the instance administrator",
         ) from exc
+
+
+@asynccontextmanager
+async def acquire_project_write_lock(
+    project_id: int, projects_root: Path
+) -> AsyncIterator[None]:
+    """Serialize one project's filesystem mutations across APIs and workers."""
+    lock_root = projects_root.resolve() / ".locks"
+    ensure_lock_root(lock_root)
+    lock_name = hashlib.sha256(str(project_id).encode()).hexdigest()
+    lock = FileLock(lock_root / f"{lock_name}.lock")
+    try:
+        await asyncio.to_thread(lock.acquire, timeout=LOCK_TIMEOUT_SECONDS)
+    except Timeout as exc:
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail="Another operation is currently modifying this project",
+        ) from exc
+    try:
+        yield
+    finally:
+        await asyncio.to_thread(lock.release)
 
 
 async def project_write_lock(
@@ -56,18 +79,7 @@ async def project_write_lock(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
 
-    lock_root = Path(get_elanora_projects_base_path()).resolve() / ".locks"
-    ensure_lock_root(lock_root)
-    lock_name = hashlib.sha256(str(project.project_id).encode()).hexdigest()
-    lock = FileLock(lock_root / f"{lock_name}.lock")
-    try:
-        await asyncio.to_thread(lock.acquire, timeout=LOCK_TIMEOUT_SECONDS)
-    except Timeout as exc:
-        raise HTTPException(
-            status_code=status.HTTP_423_LOCKED,
-            detail="Another operation is currently modifying this project",
-        ) from exc
-    try:
+    async with acquire_project_write_lock(
+        project.project_id, Path(get_elanora_projects_base_path())
+    ):
         yield
-    finally:
-        await asyncio.to_thread(lock.release)

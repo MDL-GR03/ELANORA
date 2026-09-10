@@ -62,6 +62,7 @@ from app.schema.responses.git import (
     ProjectVersionPreviewResponse,
     ProjectVersionRestoreResponse,
 )
+from app.service.contribution_change_set import ContributionChangeSetCoordinator
 from app.service.eaf_review import (
     EafReviewUnavailableError,
     compare_repository_eaf,
@@ -91,6 +92,7 @@ project_lock_dep = Depends(project_write_lock)
 router = APIRouter()
 
 git_service = GitService()
+contribution_change_sets = ContributionChangeSetCoordinator(git_service)
 sync_coordinator = ProjectSyncCoordinator(git_service)
 logger = get_logger()
 
@@ -990,15 +992,16 @@ async def merge_pending_upload(
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
 ):
-    """Merge one reviewed contribution and mark its queue record resolved."""
+    """Durably request and execute publication of one reviewed contribution."""
     try:
-        return await git_service.complete_pending_upload(
-            project_name,
-            branch_name,
-            request.resolution_strategy,
+        change_set = await contribution_change_sets.request(
             db,
-            access.user.user_id,
+            project_name=project_name,
+            branch_name=branch_name,
+            resolution_strategy=request.resolution_strategy,
+            requested_by=access.user.user_id,
         )
+        return await contribution_change_sets.execute(db, change_set.change_set_id)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:

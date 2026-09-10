@@ -47,6 +47,12 @@ describe('OperationsPage', () => {
         unscanned_projects: 0,
         latest_check_at: '2026-09-10T12:00:00Z',
       },
+      publication_queue: {
+        queued: 2,
+        running: 1,
+        review_needed: 1,
+        failed: 0,
+      },
       recovery: {
         responsibility: 'deployment_operator',
         latest_drill_at: null,
@@ -62,6 +68,8 @@ describe('OperationsPage', () => {
 
     expect(wrapper.text()).toContain('in...ts via objects.example.org');
     expect(wrapper.text()).toContain('Needs attention');
+    expect(wrapper.text()).toContain('Publication queue');
+    expect(wrapper.text()).toContain('Review needed');
     expect(wrapper.text()).toContain('Not reported to ELANORA');
 
     await wrapper.get('button').trigger('click');
