@@ -35,9 +35,11 @@ from app.core.exception_handler import (
     validation_exception_handler,
 )
 from app.core.limiter import limiter
-from app.db.database import close_database, init_database
+from app.core.settings import get_settings
+from app.db.database import close_database, get_session_maker, init_database
 from app.middleware.csrf import CSRFMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.service.git import GitService
 from app.utils.project_backup import create_hidden_folder_in_root
 
 # Get logger (this will automatically call setup_application_logging)
@@ -52,6 +54,18 @@ async def lifespan(app: FastAPI):
     init_database()
     backup_root = create_hidden_folder_in_root()
     logger.info(f"Backup folder created at: {backup_root}")
+    if get_settings().integrity_scan_on_startup:
+        try:
+            async with get_session_maker()() as db:
+                results = await GitService().scan_all_project_integrity(db)
+            unhealthy = sum(item["status"] != "healthy" for item in results)
+            logger.info(
+                "Startup project integrity scan completed: %s scanned, %s unhealthy",
+                len(results),
+                unhealthy,
+            )
+        except Exception:
+            logger.exception("Startup project integrity scan failed")
 
     yield
     await close_database()

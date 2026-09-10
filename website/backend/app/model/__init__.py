@@ -60,6 +60,7 @@ from .pending_upload import PendingUpload
 # Project model (depends on instance)
 from .project import Project
 from .project_file_type import ProjectFileType
+from .project_integrity import ProjectIntegrityStatus
 from .project_location_file_type import ProjectLocationFileType
 from .project_naming_standard import ProjectNamingStandard
 from .project_revision import ProjectRevision, ProjectRevisionEaf
@@ -122,6 +123,7 @@ __all__ = [
     "ProjectComplianceScan",
     "ProjectComplianceScanFile",
     "ProjectFileType",
+    "ProjectIntegrityStatus",
     "ProjectLocationFileType",
     "ProjectNamingStandard",
     "ProjectPermission",

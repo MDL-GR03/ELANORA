@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.elan_file import get_elan_files_by_project
@@ -12,7 +12,9 @@ from app.crud.pending_upload import get_pending_uploads, save_pending_upload
 from app.model.audit_event import AuditEvent
 from app.model.enums import Status, UserRole
 from app.model.instance import Instance
+from app.model.notification import Notification
 from app.model.project import Project
+from app.model.project_integrity import ProjectIntegrityStatus
 from app.model.project_revision import ProjectRevision
 from app.model.user import User
 from app.service.elan import ElanService
@@ -280,6 +282,20 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
         "session-12.eaf",
         "video-11.eaf",
     ]
+    await service.record_current_revision_health(project_name, session)
+    await service.record_current_revision_health(project_name, session)
+    incident = await session.get(ProjectIntegrityStatus, project.project_id)
+    assert incident is not None
+    assert incident.status == "recovery_required"
+    assert incident.first_detected_at is not None
+    assert (
+        await session.scalar(
+            select(func.count())
+            .select_from(Notification)
+            .where(Notification.title == "Project integrity issue detected")
+        )
+        == 1
+    )
 
     with (
         patch.object(
@@ -323,6 +339,18 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
     assert not runner.run(["status", "--porcelain"], check=True).stdout.strip()
     healthy = await service.get_current_revision_health(project_name, session)
     assert healthy["status"] == "healthy"
+    await service.record_current_revision_health(project_name, session)
+    await session.refresh(incident)
+    assert incident.status == "healthy"
+    assert incident.resolved_at is not None
+    assert (
+        await session.scalar(
+            select(func.count())
+            .select_from(Notification)
+            .where(Notification.title == "Project integrity restored")
+        )
+        == 1
+    )
     audit = await session.scalar(
         select(AuditEvent).where(AuditEvent.action == "project.revision.recovered")
     )

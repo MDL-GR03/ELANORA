@@ -3,13 +3,13 @@ import os
 import re
 import tempfile
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import aiofiles
 from fastapi import UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -48,10 +48,11 @@ from app.model.association import ProjectCapabilityGrant, UserToProject
 from app.model.audit_event import AuditEvent
 from app.model.eaf_revision import EafRevision
 from app.model.elan_file import ElanFile
-from app.model.enums import ProjectPermission, ReviewCaseState, Status
+from app.model.enums import ProjectPermission, ReviewCaseState, Status, UserRole
 from app.model.notification import Notification
 from app.model.pending_upload import PendingUpload
 from app.model.project import Project
+from app.model.project_integrity import ProjectIntegrityStatus
 from app.model.project_revision import ProjectRevision
 from app.model.research_topic import (
     ProjectBaselineTier,
@@ -1475,6 +1476,150 @@ class GitService:
             "recovery_required" if any(result[key] for key in issue_keys) else "healthy"
         )
         return result
+
+    async def record_current_revision_health(
+        self, project_name: str, db: AsyncSession
+    ) -> dict[str, Any]:
+        """Persist a scan and notify administrators only on health transitions."""
+        project = await db.scalar(
+            select(Project)
+            .where(Project.project_name == project_name, Project.deleted_at.is_(None))
+            .with_for_update()
+        )
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        try:
+            health = await self.get_current_revision_health(project_name, db)
+        except (FileNotFoundError, RuntimeError, ValueError) as exc:
+            health = {
+                "project_name": project_name,
+                "revision_id": None,
+                "git_commit": "",
+                "status": "scan_failed",
+                "recoverable": False,
+                "detail": str(exc),
+            }
+        now = datetime.now(UTC)
+        record = await db.get(ProjectIntegrityStatus, project.project_id)
+        previous_status = record.status if record is not None else None
+        is_healthy = health["status"] == "healthy"
+        details = {
+            key: value
+            for key, value in health.items()
+            if key not in {"project_name", "revision_id", "git_commit", "status"}
+        }
+        if record is None:
+            record = ProjectIntegrityStatus(
+                project_id=project.project_id,
+                revision_id=health.get("revision_id"),
+                status=health["status"],
+                details=details,
+                first_detected_at=None if is_healthy else now,
+                last_checked_at=now,
+                resolved_at=None,
+            )
+            db.add(record)
+        else:
+            record.revision_id = health.get("revision_id")
+            record.status = health["status"]
+            record.details = details
+            record.last_checked_at = now
+            if is_healthy:
+                record.resolved_at = (
+                    now if previous_status != "healthy" else record.resolved_at
+                )
+                record.first_detected_at = None
+            elif previous_status == "healthy":
+                record.first_detected_at = now
+                record.resolved_at = None
+
+        transitioned_to_incident = not is_healthy and previous_status in {
+            None,
+            "healthy",
+        }
+        transitioned_to_healthy = is_healthy and previous_status not in {
+            None,
+            "healthy",
+        }
+        if transitioned_to_incident or transitioned_to_healthy:
+            action = (
+                "project.integrity.failed"
+                if transitioned_to_incident
+                else "project.integrity.restored"
+            )
+            db.add(
+                AuditEvent(
+                    actor_user_id=None,
+                    project_id=project.project_id,
+                    action=action,
+                    resource_type="project_integrity",
+                    resource_id=str(project.project_id),
+                    details={"previous_status": previous_status, **health},
+                )
+            )
+            administrator_ids = set(
+                (
+                    await db.scalars(
+                        select(User.user_id)
+                        .outerjoin(
+                            UserToProject,
+                            and_(
+                                UserToProject.user_id == User.user_id,
+                                UserToProject.project_id == project.project_id,
+                            ),
+                        )
+                        .where(
+                            User.is_active.is_(True),
+                            or_(
+                                and_(
+                                    User.instance_id == project.instance_id,
+                                    User.role == UserRole.ADMIN,
+                                ),
+                                UserToProject.permission.in_(
+                                    [ProjectPermission.ADMIN, ProjectPermission.OWNER]
+                                ),
+                            ),
+                        )
+                    )
+                ).all()
+            )
+            for administrator_id in administrator_ids:
+                db.add(
+                    Notification(
+                        user_id=administrator_id,
+                        title=(
+                            "Project integrity issue detected"
+                            if transitioned_to_incident
+                            else "Project integrity restored"
+                        ),
+                        message=(
+                            f"{project_name} no longer matches its accepted revision."
+                            if transitioned_to_incident
+                            else f"{project_name} matches its accepted revision again."
+                        ),
+                        action_url=f"/contribution?project={project.project_id}&view=history",
+                    )
+                )
+        await db.commit()
+        return health
+
+    async def scan_all_project_integrity(
+        self, db: AsyncSession
+    ) -> list[dict[str, Any]]:
+        """Scan every active project without repairing or rewriting project data."""
+        project_names = list(
+            (
+                await db.scalars(
+                    select(Project.project_name)
+                    .where(Project.deleted_at.is_(None))
+                    .order_by(Project.project_id)
+                )
+            ).all()
+        )
+        results = []
+        for project_name in project_names:
+            results.append(await self.record_current_revision_health(project_name, db))
+        return results
 
     async def recover_current_revision_from_manifest(
         self,

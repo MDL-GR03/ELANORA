@@ -47,6 +47,7 @@ services:
       ELAN_BACKUPS_BASE_PATH: /app/website/data/recovery-cache
       INSTANCE_ASSETS_BASE_PATH: /app/website/data/instance-assets
       SYNC_STAGING_BASE_PATH: /app/website/data/sync-staging
+      INTEGRITY_SCAN_ON_STARTUP: "true"
     user: "${ELANORA_DEV_UID:-1000}:${ELANORA_DEV_GID:-1000}"
     volumes:
       - ../../backend:/app

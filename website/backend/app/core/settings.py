@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     sync_staging_base_path: Path = Path(".elanora_sync_staging")
     elan_max_file_size_mb: int = Field(default=50, ge=1, le=2048)
     elan_max_batch_size_mb: int = Field(default=500, ge=1, le=8192)
+    integrity_scan_on_startup: bool = False
 
     mail_username: str = ""
     mail_password: SecretStr = SecretStr("")

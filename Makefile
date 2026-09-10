@@ -8,7 +8,7 @@ export ELANORA_DEV_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-email-smoke test-db-up test-db-reset test-db-down test-integration test-e2e legacy-validate legacy-status legacy-down backend-check frontend-check check
+.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-email-smoke dev-check-integrity test-db-up test-db-reset test-db-down test-integration test-e2e legacy-validate legacy-status legacy-down backend-check frontend-check check
 
 help:
 	@echo "ELANORA development commands"
@@ -17,6 +17,7 @@ help:
 	@echo "  make dev-reset-password  Set a new password for ELANORA_USER (default: MDL)"
 	@echo "  make dev-dispatch-outbox  Immediately retry queued outbound messages"
 	@echo "  make dev-email-smoke  Send a test message to Mailpit at localhost:8025"
+	@echo "  make dev-check-integrity  Scan accepted project data without repairing it"
 	@echo "  make dev-logs       Follow development container logs"
 	@echo "  make dev-status     Show container status"
 	@echo "  make dev-health     Check frontend and backend URLs"
@@ -91,6 +92,9 @@ dev-email-smoke:
 	curl --fail --silent --show-error --retry 8 --retry-all-errors "http://localhost:8025/view/latest.txt?query=to:reset-smoke@dev.elanora.example.org" | rg --quiet "RESET-OUTBOX-456"
 	@echo "Mailpit captured encrypted-outbox verification and password-reset messages."
 	@echo "Open Mailpit: http://localhost:8025"
+
+dev-check-integrity:
+	$(COMPOSE) exec backend elanora-check-integrity
 
 test-db-up:
 	$(TEST_COMPOSE) up --wait -d

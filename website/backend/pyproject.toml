@@ -16,6 +16,7 @@ elanora-migrate-legacy = "app.cli.migrate_legacy:main"
 elanora-reset-password = "app.cli.reset_password:main"
 elanora-dispatch-outbox = "app.cli.dispatch_outbox:main"
 elanora-queue-test-emails = "app.cli.queue_test_account_emails:main"
+elanora-check-integrity = "app.cli.check_integrity:main"
 
 [tool.poetry]
 packages = [
