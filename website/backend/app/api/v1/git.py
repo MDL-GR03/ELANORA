@@ -30,7 +30,6 @@ from app.model.review import ReviewCase
 from app.model.user import User
 from app.schema.requests.git import (
     BulkRenameRequest,
-    CommitRequest,
     ContributionPolicyRequest,
     ContributionResearchTopicRequest,
     PendingUploadDeclineRequest,
@@ -46,7 +45,6 @@ from app.schema.responses.git import (
     AcceptedProjectHistoryResponse,
     BatchFileUploadResponse,
     BulkRenameResponse,
-    CommitResponse,
     EafReviewResponse,
     FileRenameResponse,
     GitStatusResponse,
@@ -332,42 +330,6 @@ async def create_project(
         raise HTTPException(status_code=400, detail="Invalid project operation") from e
     except Exception as e:
         logger.exception("Unable to create project %r", project_data.project_name)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-
-@router.post(
-    "/projects/{project_name}/commit",
-    response_model=CommitResponse,
-    dependencies=[project_lock_dep],
-)
-async def commit_changes(
-    project_name: str,
-    commit_data: CommitRequest,
-    user: User = get_admin_dep,
-) -> CommitResponse:
-    """Commit changes to a project.
-
-    Args:
-        project_name: Name of the project to commit changes to.
-        commit_data: Commit request containing message and user information.
-
-    Returns:
-        CommitResponse: Details of the commit including hash and timestamp.
-
-    Raises:
-        HTTPException: 404 if project not found, 400 if no changes or invalid data, 500 if commit fails.
-
-    """
-    try:
-        result = git_service.commit_changes(
-            project_name, commit_data.commit_message, commit_data.user_name
-        )
-        return CommitResponse(**result)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail="Project or file not found") from e
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid project operation") from e
-    except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 

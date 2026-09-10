@@ -206,103 +206,57 @@ class GitService:
     async def get_accepted_project_history(
         self, project_name: str, db: AsyncSession
     ) -> dict[str, Any]:
-        """List immutable states from the canonical branch with audit provenance."""
+        """List published states from the authoritative revision ledger."""
         project = await get_project_by_name(db, project_name)
         if project is None:
             raise FileNotFoundError("Project not found")
-        project_path = safe_project_path(self.base_path, project_name)
-        runner = GitCommandRunner(project_path)
-        current = runner.get_commit_hash()
-        log = runner.run(
-            [
-                "log",
-                "--first-parent",
-                "--date=iso-strict",
-                "--pretty=format:%H%x1f%aI%x1f%an%x1f%s%x1e",
-                runner.canonical_branch(),
-            ],
-            check=True,
-        ).stdout
-        events = (
-            (
-                await db.execute(
-                    select(AuditEvent).where(
-                        AuditEvent.project_id == project.project_id,
-                        AuditEvent.action.in_(
-                            ["contribution.accepted", "project.version.restored"]
-                        ),
-                    )
-                )
+        rows = (
+            await db.execute(
+                select(ProjectRevision, User.username)
+                .outerjoin(User, User.user_id == ProjectRevision.actor_user_id)
+                .where(ProjectRevision.project_id == project.project_id)
+                .order_by(ProjectRevision.ordinal.desc())
             )
-            .scalars()
-            .all()
-        )
-        actor_ids = {
-            event.actor_user_id for event in events if event.actor_user_id is not None
-        }
-        actors: dict[int, str] = {}
-        if actor_ids:
-            actor_rows = await db.execute(
-                select(User.user_id, User.username).where(User.user_id.in_(actor_ids))
-            )
-            actors = dict(actor_rows.all())
-        provenance: dict[str, AuditEvent] = {}
-        for audit_event in events:
-            commit = audit_event.details.get(
-                "accepted_commit"
-            ) or audit_event.details.get("restored_commit")
-            if isinstance(commit, str):
-                provenance[commit] = audit_event
+        ).all()
         versions: list[dict[str, Any]] = []
-        for record in log.split("\x1e"):
-            fields = record.strip().split("\x1f")
-            if len(fields) != EXPECTED_LOG_FIELDS:
-                continue
-            commit, committed_at, author, message = fields
-            current_event = provenance.get(commit)
-            details = current_event.details if current_event else {}
-            contribution_id = None
-            if (
-                current_event
-                and current_event.action == "contribution.accepted"
-                and current_event.resource_id
-            ):
-                try:
-                    contribution_id = int(current_event.resource_id)
-                except ValueError:
-                    contribution_id = None
+        for revision, actor_name in rows:
+            details = revision.details
+            contribution_id = revision.contribution_id
+            action = {
+                "contribution": "contribution.accepted",
+                "restoration": "project.version.restored",
+                "migration": "project.revision.migrated",
+            }[revision.source_type]
             versions.append(
                 {
-                    "commit": commit,
-                    "short_commit": commit[:8],
-                    "committed_at": committed_at,
+                    "commit": revision.git_commit,
+                    "short_commit": revision.git_commit[:8],
+                    "committed_at": revision.created_at.isoformat(),
                     "message": (
                         f"Accepted contribution #{contribution_id}"
                         if contribution_id is not None
                         else (
                             f"Restored project to version {str(details.get('target_commit', ''))[:8]}"
-                            if current_event
-                            and current_event.action == "project.version.restored"
-                            else message
+                            if revision.source_type == "restoration"
+                            else str(
+                                details.get("message") or "Initial project revision"
+                            )
                         )
                     ),
-                    "author": (
-                        actors.get(current_event.actor_user_id, author)
-                        if current_event and current_event.actor_user_id is not None
-                        else author
-                    ),
-                    "action": current_event.action
-                    if current_event
-                    else "project.commit",
+                    "author": actor_name or "ELANORA",
+                    "action": action,
                     "contribution_id": contribution_id,
                     "restored_from": details.get("target_commit"),
                     "reason": details.get("reason"),
-                    "is_current": commit == current,
+                    "is_current": revision.revision_id == project.current_revision_id,
                 }
             )
         return {
             "project_name": project_name,
-            "current_commit": current,
+            "current_commit": next(
+                (version["commit"] for version in versions if version["is_current"]),
+                "",
+            ),
             "versions": versions,
         }
 
@@ -561,13 +515,22 @@ class GitService:
             hooks_dir.mkdir(parents=True, exist_ok=True)
 
             # Save to database
-            await create_project_db(
+            project = await create_project_db(
                 db=db,
                 project_name=project_name,
                 description=description,
                 project_path=str(project_path),
                 instance_id=instance_id,
                 creator_user_id=user_id,
+            )
+            await append_project_revision(
+                db,
+                project_id=project.project_id,
+                git_commit=runner.get_commit_hash(),
+                parent_git_commit=None,
+                source_type="migration",
+                actor_user_id=user_id,
+                details={"message": "Initial project setup"},
             )
             # Flush has succeeded in create_project_db, but PostgreSQL remains
             # uncommitted while the ready repository is atomically published.
@@ -609,43 +572,6 @@ class GitService:
                     "Unable to clean up failed project creation for %r", project_name
                 )
             raise RuntimeError(f"Project creation failed: {e}") from e
-
-    def commit_changes(
-        self, project_name: str, commit_message: str, user_name: str = "user"
-    ) -> dict[str, Any]:
-        """Commit changes to a project."""
-        project_path = safe_project_path(self.base_path, project_name)
-
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-
-        try:
-            runner = GitCommandRunner(project_path)
-
-            # Check if there are changes to commit
-            if not runner.get_status().strip():
-                raise ValueError("No changes to commit")
-
-            # Add all changes
-            runner.add_all()
-
-            # Commit with user info
-            full_message = f"{commit_message}\n\nCommitted by: {user_name}"
-            runner.commit(full_message)
-
-            # Get commit hash
-            commit_hash = runner.get_commit_hash()
-
-            return {
-                "project_name": project_name,
-                "message": commit_message,
-                "commit_hash": commit_hash,
-                "status": "committed",
-                "committed_at": datetime.now().isoformat(),
-            }
-
-        except Exception as e:
-            raise RuntimeError(f"Commit failed: {e}") from e
 
     async def add_elan_files(  # noqa: PLR0912
         self,
@@ -1171,7 +1097,7 @@ class GitService:
 
         try:
             logger.info("Creating project in database")
-            await create_project_db(
+            project = await create_project_db(
                 db=db,
                 project_name=project_name,
                 description=description,
@@ -1214,6 +1140,15 @@ class GitService:
                     failed_files.append(elan_file.name)
                     raise
 
+            await append_project_revision(
+                db,
+                project_id=project.project_id,
+                git_commit=runner.get_commit_hash(),
+                parent_git_commit=None,
+                source_type="migration",
+                actor_user_id=user_id,
+                details={"message": "Initial imported project revision"},
+            )
             await db.commit()
             logger.info(
                 "ELAN processing complete. Processed: %d, Skipped: %d, Failed: %d",
@@ -1320,12 +1255,12 @@ class GitService:
         revision = await db.get(ProjectRevision, revision_id)
         if revision is None or revision.project_id != project.project_id:
             raise ValueError("Project revision not found")
-        project_path = safe_project_path(self.base_path, project_name)
-        runner = GitCommandRunner(project_path)
-        if runner.get_commit_hash() != revision.git_commit:
+        if revision.revision_id != project.current_revision_id:
             raise ValueError(
                 "Only the current accepted project revision can be rebuilt"
             )
+        project_path = safe_project_path(self.base_path, project_name)
+        runner = GitCommandRunner(project_path)
         if runner.run(["status", "--porcelain"], check=True).stdout.strip():
             raise ValueError("The project working tree is not clean")
 
@@ -1387,11 +1322,10 @@ class GitService:
         project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
         git_commit = runner.get_commit_hash()
-        revision = await db.scalar(
-            select(ProjectRevision).where(
-                ProjectRevision.project_id == project.project_id,
-                ProjectRevision.git_commit == git_commit,
-            )
+        revision = (
+            await db.get(ProjectRevision, project.current_revision_id)
+            if project.current_revision_id is not None
+            else None
         )
         if revision is None:
             return {
@@ -1399,6 +1333,7 @@ class GitService:
                 "git_commit": git_commit,
                 "status": "ledger_missing",
                 "recoverable": False,
+                "git_export_matches": False,
             }
 
         try:
@@ -1410,6 +1345,7 @@ class GitService:
                 "git_commit": git_commit,
                 "status": "ledger_invalid",
                 "recoverable": False,
+                "git_export_matches": git_commit == revision.git_commit,
                 "detail": str(exc),
             }
         expected = {entry.filename: entry.sha256 for entry in manifest}
@@ -1449,6 +1385,7 @@ class GitService:
             "revision_id": str(revision.revision_id),
             "git_commit": git_commit,
             "recoverable": True,
+            "git_export_matches": git_commit == revision.git_commit,
             "missing_files": sorted(expected.keys() - disk_hashes.keys()),
             "unexpected_files": sorted(disk_hashes.keys() - expected.keys()),
             "checksum_mismatches": sorted(
@@ -1471,9 +1408,15 @@ class GitService:
             "database_missing_files",
             "database_unexpected_files",
             "database_checksum_mismatches",
+            "git_export_matches",
         )
         result["status"] = (
-            "recovery_required" if any(result[key] for key in issue_keys) else "healthy"
+            "recovery_required"
+            if any(
+                not result[key] if key == "git_export_matches" else result[key]
+                for key in issue_keys
+            )
+            else "healthy"
         )
         return result
 
@@ -1646,13 +1589,14 @@ class GitService:
         revision = await db.get(ProjectRevision, revision_id)
         if revision is None or revision.project_id != project.project_id:
             raise ValueError("Project revision not found")
-
-        project_path = safe_project_path(self.base_path, project_name)
-        runner = GitCommandRunner(project_path)
-        if runner.get_commit_hash() != revision.git_commit:
+        if project.current_revision_id != revision.revision_id:
             raise ValueError(
                 "Only the current accepted project revision can be recovered"
             )
+
+        project_path = safe_project_path(self.base_path, project_name)
+        runner = GitCommandRunner(project_path)
+        previous_git_head = runner.get_commit_hash()
         manifest = await verify_project_revision_manifest(db, revision.revision_id)
         for entry in manifest:
             if Path(entry.filename).name != entry.filename:
@@ -1676,6 +1620,13 @@ class GitService:
             try:
                 for path in original_paths:
                     path.replace(backup_directory / path.name)
+                # Git is a compatibility export of the authoritative database
+                # revision. Re-anchor it before materializing the immutable
+                # manifest so an accidentally advanced checkout is repairable.
+                if previous_git_head != revision.git_commit:
+                    runner.reset_hard(revision.git_commit)
+                for path in elan_directory.glob("*.eaf"):
+                    path.unlink()
                 for entry in manifest:
                     (staged_directory / entry.filename).replace(
                         elan_directory / entry.filename
@@ -1708,6 +1659,8 @@ class GitService:
                 await db.commit()
             except Exception:
                 await db.rollback()
+                if runner.get_commit_hash() != previous_git_head:
+                    runner.reset_hard(previous_git_head)
                 for path in elan_directory.glob("*.eaf"):
                     path.unlink()
                 for path in backup_directory.glob("*.eaf"):

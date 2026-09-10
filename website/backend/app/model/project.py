@@ -2,7 +2,17 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Uuid, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    String,
+    Text,
+    Uuid,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -12,12 +22,22 @@ if TYPE_CHECKING:
     from .instance import Instance
     from .invitation import Invitation
     from .pending_upload import PendingUpload
+    from .project_revision import ProjectRevision
 
 
 class Project(Base):
     """Project model representing annotation projects."""
 
     __tablename__ = "PROJECT"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["current_revision_id", "project_id"],
+            ["PROJECT_REVISION.revision_id", "PROJECT_REVISION.project_id"],
+            name="fk_project_current_revision",
+            ondelete="RESTRICT",
+            use_alter=True,
+        ),
+    )
 
     project_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
@@ -37,6 +57,11 @@ class Project(Base):
         nullable=True,
         index=True,
     )
+    current_revision_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        nullable=True,
+        index=True,
+    )
     auto_accept_new_files: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")
     )
@@ -51,6 +76,9 @@ class Project(Base):
     instance: Mapped["Instance"] = relationship("Instance", back_populates="projects")
     invitations: Mapped[list["Invitation"]] = relationship(
         "Invitation", back_populates="project"
+    )
+    current_revision: Mapped["ProjectRevision | None"] = relationship(
+        "ProjectRevision", foreign_keys=[current_revision_id], post_update=True
     )
 
     def __repr__(self) -> str:

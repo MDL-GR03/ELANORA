@@ -70,11 +70,49 @@ async def test_revision_append_is_ordered_and_retry_safe(
         source_type="restoration",
         actor_user_id=None,
     )
+    delayed_first_retry = await append_project_revision(
+        session,
+        project_id=project.project_id,
+        git_commit="a" * 40,
+        parent_git_commit=None,
+        source_type="migration",
+        actor_user_id=None,
+    )
     await session.commit()
 
     assert retried.revision_id == first.revision_id
+    assert delayed_first_retry.revision_id == first.revision_id
     assert (first.ordinal, second.ordinal) == (1, 2)
     assert second.parent_git_commit == first.git_commit
+    await session.refresh(project)
+    assert project.current_revision_id == second.revision_id
+
+
+@pytest.mark.asyncio
+async def test_current_revision_pointer_cannot_cross_projects(
+    session: AsyncSession,
+) -> None:
+    first_project = await _project(session)
+    first_revision = await append_project_revision(
+        session,
+        project_id=first_project.project_id,
+        git_commit="1" * 40,
+        parent_git_commit=None,
+        source_type="migration",
+        actor_user_id=None,
+    )
+    second_project = Project(
+        project_name="other-revision-ledger",
+        project_path="other-revision-ledger",
+        instance_id=first_project.instance_id,
+    )
+    session.add(second_project)
+    await session.flush()
+
+    second_project.current_revision_id = first_revision.revision_id
+    with pytest.raises(DBAPIError):
+        await session.commit()
+    await session.rollback()
 
 
 @pytest.mark.asyncio

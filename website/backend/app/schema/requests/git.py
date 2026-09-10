@@ -13,13 +13,6 @@ class ProjectCreateRequest(CustomBaseModel):
     description: str | None = None
 
 
-class CommitRequest(CustomBaseModel):
-    """Schema for commit request."""
-
-    commit_message: str
-    user_name: str = "user"
-
-
 class ProjectCheckoutRequest(CustomBaseModel):
     """Schema for project branch checkout request."""
 

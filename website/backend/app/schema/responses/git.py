@@ -25,16 +25,6 @@ class ProjectCreateResponse(CustomBaseModel):
     created_at: str
 
 
-class CommitResponse(CustomBaseModel):
-    """Schema for commit response."""
-
-    project_name: str
-    message: str
-    commit_hash: str
-    status: str
-    committed_at: str
-
-
 class FileUploadResponse(CustomBaseModel):
     """Schema for file upload response."""
 
@@ -319,6 +309,7 @@ class ProjectRevisionHealthResponse(CustomBaseModel):
     git_commit: str
     status: str
     recoverable: bool
+    git_export_matches: bool = True
     detail: str | None = None
     missing_files: list[str] = Field(default_factory=list)
     unexpected_files: list[str] = Field(default_factory=list)

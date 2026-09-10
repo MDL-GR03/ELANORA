@@ -26,6 +26,9 @@ class ProjectRevision(Base):
     __table_args__ = (
         UniqueConstraint("project_id", "ordinal", name="uq_project_revision_ordinal"),
         UniqueConstraint("project_id", "git_commit", name="uq_project_revision_commit"),
+        UniqueConstraint(
+            "revision_id", "project_id", name="uq_project_revision_identity_project"
+        ),
         CheckConstraint("ordinal > 0", name="ck_project_revision_ordinal_positive"),
         CheckConstraint(
             "source_type IN ('contribution', 'restoration', 'migration')",

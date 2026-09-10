@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.crud.project import get_project_by_name
 from app.model.audit_event import AuditEvent
 from app.model.project_sync_operation import ProjectSyncOperation
+from app.service.project_revision import append_project_revision
 from app.storage.paths import safe_project_path
 from app.storage.sync_evidence import SyncEvidenceStore
 
@@ -60,6 +61,18 @@ class ProjectSyncCoordinator:
                 project_name, db, user_id, operation_id=str(operation.operation_id)
             )
             operation.resulting_commit = runner.get_commit_hash()
+            await append_project_revision(
+                db,
+                project_id=project.project_id,
+                git_commit=operation.resulting_commit,
+                parent_git_commit=operation.starting_commit,
+                source_type="migration",
+                actor_user_id=user_id,
+                details={
+                    "message": "Accepted administrator-imported server changes",
+                    "sync_operation_id": str(operation.operation_id),
+                },
+            )
             operation.state = "completed"
             operation.completed_at = datetime.now(UTC)
             operation.evidence_expires_at = datetime.now(UTC) + timedelta(days=30)
@@ -157,6 +170,18 @@ class ProjectSyncCoordinator:
         ):
             raise ValueError("Canonical Git history does not match this operation")
         await self.git.rebuild_project_database(project_name, db, user_id)
+        await append_project_revision(
+            db,
+            project_id=project.project_id,
+            git_commit=head,
+            parent_git_commit=operation.starting_commit,
+            source_type="migration",
+            actor_user_id=user_id,
+            details={
+                "message": "Recovered administrator-imported server changes",
+                "sync_operation_id": str(operation.operation_id),
+            },
+        )
         operation.state = "completed"
         operation.resulting_commit = head
         operation.error = None

@@ -28,19 +28,6 @@ const gitService = {
     return data;
   },
 
-  // Commit changes to a project
-  async commitChanges(projectName, commitMessage, userName) {
-    const payload = {
-      commit_message: commitMessage,
-      user_name: userName,
-    };
-    const { data } = await axiosInstance.post(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/commit`,
-      payload
-    );
-    return data;
-  },
-
   // Upload ELAN files to a project
   async uploadElanFiles(
     projectId,

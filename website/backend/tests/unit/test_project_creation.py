@@ -27,12 +27,15 @@ async def test_project_creation_succeeds_without_optional_central_hooks(
     """A default installation can create an empty, valid project repository."""
     service = GitService(base_path=str(tmp_path))
     db = AsyncMock()
+    project = type("CreatedProject", (), {"project_id": 42})()
+    append_revision = AsyncMock()
 
     with (
         patch(
             "app.service.git.project_exists_by_name", new=AsyncMock(return_value=False)
         ),
-        patch("app.service.git.create_project_db", new=AsyncMock()),
+        patch("app.service.git.create_project_db", new=AsyncMock(return_value=project)),
+        patch("app.service.git.append_project_revision", new=append_revision),
         patch("app.service.git.update_backup"),
     ):
         result = await service.create_project(
@@ -48,6 +51,9 @@ async def test_project_creation_succeeds_without_optional_central_hooks(
     assert project_path.is_dir()
     assert (project_path / "elan_files").is_dir()
     assert GitCommandRunner(project_path).get_commit_hash()
+    append_revision.assert_awaited_once()
+    assert append_revision.await_args.kwargs["project_id"] == 42
+    assert append_revision.await_args.kwargs["source_type"] == "migration"
     db.commit.assert_awaited_once()
 
 

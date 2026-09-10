@@ -94,7 +94,10 @@ test('admin orders contributions and inspects declared research context', async 
 }) => {
   await page.goto('/contribution?view=queue');
 
-  const cards = page.locator('.upload-item .upload-branch');
+  const cards = page.getByRole('heading', {
+    name: /^Contribution #(14|15)$/,
+    level: 3,
+  });
   await expect(cards).toHaveText(['Contribution #14', 'Contribution #15']);
   await expect(page.getByText('Reviewed prominence and rhythm.')).toBeVisible();
 

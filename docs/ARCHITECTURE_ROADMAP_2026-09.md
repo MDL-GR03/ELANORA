@@ -250,10 +250,16 @@ state.
 This sequence keeps the working prototype usable while moving the strongest
 research guarantees into explicit, testable domain boundaries.
 
-**Item 5 progress, 10 September 2026:** reviewed contribution publications now
+**Item 5 completed, 10 September 2026:** reviewed contribution publications now
 create a durable PostgreSQL change set before execution. Publication is prepared
-in an isolated Git worktree, guarded by the expected accepted commit, retried by
-a dedicated worker, reconciled after an interrupted Git publication, and exposed
-in the administrator operations status. The remaining transition is to make the
-immutable revision/object records the publication authority and generate Git
-history only as an idempotent compatibility export.
+in an isolated Git worktree, guarded by the expected accepted revision, retried
+by a dedicated worker, reconciled after an interrupted Git publication, and
+exposed in the administrator operations status. Each project points explicitly
+to its immutable PostgreSQL revision manifest; history and recovery resolve that
+pointer rather than inferring accepted state from the current checkout. Git is a
+checked compatibility export, and an administrator-confirmed recovery can
+re-materialize it from the authoritative manifest. The unused direct Git commit
+API was removed so it cannot bypass the revision ledger.
+
+The next delivery target is item 6: split the oversized backend services and
+frontend components by use case while preserving the tested public contracts.

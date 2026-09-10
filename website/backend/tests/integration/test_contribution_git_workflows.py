@@ -267,6 +267,9 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
     (project_path / "elan_files" / "unexpected.eaf").write_bytes(
         EAF_FIXTURE.read_bytes()
     )
+    runner.add_all()
+    runner.commit("Simulate an export drifting from the database revision")
+    drifted_git_head = runner.get_commit_hash()
     elan_service = ElanService(session)
     for elan_file, _username in await get_elan_files_by_project(
         session, project.project_id
@@ -278,6 +281,7 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
 
     unhealthy = await service.get_current_revision_health(project_name, session)
     assert unhealthy["status"] == "recovery_required"
+    assert unhealthy["git_export_matches"] is False
     assert unhealthy["missing_files"] == ["session-12.eaf"]
     assert unhealthy["unexpected_files"] == ["unexpected.eaf"]
     assert unhealthy["checksum_mismatches"] == ["video-11.eaf"]
@@ -319,6 +323,7 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
     assert (project_path / "elan_files" / "video-11.eaf").read_bytes() == b"damaged"
     assert not (project_path / "elan_files" / "session-12.eaf").exists()
     assert (project_path / "elan_files" / "unexpected.eaf").exists()
+    assert runner.get_commit_hash() == drifted_git_head
 
     recovered = await service.recover_current_revision_from_manifest(
         project_name,
@@ -340,8 +345,10 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
         "session-12.eaf",
     }
     assert not runner.run(["status", "--porcelain"], check=True).stdout.strip()
+    assert runner.get_commit_hash() == revisions[1].git_commit
     healthy = await service.get_current_revision_health(project_name, session)
     assert healthy["status"] == "healthy"
+    assert healthy["git_export_matches"] is True
     await service.record_current_revision_health(project_name, session)
     await session.refresh(incident)
     assert incident.status == "healthy"

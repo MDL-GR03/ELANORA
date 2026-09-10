@@ -134,6 +134,11 @@ async def append_project_revision(
     if existing is not None:
         if existing.manifest_sha256 != manifest_sha256:
             raise RuntimeError("Existing project revision has a different EAF manifest")
+        # A delayed retry of an older operation must never rewind a project
+        # that has since published a newer revision.
+        if project.current_revision_id is None:
+            project.current_revision_id = existing.revision_id
+            await db.flush()
         return existing
     latest = await db.scalar(
         select(func.max(ProjectRevision.ordinal)).where(
@@ -169,5 +174,7 @@ async def append_project_revision(
             for filename, eaf_revision in manifest
         ]
     )
+    await db.flush()
+    project.current_revision_id = revision.revision_id
     await db.flush()
     return revision
