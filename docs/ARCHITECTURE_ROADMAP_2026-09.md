@@ -263,3 +263,9 @@ API was removed so it cannot bypass the revision ledger.
 
 The next delivery target is item 6: split the oversized backend services and
 frontend components by use case while preserving the tested public contracts.
+
+**Item 6 progress, 10 September 2026:** accepted-history queries and safe Git
+export identifier resolution now live in a dedicated `ProjectHistoryService`.
+`GitService` retains a thin compatibility delegate so API callers do not change.
+The next extraction should move restore preview/publication behind this boundary,
+followed by revision integrity and recovery.

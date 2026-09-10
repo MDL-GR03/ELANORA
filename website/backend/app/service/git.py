@@ -84,6 +84,7 @@ from app.service.git_operations import (
     delete_project_folder,
 )
 from app.service.git_status_parser import GitFileStatusAnalyzer, GitStatusParser
+from app.service.project_history import ProjectHistoryService
 from app.service.project_revision import (
     append_project_revision,
     verify_project_revision_manifest,
@@ -159,6 +160,7 @@ class GitService:
             self.base_path = Path(base_path)
 
         self.base_path.mkdir(parents=True, exist_ok=True)
+        self.project_history = ProjectHistoryService()
 
     def check_git_availability(self) -> dict[str, Any]:
         """Check if Git is available on the system."""
@@ -178,87 +180,11 @@ class GitService:
                 "error": "Git not installed",
             }
 
-    @staticmethod
-    def _canonical_commits(runner: GitCommandRunner) -> list[str]:
-        """Return only commits from the canonical branch's first-parent history."""
-        result = runner.run(
-            ["rev-list", "--first-parent", runner.canonical_branch()], check=True
-        )
-        return [line for line in result.stdout.splitlines() if line]
-
-    @staticmethod
-    def _resolve_history_commit(
-        runner: GitCommandRunner, target_commit: str
-    ) -> tuple[str, list[str]]:
-        if not re.fullmatch(r"[0-9a-fA-F]{7,64}", target_commit):
-            raise ValueError("Invalid project version")
-        resolved = runner.run(
-            ["rev-parse", "--verify", f"{target_commit}^{{commit}}"], check=False
-        )
-        if resolved.returncode != 0:
-            raise ValueError("Project version not found")
-        commit = resolved.stdout.strip()
-        canonical = GitService._canonical_commits(runner)
-        if commit not in canonical:
-            raise ValueError("The selected version is not in accepted project history")
-        return commit, canonical
-
     async def get_accepted_project_history(
         self, project_name: str, db: AsyncSession
     ) -> dict[str, Any]:
         """List published states from the authoritative revision ledger."""
-        project = await get_project_by_name(db, project_name)
-        if project is None:
-            raise FileNotFoundError("Project not found")
-        rows = (
-            await db.execute(
-                select(ProjectRevision, User.username)
-                .outerjoin(User, User.user_id == ProjectRevision.actor_user_id)
-                .where(ProjectRevision.project_id == project.project_id)
-                .order_by(ProjectRevision.ordinal.desc())
-            )
-        ).all()
-        versions: list[dict[str, Any]] = []
-        for revision, actor_name in rows:
-            details = revision.details
-            contribution_id = revision.contribution_id
-            action = {
-                "contribution": "contribution.accepted",
-                "restoration": "project.version.restored",
-                "migration": "project.revision.migrated",
-            }[revision.source_type]
-            versions.append(
-                {
-                    "commit": revision.git_commit,
-                    "short_commit": revision.git_commit[:8],
-                    "committed_at": revision.created_at.isoformat(),
-                    "message": (
-                        f"Accepted contribution #{contribution_id}"
-                        if contribution_id is not None
-                        else (
-                            f"Restored project to version {str(details.get('target_commit', ''))[:8]}"
-                            if revision.source_type == "restoration"
-                            else str(
-                                details.get("message") or "Initial project revision"
-                            )
-                        )
-                    ),
-                    "author": actor_name or "ELANORA",
-                    "action": action,
-                    "contribution_id": contribution_id,
-                    "restored_from": details.get("target_commit"),
-                    "reason": details.get("reason"),
-                    "is_current": revision.revision_id == project.current_revision_id,
-                }
-            )
-        return {
-            "project_name": project_name,
-            "current_commit": next(
-                (version["commit"] for version in versions if version["is_current"]),
-                "",
-            ),
-            "versions": versions,
-        }
+        return await self.project_history.list_accepted_versions(project_name, db)
 
     async def preview_project_version_restore(
         self, project_name: str, target_commit: str, db: AsyncSession
@@ -268,7 +194,7 @@ class GitService:
         if project is None:
             raise FileNotFoundError("Project not found")
         runner = GitCommandRunner(safe_project_path(self.base_path, project_name))
-        target, _ = self._resolve_history_commit(runner, target_commit)
+        target, _ = self.project_history.resolve_export_commit(runner, target_commit)
         current = runner.get_commit_hash()
         if target == current:
             raise ValueError("The selected version is already current")
@@ -367,7 +293,7 @@ class GitService:
             raise ValueError(
                 "Accepted project history changed. Refresh the preview before restoring"
             )
-        target, _ = self._resolve_history_commit(runner, target_commit)
+        target, _ = self.project_history.resolve_export_commit(runner, target_commit)
         if target == previous:
             raise ValueError("The selected version is already current")
         if runner.run(["status", "--porcelain"], check=True).stdout.strip():
