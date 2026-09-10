@@ -12,6 +12,7 @@ from app.core.settings import get_settings
 class AssetStorage(Protocol):
     def put(self, key: str, content: bytes) -> None: ...
     def read(self, key: str) -> bytes: ...
+    def delete(self, key: str) -> None: ...
 
 
 class LocalAssetStorage:
@@ -35,6 +36,19 @@ class LocalAssetStorage:
         if self.root not in target.parents:
             raise ValueError("Asset key escapes storage root")
         return target.read_bytes()
+
+    def delete(self, key: str) -> None:
+        target = (self.root / key).resolve()
+        if self.root not in target.parents:
+            raise ValueError("Asset key escapes storage root")
+        target.unlink(missing_ok=True)
+        parent = target.parent
+        while parent != self.root:
+            try:
+                parent.rmdir()
+            except OSError:
+                break
+            parent = parent.parent
 
 
 class S3AssetStorage:
@@ -88,6 +102,9 @@ class S3AssetStorage:
             Key=self._object_key(key),
         )
         return cast("bytes", response["Body"].read())
+
+    def delete(self, key: str) -> None:
+        self.client.delete_object(Bucket=self.bucket, Key=self._object_key(key))
 
 
 def get_asset_storage() -> AssetStorage:

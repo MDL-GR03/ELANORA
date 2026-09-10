@@ -22,6 +22,57 @@
     "remove": "削除",
     "removing": "削除中"
   },
+  "operations": {
+    "title": "システム状態と復旧",
+    "description": "インフラの秘密情報を公開せずに、ELANORAの管理ストレージと復旧準備状況を確認します。",
+    "context": "管理",
+    "loading": "運用状態を読み込んでいます...",
+    "loadError": "運用状態を読み込めませんでした。",
+    "storage": {
+      "context": "管理対象アセット",
+      "title": "ストレージ",
+      "location": "保存先",
+      "localFilesystem": "サーバーのファイルシステム",
+      "credentials": "認証",
+      "check": "ストレージを確認",
+      "checking": "ストレージを確認中...",
+      "healthy": "読み書きテストに成功しました",
+      "failed": "ストレージテストに失敗しました",
+      "credentialsValues": {
+        "static_deployment_secret": "デプロイの静的シークレット",
+        "workload_identity": "ワークロードIDまたはSDK認証情報チェーン",
+        "operating_system_permissions": "オペレーティングシステムの権限"
+      },
+      "policyValues": {
+        "external_object_storage_controls": "オブジェクトストレージのバージョニング、暗号化、保持、ログ記録を確認してください。",
+        "encrypted_recovery_bundle": "暗号化されたELANORA復旧バンドルに含まれます。"
+      }
+    },
+    "integrity": {
+      "context": "承認済みコーパス",
+      "title": "プロジェクト整合性",
+      "healthy": "正常",
+      "attention": "要確認",
+      "total": "プロジェクト総数",
+      "passing": "正常",
+      "attentionCount": "異常または未確認",
+      "lastChecked": "最終確認: {date}",
+      "notChecked": "プロジェクト整合性チェックはまだ記録されていません。"
+    },
+    "recovery": {
+      "context": "災害復旧",
+      "title": "バックアップ証跡",
+      "explanation": "アプリケーションやサーバーの障害時にも利用できるよう、バックアップはELANORAの外部で管理されます。",
+      "owner": "担当者",
+      "command": "運用担当者は次のコマンドで完全な復旧手順を検証できます",
+      "states": { "not_reported": "ELANORAに報告されていません" },
+      "owners": { "deployment_operator": "デプロイ運用担当者" }
+    },
+    "boundary": {
+      "title": "ここで設定を変更できない理由",
+      "body": "ストレージ認証情報、暗号鍵、スケジュール、復旧操作はデプロイの秘密管理と運用手順書で管理します。このページは意図的に状態のみを表示します。"
+    }
+  },
 
   "app": {
     "title": "ELANORA"
@@ -80,6 +131,7 @@
     "reviews": "レビュー",
     "projects": "プロジェクト",
     "dashboard": "ダッシュボード",
+    "operations": "システム状態",
     "upload": "ファイルアップロード",
     "contribution": "貢献",
     "tiers": "階層",

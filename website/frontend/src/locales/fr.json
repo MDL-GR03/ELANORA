@@ -22,6 +22,57 @@
     "remove": "Supprimer",
     "removing": "Suppression"
   },
+  "operations": {
+    "title": "État du système et récupération",
+    "description": "Vérifiez le stockage géré par ELANORA et la préparation à la récupération sans exposer les secrets d'infrastructure.",
+    "context": "Administration",
+    "loading": "Chargement de l'état opérationnel...",
+    "loadError": "Impossible de charger l'état opérationnel.",
+    "storage": {
+      "context": "Ressources gérées",
+      "title": "Stockage",
+      "location": "Destination",
+      "localFilesystem": "Système de fichiers du serveur",
+      "credentials": "Authentification",
+      "check": "Tester le stockage",
+      "checking": "Vérification du stockage...",
+      "healthy": "Test de lecture et d'écriture réussi",
+      "failed": "Échec du test de stockage",
+      "credentialsValues": {
+        "static_deployment_secret": "Secret statique du déploiement",
+        "workload_identity": "Identité de charge de travail ou chaîne d'identifiants du SDK",
+        "operating_system_permissions": "Autorisations du système d'exploitation"
+      },
+      "policyValues": {
+        "external_object_storage_controls": "Vérifiez le versionnage, le chiffrement, la rétention et la journalisation du stockage objet.",
+        "encrypted_recovery_bundle": "Inclus dans les archives de récupération chiffrées d'ELANORA."
+      }
+    },
+    "integrity": {
+      "context": "Corpus accepté",
+      "title": "Intégrité des projets",
+      "healthy": "Sain",
+      "attention": "Attention requise",
+      "total": "Projets au total",
+      "passing": "Sains",
+      "attentionCount": "Défaillants ou non vérifiés",
+      "lastChecked": "Dernière vérification : {date}",
+      "notChecked": "Aucune vérification d'intégrité n'a encore été enregistrée."
+    },
+    "recovery": {
+      "context": "Reprise après sinistre",
+      "title": "Preuves de sauvegarde",
+      "explanation": "Les sauvegardes sont contrôlées hors d'ELANORA afin de rester disponibles si l'application ou le serveur tombe en panne.",
+      "owner": "Responsable",
+      "command": "Les opérateurs peuvent tester la procédure complète de restauration avec",
+      "states": { "not_reported": "Non communiqué à ELANORA" },
+      "owners": { "deployment_operator": "Opérateur du déploiement" }
+    },
+    "boundary": {
+      "title": "Pourquoi la configuration n'est pas modifiable ici",
+      "body": "Les identifiants de stockage, clés de chiffrement, calendriers et restaurations appartiennent au gestionnaire de secrets et au guide d'exploitation. Cette page n'expose volontairement que l'état."
+    }
+  },
 
   "http_status": {
     "400": "Requête incorrecte",
@@ -137,6 +188,7 @@
     "reviews": "Révisions",
     "projects": "Projets",
     "dashboard": "Tableau de bord",
+    "operations": "État du système",
     "upload": "File Upload",
     "tiers": "Tiers",
     "export": "Export",

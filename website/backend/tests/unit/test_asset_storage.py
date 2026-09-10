@@ -21,6 +21,10 @@ class FakeS3Client:
         identity = (str(arguments["Bucket"]), str(arguments["Key"]))
         return {"Body": io.BytesIO(self.objects[identity])}
 
+    def delete_object(self, **arguments: object) -> None:
+        identity = (str(arguments["Bucket"]), str(arguments["Key"]))
+        self.objects.pop(identity, None)
+
 
 def test_local_storage_round_trip_is_confined_to_root(tmp_path: Path) -> None:
     storage = LocalAssetStorage(tmp_path)
@@ -43,6 +47,8 @@ def test_s3_storage_uses_prefixed_immutable_keys() -> None:
     )
     with pytest.raises(RuntimeError, match="already exists"):
         storage.put("instances/example/logo.webp", b"replacement")
+    storage.delete("instances/example/logo.webp")
+    assert client.objects == {}
 
 
 @pytest.mark.parametrize("key", ["../outside", "/absolute", "part/../outside"])

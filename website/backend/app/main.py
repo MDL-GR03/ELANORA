@@ -17,6 +17,7 @@ from app.api.v1.instance import router as instance_router
 from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
 from app.api.v1.notification import router as notification_router
+from app.api.v1.operations import router as operations_router
 from app.api.v1.project_associations import router as project_associations_router
 from app.api.v1.project_location_file_type import (
     router as project_location_file_type_router,
@@ -158,6 +159,9 @@ app.include_router(
 
 app.include_router(
     notification_router, prefix=f"{API_V1_PREFIX}/notifications", tags=["NOTIFICATION"]
+)
+app.include_router(
+    operations_router, prefix=f"{API_V1_PREFIX}/operations", tags=["OPERATIONS"]
 )
 
 

@@ -31,6 +31,7 @@ const ProjectConfigurationPage = () =>
   import('@views/ProjectConfigurationPage.vue');
 const ProfilePage = () => import('@views/ProfilePage.vue');
 const SetupPage = () => import('@views/SetupPage.vue');
+const OperationsPage = () => import('@views/OperationsPage.vue');
 
 const authenticatedPageLoaders = [
   HomePage,
@@ -41,6 +42,7 @@ const authenticatedPageLoaders = [
   TiersPage,
   ProjectConfigurationPage,
   ProfilePage,
+  OperationsPage,
 ];
 
 // Define routes
@@ -118,6 +120,12 @@ const routes = [
         path: 'admin/invitations',
         name: 'AdminInvitationsPage',
         component: AdminInvitationsPage,
+        meta: { requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: 'admin/operations',
+        name: 'OperationsPage',
+        component: OperationsPage,
         meta: { requiresAuth: true, requiresAdmin: true },
       },
       {

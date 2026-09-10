@@ -60,6 +60,14 @@
             <font-awesome-icon icon="fa-solid fa-layer-group" />
             {{ t('appHeader.tiers') || 'Tiers' }}
           </router-link>
+          <router-link
+            v-if="isAdministrator"
+            :to="{ name: 'OperationsPage' }"
+            class="elanora-header-menu-link"
+          >
+            <font-awesome-icon icon="fa-solid fa-heart-pulse" />
+            {{ t('appHeader.operations') }}
+          </router-link>
           <div class="mobile-nav-footer">
             <ProjectSection />
             <NotificationBell v-if="userStore.isAuthenticated" />
@@ -122,6 +130,7 @@ const canReadProject = computed(() =>
 const canWriteProject = computed(() =>
   hasProjectPermission(userStore.user, projectStore.currentProject, 'write')
 );
+const isAdministrator = computed(() => userStore.user?.role === 'admin');
 watch(
   () => route.fullPath,
   () => {

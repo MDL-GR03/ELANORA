@@ -22,6 +22,57 @@
     "remove": "Remove",
     "removing": "Removing"
   },
+  "operations": {
+    "title": "System health and recovery",
+    "description": "Verify ELANORA's managed storage and review recovery readiness without exposing infrastructure secrets.",
+    "context": "Administration",
+    "loading": "Loading operational status...",
+    "loadError": "Operational status could not be loaded.",
+    "storage": {
+      "context": "Managed assets",
+      "title": "Storage",
+      "location": "Destination",
+      "localFilesystem": "Server filesystem",
+      "credentials": "Authentication",
+      "check": "Run storage check",
+      "checking": "Checking storage...",
+      "healthy": "Read and write check passed",
+      "failed": "Storage check failed",
+      "credentialsValues": {
+        "static_deployment_secret": "Static deployment secret",
+        "workload_identity": "Workload identity or SDK credential chain",
+        "operating_system_permissions": "Operating-system permissions"
+      },
+      "policyValues": {
+        "external_object_storage_controls": "Verify versioning, encryption, retention, and logging in object storage.",
+        "encrypted_recovery_bundle": "Included in encrypted ELANORA recovery bundles."
+      }
+    },
+    "integrity": {
+      "context": "Accepted corpus",
+      "title": "Project integrity",
+      "healthy": "Healthy",
+      "attention": "Needs attention",
+      "total": "Total projects",
+      "passing": "Healthy",
+      "attentionCount": "Unhealthy or unscanned",
+      "lastChecked": "Last checked {date}",
+      "notChecked": "No project integrity scan has been recorded yet."
+    },
+    "recovery": {
+      "context": "Disaster recovery",
+      "title": "Backup evidence",
+      "explanation": "Backups are controlled outside ELANORA so they remain available if this application or server fails.",
+      "owner": "Responsible party",
+      "command": "Deployment operators can prove the complete restore procedure with",
+      "states": { "not_reported": "Not reported to ELANORA" },
+      "owners": { "deployment_operator": "Deployment operator" }
+    },
+    "boundary": {
+      "title": "Why configuration is not editable here",
+      "body": "Storage credentials, encryption keys, schedules, and restores belong in the deployment secret manager and infrastructure runbook. This page deliberately exposes status only."
+    }
+  },
 
   "http_status": {
     "400": "Bad Request",
@@ -93,6 +144,7 @@
     "logout": "Log out",
     "projects": "Projects",
     "dashboard": "Dashboard",
+    "operations": "System health",
     "upload": "File Upload",
     "tiers": "Tiers",
     "export": "Export",
