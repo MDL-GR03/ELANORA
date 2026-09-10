@@ -7,30 +7,6 @@ import pytest
 from app.service.git_operations import GitCommandRunner
 
 
-class RecordingRunner(GitCommandRunner):
-    def __init__(
-        self, project_path: Path, *, conflicts: list[str], already_merged: bool = False
-    ) -> None:
-        super().__init__(project_path, maintain_backup=False)
-        self.commands: list[tuple[list[str], bool]] = []
-        self.conflicts = conflicts
-        self.already_merged = already_merged
-
-    def run(self, args: list[str], check: bool = False) -> Any:
-        self.commands.append((args, check))
-        if args[:2] == ["merge-base", "--is-ancestor"]:
-            return SimpleNamespace(
-                returncode=0 if self.already_merged else 1, stdout=""
-            )
-        return SimpleNamespace(returncode=1 if self.conflicts else 0, stdout="")
-
-    def get_conflicted_files(self) -> list[str]:
-        return self.conflicts
-
-    def canonical_branch(self) -> str:
-        return "master"
-
-
 class PreviewRunner(GitCommandRunner):
     def __init__(self, project_path: Path, result: Any) -> None:
         super().__init__(project_path, maintain_backup=False)
@@ -43,6 +19,25 @@ class PreviewRunner(GitCommandRunner):
 
     def canonical_branch(self) -> str:
         return "master"
+
+
+def initialized_repository(tmp_path: Path) -> GitCommandRunner:
+    runner = GitCommandRunner(tmp_path, maintain_backup=False)
+    runner.run(["init", "--initial-branch=main"], check=True)
+    runner.run(["config", "user.name", "Test"], check=True)
+    runner.run(["config", "user.email", "test@example.org"], check=True)
+    (tmp_path / "session.eaf").write_text("accepted\n", encoding="utf-8")
+    runner.run(["add", "session.eaf"], check=True)
+    runner.run(["commit", "-m", "accepted"], check=True)
+    return runner
+
+
+def commit_submission(runner: GitCommandRunner, tmp_path: Path, content: str) -> None:
+    runner.run(["checkout", "-b", "upload_42"], check=True)
+    (tmp_path / "session.eaf").write_text(content, encoding="utf-8")
+    runner.run(["add", "session.eaf"], check=True)
+    runner.run(["commit", "-m", "submission"], check=True)
+    runner.run(["checkout", "main"], check=True)
 
 
 def test_merge_preview_is_non_mutating_and_reports_clean_result(tmp_path: Path) -> None:
@@ -102,47 +97,75 @@ def test_real_merge_preview_supports_main_without_switching_branches(
 
 
 def test_clean_pending_contribution_is_committed_after_review(tmp_path: Path) -> None:
-    runner = RecordingRunner(tmp_path, conflicts=[])
+    runner = initialized_repository(tmp_path)
+    commit_submission(runner, tmp_path, "submitted\n")
 
     result = runner.complete_pending_merge("upload_42", "auto")
 
     assert result["status"] == "resolved"
-    assert (["merge", "--no-commit", "--no-ff", "upload_42"], False) in runner.commands
-    assert (["add", "--all"], True) in runner.commands
-    assert not any(
-        command[:2] == ["merge", "--abort"] for command, _ in runner.commands
-    )
+    assert (tmp_path / "session.eaf").read_text(encoding="utf-8") == "submitted\n"
+    assert runner.get_current_branch() == "main"
+    assert runner.run(["status", "--porcelain"], check=True).stdout == ""
 
 
 def test_retry_after_git_commit_rebuilds_projection_without_second_commit(
     tmp_path: Path,
 ) -> None:
-    runner = RecordingRunner(tmp_path, conflicts=[], already_merged=True)
+    runner = initialized_repository(tmp_path)
+    commit_submission(runner, tmp_path, "submitted\n")
+    runner.complete_pending_merge("upload_42", "auto")
+    accepted_commit = runner.get_commit_hash()
 
     result = runner.complete_pending_merge("upload_42", "auto")
 
     assert result["status"] == "already_merged"
-    assert not any(command[0] == "commit" for command, _ in runner.commands)
+    assert runner.get_commit_hash() == accepted_commit
 
 
-def test_auto_merge_aborts_without_committing_when_conflicts_exist(
+def test_auto_merge_conflict_does_not_mutate_the_shared_checkout(
     tmp_path: Path,
 ) -> None:
-    runner = RecordingRunner(tmp_path, conflicts=["elan_files/session.eaf"])
+    runner = initialized_repository(tmp_path)
+    commit_submission(runner, tmp_path, "submitted\n")
+    (tmp_path / "session.eaf").write_text("new accepted\n", encoding="utf-8")
+    runner.run(["add", "session.eaf"], check=True)
+    runner.run(["commit", "-m", "new accepted"], check=True)
+    accepted_commit = runner.get_commit_hash()
 
     with pytest.raises(ValueError, match="require resolution"):
         runner.complete_pending_merge("upload_42", "auto")
 
-    assert (["merge", "--abort"], False) in runner.commands
-    assert not any(command[0] == "commit" for command, _ in runner.commands)
+    assert runner.get_commit_hash() == accepted_commit
+    assert runner.get_current_branch() == "main"
+    assert (tmp_path / "session.eaf").read_text(encoding="utf-8") == "new accepted\n"
+    assert runner.run(["status", "--porcelain"], check=True).stdout == ""
 
 
 def test_explicit_incoming_strategy_resolves_and_commits_conflicts(
     tmp_path: Path,
 ) -> None:
-    runner = RecordingRunner(tmp_path, conflicts=["elan_files/session.eaf"])
+    runner = initialized_repository(tmp_path)
+    commit_submission(runner, tmp_path, "submitted\n")
+    (tmp_path / "session.eaf").write_text("new accepted\n", encoding="utf-8")
+    runner.run(["add", "session.eaf"], check=True)
+    runner.run(["commit", "-m", "new accepted"], check=True)
 
-    runner.complete_pending_merge("upload_42", "accept_incoming")
+    result = runner.complete_pending_merge("upload_42", "accept_incoming")
 
-    assert (["checkout", "--theirs", "--", "."], True) in runner.commands
-    assert any(command[0] == "commit" for command, _ in runner.commands)
+    assert result["status"] == "resolved"
+    assert (tmp_path / "session.eaf").read_text(encoding="utf-8") == "submitted\n"
+    assert runner.get_current_branch() == "main"
+
+
+def test_explicit_current_strategy_keeps_the_accepted_file(tmp_path: Path) -> None:
+    runner = initialized_repository(tmp_path)
+    commit_submission(runner, tmp_path, "submitted\n")
+    (tmp_path / "session.eaf").write_text("new accepted\n", encoding="utf-8")
+    runner.run(["add", "session.eaf"], check=True)
+    runner.run(["commit", "-m", "new accepted"], check=True)
+
+    result = runner.complete_pending_merge("upload_42", "accept_current")
+
+    assert result["status"] == "resolved"
+    assert (tmp_path / "session.eaf").read_text(encoding="utf-8") == "new accepted\n"
+    assert runner.get_current_branch() == "main"

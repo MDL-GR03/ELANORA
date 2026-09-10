@@ -2,6 +2,7 @@ import os
 import shutil
 import stat
 import subprocess
+import tempfile
 import traceback
 from dataclasses import dataclass
 from datetime import datetime
@@ -762,7 +763,7 @@ class GitCommandRunner:
     def complete_pending_merge(
         self, branch_name: str, resolution_strategy: str = "auto"
     ) -> dict[str, Any]:
-        """Merge a reviewed branch, resolving conflicts only when explicitly asked."""
+        """Prepare a merge in isolation, then publish it only if HEAD is unchanged."""
         allowed_strategies = {"auto", "accept_incoming", "accept_current"}
         if resolution_strategy not in allowed_strategies:
             raise ValueError("Unsupported merge resolution strategy")
@@ -783,30 +784,54 @@ class GitCommandRunner:
                 "status": "already_merged",
             }
 
-        self.checkout(self.canonical_branch())
-        merge_result = self.run(
-            ["merge", "--no-commit", "--no-ff", branch_name], check=False
-        )
-        conflicted_files = self.get_conflicted_files()
-        if conflicted_files and resolution_strategy == "auto":
-            self.run(["merge", "--abort"], check=False)
-            raise ValueError("Contribution has conflicts that require resolution")
-
-        if merge_result.returncode != 0 and not conflicted_files:
-            self.run(["merge", "--abort"], check=False)
-            raise RuntimeError("Git could not merge the contribution")
-
-        if conflicted_files:
-            checkout_side = (
-                "--theirs" if resolution_strategy == "accept_incoming" else "--ours"
+        canonical_branch = self.canonical_branch()
+        expected_head = self.run(
+            ["rev-parse", canonical_branch], check=True
+        ).stdout.strip()
+        staging_root = Path(tempfile.mkdtemp(prefix="elanora-change-set-"))
+        worktree = staging_root / "worktree"
+        prepared_commit: str | None = None
+        try:
+            self.run(
+                ["worktree", "add", "--detach", str(worktree), expected_head],
+                check=True,
             )
-            self.run(["checkout", checkout_side, "--", "."], check=True)
+            isolated = GitCommandRunner(worktree, maintain_backup=False)
+            merge_result = isolated.run(
+                ["merge", "--no-commit", "--no-ff", branch_name], check=False
+            )
+            conflicted_files = isolated.get_conflicted_files()
+            if conflicted_files and resolution_strategy == "auto":
+                raise ValueError("Contribution has conflicts that require resolution")
+            if merge_result.returncode != 0 and not conflicted_files:
+                raise RuntimeError("Git could not merge the contribution")
+            if conflicted_files:
+                checkout_side = (
+                    "--theirs" if resolution_strategy == "accept_incoming" else "--ours"
+                )
+                isolated.run(["checkout", checkout_side, "--", "."], check=True)
+            isolated.run(["add", "--all"], check=True)
+            isolated.run(
+                ["commit", "-m", f"Merge reviewed contribution {branch_name}"],
+                check=True,
+            )
+            prepared_commit = isolated.get_commit_hash()
 
-        self.run(["add", "--all"], check=True)
-        self.run(
-            ["commit", "-m", f"Merge reviewed contribution {branch_name}"],
-            check=True,
-        )
+            current_head = self.run(
+                ["rev-parse", canonical_branch], check=True
+            ).stdout.strip()
+            if current_head != expected_head:
+                raise RuntimeError(
+                    "Accepted project changed while the contribution was being prepared"
+                )
+            self.checkout(canonical_branch)
+            self.run(["merge", "--ff-only", prepared_commit], check=True)
+        finally:
+            self.run(["worktree", "remove", "--force", str(worktree)], check=False)
+            shutil.rmtree(staging_root, ignore_errors=True)
+
+        if prepared_commit is None:
+            raise RuntimeError("Contribution merge was not prepared")
         return {
             "branch_name": branch_name,
             "resolution_strategy": resolution_strategy,
