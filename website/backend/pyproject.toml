@@ -17,6 +17,7 @@ elanora-reset-password = "app.cli.reset_password:main"
 elanora-dispatch-outbox = "app.cli.dispatch_outbox:main"
 elanora-queue-test-emails = "app.cli.queue_test_account_emails:main"
 elanora-check-integrity = "app.cli.check_integrity:main"
+elanora-disaster-recovery = "app.cli.disaster_recovery:main"
 
 [tool.poetry]
 packages = [

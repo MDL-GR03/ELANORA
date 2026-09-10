@@ -8,7 +8,7 @@ export ELANORA_DEV_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-email-smoke dev-check-integrity test-db-up test-db-reset test-db-down test-integration test-e2e legacy-validate legacy-status legacy-down backend-check frontend-check check
+.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-e2e legacy-validate legacy-status legacy-down backend-check frontend-check check
 
 help:
 	@echo "ELANORA development commands"
@@ -18,6 +18,7 @@ help:
 	@echo "  make dev-dispatch-outbox  Immediately retry queued outbound messages"
 	@echo "  make dev-email-smoke  Send a test message to Mailpit at localhost:8025"
 	@echo "  make dev-check-integrity  Scan accepted project data without repairing it"
+	@echo "  make recovery-verify RECOVERY_BUNDLE=/path/file.elanora"
 	@echo "  make dev-logs       Follow development container logs"
 	@echo "  make dev-status     Show container status"
 	@echo "  make dev-health     Check frontend and backend URLs"
@@ -95,6 +96,10 @@ dev-email-smoke:
 
 dev-check-integrity:
 	$(COMPOSE) exec backend elanora-check-integrity
+
+recovery-verify:
+	test -n "$(RECOVERY_BUNDLE)"
+	cd website/backend && poetry run elanora-disaster-recovery verify "$(abspath $(RECOVERY_BUNDLE))"
 
 test-db-up:
 	$(TEST_COMPOSE) up --wait -d
