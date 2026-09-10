@@ -62,7 +62,7 @@ from .project import Project
 from .project_file_type import ProjectFileType
 from .project_location_file_type import ProjectLocationFileType
 from .project_naming_standard import ProjectNamingStandard
-from .project_revision import ProjectRevision
+from .project_revision import ProjectRevision, ProjectRevisionEaf
 from .project_sync_operation import ProjectSyncOperation
 from .protocol import (
     ProjectComplianceScan,
@@ -126,6 +126,7 @@ __all__ = [
     "ProjectNamingStandard",
     "ProjectPermission",
     "ProjectRevision",
+    "ProjectRevisionEaf",
     "ProjectSyncOperation",
     "Protocol",
     "ProtocolValidationIssue",

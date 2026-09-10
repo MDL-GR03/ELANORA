@@ -1,14 +1,23 @@
 """PostgreSQL guarantees for the accepted project revision ledger."""
 
+import hashlib
+from datetime import datetime
+
 import pytest
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.model.eaf_revision import EafRevision
+from app.model.elan_file import ElanFile
+from app.model.file_content import FileContent
 from app.model.instance import Instance
 from app.model.project import Project
-from app.model.project_revision import ProjectRevision
-from app.service.project_revision import append_project_revision
+from app.model.project_revision import ProjectRevision, ProjectRevisionEaf
+from app.service.project_revision import (
+    append_project_revision,
+    verify_project_revision_manifest,
+)
 
 
 async def _project(session: AsyncSession) -> Project:
@@ -63,6 +72,76 @@ async def test_revision_append_is_ordered_and_retry_safe(
     assert retried.revision_id == first.revision_id
     assert (first.ordinal, second.ordinal) == (1, 2)
     assert second.parent_git_commit == first.git_commit
+
+
+@pytest.mark.asyncio
+async def test_revision_captures_exact_eaf_manifest(session: AsyncSession) -> None:
+    project = await _project(session)
+    raw_xml = b"<ANNOTATION_DOCUMENT/>"
+    digest = hashlib.sha256(raw_xml).hexdigest()
+    content = FileContent(
+        filename="session.eaf",
+        file_size=len(raw_xml),
+        content_hash=digest,
+        user_id=None,
+    )
+    elan_file = ElanFile(
+        file_content=content,
+        project=project,
+        filename="session.eaf",
+        file_path="revision-ledger/elan_files/session.eaf",
+        last_modified=datetime.now(),
+    )
+    session.add_all([content, elan_file])
+    await session.flush()
+    eaf_revision = EafRevision(
+        elan_id=elan_file.elan_id,
+        revision_number=1,
+        sha256=digest,
+        raw_xml=raw_xml,
+        created_by=None,
+    )
+    session.add(eaf_revision)
+    await session.flush()
+
+    revision = await append_project_revision(
+        session,
+        project_id=project.project_id,
+        git_commit="e" * 40,
+        parent_git_commit=None,
+        source_type="migration",
+        actor_user_id=None,
+    )
+    project_revision_id = revision.revision_id
+    eaf_revision_id = eaf_revision.revision_id
+    manifest_sha256 = revision.manifest_sha256
+    await session.commit()
+
+    manifest = await session.scalar(
+        select(ProjectRevisionEaf).where(
+            ProjectRevisionEaf.project_revision_id == project_revision_id
+        )
+    )
+    assert manifest is not None
+    assert manifest.filename == "session.eaf"
+    assert manifest.eaf_revision_id == eaf_revision_id
+    assert manifest.sha256 == digest
+    assert manifest_sha256 is not None
+    await verify_project_revision_manifest(session, project_revision_id)
+
+    with pytest.raises(DBAPIError) as error:
+        await session.execute(
+            update(ProjectRevisionEaf)
+            .where(
+                ProjectRevisionEaf.project_revision_id == project_revision_id,
+                ProjectRevisionEaf.filename == "session.eaf",
+            )
+            .values(sha256="f" * 64)
+        )
+        await session.commit()
+    assert "PROJECT_REVISION_EAF is append-only" in str(error.value.orig)
+    await session.rollback()
+    await verify_project_revision_manifest(session, project_revision_id)
 
 
 @pytest.mark.asyncio

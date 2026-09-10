@@ -69,6 +69,7 @@ async def test_restore_creates_descendant_and_keeps_forward_version(
     monkeypatch.setattr(
         "app.service.git.get_pending_uploads", AsyncMock(return_value=[])
     )
+    monkeypatch.setattr("app.service.git.append_project_revision", AsyncMock())
     monkeypatch.setattr("app.service.git.update_backup", lambda *_args: None)
     db = AsyncMock()
     db.add = MagicMock()
@@ -169,6 +170,7 @@ async def test_restore_resets_git_when_database_commit_fails(
     monkeypatch.setattr(
         "app.service.git.get_pending_uploads", AsyncMock(return_value=[])
     )
+    monkeypatch.setattr("app.service.git.append_project_revision", AsyncMock())
     monkeypatch.setattr("app.service.git.update_backup", lambda *_args: None)
     db = AsyncMock()
     db.add = MagicMock()
