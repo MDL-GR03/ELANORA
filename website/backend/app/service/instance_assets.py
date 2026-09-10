@@ -90,7 +90,13 @@ async def read_logo(db: AsyncSession, instance: Instance) -> bytes | None:
     asset = await db.get(InstanceAsset, instance.logo_asset_id)
     if asset is None:
         return None
-    return await asyncio.to_thread(
+    content = await asyncio.to_thread(
         get_asset_storage().read,
         asset.storage_key,
     )
+    if (
+        len(content) != asset.byte_size
+        or hashlib.sha256(content).hexdigest() != asset.sha256
+    ):
+        raise ValueError("Stored institution logo failed its integrity check")
+    return content

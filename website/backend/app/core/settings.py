@@ -16,6 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.core.load_env import load_env
 
 Environment = Literal["dev", "dev.docker", "test", "prod", "server"]
+AssetStorageBackend = Literal["local", "s3"]
 MINIMUM_PRODUCTION_SECRET_LENGTH = 32
 DEVELOPMENT_OUTBOX_KEY = "svzSYyqHlCqGnZmcGdjsp3qNN6HvwqEAAkhiJCMdrtk="
 DEVELOPMENT_SETUP_TOKEN = "elanora-local-setup"  # noqa: S105
@@ -51,6 +52,13 @@ class Settings(BaseSettings):
     elan_projects_base_path: Path = Path("elanora_projects")
     elan_backups_base_path: Path = Path(".elanora_projects_backups")
     instance_assets_base_path: Path = Path("instance_assets")
+    asset_storage_backend: AssetStorageBackend = "local"
+    asset_s3_bucket: str | None = None
+    asset_s3_prefix: str = "elanora"
+    asset_s3_region: str | None = None
+    asset_s3_endpoint_url: str | None = None
+    asset_s3_access_key_id: SecretStr | None = None
+    asset_s3_secret_access_key: SecretStr | None = None
     sync_staging_base_path: Path = Path(".elanora_sync_staging")
     elan_max_file_size_mb: int = Field(default=50, ge=1, le=2048)
     elan_max_batch_size_mb: int = Field(default=500, ge=1, le=8192)
@@ -92,6 +100,12 @@ class Settings(BaseSettings):
         if self.elan_max_batch_size_mb < self.elan_max_file_size_mb:
             raise ValueError(
                 "ELAN_MAX_BATCH_SIZE_MB must be at least ELAN_MAX_FILE_SIZE_MB"
+            )
+        if self.asset_storage_backend == "s3" and not self.asset_s3_bucket:
+            raise ValueError("ASSET_S3_BUCKET is required for S3 asset storage")
+        if bool(self.asset_s3_access_key_id) != bool(self.asset_s3_secret_access_key):
+            raise ValueError(
+                "ASSET_S3_ACCESS_KEY_ID and ASSET_S3_SECRET_ACCESS_KEY must be set together"
             )
         if self.environment in {"prod", "server"}:
             secret = (
