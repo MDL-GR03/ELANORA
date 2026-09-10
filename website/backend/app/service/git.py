@@ -637,59 +637,16 @@ class GitService:
             branch_name = upload.branch_name
             git_details = upload.git_details or {}
             upload_data = git_details.get("upload_data", git_details)
-            protocol_validation = upload_data.get("protocol_validation") or {}
-            current_protocol_id = (
-                str(project.protocol_version_id)
-                if project.protocol_version_id is not None
-                else None
-            )
-            recorded_protocol_id = protocol_validation.get("protocol_version_id")
-            protocol_outcome = (
-                "not_configured"
-                if current_protocol_id is None
-                else (
-                    "passed"
-                    if protocol_validation.get("outcome") == "passed"
-                    and recorded_protocol_id == current_protocol_id
-                    else "recheck_required"
-                )
-            )
-            semantic_summary, semantic_targets, changed_tiers = (
-                self.contribution_inspection.semantic_analysis(
-                    project_name, branch_name, upload_data, upload.base_commit
-                )
+            (
+                semantic_summary,
+                semantic_targets,
+                research_context,
+                protocol_outcome,
+                recorded_protocol_id,
+            ) = self.contribution_inspection.research_scope(
+                project_name, project, upload, configured_baseline_tiers
             )
             semantic_targets_by_upload[upload.upload_id] = semantic_targets
-            research_context = dict(upload_data.get("research_context") or {})
-            declared_tiers = {
-                tier
-                for tier in research_context.get("declared_tiers", [])
-                if isinstance(tier, str)
-            }
-            baseline_tiers = configured_baseline_tiers | {
-                tier
-                for tier in research_context.get("baseline_tiers", [])
-                if isinstance(tier, str)
-            }
-            outside_scope = sorted(changed_tiers - declared_tiers - baseline_tiers)
-            research_context.update(
-                {
-                    "changed_tiers": sorted(changed_tiers),
-                    "baseline_changed_tiers": sorted(changed_tiers & baseline_tiers),
-                    "outside_scope_tiers": outside_scope,
-                    "scope_status": (
-                        "missing_context"
-                        if not research_context.get("summary")
-                        else "topic_review_needed"
-                        if research_context.get("topic_review_status") == "proposed"
-                        else "outside_scope"
-                        if declared_tiers and outside_scope
-                        else "aligned"
-                        if declared_tiers
-                        else "declared_general"
-                    ),
-                }
-            )
 
             if upload.superseded_by_upload_id is not None:
                 upload_status.append(
@@ -814,9 +771,7 @@ class GitService:
                         },
                         "semantic_summary": semantic_summary,
                         "research_context": research_context,
-                        "protocol_version_id": protocol_validation.get(
-                            "protocol_version_id"
-                        ),
+                        "protocol_version_id": recorded_protocol_id,
                         "git_details": upload.git_details,
                         "merge_status": status,
                         "conflicted_files": conflicts,

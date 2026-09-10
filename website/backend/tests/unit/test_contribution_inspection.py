@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from app.service.contribution_inspection import ContributionInspectionService
 
@@ -29,3 +29,68 @@ def test_annotation_collisions_only_report_different_results_for_same_target() -
     assert ContributionInspectionService.annotation_collisions(
         14, targets, {15, 16}
     ) == []
+
+
+def test_research_scope_allows_configured_baseline_changes() -> None:
+    service = ContributionInspectionService(MagicMock())
+    project = SimpleNamespace(protocol_version_id="protocol-2")
+    upload = SimpleNamespace(
+        branch_name="pending",
+        base_commit="base",
+        git_details={
+            "upload_data": {
+                "protocol_validation": {
+                    "outcome": "passed",
+                    "protocol_version_id": "protocol-2",
+                },
+                "research_context": {
+                    "summary": "Corrected prosodic phrasing",
+                    "declared_tiers": ["Prosody"],
+                },
+            }
+        },
+    )
+
+    with patch.object(
+        service,
+        "semantic_analysis",
+        return_value=(
+            {"files": 1},
+            {"session.eaf": {"a1": ("value",)}},
+            {"Prosody", "Sign-LH"},
+        ),
+    ):
+        _, _, context, protocol, protocol_id = service.research_scope(
+            "corpus", project, upload, {"Sign-LH"}
+        )
+
+    assert protocol == "passed"
+    assert protocol_id == "protocol-2"
+    assert context["scope_status"] == "aligned"
+    assert context["baseline_changed_tiers"] == ["Sign-LH"]
+    assert context["outside_scope_tiers"] == []
+
+
+def test_research_scope_requires_protocol_recheck_after_protocol_change() -> None:
+    service = ContributionInspectionService(MagicMock())
+    project = SimpleNamespace(protocol_version_id="protocol-2")
+    upload = SimpleNamespace(
+        branch_name="pending",
+        base_commit="base",
+        git_details={
+            "upload_data": {
+                "protocol_validation": {
+                    "outcome": "passed",
+                    "protocol_version_id": "protocol-1",
+                },
+                "research_context": {"summary": "Checked the file"},
+            }
+        },
+    )
+
+    with patch.object(service, "semantic_analysis", return_value=({}, {}, set())):
+        _, _, _, protocol, _ = service.research_scope(
+            "corpus", project, upload, set()
+        )
+
+    assert protocol == "recheck_required"

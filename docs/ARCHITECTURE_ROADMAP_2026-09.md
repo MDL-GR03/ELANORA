@@ -288,6 +288,7 @@ acceptance. Read-only EAF semantic summaries, changed-tier detection,
 annotation-level comparison targets, and Git compatibility previews now live in
 `ContributionInspectionService`. Queue presentation still composes these
 results in `GitService`, while content-identity grouping and annotation-level
-cross-contribution collision detection now live with the inspection rules.
-Moving the remaining queue DTO composition completes the inspection boundary
-before review decisions are extracted.
+cross-contribution collision detection, protocol-version freshness, and
+topic-versus-baseline scope evaluation now live with the inspection rules.
+Moving the remaining queue DTO assembly completes the inspection boundary
+before administrator review decisions are extracted.
