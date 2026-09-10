@@ -7,14 +7,17 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.crud.elan_file import get_elan_files_by_project
 from app.crud.pending_upload import get_pending_uploads, save_pending_upload
 from app.model.enums import Status, UserRole
 from app.model.instance import Instance
 from app.model.project import Project
 from app.model.project_revision import ProjectRevision
 from app.model.user import User
+from app.service.elan import ElanService
 from app.service.git import GitService
 from app.service.git_operations import GitCommandRunner
+from app.service.project_revision import verify_project_revision_manifest
 
 EAF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
 
@@ -219,6 +222,13 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
             session,
             admin_id,
         )
+    with pytest.raises(ValueError, match="current accepted"):
+        await service.recover_current_revision_from_manifest(
+            project_name,
+            revisions[0].revision_id,
+            session,
+            admin_id,
+        )
     first_rebuild = await service.rebuild_current_revision_projection(
         project_name,
         current_revision_id,
@@ -241,6 +251,59 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
         b"Researcher B session 12"
         in (project_path / "elan_files" / "session-12.eaf").read_bytes()
     )
+
+    manifest = await verify_project_revision_manifest(session, current_revision_id)
+    expected_bytes = {entry.filename: entry.raw_xml for entry in manifest}
+    (project_path / "elan_files" / "video-11.eaf").write_bytes(b"damaged")
+    (project_path / "elan_files" / "session-12.eaf").unlink()
+    (project_path / "elan_files" / "unexpected.eaf").write_bytes(
+        EAF_FIXTURE.read_bytes()
+    )
+    elan_service = ElanService(session)
+    for elan_file, _username in await get_elan_files_by_project(
+        session, project.project_id
+    ):
+        assert await elan_service.delete_elan_files_from_db(
+            elan_file.filename, project.project_name, commit_changes=False
+        )
+    await session.commit()
+
+    with (
+        patch.object(
+            service,
+            "rebuild_current_revision_projection",
+            AsyncMock(side_effect=RuntimeError("simulated rebuild failure")),
+        ),
+        pytest.raises(RuntimeError, match="simulated rebuild failure"),
+    ):
+        await service.recover_current_revision_from_manifest(
+            project_name,
+            current_revision_id,
+            session,
+            admin_id,
+        )
+    assert (project_path / "elan_files" / "video-11.eaf").read_bytes() == b"damaged"
+    assert not (project_path / "elan_files" / "session-12.eaf").exists()
+    assert (project_path / "elan_files" / "unexpected.eaf").exists()
+
+    recovered = await service.recover_current_revision_from_manifest(
+        project_name,
+        current_revision_id,
+        session,
+        admin_id,
+    )
+    assert recovered["status"] == "recovered"
+    assert recovered["file_count"] == 2
+    assert {
+        path.name: path.read_bytes()
+        for path in (project_path / "elan_files").glob("*.eaf")
+    } == expected_bytes
+    projected = await get_elan_files_by_project(session, project.project_id)
+    assert {elan_file.filename for elan_file, _username in projected} == {
+        "video-11.eaf",
+        "session-12.eaf",
+    }
+    assert not runner.run(["status", "--porcelain"], check=True).stdout.strip()
 
 
 @pytest.mark.asyncio

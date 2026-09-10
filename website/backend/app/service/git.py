@@ -1368,6 +1368,75 @@ class GitService:
             "status": "rebuilt",
         }
 
+    async def recover_current_revision_from_manifest(
+        self,
+        project_name: str,
+        revision_id: object,
+        db: AsyncSession,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Recover current EAF files and their query projection from the ledger."""
+        project = await db.scalar(
+            select(Project)
+            .where(Project.project_name == project_name, Project.deleted_at.is_(None))
+            .with_for_update()
+        )
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        revision = await db.get(ProjectRevision, revision_id)
+        if revision is None or revision.project_id != project.project_id:
+            raise ValueError("Project revision not found")
+
+        project_path = safe_project_path(self.base_path, project_name)
+        runner = GitCommandRunner(project_path)
+        if runner.get_commit_hash() != revision.git_commit:
+            raise ValueError(
+                "Only the current accepted project revision can be recovered"
+            )
+        manifest = await verify_project_revision_manifest(db, revision.revision_id)
+        for entry in manifest:
+            if Path(entry.filename).name != entry.filename:
+                raise RuntimeError("Revision manifest contains an unsafe EAF filename")
+            validate_eaf(entry.raw_xml)
+
+        elan_directory = project_path / "elan_files"
+        elan_directory.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(
+            prefix=f".{project_path.name}-elanora-recovery-", dir=project_path.parent
+        ) as recovery_directory:
+            recovery_root = Path(recovery_directory)
+            staged_directory = recovery_root / "staged"
+            backup_directory = recovery_root / "backup"
+            staged_directory.mkdir()
+            backup_directory.mkdir()
+            for entry in manifest:
+                (staged_directory / entry.filename).write_bytes(entry.raw_xml)
+
+            original_paths = sorted(elan_directory.glob("*.eaf"))
+            try:
+                for path in original_paths:
+                    path.replace(backup_directory / path.name)
+                for entry in manifest:
+                    (staged_directory / entry.filename).replace(
+                        elan_directory / entry.filename
+                    )
+                if runner.run(["status", "--porcelain"], check=True).stdout.strip():
+                    raise RuntimeError(
+                        "Recovered EAF files do not match the current Git revision"
+                    )
+                rebuilt = await self.rebuild_current_revision_projection(
+                    project_name, revision.revision_id, db, user_id
+                )
+            except Exception:
+                await db.rollback()
+                for path in elan_directory.glob("*.eaf"):
+                    path.unlink()
+                for path in backup_directory.glob("*.eaf"):
+                    path.replace(elan_directory / path.name)
+                raise
+
+        return {**rebuilt, "status": "recovered"}
+
     def _validate_upload_request(
         self, project_path: Path, files: list[UploadFile]
     ) -> None:
