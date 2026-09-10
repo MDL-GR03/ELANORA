@@ -51,3 +51,7 @@ def main() -> None:
     else:
         manifest = extract_bundle(arguments.bundle, arguments.destination, passphrase)
     print(json.dumps(manifest, indent=2, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()

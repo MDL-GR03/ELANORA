@@ -8,7 +8,7 @@ export ELANORA_DEV_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-e2e legacy-validate legacy-status legacy-down backend-check frontend-check check
+.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-recovery test-e2e legacy-validate legacy-status legacy-down backend-check frontend-check check
 
 help:
 	@echo "ELANORA development commands"
@@ -30,6 +30,7 @@ help:
 	@echo "  make test-db-reset  Recreate and migrate disposable PostgreSQL"
 	@echo "  make test-db-down   Destroy the disposable test database"
 	@echo "  make test-integration  Run database tests against PostgreSQL"
+	@echo "  make test-recovery     Prove an encrypted snapshot restores into an empty environment"
 	@echo "  make test-e2e        Run browser workflow tests with Playwright"
 	@echo "  make legacy-validate  Import the MySQL-era dataset into isolated PostgreSQL"
 	@echo "  make legacy-status    Show the isolated migration services"
@@ -119,6 +120,9 @@ test-integration: test-db-reset
 	cd website/backend && ENVIRONMENT=test TEST_DATABASE_URL="$(TEST_DATABASE_URL)" poetry run pytest tests/integration
 	$(TEST_COMPOSE) down --volumes --remove-orphans
 
+test-recovery:
+	sh website/backend/scripts/run_recovery_drill.sh
+
 test-e2e:
 	cd website/frontend && npm run test:e2e
 
@@ -139,6 +143,7 @@ backend-check:
 	cd website/backend && poetry run mypy --config-file mypy.ini
 	cd website/backend && poetry run pytest tests/unit
 	$(MAKE) test-integration
+	$(MAKE) test-recovery
 
 frontend-check:
 	cd website/frontend && npm run lint

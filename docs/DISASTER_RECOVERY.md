@@ -5,6 +5,11 @@ and institution assets from the same maintenance window. Bundles are encrypted
 with AES-256-GCM, authenticated before extraction, and contain a SHA-256 and byte
 size for every archived file.
 
+Run `make test-recovery` from the repository root to exercise the complete
+procedure against disposable PostgreSQL and storage: seed data, dump, encrypt,
+destroy the source database, restore into an empty database and storage root,
+then verify the revision ledger, EAF projection, and institution asset.
+
 The same-host `recovery-cache` is not a disaster backup. Copy completed bundles
 to institution-controlled off-host storage with version retention and access
 logging. ELANORA stores linked audiovisual media as references, not managed
