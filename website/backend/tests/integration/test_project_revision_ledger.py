@@ -2,6 +2,7 @@
 
 import hashlib
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 from sqlalchemy import delete, select, update
@@ -18,6 +19,8 @@ from app.service.project_revision import (
     append_project_revision,
     verify_project_revision_manifest,
 )
+
+EAF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
 
 
 async def _project(session: AsyncSession) -> Project:
@@ -77,7 +80,7 @@ async def test_revision_append_is_ordered_and_retry_safe(
 @pytest.mark.asyncio
 async def test_revision_captures_exact_eaf_manifest(session: AsyncSession) -> None:
     project = await _project(session)
-    raw_xml = b"<ANNOTATION_DOCUMENT/>"
+    raw_xml = EAF_FIXTURE.read_bytes()
     digest = hashlib.sha256(raw_xml).hexdigest()
     content = FileContent(
         filename="session.eaf",
@@ -126,6 +129,9 @@ async def test_revision_captures_exact_eaf_manifest(session: AsyncSession) -> No
     assert manifest.filename == "session.eaf"
     assert manifest.eaf_revision_id == eaf_revision_id
     assert manifest.sha256 == digest
+    assert manifest.parser_version == "1"
+    assert len(manifest.structured_projection["tiers"]) == 2
+    assert len(manifest.structured_projection["controlled_vocabularies"]) == 1
     assert manifest_sha256 is not None
     await verify_project_revision_manifest(session, project_revision_id)
 

@@ -88,3 +88,7 @@ class ProjectRevisionEaf(Base):
     )
     sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     raw_xml: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    parser_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    structured_projection: Mapped[dict[str, object]] = mapped_column(
+        JSON, nullable=False
+    )

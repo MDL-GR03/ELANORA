@@ -7,6 +7,8 @@ from typing import Literal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.elan.parser import parse_eaf
+from app.elan.projection import EAF_PROJECTION_VERSION, document_projection
 from app.model.eaf_revision import EafRevision
 from app.model.elan_file import ElanFile
 from app.model.project import Project
@@ -159,6 +161,10 @@ async def append_project_revision(
                 eaf_revision_id=eaf_revision.revision_id,
                 sha256=eaf_revision.sha256,
                 raw_xml=eaf_revision.raw_xml,
+                parser_version=EAF_PROJECTION_VERSION,
+                structured_projection=document_projection(
+                    parse_eaf(eaf_revision.raw_xml)
+                ),
             )
             for filename, eaf_revision in manifest
         ]

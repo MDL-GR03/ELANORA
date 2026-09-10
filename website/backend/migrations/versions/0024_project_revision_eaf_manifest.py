@@ -32,6 +32,8 @@ def upgrade() -> None:
         sa.Column("eaf_revision_id", sa.Uuid(), nullable=True),
         sa.Column("sha256", sa.String(length=64), nullable=False),
         sa.Column("raw_xml", sa.LargeBinary(), nullable=False),
+        sa.Column("parser_version", sa.String(length=32), nullable=False),
+        sa.Column("structured_projection", sa.JSON(), nullable=False),
         sa.CheckConstraint(
             "length(sha256) = 64", name="ck_project_revision_eaf_sha256"
         ),
