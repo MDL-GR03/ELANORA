@@ -118,7 +118,7 @@ class Settings(BaseSettings):
 
     @property
     def resolved_database_url(self) -> str:
-        """Return DATABASE_URL or build a PostgreSQL URL from legacy DB fields."""
+        """Return DATABASE_URL or build a PostgreSQL URL from DB_* settings."""
         if self.database_url is not None:
             return self.database_url.get_secret_value()
         required = (

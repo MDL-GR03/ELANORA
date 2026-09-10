@@ -105,6 +105,38 @@ def test_repository_review_compares_branches_without_changing_checkout(
     assert branch.stdout.strip() == "researcher-submission"
 
 
+def test_repository_review_presents_a_new_eaf_without_an_accepted_baseline(
+    tmp_path: Path,
+) -> None:
+    project = tmp_path / "research-project"
+    project.mkdir()
+    runner = GitCommandRunner(project, maintain_backup=False)
+
+    def git(*arguments: str) -> None:
+        runner.run(list(arguments), check=True)
+
+    git("init", "--initial-branch=main")
+    git("config", "user.name", "ELANORA test")
+    git("config", "user.email", "test@elanora.invalid")
+    (project / "README.md").write_text("accepted\n", encoding="utf-8")
+    git("add", "README.md")
+    git("commit", "-m", "accepted project")
+    git("checkout", "-b", "new-eaf-contribution")
+    (project / "session.eaf").write_bytes(FIXTURE.read_bytes())
+    git("add", "session.eaf")
+    git("commit", "-m", "add EAF")
+
+    comparison = compare_repository_eaf(
+        tmp_path, "research-project", "new-eaf-contribution", "session.eaf"
+    )
+
+    assert {change.annotation_id for change in comparison.changes} == {"a1", "a2"}
+    assert all(
+        change.before is None and change.kinds == (AnnotationChangeKind.ADDED,)
+        for change in comparison.changes
+    )
+
+
 def test_repository_review_rejects_non_eaf_and_parent_paths(tmp_path: Path) -> None:
     for filename in ("notes.txt", "../outside.eaf"):
         with pytest.raises(EafReviewUnavailableError):

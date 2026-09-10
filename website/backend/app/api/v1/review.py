@@ -22,13 +22,18 @@ from app.schema.review import (
     ReviewCaseResubmit,
     ReviewCaseTransition,
     ReviewCommentCreate,
+    ReviewRevisionRequest,
+    ReviewTaskUpdate,
 )
 from app.service.review import (
     add_comment,
     create_case,
     get_case,
     list_cases,
+    mark_case_viewed,
+    request_review_revision,
     transition_case,
+    update_review_task,
 )
 
 router = APIRouter()
@@ -43,7 +48,9 @@ async def get_review_cases(
     access: ProjectAccess = get_project_read_dep,
 ) -> list[ReviewCaseResponse]:
     """List review cases visible to a project member."""
-    return await list_cases(db, access.project.project_id, upload_id)
+    return await list_cases(
+        db, access.project.project_id, upload_id, access.user.user_id
+    )
 
 
 @router.post(
@@ -146,9 +153,13 @@ async def post_review_resubmission(
         )
         if submission is None:
             raise ValueError("Resubmission does not belong to this project")
-        if (
-            access.permission not in {ProjectPermission.ADMIN, ProjectPermission.OWNER}
-            and submission.submitted_by != access.user.user_id
+        if access.permission not in {
+            ProjectPermission.ADMIN,
+            ProjectPermission.OWNER,
+        } and (
+            submission.submitted_by != access.user.user_id
+            or review_case.upload is None
+            or review_case.upload.submitted_by != access.user.user_id
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -163,6 +174,86 @@ async def post_review_resubmission(
                 state=ReviewCaseState.RESUBMITTED,
                 resubmitted_upload_id=request.upload_id,
             ),
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post(
+    "/projects/{project_id}/cases/{case_id}/view",
+    response_model=ReviewCaseResponse,
+)
+async def post_review_case_view(
+    project_id: int,
+    case_id: uuid.UUID,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_read_dep,
+) -> ReviewCaseResponse:
+    """Persist that the current member inspected the latest case activity."""
+    try:
+        return await mark_case_viewed(
+            db, access.project.project_id, case_id, access.user.user_id
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.patch(
+    "/projects/{project_id}/cases/{case_id}/tasks/{task_id}",
+    response_model=ReviewCaseResponse,
+)
+async def patch_review_task(
+    project_id: int,
+    case_id: uuid.UUID,
+    task_id: uuid.UUID,
+    request: ReviewTaskUpdate,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_write_dep,
+) -> ReviewCaseResponse:
+    """Update one file task without resolving unrelated requested files."""
+    try:
+        return await update_review_task(
+            db,
+            access.project.project_id,
+            case_id,
+            task_id,
+            access.user.user_id,
+            request,
+            can_manage=access.permission
+            in {ProjectPermission.ADMIN, ProjectPermission.OWNER},
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post(
+    "/projects/{project_id}/cases/{case_id}/revision-request",
+    response_model=ReviewCaseResponse,
+    dependencies=[project_lock_dep],
+)
+async def post_review_revision_request(
+    project_id: int,
+    case_id: uuid.UUID,
+    request: ReviewRevisionRequest,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+) -> ReviewCaseResponse:
+    """Return selected edits with mandatory feedback in one transaction."""
+    try:
+        return await request_review_revision(
+            db,
+            access.project.project_id,
+            case_id,
+            access.user.user_id,
+            request,
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

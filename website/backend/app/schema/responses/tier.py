@@ -32,3 +32,15 @@ class TierGroupInfo(CustomBaseModel):
 class SectionsAndGroupsResponse(CustomBaseModel):
     sections: list[SectionInfo]
     tier_groups: list[TierGroupInfo]
+
+
+class ResearchTopicInfo(CustomBaseModel):
+    topic_id: int
+    name: str
+    description: str | None = None
+    tier_names: list[str] = Field(default_factory=list)
+    allow_new_tiers: bool = False
+
+
+class ProjectBaselineTiersInfo(CustomBaseModel):
+    tier_names: list[str] = Field(default_factory=list)

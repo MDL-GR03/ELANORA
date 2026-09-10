@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import Field
 
 from app.schema.common.base import CustomBaseModel
@@ -229,9 +231,13 @@ class PendingUploadInfo(CustomBaseModel):
     uploaded_by: str | None = None
     files: dict[str, list[str]] = Field(default_factory=dict)
     file_counts: dict[str, int] = Field(default_factory=dict)
+    semantic_summary: dict[str, int] = Field(default_factory=dict)
+    research_context: dict[str, Any] = Field(default_factory=dict)
+    annotation_collisions: list[dict[str, Any]] = Field(default_factory=list)
     quality_checks: dict[str, str] = Field(default_factory=dict)
     protocol_version_id: str | None = None
     duplicate_of_upload_id: int | None = None
+    superseded_by_upload_id: int | None = None
 
     # Real-time merge status (computed when requested)
     merge_status: str | None = None  # "ready_to_merge", "needs_resolution", "error"
@@ -259,6 +265,52 @@ class PendingUploadsResponse(CustomBaseModel):
     total_pending: int
     ready_count: int = 0
     conflicts_count: int = 0
+
+
+class AcceptedProjectVersion(CustomBaseModel):
+    """One immutable commit on the canonical project branch."""
+
+    commit: str
+    short_commit: str
+    committed_at: str
+    message: str
+    author: str
+    action: str
+    contribution_id: int | None = None
+    restored_from: str | None = None
+    reason: str | None = None
+    is_current: bool = False
+
+
+class AcceptedProjectHistoryResponse(CustomBaseModel):
+    project_name: str
+    current_commit: str
+    versions: list[AcceptedProjectVersion]
+
+
+class ProjectVersionFileChange(CustomBaseModel):
+    status: str
+    filename: str
+
+
+class ProjectVersionPreviewResponse(CustomBaseModel):
+    project_name: str
+    current_commit: str
+    target_commit: str
+    files: list[ProjectVersionFileChange]
+    semantic_summary: dict[str, int] = Field(default_factory=dict)
+    affected_pending_contributions: int = 0
+    affected_pending_upload_ids: list[int] = Field(default_factory=list)
+    active_review_cases: int = 0
+    active_review_case_ids: list[str] = Field(default_factory=list)
+
+
+class ProjectVersionRestoreResponse(CustomBaseModel):
+    project_name: str
+    previous_commit: str
+    target_commit: str
+    restored_commit: str
+    status: str
 
 
 class AnnotationReviewSnapshot(CustomBaseModel):

@@ -16,8 +16,8 @@ from app.elan.domain import (
     MediaDescriptor,
     ReferenceAnnotation,
 )
-from app.elan.legacy import LegacyEafFile, document_to_legacy
 from app.elan.parser import parse_eaf, parse_eaf_path
+from app.elan.persistence import PersistedEafFile, document_to_persistence
 from app.elan.validation import EafValidationError, ValidationIssue, validate_eaf
 
 __all__ = [
@@ -31,12 +31,12 @@ __all__ = [
     "EafTier",
     "EafValidationError",
     "ElementSnapshot",
-    "LegacyEafFile",
     "MediaDescriptor",
+    "PersistedEafFile",
     "ReferenceAnnotation",
     "ValidationIssue",
     "compare_eaf",
-    "document_to_legacy",
+    "document_to_persistence",
     "parse_eaf",
     "parse_eaf_path",
     "validate_eaf",

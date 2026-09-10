@@ -65,6 +65,13 @@ def _read_blob(project_path: Path, revision: str, filename: str) -> bytes:
     return result.stdout
 
 
+def _read_optional_blob(
+    project_path: Path, revision: str, filename: str
+) -> bytes | None:
+    result = _git(project_path, ["show", f"{revision}:{filename}"])
+    return result.stdout if result.returncode == 0 else None
+
+
 def _canonical_revision(project_path: Path) -> str:
     for branch in ("main", "master"):
         revision = f"refs/heads/{branch}"
@@ -84,18 +91,38 @@ def compare_repository_eaf(
     project_name: str,
     branch_name: str,
     filename: str,
+    *,
+    accepted_revision: str | None = None,
 ) -> EafComparison:
     """Compare the accepted EAF with a contribution without changing the checkout."""
     safe_filename = _validated_repository_filename(filename)
     project_path = safe_project_path(projects_root, project_name)
     if not project_path.is_dir():
         raise FileNotFoundError("Project repository not found")
-    before = parse_eaf(
-        _read_blob(project_path, _canonical_revision(project_path), safe_filename)
-    )
-    after = parse_eaf(
-        _read_blob(project_path, f"refs/heads/{branch_name}", safe_filename)
-    )
+    canonical_revision = accepted_revision or _canonical_revision(project_path)
+    submitted_revision = f"refs/heads/{branch_name}"
+    if (
+        _git(
+            project_path,
+            [
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                "--end-of-options",
+                submitted_revision,
+            ],
+        ).returncode
+        != 0
+    ):
+        raise EafReviewUnavailableError("The requested contribution no longer exists")
+    before_blob = _read_optional_blob(project_path, canonical_revision, safe_filename)
+    after_blob = _read_optional_blob(project_path, submitted_revision, safe_filename)
+    if before_blob is None and after_blob is None:
+        raise EafReviewUnavailableError(
+            "This EAF file is not present in either compared version"
+        )
+    before = parse_eaf(before_blob) if before_blob is not None else None
+    after = parse_eaf(after_blob) if after_blob is not None else None
     return compare_eaf(before, after)
 
 

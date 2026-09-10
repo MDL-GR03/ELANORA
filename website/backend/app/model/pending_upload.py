@@ -56,6 +56,12 @@ class PendingUpload(Base):
     branch_name: Mapped[str | None] = mapped_column(String, nullable=True)
     base_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
     accepted_commit: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    superseded_by_upload_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("PENDING_UPLOAD.upload_id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
     git_details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     project_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False

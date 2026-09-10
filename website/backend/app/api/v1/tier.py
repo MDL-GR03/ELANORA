@@ -1,20 +1,42 @@
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Response
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
-from app.dependency.project_access import ProjectAccess, get_project_read_dep
+from app.dependency.project_access import (
+    ProjectAccess,
+    get_project_admin_dep,
+    get_project_read_dep,
+)
 from app.dependency.user import get_admin_dep
+from app.model.research_topic import (
+    ProjectBaselineTier,
+    ResearchTopic,
+    ResearchTopicTier,
+)
 from app.schema.requests.tier import (
     CreateSectionRequest,
     DeleteSectionRequest,
     MoveTierGroupRequest,
+    ProjectBaselineTiersRequest,
     RenameSectionRequest,
+    ResearchTopicRequest,
     TierSubsetExportRequest,
 )
-from app.schema.responses.tier import SectionsAndGroupsResponse, TierTreeResponse
+from app.schema.responses.tier import (
+    ProjectBaselineTiersInfo,
+    ResearchTopicInfo,
+    SectionsAndGroupsResponse,
+    TierTreeResponse,
+)
 from app.service.git import GitService
+from app.service.research_topics import (
+    SimilarResearchTopicError,
+    require_distinct_topic_name,
+)
 from app.service.tier import TierGroupService, TierSectionService, TierService
 from app.service.tier_export import build_tier_subset
 from app.storage.paths import safe_project_path
@@ -26,6 +48,7 @@ router = APIRouter()
 async def export_tier_subset(
     project_name: str,
     request: TierSubsetExportRequest,
+    db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_read_dep,
 ):
     """Download a derived EAF containing only selected tiers and dependencies."""
@@ -40,11 +63,57 @@ async def export_tier_subset(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Invalid EAF filename.") from exc
     if not source.is_file():
-        raise HTTPException(status_code=404, detail="The selected EAF file was not found.")
+        raise HTTPException(
+            status_code=404, detail="The selected EAF file was not found."
+        )
 
+    topic = None
+    if request.topic_id is not None:
+        topic = await db.scalar(
+            select(ResearchTopic).where(
+                ResearchTopic.topic_id == request.topic_id,
+                ResearchTopic.project_id == access.project.project_id,
+            )
+        )
+        if topic is None:
+            raise HTTPException(status_code=404, detail="Research topic not found.")
     try:
+        baseline_tiers = list(
+            (
+                await db.scalars(
+                    select(ProjectBaselineTier.tier_name).where(
+                        ProjectBaselineTier.project_id == access.project.project_id
+                    )
+                )
+            ).all()
+        )
+        baseline_set = set(baseline_tiers)
+        requested_context = (
+            baseline_set
+            if request.context_tier_names is None
+            else set(request.context_tier_names)
+        )
+        editable_baseline = set(request.editable_baseline_tier_names)
+        unknown_baseline = sorted(
+            (requested_context | editable_baseline) - baseline_set
+        )
+        if unknown_baseline:
+            raise ValueError(
+                f"Not configured as project baseline tier(s): {', '.join(unknown_baseline)}"
+            )
         export = build_tier_subset(
-            source.read_bytes(), request.tier_names, filename.name
+            source.read_bytes(),
+            request.tier_names,
+            filename.name,
+            topic_id=topic.topic_id if topic else None,
+            topic_name=topic.name if topic else None,
+            context_tier_names=sorted(requested_context | editable_baseline),
+            editable_baseline_tier_names=sorted(editable_baseline),
+            allowed_new_tier_names=(
+                [item.tier_name for item in topic.tiers]
+                if topic and topic.allow_new_tiers
+                else None
+            ),
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -61,6 +130,187 @@ async def export_tier_subset(
             ),
         },
     )
+
+
+def _topic_response(topic: ResearchTopic) -> ResearchTopicInfo:
+    return ResearchTopicInfo(
+        topic_id=topic.topic_id,
+        name=topic.name,
+        description=topic.description,
+        allow_new_tiers=topic.allow_new_tiers,
+        tier_names=sorted(item.tier_name for item in topic.tiers),
+    )
+
+
+@router.get("/{project_id}/baseline-tiers", response_model=ProjectBaselineTiersInfo)
+async def get_project_baseline_tiers(
+    project_id: int,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_read_dep,
+):
+    names = (
+        await db.scalars(
+            select(ProjectBaselineTier.tier_name)
+            .where(ProjectBaselineTier.project_id == project_id)
+            .order_by(ProjectBaselineTier.tier_name)
+        )
+    ).all()
+    return ProjectBaselineTiersInfo(tier_names=list(names))
+
+
+@router.put("/{project_id}/baseline-tiers", response_model=ProjectBaselineTiersInfo)
+async def update_project_baseline_tiers(
+    project_id: int,
+    request: ProjectBaselineTiersRequest,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+):
+    existing = list(
+        (
+            await db.scalars(
+                select(ProjectBaselineTier).where(
+                    ProjectBaselineTier.project_id == project_id
+                )
+            )
+        ).all()
+    )
+    for item in existing:
+        await db.delete(item)
+    names = sorted({name.strip() for name in request.tier_names if name.strip()})
+    db.add_all(
+        [ProjectBaselineTier(project_id=project_id, tier_name=name) for name in names]
+    )
+    await db.commit()
+    return ProjectBaselineTiersInfo(tier_names=names)
+
+
+@router.get("/{project_id}/topics", response_model=list[ResearchTopicInfo])
+async def get_research_topics(
+    project_id: int,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_read_dep,
+):
+    topics = (
+        await db.scalars(
+            select(ResearchTopic)
+            .where(ResearchTopic.project_id == project_id)
+            .order_by(ResearchTopic.name)
+        )
+    ).all()
+    return [_topic_response(topic) for topic in topics]
+
+
+@router.post("/{project_id}/topics", response_model=ResearchTopicInfo, status_code=201)
+async def create_research_topic(
+    project_id: int,
+    request: ResearchTopicRequest,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+):
+    existing_topics = list(
+        (
+            await db.scalars(
+                select(ResearchTopic).where(ResearchTopic.project_id == project_id)
+            )
+        ).all()
+    )
+    try:
+        require_distinct_topic_name(request.name, existing_topics)
+    except SimilarResearchTopicError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=f'Use the existing research topic "{exc.topic.name}" instead.',
+        ) from exc
+    topic = ResearchTopic(
+        project_id=project_id,
+        name=request.name.strip(),
+        description=(request.description or "").strip() or None,
+        allow_new_tiers=request.allow_new_tiers,
+        tiers=[
+            ResearchTopicTier(tier_name=name)
+            for name in sorted(set(request.tier_names))
+        ],
+    )
+    db.add(topic)
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409, detail="A research topic with this name already exists."
+        ) from exc
+    await db.refresh(topic, attribute_names=["tiers"])
+    return _topic_response(topic)
+
+
+@router.put("/{project_id}/topics/{topic_id}", response_model=ResearchTopicInfo)
+async def update_research_topic(
+    project_id: int,
+    topic_id: int,
+    request: ResearchTopicRequest,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+):
+    topic = await db.scalar(
+        select(ResearchTopic).where(
+            ResearchTopic.topic_id == topic_id,
+            ResearchTopic.project_id == project_id,
+        )
+    )
+    if topic is None:
+        raise HTTPException(status_code=404, detail="Research topic not found.")
+    other_topics = list(
+        (
+            await db.scalars(
+                select(ResearchTopic).where(
+                    ResearchTopic.project_id == project_id,
+                    ResearchTopic.topic_id != topic_id,
+                )
+            )
+        ).all()
+    )
+    try:
+        require_distinct_topic_name(request.name, other_topics)
+    except SimilarResearchTopicError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=f'Use the existing research topic "{exc.topic.name}" instead.',
+        ) from exc
+    topic.name = request.name.strip()
+    topic.description = (request.description or "").strip() or None
+    topic.allow_new_tiers = request.allow_new_tiers
+    topic.tiers = [
+        ResearchTopicTier(tier_name=name) for name in sorted(set(request.tier_names))
+    ]
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409, detail="A research topic with this name already exists."
+        ) from exc
+    await db.refresh(topic, attribute_names=["tiers"])
+    return _topic_response(topic)
+
+
+@router.delete("/{project_id}/topics/{topic_id}", status_code=204)
+async def delete_research_topic(
+    project_id: int,
+    topic_id: int,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+):
+    topic = await db.scalar(
+        select(ResearchTopic).where(
+            ResearchTopic.topic_id == topic_id,
+            ResearchTopic.project_id == project_id,
+        )
+    )
+    if topic is None:
+        raise HTTPException(status_code=404, detail="Research topic not found.")
+    await db.delete(topic)
+    await db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/{project_name}", response_model=TierTreeResponse)

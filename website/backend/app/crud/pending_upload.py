@@ -55,21 +55,19 @@ async def get_pending_uploads(db: AsyncSession, project_id: int) -> list[Pending
 
 
 def build_pending_description(upload_data: dict[str, Any]) -> str:
-    """Build description for pending upload."""
-    new_count = len(upload_data.get("new_files", []))
-    modified_count = len(upload_data.get("modified_files", []))
-    deleted_count = len(upload_data.get("deleted_files", []))
-
-    parts = []
-    if new_count > 0:
-        parts.append(f"{new_count} new")
-    if modified_count > 0:
-        parts.append(f"{modified_count} modified")
-    if deleted_count > 0:
-        parts.append(f"{deleted_count} deleted")
-
-    files_desc = ", ".join(parts) if parts else "no changes"
-    return f"Pending upload: {files_desc} files"
+    """Build a concise file-change summary for a contribution."""
+    files = upload_data.get("upload_data", upload_data)
+    counts = (
+        (len(files.get("new_files", [])), "new"),
+        (len(files.get("modified_files", [])), "modified"),
+        (len(files.get("deleted_files", [])), "deleted"),
+    )
+    parts = [
+        f"{count} {kind} {'file' if count == 1 else 'files'}"
+        for count, kind in counts
+        if count
+    ]
+    return ", ".join(parts) if parts else "No file changes detected"
 
 
 async def mark_upload_processed(

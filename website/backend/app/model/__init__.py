@@ -73,7 +73,8 @@ from .protocol import (
     ValidationRun,
     ValidatorRelease,
 )
-from .review import ReviewCase, ReviewComment
+from .research_topic import ProjectBaselineTier, ResearchTopic, ResearchTopicTier
+from .review import ReviewCase, ReviewCaseView, ReviewComment, ReviewTask
 from .standard_component import StandardComponent
 
 # Tier and annotation models
@@ -114,6 +115,7 @@ __all__ = [
     "PendingUpload",
     "Project",
     "ProjectAnnotStandard",
+    "ProjectBaselineTier",
     "ProjectCapability",
     "ProjectCapabilityGrant",
     "ProjectComplianceScan",
@@ -128,9 +130,13 @@ __all__ = [
     "ProtocolVersion",
     "ProtocolVersionArchive",
     "ProtocolVersionStatus",
+    "ResearchTopic",
+    "ResearchTopicTier",
     "ReviewCase",
     "ReviewCaseState",
+    "ReviewCaseView",
     "ReviewComment",
+    "ReviewTask",
     "Severity",
     "StandardComponent",
     "Status",

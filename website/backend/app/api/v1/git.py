@@ -3,6 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -17,18 +18,31 @@ from app.dependency.project_access import (
 from app.dependency.project_lock import project_write_lock
 from app.dependency.user import get_admin_dep, get_user_dep
 from app.elan.validation import EafValidationError
+from app.model.enums import ReviewCaseState
+from app.model.pending_upload import PendingUpload
 from app.model.project import Project
+from app.model.research_topic import (
+    ProjectBaselineTier,
+    ResearchTopic,
+    ResearchTopicTier,
+)
+from app.model.review import ReviewCase
 from app.model.user import User
 from app.schema.requests.git import (
     BulkRenameRequest,
     CommitRequest,
     ContributionPolicyRequest,
+    ContributionResearchTopicRequest,
+    PendingUploadDeclineRequest,
     PendingUploadMergeRequest,
     ProjectCheckoutRequest,
     ProjectCreateRequest,
     ProjectEditRequest,
+    ProjectVersionPreviewRequest,
+    ProjectVersionRestoreRequest,
 )
 from app.schema.responses.git import (
+    AcceptedProjectHistoryResponse,
     BatchFileUploadResponse,
     BulkRenameResponse,
     CommitResponse,
@@ -42,6 +56,8 @@ from app.schema.responses.git import (
     ProjectListResponse,
     ProjectSyncCheckResponse,
     ProjectSyncExecutionResponse,
+    ProjectVersionPreviewResponse,
+    ProjectVersionRestoreResponse,
 )
 from app.service.eaf_review import (
     EafReviewUnavailableError,
@@ -55,8 +71,13 @@ from app.service.git import (
     RenameConflictError,
 )
 from app.service.project_sync import ProjectSyncCoordinator, operation_payload
+from app.service.research_topics import (
+    SimilarResearchTopicError,
+    require_distinct_topic_name,
+)
 from app.service.tier_export import (
     PROVENANCE_PROPERTY,
+    ProtectedContextModifiedError,
     TierReintegrationConflictError,
     reintegrate_tier_subset,
     research_extract_metadata,
@@ -71,13 +92,21 @@ sync_coordinator = ProjectSyncCoordinator(git_service)
 logger = get_logger()
 
 eaf_upload_files_dep = File(...)
+correction_case_id_dep = Form(default=None)
 
 
 async def _prepare_tier_scoped_uploads(
-    files: list[UploadFile], project: Project
-) -> list[UploadFile]:
+    files: list[UploadFile],
+    project: Project,
+    db: AsyncSession,
+    *,
+    declared_topic_id: int | None,
+    proposed_topic_name: str | None,
+    contribution_summary: str | None,
+) -> tuple[list[UploadFile], dict[str, object]]:
     """Expand research extracts into safe full-file tier-scoped candidates."""
     prepared: list[UploadFile] = []
+    scoped_files: list[dict[str, object]] = []
     project_files = Path(project.project_path) / "elan_files"
     marker = PROVENANCE_PROPERTY.encode()
     for upload in files:
@@ -107,11 +136,142 @@ async def _prepare_tier_scoped_uploads(
                 detail=f"The source file {source_filename} is no longer available.",
             )
         merged = reintegrate_tier_subset(source.read_bytes(), content)
+        selected_tiers = metadata.get("selected_tiers", [])
+        scoped_files.append(
+            {
+                "filename": source_filename,
+                "topic_id": metadata.get("research_topic_id"),
+                "topic_name": metadata.get("research_topic"),
+                "selected_tiers": selected_tiers,
+                "automatically_included_tiers": metadata.get(
+                    "included_parent_tiers", []
+                ),
+                "baseline_context_tiers": metadata.get("context_tiers", []),
+                "editable_baseline_tiers": metadata.get("editable_baseline_tiers", []),
+            }
+        )
         upload.filename = source_filename
         upload.file = BytesIO(merged)
         upload.size = len(merged)
         prepared.append(upload)
-    return prepared
+
+    topic = None
+    topic_match = "selected_existing" if declared_topic_id is not None else None
+    if declared_topic_id is not None:
+        topic = await db.scalar(
+            select(ResearchTopic).where(
+                ResearchTopic.topic_id == declared_topic_id,
+                ResearchTopic.project_id == project.project_id,
+            )
+        )
+        if topic is None:
+            raise HTTPException(status_code=422, detail="Research topic not found.")
+    embedded_topic_ids = {
+        item["topic_id"]
+        for item in scoped_files
+        if isinstance(item.get("topic_id"), int)
+    }
+    if declared_topic_id is not None and embedded_topic_ids - {declared_topic_id}:
+        raise HTTPException(
+            status_code=409,
+            detail="The selected research topic does not match the downloaded research copy.",
+        )
+    if topic is None and len(embedded_topic_ids) == 1:
+        embedded_topic_id = next(iter(embedded_topic_ids))
+        topic = await db.scalar(
+            select(ResearchTopic).where(
+                ResearchTopic.topic_id == embedded_topic_id,
+                ResearchTopic.project_id == project.project_id,
+            )
+        )
+    if len(embedded_topic_ids) > 1:
+        raise HTTPException(
+            status_code=422,
+            detail="Upload research copies from one research topic at a time.",
+        )
+
+    proposed_name = (proposed_topic_name or "").strip()
+    if topic is None and not scoped_files and proposed_name:
+        project_topics = list(
+            (
+                await db.scalars(
+                    select(ResearchTopic).where(
+                        ResearchTopic.project_id == project.project_id
+                    )
+                )
+            ).all()
+        )
+        try:
+            require_distinct_topic_name(proposed_name, project_topics)
+        except SimilarResearchTopicError as exc:
+            suggested = exc.topic
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "similar_research_topic",
+                    "message": f'Did you mean the existing topic "{suggested.name}"?',
+                    "suggested_topic_id": getattr(suggested, "topic_id", None),
+                    "suggested_topic_name": suggested.name,
+                },
+            ) from exc
+
+    topic_tiers = []
+    if topic is not None:
+        topic_tiers = list(
+            (
+                await db.scalars(
+                    select(ResearchTopicTier.tier_name).where(
+                        ResearchTopicTier.topic_id == topic.topic_id
+                    )
+                )
+            ).all()
+        )
+    baseline_tiers = list(
+        (
+            await db.scalars(
+                select(ProjectBaselineTier.tier_name).where(
+                    ProjectBaselineTier.project_id == project.project_id
+                )
+            )
+        ).all()
+    )
+    scoped_tiers_set: set[str] = set()
+    for item in scoped_files:
+        selected_tiers = item.get("selected_tiers")
+        if isinstance(selected_tiers, list):
+            scoped_tiers_set.update(
+                tier for tier in selected_tiers if isinstance(tier, str)
+            )
+    scoped_tiers = sorted(scoped_tiers_set)
+    editable_baseline_tiers = sorted(
+        {
+            tier
+            for item in scoped_files
+            for tier in item.get("editable_baseline_tiers", [])
+            if isinstance(tier, str)
+        }
+    )
+    subject = topic.name if topic else None
+    if subject is None and scoped_files:
+        embedded_names = {
+            str(item["topic_name"]) for item in scoped_files if item.get("topic_name")
+        }
+        subject = next(iter(embedded_names)) if len(embedded_names) == 1 else None
+    return prepared, {
+        "summary": (contribution_summary or "").strip(),
+        "declared_topic_id": topic.topic_id if topic else None,
+        "declared_topic_name": subject,
+        "declared_tiers": sorted(set(topic_tiers)) or scoped_tiers,
+        "baseline_tiers": sorted(set(baseline_tiers)),
+        "declared_baseline_correction_tiers": editable_baseline_tiers,
+        "source": "research_copy" if scoped_files else "researcher_declaration",
+        "topic_match": topic_match,
+        "proposed_topic_name": proposed_name if topic is None else None,
+        "topic_review_status": (
+            "proposed" if proposed_name and topic is None else "verified"
+        ),
+        "scoped_files": scoped_files,
+    }
 
 
 @router.get("/check", response_model=GitStatusResponse)
@@ -211,9 +371,13 @@ async def commit_changes(
     response_model=BatchFileUploadResponse,
     dependencies=[get_project_write_dep, project_lock_dep],
 )
-async def upload_elan_files(
+async def upload_elan_files(  # noqa: PLR0913, PLR0917
     project_id: int,
     user_name: str = Form(...),
+    correction_case_id: uuid.UUID | None = correction_case_id_dep,
+    research_topic_id: int | None = Form(default=None),
+    proposed_topic_name: str | None = Form(default=None, max_length=100),
+    contribution_summary: str = Form(min_length=3, max_length=1000),
     files: list[UploadFile] = eaf_upload_files_dep,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_write_dep,
@@ -241,7 +405,36 @@ async def upload_elan_files(
         project = await db.get(Project, project_id)
         if project is None:
             raise HTTPException(status_code=404, detail="Project not found")
-        files = await _prepare_tier_scoped_uploads(files, project)
+        allow_current_tree = False
+        if correction_case_id is not None:
+            review_case = await db.get(ReviewCase, correction_case_id)
+            if review_case is None or review_case.project_id != project_id:
+                raise HTTPException(
+                    status_code=404, detail="Correction request not found"
+                )
+            original_upload = (
+                await db.get(PendingUpload, review_case.upload_id)
+                if review_case.upload_id is not None
+                else None
+            )
+            if (
+                ReviewCaseState(review_case.state) != ReviewCaseState.CHANGES_REQUESTED
+                or original_upload is None
+                or original_upload.submitted_by != access.user.user_id
+            ):
+                raise HTTPException(
+                    status_code=409,
+                    detail="This correction request cannot accept a new response.",
+                )
+            allow_current_tree = True
+        files, research_context = await _prepare_tier_scoped_uploads(
+            files,
+            project,
+            db,
+            declared_topic_id=research_topic_id,
+            proposed_topic_name=proposed_topic_name,
+            contribution_summary=contribution_summary,
+        )
         validated_batch = await validate_and_record_elan_files(
             files,
             db=db,
@@ -265,8 +458,20 @@ async def upload_elan_files(
                 ),
                 "rules_sha256": validated_batch.protocol_rules_sha256,
             },
+            research_context=research_context,
+            allow_current_tree=allow_current_tree,
         )
         return BatchFileUploadResponse(**result)
+    except ProtectedContextModifiedError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "protected_baseline_modified",
+                "message": str(e),
+                "filename": e.filename,
+                "tiers": e.tiers,
+            },
+        ) from e
     except TierReintegrationConflictError as e:
         raise HTTPException(
             status_code=409,
@@ -600,6 +805,77 @@ async def get_pending_uploads(
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
+@router.get(
+    "/projects/{project_name}/accepted-history",
+    response_model=AcceptedProjectHistoryResponse,
+    dependencies=[get_project_admin_dep],
+)
+async def get_accepted_project_history(
+    project_name: str,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+) -> AcceptedProjectHistoryResponse:
+    """List immutable versions from the project's canonical branch."""
+    try:
+        result = await git_service.get_accepted_project_history(project_name, db)
+        return AcceptedProjectHistoryResponse(**result)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post(
+    "/projects/{project_name}/accepted-history/preview",
+    response_model=ProjectVersionPreviewResponse,
+    dependencies=[get_project_admin_dep],
+)
+async def preview_project_version_restore(
+    project_name: str,
+    request: ProjectVersionPreviewRequest,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+) -> ProjectVersionPreviewResponse:
+    """Preview a restoration and its effect on current and pending work."""
+    try:
+        result = await git_service.preview_project_version_restore(
+            project_name, request.target_commit, db
+        )
+        return ProjectVersionPreviewResponse(**result)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (ValueError, EafValidationError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post(
+    "/projects/{project_name}/accepted-history/restore",
+    response_model=ProjectVersionRestoreResponse,
+    dependencies=[get_project_admin_dep, project_lock_dep],
+)
+async def restore_project_version(
+    project_name: str,
+    request: ProjectVersionRestoreRequest,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+) -> ProjectVersionRestoreResponse:
+    """Restore an older tree as a new, fully audited canonical version."""
+    try:
+        result = await git_service.restore_project_version(
+            project_name,
+            request.target_commit,
+            request.expected_head,
+            request.reason,
+            request.confirmation,
+            db,
+            access.user.user_id,
+            access.user.username,
+        )
+        return ProjectVersionRestoreResponse(**result)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except (ValueError, EafValidationError) as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
 @router.put("/projects/{project_id}/contribution-policy")
 async def update_contribution_policy(
     project_id: int,
@@ -680,6 +956,56 @@ async def merge_pending_upload(
         raise HTTPException(status_code=409, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.post(
+    "/projects/{project_name}/admin/pending-uploads/{upload_id}/decline",
+    dependencies=[get_project_admin_dep, project_lock_dep],
+)
+async def decline_pending_upload(
+    project_name: str,
+    upload_id: int,
+    request: PendingUploadDeclineRequest,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+):
+    """Decline a contribution while retaining its provenance and review history."""
+    try:
+        return await git_service.decline_pending_upload(
+            project_name, upload_id, request.reason, db, access.user.user_id
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.put(
+    "/projects/{project_name}/admin/pending-uploads/{upload_id}/research-topic",
+    dependencies=[get_project_admin_dep],
+)
+async def set_contribution_research_topic(
+    project_name: str,
+    upload_id: int,
+    request: ContributionResearchTopicRequest,
+    db: AsyncSession = get_db_dep,
+    access: ProjectAccess = get_project_admin_dep,
+):
+    """Assign or create the curated topic used to classify a contribution."""
+    try:
+        return await git_service.set_contribution_research_topic(
+            project_name,
+            upload_id,
+            request.topic_id,
+            request.new_topic_name,
+            db,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.delete(

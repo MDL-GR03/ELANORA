@@ -40,12 +40,20 @@ from app.crud.project import (
     restore_project_db,
 )
 from app.crud.project_naming_standard import get_standard_with_components_full
-from app.elan.validation import validate_eaf
+from app.elan import compare_eaf, parse_eaf
+from app.elan.validation import EafValidationError, validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
 from app.model.audit_event import AuditEvent
 from app.model.enums import ProjectPermission, ReviewCaseState, Status
 from app.model.notification import Notification
+from app.model.pending_upload import PendingUpload
+from app.model.research_topic import (
+    ProjectBaselineTier,
+    ResearchTopic,
+    ResearchTopicTier,
+)
 from app.model.review import ReviewCase
+from app.model.user import User
 from app.schema.common.git import FileStatus
 from app.schema.responses.git import (
     BulkRenameResponse,
@@ -55,7 +63,11 @@ from app.schema.responses.git import (
     RenameResult,
 )
 from app.service.database_rename_handler import DatabaseRenameHandler
-from app.service.eaf_review import validate_repository_eafs
+from app.service.eaf_review import (
+    EafReviewUnavailableError,
+    compare_repository_eaf,
+    validate_repository_eafs,
+)
 from app.service.elan import ElanService
 from app.service.git_operations import (
     FileUploadProcessor,
@@ -69,6 +81,7 @@ from app.service.protocol import (
     get_pinned_protocol_version,
     validate_content_against_protocol,
 )
+from app.service.research_topics import require_distinct_topic_name
 from app.storage.paths import safe_project_path
 from app.utils.project_backup import (
     remove_project_backup,
@@ -87,6 +100,8 @@ from app.utils.validation import ValidationUtils
 
 logger = get_logger()
 EXPECTED_LOG_FIELDS = 4
+MIN_DECLINE_REASON_LENGTH = 3
+MIN_NAME_STATUS_FIELDS = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,6 +112,7 @@ class SubmissionContext:
     user_id: int
     base_commit: str
     protocol_validation: dict[str, str | None]
+    research_context: dict[str, Any]
 
 
 class DuplicatePendingContributionError(ValueError):
@@ -149,6 +165,325 @@ class GitService:
                 "status": "missing",
                 "error": "Git not installed",
             }
+
+    @staticmethod
+    def _canonical_commits(runner: GitCommandRunner) -> list[str]:
+        """Return only commits from the canonical branch's first-parent history."""
+        result = runner.run(
+            ["rev-list", "--first-parent", runner.canonical_branch()], check=True
+        )
+        return [line for line in result.stdout.splitlines() if line]
+
+    @staticmethod
+    def _resolve_history_commit(
+        runner: GitCommandRunner, target_commit: str
+    ) -> tuple[str, list[str]]:
+        if not re.fullmatch(r"[0-9a-fA-F]{7,64}", target_commit):
+            raise ValueError("Invalid project version")
+        resolved = runner.run(
+            ["rev-parse", "--verify", f"{target_commit}^{{commit}}"], check=False
+        )
+        if resolved.returncode != 0:
+            raise ValueError("Project version not found")
+        commit = resolved.stdout.strip()
+        canonical = GitService._canonical_commits(runner)
+        if commit not in canonical:
+            raise ValueError("The selected version is not in accepted project history")
+        return commit, canonical
+
+    async def get_accepted_project_history(
+        self, project_name: str, db: AsyncSession
+    ) -> dict[str, Any]:
+        """List immutable states from the canonical branch with audit provenance."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        project_path = safe_project_path(self.base_path, project_name)
+        runner = GitCommandRunner(project_path)
+        current = runner.get_commit_hash()
+        log = runner.run(
+            [
+                "log",
+                "--first-parent",
+                "--date=iso-strict",
+                "--pretty=format:%H%x1f%aI%x1f%an%x1f%s%x1e",
+                runner.canonical_branch(),
+            ],
+            check=True,
+        ).stdout
+        events = (
+            (
+                await db.execute(
+                    select(AuditEvent).where(
+                        AuditEvent.project_id == project.project_id,
+                        AuditEvent.action.in_(
+                            ["contribution.accepted", "project.version.restored"]
+                        ),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        actor_ids = {
+            event.actor_user_id for event in events if event.actor_user_id is not None
+        }
+        actors: dict[int, str] = {}
+        if actor_ids:
+            actor_rows = await db.execute(
+                select(User.user_id, User.username).where(User.user_id.in_(actor_ids))
+            )
+            actors = dict(actor_rows.all())
+        provenance: dict[str, AuditEvent] = {}
+        for audit_event in events:
+            commit = audit_event.details.get(
+                "accepted_commit"
+            ) or audit_event.details.get("restored_commit")
+            if isinstance(commit, str):
+                provenance[commit] = audit_event
+        versions: list[dict[str, Any]] = []
+        for record in log.split("\x1e"):
+            fields = record.strip().split("\x1f")
+            if len(fields) != EXPECTED_LOG_FIELDS:
+                continue
+            commit, committed_at, author, message = fields
+            current_event = provenance.get(commit)
+            details = current_event.details if current_event else {}
+            contribution_id = None
+            if (
+                current_event
+                and current_event.action == "contribution.accepted"
+                and current_event.resource_id
+            ):
+                try:
+                    contribution_id = int(current_event.resource_id)
+                except ValueError:
+                    contribution_id = None
+            versions.append(
+                {
+                    "commit": commit,
+                    "short_commit": commit[:8],
+                    "committed_at": committed_at,
+                    "message": (
+                        f"Accepted contribution #{contribution_id}"
+                        if contribution_id is not None
+                        else (
+                            f"Restored project to version {str(details.get('target_commit', ''))[:8]}"
+                            if current_event
+                            and current_event.action == "project.version.restored"
+                            else message
+                        )
+                    ),
+                    "author": (
+                        actors.get(current_event.actor_user_id, author)
+                        if current_event and current_event.actor_user_id is not None
+                        else author
+                    ),
+                    "action": current_event.action
+                    if current_event
+                    else "project.commit",
+                    "contribution_id": contribution_id,
+                    "restored_from": details.get("target_commit"),
+                    "reason": details.get("reason"),
+                    "is_current": commit == current,
+                }
+            )
+        return {
+            "project_name": project_name,
+            "current_commit": current,
+            "versions": versions,
+        }
+
+    async def preview_project_version_restore(
+        self, project_name: str, target_commit: str, db: AsyncSession
+    ) -> dict[str, Any]:
+        """Preview files, EAF meaning, and open work affected by a restoration."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        runner = GitCommandRunner(safe_project_path(self.base_path, project_name))
+        target, _ = self._resolve_history_commit(runner, target_commit)
+        current = runner.get_commit_hash()
+        if target == current:
+            raise ValueError("The selected version is already current")
+        diff = runner.run(
+            ["diff", "--name-status", "--find-renames", current, target], check=True
+        ).stdout
+        files: list[dict[str, str]] = []
+        summary = {
+            "files": 0,
+            "annotations": 0,
+            "added": 0,
+            "removed": 0,
+            "value_changed": 0,
+            "timing_changed": 0,
+            "tier_changed": 0,
+            "reference_changed": 0,
+            "media_changed": 0,
+        }
+        for line in diff.splitlines():
+            parts = line.split("\t")
+            if len(parts) < MIN_NAME_STATUS_FIELDS:
+                continue
+            status, filename = parts[0], parts[-1]
+            files.append({"status": status, "filename": filename})
+            if not filename.lower().endswith(".eaf"):
+                continue
+            documents = []
+            for revision in (current, target):
+                blob = runner.run(["show", f"{revision}:{filename}"], check=False)
+                documents.append(
+                    parse_eaf(blob.stdout.encode()) if blob.returncode == 0 else None
+                )
+            comparison = compare_eaf(documents[0], documents[1])
+            summary["files"] += 1
+            summary["annotations"] += len(comparison.changes)
+            for change in comparison.changes:
+                for kind in change.kinds:
+                    summary[kind.value] += 1
+            if comparison.before_media_urls != comparison.after_media_urls:
+                summary["media_changed"] += 1
+        pending = await get_pending_uploads(db, project.project_id)
+        affected_ids = [item.upload_id for item in pending]
+        review_rows = (
+            (
+                await db.execute(
+                    select(ReviewCase.case_id).where(
+                        ReviewCase.project_id == project.project_id,
+                        ReviewCase.state.in_(
+                            [
+                                ReviewCaseState.OPEN.value,
+                                ReviewCaseState.CHANGES_REQUESTED.value,
+                                ReviewCaseState.RESUBMITTED.value,
+                            ]
+                        ),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return {
+            "project_name": project_name,
+            "current_commit": current,
+            "target_commit": target,
+            "files": files,
+            "semantic_summary": summary,
+            "affected_pending_contributions": len(affected_ids),
+            "affected_pending_upload_ids": affected_ids,
+            "active_review_cases": len(review_rows),
+            "active_review_case_ids": [str(case_id) for case_id in review_rows],
+        }
+
+    async def restore_project_version(
+        self,
+        project_name: str,
+        target_commit: str,
+        expected_head: str,
+        reason: str,
+        confirmation: str,
+        db: AsyncSession,
+        user_id: int,
+        actor_name: str | None = None,
+    ) -> dict[str, Any]:
+        """Restore an accepted tree as a new commit without rewriting history."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        if confirmation != f"RESTORE {project_name}":
+            raise ValueError(f'Type "RESTORE {project_name}" to confirm')
+        project_path = safe_project_path(self.base_path, project_name)
+        runner = GitCommandRunner(project_path)
+        branch = runner.canonical_branch()
+        runner.checkout(branch)
+        previous = runner.get_commit_hash()
+        if previous != expected_head:
+            raise ValueError(
+                "Accepted project history changed. Refresh the preview before restoring"
+            )
+        target, _ = self._resolve_history_commit(runner, target_commit)
+        if target == previous:
+            raise ValueError("The selected version is already current")
+        if runner.run(["status", "--porcelain"], check=True).stdout.strip():
+            raise ValueError("The project working tree is not clean")
+        eaf_paths = runner.run(
+            ["ls-tree", "-r", "--name-only", target, "--", "elan_files"], check=True
+        ).stdout.splitlines()
+        for filename in eaf_paths:
+            if filename.lower().endswith(".eaf"):
+                content = runner.run(
+                    ["show", f"{target}:{filename}"], check=True
+                ).stdout
+                validate_eaf(content.encode())
+        runner.run(["read-tree", "--reset", "-u", f"{target}^{{tree}}"], check=True)
+        commit_args = [
+            "commit",
+            "-m",
+            f"Restore accepted project version {target[:8]}",
+            "-m",
+            f"Reason: {reason.strip()}",
+        ]
+        if actor_name:
+            safe_email_name = re.sub(r"[^a-z0-9._-]+", "-", actor_name.lower())
+            commit_args = [
+                "-c",
+                f"user.name={actor_name}",
+                "-c",
+                f"user.email={safe_email_name}@elanora.local",
+                *commit_args,
+            ]
+        runner.run(commit_args, check=True)
+        restored = runner.get_commit_hash()
+        try:
+            await self.rebuild_project_database(
+                project_name, db, user_id, commit_changes=False
+            )
+            db.add(
+                AuditEvent(
+                    actor_user_id=user_id,
+                    project_id=project.project_id,
+                    action="project.version.restored",
+                    resource_type="project",
+                    resource_id=str(project.project_id),
+                    details={
+                        "previous_commit": previous,
+                        "target_commit": target,
+                        "restored_commit": restored,
+                        "reason": reason.strip(),
+                    },
+                )
+            )
+            pending = await get_pending_uploads(db, project.project_id)
+            notified_users = {
+                upload.submitted_by
+                for upload in pending
+                if upload.submitted_by not in {None, user_id}
+            }
+            for submitted_by in notified_users:
+                db.add(
+                    Notification(
+                        user_id=submitted_by,
+                        title="Accepted project version changed",
+                        message=(
+                            f"An administrator restored an earlier state of {project_name}. "
+                            "Your open contribution was preserved and its compatibility was re-evaluated."
+                        ),
+                        action_url=f"/contribution?project={project.project_id}&view=queue",
+                    )
+                )
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            runner.reset_hard(previous)
+            raise
+        update_backup(project_path.name, project_path.parent)
+        return {
+            "project_name": project_name,
+            "previous_commit": previous,
+            "target_commit": target,
+            "restored_commit": restored,
+            "status": "restored_as_new_version",
+        }
 
     async def create_project(
         self,
@@ -296,6 +631,8 @@ class GitService:
         user_id: int,
         user_name: str,
         protocol_validation: dict[str, str | None],
+        research_context: dict[str, Any] | None = None,
+        allow_current_tree: bool = False,
     ) -> dict[str, Any]:
         """Add multiple ELAN files to the project with branch-based workflow."""
         # Fetch project details by ID
@@ -432,8 +769,10 @@ class GitService:
                     user_id=user_id,
                     base_commit=base_commit,
                     protocol_validation=protocol_validation,
+                    research_context=research_context or {},
                 ),
                 project_path=project_path,
+                allow_current_tree=allow_current_tree,
             )
             contribution_recorded = True
             auto_accepted = False
@@ -503,6 +842,7 @@ class GitService:
         db: AsyncSession,
         context: SubmissionContext,
         project_path: Path,
+        allow_current_tree: bool = False,
     ) -> dict[str, Any]:
         """Save upload for admin approval instead of attempting immediate merge."""
         logger.info(f"Saving upload branch '{branch_name}' for admin approval")
@@ -516,7 +856,9 @@ class GitService:
         # repeated clicks/retries from creating indistinguishable review work.
         runner = GitCommandRunner(project_path)
         submitted_tree = runner.get_tree_hash(branch_name)
-        if submitted_tree == runner.get_tree_hash(runner.canonical_branch()):
+        if not allow_current_tree and submitted_tree == runner.get_tree_hash(
+            runner.canonical_branch()
+        ):
             raise ContributionAlreadyCurrentError(
                 "These files are already the current accepted version; no contribution was created."
             )
@@ -568,6 +910,7 @@ class GitService:
                 "uploaded_by": context.username,
                 "base_commit": context.base_commit,
                 "protocol_validation": context.protocol_validation,
+                "research_context": context.research_context,
             }
 
             # Save upload info to database for admin dashboard
@@ -623,6 +966,7 @@ class GitService:
                 "has_differences": upload_info["has_differences"],
                 "has_conflicts": upload_info["has_conflicts"],
                 "protocol_validation": upload_info["protocol_validation"],
+                "research_context": upload_info["research_context"],
             },
             "resolution_info": {
                 "can_auto_resolve": False,
@@ -890,7 +1234,12 @@ class GitService:
             )
 
     async def rebuild_project_database(
-        self, project_name: str, db: AsyncSession, user_id: int
+        self,
+        project_name: str,
+        db: AsyncSession,
+        user_id: int,
+        *,
+        commit_changes: bool = True,
     ) -> None:
         """Rebuild the mutable database projection from canonical validated EAFs."""
         project = await get_project_by_name(db, project_name)
@@ -901,7 +1250,7 @@ class GitService:
         for file_path in files:
             validate_eaf(file_path.read_bytes())
         existing = await get_elan_files_by_project(db, project.project_id)
-        existing_names = {item.filename for item in existing}
+        existing_names = {item.filename for item, _username in existing}
         canonical_names = {item.name for item in files}
         elan_service = ElanService(db)
         for file_path in files:
@@ -916,7 +1265,8 @@ class GitService:
         for filename in existing_names - canonical_names:
             if not await elan_service.delete_elan_files_from_db(filename, project_name):
                 raise RuntimeError(f"Could not remove stale database file {filename}")
-        await db.commit()
+        if commit_changes:
+            await db.commit()
 
     def _validate_upload_request(
         self, project_path: Path, files: list[UploadFile]
@@ -956,6 +1306,15 @@ class GitService:
         if project is None:
             raise FileNotFoundError(f"Project '{project_name}' not found")
         pending_uploads = await get_pending_uploads(db, project.project_id)
+        configured_baseline_tiers = set(
+            (
+                await db.scalars(
+                    select(ProjectBaselineTier.tier_name).where(
+                        ProjectBaselineTier.project_id == project.project_id
+                    )
+                )
+            ).all()
+        )
 
         tree_groups: dict[str, list[int]] = {}
         for upload in pending_uploads:
@@ -975,14 +1334,24 @@ class GitService:
             for upload_id in upload_ids
             if upload_id != min(upload_ids)
         }
+        collision_candidate_ids = {
+            upload.upload_id
+            for upload in pending_uploads
+            if upload.superseded_by_upload_id is None
+            and upload.upload_id not in duplicate_of
+        }
 
         upload_status = []
+        semantic_targets_by_upload: dict[
+            int, dict[str, dict[str, tuple[Any, ...]]]
+        ] = {}
         ready_count = 0
         conflicts_count = 0
 
         for upload in pending_uploads:
             branch_name = upload.branch_name
-            upload_data = (upload.git_details or {}).get("upload_data") or {}
+            git_details = upload.git_details or {}
+            upload_data = git_details.get("upload_data", git_details)
             protocol_validation = upload_data.get("protocol_validation") or {}
             current_protocol_id = (
                 str(project.protocol_version_id)
@@ -1000,6 +1369,72 @@ class GitService:
                     else "recheck_required"
                 )
             )
+            semantic_summary, semantic_targets, changed_tiers = (
+                self._pending_semantic_analysis(
+                    project_name, branch_name, upload_data, upload.base_commit
+                )
+            )
+            semantic_targets_by_upload[upload.upload_id] = semantic_targets
+            research_context = dict(upload_data.get("research_context") or {})
+            declared_tiers = {
+                tier
+                for tier in research_context.get("declared_tiers", [])
+                if isinstance(tier, str)
+            }
+            baseline_tiers = configured_baseline_tiers | {
+                tier
+                for tier in research_context.get("baseline_tiers", [])
+                if isinstance(tier, str)
+            }
+            outside_scope = sorted(changed_tiers - declared_tiers - baseline_tiers)
+            research_context.update(
+                {
+                    "changed_tiers": sorted(changed_tiers),
+                    "baseline_changed_tiers": sorted(changed_tiers & baseline_tiers),
+                    "outside_scope_tiers": outside_scope,
+                    "scope_status": (
+                        "missing_context"
+                        if not research_context.get("summary")
+                        else "topic_review_needed"
+                        if research_context.get("topic_review_status") == "proposed"
+                        else "outside_scope"
+                        if declared_tiers and outside_scope
+                        else "aligned"
+                        if declared_tiers
+                        else "declared_general"
+                    ),
+                }
+            )
+
+            if upload.superseded_by_upload_id is not None:
+                upload_status.append(
+                    {
+                        "upload_id": upload.upload_id,
+                        "branch_name": branch_name,
+                        "upload_type": upload.upload_type.value,
+                        "description": upload.upload_description,
+                        "status": upload.status.value,
+                        "uploaded_at": upload.detected_at.isoformat()
+                        if upload.detected_at
+                        else None,
+                        "uploaded_by": upload_data.get("uploaded_by"),
+                        "files": {
+                            "new": upload_data.get("new_files", []),
+                            "modified": upload_data.get("modified_files", []),
+                            "deleted": upload_data.get("deleted_files", []),
+                        },
+                        "quality_checks": {
+                            "eaf": "passed",
+                            "naming": "passed",
+                            "protocol": protocol_outcome,
+                        },
+                        "semantic_summary": semantic_summary,
+                        "research_context": research_context,
+                        "superseded_by_upload_id": upload.superseded_by_upload_id,
+                        "merge_status": "superseded",
+                    }
+                )
+                continue
 
             if upload.upload_id in duplicate_of:
                 upload_status.append(
@@ -1034,6 +1469,8 @@ class GitService:
                             "naming": "passed",
                             "protocol": protocol_outcome,
                         },
+                        "semantic_summary": semantic_summary,
+                        "research_context": research_context,
                         "protocol_version_id": recorded_protocol_id,
                         "duplicate_of_upload_id": duplicate_of[upload.upload_id],
                         "git_details": upload.git_details,
@@ -1090,6 +1527,8 @@ class GitService:
                             "naming": "passed",
                             "protocol": protocol_outcome,
                         },
+                        "semantic_summary": semantic_summary,
+                        "research_context": research_context,
                         "protocol_version_id": protocol_validation.get(
                             "protocol_version_id"
                         ),
@@ -1131,6 +1570,35 @@ class GitService:
                     }
                 )
 
+        for item in upload_status:
+            upload_id = int(item["upload_id"])
+            if upload_id not in collision_candidate_ids:
+                item["annotation_collisions"] = []
+                continue
+            targets = semantic_targets_by_upload.get(upload_id, {})
+            collisions = []
+            for other_id, other_targets in semantic_targets_by_upload.items():
+                if other_id == upload_id or other_id not in collision_candidate_ids:
+                    continue
+                shared: dict[str, list[str]] = {}
+                for filename in targets.keys() & other_targets.keys():
+                    differing_ids = sorted(
+                        annotation_id
+                        for annotation_id in targets[filename].keys()
+                        & other_targets[filename].keys()
+                        if targets[filename][annotation_id]
+                        != other_targets[filename][annotation_id]
+                    )
+                    if differing_ids:
+                        shared[filename] = differing_ids
+                if shared:
+                    collisions.append(
+                        {"contribution_id": other_id, "annotations": shared}
+                    )
+            item["annotation_collisions"] = sorted(
+                collisions, key=lambda collision: collision["contribution_id"]
+            )
+
         return {
             "project_name": project_name,
             "pending_uploads": upload_status,
@@ -1138,6 +1606,72 @@ class GitService:
             "ready_count": ready_count,
             "conflicts_count": conflicts_count,
         }
+
+    def _pending_semantic_analysis(
+        self,
+        project_name: str,
+        branch_name: str,
+        upload_data: dict[str, Any],
+        base_commit: str | None,
+    ) -> tuple[dict[str, int], dict[str, dict[str, tuple[Any, ...]]], set[str]]:
+        """Summarize EAF changes and retain targets for concurrency warnings."""
+        filenames = {
+            filename
+            for key in ("new_files", "modified_files", "deleted_files")
+            for filename in upload_data.get(key, [])
+            if filename.lower().endswith(".eaf")
+        }
+        summary = {
+            "files": 0,
+            "annotations": 0,
+            "added": 0,
+            "removed": 0,
+            "value_changed": 0,
+            "timing_changed": 0,
+            "tier_changed": 0,
+            "reference_changed": 0,
+            "media_changed": 0,
+        }
+        targets: dict[str, dict[str, tuple[Any, ...]]] = {}
+        changed_tiers: set[str] = set()
+        for filename in sorted(filenames):
+            try:
+                comparison = compare_repository_eaf(
+                    self.base_path,
+                    project_name,
+                    branch_name,
+                    filename,
+                    accepted_revision=base_commit,
+                )
+            except (FileNotFoundError, EafReviewUnavailableError, EafValidationError):
+                logger.warning(
+                    "Could not summarize semantic changes for %s on %s",
+                    filename,
+                    branch_name,
+                )
+                continue
+            summary["files"] += 1
+            summary["annotations"] += len(comparison.changes)
+            targets[filename] = {}
+            for change in comparison.changes:
+                after = change.after
+                if change.before is not None:
+                    changed_tiers.add(change.before.tier_id)
+                if after is not None:
+                    changed_tiers.add(after.tier_id)
+                targets[filename][change.annotation_id] = (
+                    tuple(change.kinds),
+                    after.tier_id if after else None,
+                    after.value if after else None,
+                    after.start_ms if after else None,
+                    after.end_ms if after else None,
+                    after.annotation_ref if after else None,
+                )
+                for kind in change.kinds:
+                    summary[kind.value] += 1
+            if comparison.before_media_urls != comparison.after_media_urls:
+                summary["media_changed"] += 1
+        return summary, targets, changed_tiers
 
     def test_pending_upload(
         self, project_name: str, branch_name: str
@@ -1155,6 +1689,92 @@ class GitService:
             "can_auto_merge": readiness.can_merge,
             "tested_at": datetime.now().isoformat(),
         }
+
+    async def set_contribution_research_topic(
+        self,
+        project_name: str,
+        upload_id: int,
+        topic_id: int | None,
+        new_topic_name: str | None,
+        db: AsyncSession,
+    ) -> dict[str, Any]:
+        """Resolve a contribution's topic while retaining its declared evidence."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        upload = await db.get(PendingUpload, upload_id)
+        if (
+            upload is None
+            or upload.project_id != project.project_id
+            or upload.status != Status.PENDING_ADMIN_APPROVAL
+            or not upload.branch_name
+        ):
+            raise FileNotFoundError("Pending contribution not found")
+        if topic_id is not None and new_topic_name:
+            raise ValueError("Choose an existing topic or create a new one, not both")
+
+        details = dict(upload.git_details or {})
+        upload_data = dict(details.get("upload_data") or {})
+        context = dict(upload_data.get("research_context") or {})
+        _summary, _targets, changed_tiers = self._pending_semantic_analysis(
+            project_name, upload.branch_name, upload_data, upload.base_commit
+        )
+
+        topic = None
+        if topic_id is not None:
+            topic = await db.scalar(
+                select(ResearchTopic).where(
+                    ResearchTopic.topic_id == topic_id,
+                    ResearchTopic.project_id == project.project_id,
+                )
+            )
+            if topic is None:
+                raise ValueError("Research topic not found")
+        elif new_topic_name:
+            cleaned_name = " ".join(new_topic_name.split())
+            project_topics = list(
+                (
+                    await db.scalars(
+                        select(ResearchTopic).where(
+                            ResearchTopic.project_id == project.project_id
+                        )
+                    )
+                ).all()
+            )
+            require_distinct_topic_name(cleaned_name, project_topics)
+            if not changed_tiers:
+                raise ValueError(
+                    "A topic cannot be created because no changed tiers were detected"
+                )
+            topic = ResearchTopic(
+                project_id=project.project_id,
+                name=cleaned_name,
+                description=f"Created while classifying contribution #{upload.upload_id}.",
+                allow_new_tiers=False,
+                tiers=[
+                    ResearchTopicTier(tier_name=name) for name in sorted(changed_tiers)
+                ],
+            )
+            db.add(topic)
+            await db.flush()
+
+        context.update(
+            {
+                "declared_topic_id": topic.topic_id if topic else None,
+                "declared_topic_name": topic.name if topic else None,
+                "declared_tiers": (
+                    sorted(item.tier_name for item in topic.tiers) if topic else []
+                ),
+                "proposed_topic_name": None,
+                "topic_review_status": "verified",
+                "topic_match": "administrator_decision",
+            }
+        )
+        upload_data["research_context"] = context
+        details["upload_data"] = upload_data
+        upload.git_details = details
+        await db.commit()
+        return context
 
     async def complete_pending_upload(
         self,
@@ -1174,10 +1794,30 @@ class GitService:
         )
         if pending_upload is None:
             raise FileNotFoundError("Pending contribution not found")
+        if pending_upload.superseded_by_upload_id is not None:
+            raise ValueError(
+                f"Contribution #{pending_upload.upload_id} was superseded by "
+                f"contribution #{pending_upload.superseded_by_upload_id} and cannot be accepted"
+            )
+
+        upload_data = dict((pending_upload.git_details or {}).get("upload_data") or {})
+        research_context = dict(upload_data.get("research_context") or {})
+        if research_context:
+            if not str(research_context.get("summary") or "").strip():
+                raise ValueError(
+                    "The researcher must describe the work before this contribution can be merged"
+                )
+            if research_context.get("topic_review_status") == "proposed":
+                raise ValueError(
+                    "Assign the proposed research topic before merging this contribution"
+                )
 
         blocking_review = await db.scalar(
             select(ReviewCase.case_id).where(
-                ReviewCase.upload_id == pending_upload.upload_id,
+                (
+                    (ReviewCase.upload_id == pending_upload.upload_id)
+                    | (ReviewCase.resubmitted_upload_id == pending_upload.upload_id)
+                ),
                 ReviewCase.state.in_(
                     [
                         ReviewCaseState.OPEN.value,
@@ -1292,7 +1932,9 @@ class GitService:
             None,
         )
         if original is None:
-            raise ValueError("This contribution is not a duplicate of an earlier pending contribution")
+            raise ValueError(
+                "This contribution is not a duplicate of an earlier pending contribution"
+            )
 
         upload.status = Status.DISMISSED
         upload.resolved_at = datetime.now()
@@ -1331,6 +1973,89 @@ class GitService:
             "upload_id": upload.upload_id,
             "duplicate_of_upload_id": original.upload_id,
         }
+
+    async def decline_pending_upload(
+        self,
+        project_name: str,
+        upload_id: int,
+        reason: str,
+        db: AsyncSession,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Terminally decline pending work without erasing its audit history."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+        upload = await db.get(PendingUpload, upload_id)
+        if (
+            upload is None
+            or upload.project_id != project.project_id
+            or upload.status != Status.PENDING_ADMIN_APPROVAL
+            or not upload.branch_name
+        ):
+            raise FileNotFoundError("Pending contribution not found")
+
+        decline_reason = reason.strip()
+        if len(decline_reason) < MIN_DECLINE_REASON_LENGTH:
+            raise ValueError("A decline reason is required")
+
+        upload.status = Status.DISMISSED
+        upload.resolved_at = datetime.now()
+        upload.resolved_by = user_id
+        review_cases = list(
+            (
+                await db.scalars(
+                    select(ReviewCase).where(
+                        ReviewCase.project_id == project.project_id,
+                        (
+                            (ReviewCase.upload_id == upload.upload_id)
+                            | (ReviewCase.resubmitted_upload_id == upload.upload_id)
+                        ),
+                        ReviewCase.state.not_in(
+                            [ReviewCaseState.RESOLVED, ReviewCaseState.CLOSED]
+                        ),
+                    )
+                )
+            ).all()
+        )
+        for review_case in review_cases:
+            review_case.state = ReviewCaseState.CLOSED
+            review_case.resolved_at = datetime.now()
+            review_case.updated_at = datetime.now()
+
+        db.add(
+            AuditEvent(
+                actor_user_id=user_id,
+                project_id=project.project_id,
+                action="contribution.declined",
+                resource_type="pending_upload",
+                resource_id=str(upload.upload_id),
+                details={
+                    "branch_name": upload.branch_name,
+                    "reason": decline_reason,
+                    "closed_review_case_ids": [
+                        str(review_case.case_id) for review_case in review_cases
+                    ],
+                },
+            )
+        )
+        if upload.submitted_by not in {None, user_id}:
+            db.add(
+                Notification(
+                    user_id=upload.submitted_by,
+                    title="Contribution declined",
+                    message=f"Your contribution to {project_name} was declined: {decline_reason}",
+                    action_url=f"/contribution?project={project.project_id}",
+                )
+            )
+        await db.commit()
+        try:
+            GitCommandRunner(
+                safe_project_path(self.base_path, project_name)
+            ).delete_branch_localy(upload.branch_name)
+        except Exception:
+            logger.exception("Could not remove declined branch %s", upload.branch_name)
+        return {"status": "dismissed", "upload_id": upload.upload_id}
 
     def _build_upload_response(
         self,

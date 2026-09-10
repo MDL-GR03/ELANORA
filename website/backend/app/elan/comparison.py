@@ -117,10 +117,10 @@ def _annotation_index(document: EafDocument) -> dict[str, AnnotationSnapshot]:
     return result
 
 
-def compare_eaf(before: EafDocument, after: EafDocument) -> EafComparison:
-    """Compare annotation meaning without exposing an XML line diff."""
-    before_items = _annotation_index(before)
-    after_items = _annotation_index(after)
+def compare_eaf(before: EafDocument | None, after: EafDocument | None) -> EafComparison:
+    """Compare EAF meaning, including whole-file additions and removals."""
+    before_items = _annotation_index(before) if before is not None else {}
+    after_items = _annotation_index(after) if after is not None else {}
     changes: list[AnnotationChange] = []
 
     for annotation_id in sorted(before_items.keys() | after_items.keys()):
@@ -154,10 +154,14 @@ def compare_eaf(before: EafDocument, after: EafDocument) -> EafComparison:
 
     return EafComparison(
         changes=tuple(changes),
-        before_media_urls=tuple(
-            item.media_url for item in before.header.media_descriptors
+        before_media_urls=(
+            tuple(item.media_url for item in before.header.media_descriptors)
+            if before is not None
+            else ()
         ),
-        after_media_urls=tuple(
-            item.media_url for item in after.header.media_descriptors
+        after_media_urls=(
+            tuple(item.media_url for item in after.header.media_descriptors)
+            if after is not None
+            else ()
         ),
     )

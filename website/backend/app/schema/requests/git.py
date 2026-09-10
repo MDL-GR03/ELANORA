@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from app.schema.common.base import CustomBaseModel
 
 
@@ -54,7 +56,34 @@ class PendingUploadMergeRequest(CustomBaseModel):
     resolution_strategy: str = "auto"
 
 
+class PendingUploadDeclineRequest(CustomBaseModel):
+    """An administrator's reason for terminally declining a contribution."""
+
+    reason: str = Field(min_length=3, max_length=1000)
+
+
+class ContributionResearchTopicRequest(CustomBaseModel):
+    """An administrator's decision on a contribution's research classification."""
+
+    topic_id: int | None = None
+    new_topic_name: str | None = Field(default=None, min_length=2, max_length=100)
+
+
 class ContributionPolicyRequest(CustomBaseModel):
     """Safe automatic-acceptance settings for one project."""
 
     auto_accept_new_files: bool
+
+
+class ProjectVersionPreviewRequest(CustomBaseModel):
+    """Select an immutable canonical revision for a restoration preview."""
+
+    target_commit: str = Field(min_length=7, max_length=64)
+
+
+class ProjectVersionRestoreRequest(ProjectVersionPreviewRequest):
+    """Create a new canonical commit whose tree matches an earlier revision."""
+
+    expected_head: str = Field(min_length=40, max_length=64)
+    reason: str = Field(min_length=10, max_length=2000)
+    confirmation: str = Field(min_length=1, max_length=200)

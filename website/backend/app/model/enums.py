@@ -102,6 +102,7 @@ class Status(StrEnum):
     BEING_REVIEWED = "being_reviewed"
     # Final statuses
     RESOLVED = "resolved"  # Successfully merged
+    NO_CHANGES = "no_changes"  # Reviewed successfully; project content unchanged
     DISMISSED = "dismissed"  # Rejected/cancelled
 
 

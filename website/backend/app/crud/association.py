@@ -47,47 +47,6 @@ async def update_elan_file_media(
     )
 
 
-# --- ElanFileToProject REMOVED ---
-# These operations are no longer needed as files belong directly to projects via project_id foreign key
-
-
-# Legacy functions kept for backward compatibility during migration
-async def add_elan_file_to_project(db: AsyncSession, elan_id: int, project_id: int):
-    """DEPRECATED: Files now belong directly to projects via project_id FK."""
-    logger.warning(
-        "add_elan_file_to_project is deprecated - use project_id in ElanFile directly"
-    )
-    pass  # No-op since project_id is set during file creation
-
-
-async def remove_elan_file_from_project(
-    db: AsyncSession, elan_id: int, project_id: int
-):
-    """DEPRECATED: Files now belong directly to projects via project_id FK."""
-    logger.warning(
-        "remove_elan_file_from_project is deprecated - delete the ElanFile instead"
-    )
-    pass  # No-op since cascade delete handles this
-
-
-async def update_elan_file_project(
-    db: AsyncSession, elan_id: int, old_project_id: int, new_project_id: int
-):
-    """DEPRECATED: Files now belong directly to projects via project_id FK."""
-    logger.warning(
-        "update_elan_file_project is deprecated - update project_id in ElanFile directly"
-    )
-    pass  # No-op
-
-
-async def has_any_project_for_elan_file(db: AsyncSession, elan_id: int) -> bool:
-    """DEPRECATED: Files now belong directly to projects via project_id FK."""
-    logger.warning(
-        "has_any_project_for_elan_file is deprecated - check project_id in ElanFile directly"
-    )
-    return True  # Always true now since project_id is required
-
-
 # --- ElanFileToTier ---
 
 

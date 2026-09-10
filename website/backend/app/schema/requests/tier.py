@@ -30,4 +30,20 @@ class TierSubsetExportRequest(CustomBaseModel):
     """A non-destructive working extract of selected tiers from one EAF."""
 
     filename: str = Field(min_length=1, max_length=255)
+    tier_names: list[str] = Field(default_factory=list, max_length=500)
+    topic_id: int | None = None
+    context_tier_names: list[str] | None = Field(default=None, max_length=500)
+    editable_baseline_tier_names: list[str] = Field(
+        default_factory=list, max_length=500
+    )
+
+
+class ResearchTopicRequest(CustomBaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=1000)
     tier_names: list[str] = Field(min_length=1, max_length=500)
+    allow_new_tiers: bool = False
+
+
+class ProjectBaselineTiersRequest(CustomBaseModel):
+    tier_names: list[str] = Field(default_factory=list, max_length=500)

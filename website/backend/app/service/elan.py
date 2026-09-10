@@ -37,7 +37,7 @@ from app.crud.tier import (
     update_parent_tier,
 )
 from app.crud.tier_group import delete_tier_groups_for_project_and_elan
-from app.elan import LegacyEafFile, document_to_legacy, parse_eaf_path
+from app.elan import PersistedEafFile, document_to_persistence, parse_eaf_path
 from app.model.tier import Tier
 from app.utils.file_processing import ElanFileProcessor
 
@@ -52,13 +52,13 @@ class ElanService:
         self.db = db
         self.file_processor = ElanFileProcessor()
 
-    def parse_elan_file(self, file_path: str) -> LegacyEafFile:
+    def parse_elan_file(self, file_path: str) -> PersistedEafFile:
         logger.info(f"Starting to parse ELAN file: {file_path}")
         t0 = time.perf_counter()
 
         file_path_obj = ElanFileProcessor.validate_elan_file(file_path)
         document = parse_eaf_path(file_path_obj)
-        file_info = document_to_legacy(document)
+        file_info = document_to_persistence(document)
 
         total_time = time.perf_counter() - t0
         logger.info(f"Total parse_elan_file time: {total_time:.3f}s")

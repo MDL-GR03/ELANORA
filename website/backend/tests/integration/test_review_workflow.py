@@ -19,13 +19,26 @@ from app.model.instance import Instance
 from app.model.notification import Notification
 from app.model.pending_upload import PendingUpload
 from app.model.project import Project
+from app.model.review import ReviewCase
 from app.model.user import User
 from app.schema.review import (
     ReviewCaseCreate,
     ReviewCaseTransition,
     ReviewCommentCreate,
+    ReviewRevisionRequest,
+    ReviewTaskCreate,
+    ReviewTaskUpdate,
 )
-from app.service.review import add_comment, create_case, transition_case
+from app.service.git import GitService
+from app.service.review import (
+    add_comment,
+    create_case,
+    list_cases,
+    mark_case_viewed,
+    request_review_revision,
+    transition_case,
+    update_review_task,
+)
 
 
 def _user(username: str, instance: Instance, role: UserRole = UserRole.PUBLIC) -> User:
@@ -45,7 +58,7 @@ def _user(username: str, instance: Instance, role: UserRole = UserRole.PUBLIC) -
 
 @pytest.mark.asyncio
 async def test_review_case_discussion_assignment_and_resubmission_are_audited(
-    session: AsyncSession,
+    session: AsyncSession, tmp_path
 ) -> None:
     institution = Instance(
         instance_name="Research",
@@ -77,6 +90,7 @@ async def test_review_case_discussion_assignment_and_resubmission_are_audited(
         status=Status.PENDING_ADMIN_APPROVAL,
         branch_name="first-submission",
         project_id=project.project_id,
+        submitted_by=contributor.user_id,
     )
     second_upload = PendingUpload(
         upload_type=Type.PENDING_UPLOAD,
@@ -85,6 +99,7 @@ async def test_review_case_discussion_assignment_and_resubmission_are_audited(
         status=Status.PENDING_ADMIN_APPROVAL,
         branch_name="corrected-submission",
         project_id=project.project_id,
+        submitted_by=contributor.user_id,
     )
     session.add_all([first_upload, second_upload])
     await session.commit()
@@ -99,15 +114,46 @@ async def test_review_case_discussion_assignment_and_resubmission_are_audited(
             filename="session.eaf",
             tier_id="Gloss-RH",
             annotation_id="a42",
+            current_text="HE-LEAVE-TOMORROW",
+            suggested_text="SHE-LEAVE-TOMORROW",
             start_ms=134_200,
             end_ms=135_000,
             initial_comment="Please verify this value against the protocol.",
+            tasks=[
+                ReviewTaskCreate(
+                    filename="session.eaf",
+                    instruction="Correct the right-hand gloss only.",
+                    tier_id="Gloss-RH",
+                    annotation_id="a42",
+                )
+            ],
         ),
     )
     assert created.state == ReviewCaseState.OPEN
     assert created.assigned_to == reviewer.user_id
     assert created.assignee_name == "Reviewer Researcher"
     assert created.comments[0].body.startswith("Please verify")
+    assert created.current_text == "HE-LEAVE-TOMORROW"
+    assert created.suggested_text == "SHE-LEAVE-TOMORROW"
+    assert created.tasks[0].status == "requested"
+    unread = await list_cases(
+        session, project.project_id, viewer_id=contributor.user_id
+    )
+    assert unread[0].unread is True
+    viewed = await mark_case_viewed(
+        session, project.project_id, created.case_id, contributor.user_id
+    )
+    assert viewed.unread is False
+    with pytest.raises(PermissionError, match="administrator"):
+        await update_review_task(
+            session,
+            project.project_id,
+            created.case_id,
+            created.tasks[0].task_id,
+            contributor.user_id,
+            ReviewTaskUpdate(status="accepted"),
+            can_manage=False,
+        )
 
     discussed = await add_comment(
         session,
@@ -132,12 +178,42 @@ async def test_review_case_discussion_assignment_and_resubmission_are_audited(
         ),
     )
     assert requested.assignee_name == "Contributor Researcher"
+    with pytest.raises(ValueError, match="after a corrected revision"):
+        await update_review_task(
+            session,
+            project.project_id,
+            created.case_id,
+            created.tasks[0].task_id,
+            reviewer.user_id,
+            ReviewTaskUpdate(status="accepted"),
+            can_manage=True,
+        )
+    updated_task = await update_review_task(
+        session,
+        project.project_id,
+        created.case_id,
+        created.tasks[0].task_id,
+        contributor.user_id,
+        ReviewTaskUpdate(status="addressed"),
+        can_manage=False,
+    )
+    assert updated_task.tasks[0].status == "addressed"
+    with pytest.raises(PermissionError, match="submitted the contribution"):
+        await update_review_task(
+            session,
+            project.project_id,
+            created.case_id,
+            created.tasks[0].task_id,
+            reviewer.user_id,
+            ReviewTaskUpdate(status="addressed"),
+            can_manage=True,
+        )
 
     resubmitted = await transition_case(
         session,
         project.project_id,
         created.case_id,
-        reviewer.user_id,
+        contributor.user_id,
         ReviewCaseTransition(
             state=ReviewCaseState.RESUBMITTED,
             assigned_to=contributor.user_id,
@@ -146,6 +222,29 @@ async def test_review_case_discussion_assignment_and_resubmission_are_audited(
     )
     assert resubmitted.resubmitted_upload_id == second_upload.upload_id
     assert resubmitted.resolved_at is None
+    with pytest.raises(ValueError, match="open review cases"):
+        await GitService(base_path=str(tmp_path)).complete_pending_upload(
+            project.project_name,
+            second_upload.branch_name,
+            "auto",
+            session,
+            reviewer.user_id,
+        )
+    await session.refresh(first_upload)
+    assert first_upload.superseded_by_upload_id == second_upload.upload_id
+    revision_requested = await request_review_revision(
+        session,
+        project.project_id,
+        created.case_id,
+        reviewer.user_id,
+        ReviewRevisionRequest(
+            task_ids=[created.tasks[0].task_id],
+            feedback="The right-hand gloss still does not match the protocol.",
+        ),
+    )
+    assert revision_requested.state == ReviewCaseState.CHANGES_REQUESTED
+    assert revision_requested.tasks[0].status == "reopened"
+    assert revision_requested.comments[-1].body.startswith("The right-hand gloss")
     notifications = (
         await session.scalars(
             select(Notification).where(
@@ -154,6 +253,8 @@ async def test_review_case_discussion_assignment_and_resubmission_are_audited(
         )
     ).all()
     assert {notification.title for notification in notifications} == {
+        "Corrected contribution submitted",
+        "Another revision requested",
         "New review comment",
         "Review assigned to you",
     }
@@ -162,7 +263,7 @@ async def test_review_case_discussion_assignment_and_resubmission_are_audited(
         .select_from(AuditEvent)
         .where(AuditEvent.resource_id == str(created.case_id))
     )
-    assert audit_count == 4
+    assert audit_count == 5
 
 
 @pytest.mark.asyncio
@@ -239,6 +340,7 @@ async def test_review_rejects_cross_project_submission_and_invalid_transition(
             upload_id=upload.upload_id,
             request_changes=True,
             title="Correct the submitted annotation",
+            filename="elan_files/submission.eaf",
         ),
     )
     assert direct_correction.state == ReviewCaseState.CHANGES_REQUESTED
@@ -302,3 +404,81 @@ async def test_contribution_queue_retains_provenance_and_excludes_resolved_work(
     ]
     assert queue[0].submitted_by == contributor.user_id
     assert queue[0].base_commit == "d" * 40
+
+
+@pytest.mark.asyncio
+async def test_declining_contribution_closes_review_and_notifies_submitter(
+    session: AsyncSession, tmp_path
+) -> None:
+    institution = Instance(
+        instance_name="Decline",
+        institution_name="Decline Institute",
+        contact_email="admin@decline.example",
+        domain="decline.example",
+        timezone="UTC",
+    )
+    reviewer = _user("decline-reviewer", institution, UserRole.ADMIN)
+    contributor = _user("decline-contributor", institution)
+    project = Project(
+        project_name="Decline corpus",
+        project_path="decline-corpus",
+        instance=institution,
+    )
+    session.add_all([institution, reviewer, contributor, project])
+    await session.flush()
+    upload = await save_pending_upload(
+        session,
+        project.project_id,
+        "decline-submission",
+        {"new_files": ["session.eaf"]},
+        submitted_by=contributor.user_id,
+        base_commit="a" * 40,
+    )
+    review_case = await create_case(
+        session,
+        project.project_id,
+        reviewer.user_id,
+        ReviewCaseCreate(
+            upload_id=upload.upload_id,
+            request_changes=True,
+            title="Submission is out of scope",
+            filename="session.eaf",
+        ),
+    )
+
+    result = await GitService(base_path=str(tmp_path)).decline_pending_upload(
+        project.project_name,
+        upload.upload_id,
+        "The recording belongs to a different corpus.",
+        session,
+        reviewer.user_id,
+    )
+
+    await session.refresh(upload)
+    closed_case = await session.get(ReviewCase, review_case.case_id)
+    audit = await session.scalar(
+        select(AuditEvent).where(AuditEvent.action == "contribution.declined")
+    )
+    notification = await session.scalar(
+        select(Notification).where(
+            Notification.user_id == contributor.user_id,
+            Notification.title == "Contribution declined",
+        )
+    )
+    assert result == {"status": "dismissed", "upload_id": upload.upload_id}
+    assert upload.status == Status.DISMISSED
+    assert upload.resolved_by == reviewer.user_id
+    assert closed_case is not None
+    assert closed_case.state == ReviewCaseState.CLOSED
+    assert audit is not None
+    assert audit.details["reason"] == "The recording belongs to a different corpus."
+    assert notification is not None
+    assert "different corpus" in notification.message
+    with pytest.raises(ValueError, match="cannot be changed"):
+        await add_comment(
+            session,
+            project.project_id,
+            review_case.case_id,
+            contributor.user_id,
+            ReviewCommentCreate(body="This stale browser should not change history."),
+        )

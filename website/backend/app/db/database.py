@@ -25,7 +25,7 @@ _session_maker: async_sessionmaker[AsyncSession] | None = None
 
 
 def build_database_url() -> str | None:
-    """Resolve the configured URL while retaining the legacy optional contract."""
+    """Resolve the configured PostgreSQL URL when database settings are complete."""
     try:
         return get_settings().resolved_database_url
     except RuntimeError:

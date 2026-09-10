@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,12 +13,12 @@ from app.model.association import UserToProject
 from app.model.audit_event import AuditEvent
 from app.model.eaf_revision import EafRevision
 from app.model.elan_file import ElanFile
-from app.model.enums import ReviewCaseState
+from app.model.enums import ReviewCaseState, Status
 from app.model.notification import Notification
 from app.model.pending_upload import PendingUpload
 from app.model.project import Project
 from app.model.protocol import ProtocolValidationIssue, ValidationRun
-from app.model.review import ReviewCase, ReviewComment
+from app.model.review import ReviewCase, ReviewCaseView, ReviewComment, ReviewTask
 from app.model.user import User
 from app.schema.review import (
     ReviewCaseCreate,
@@ -25,7 +26,11 @@ from app.schema.review import (
     ReviewCaseTransition,
     ReviewCommentCreate,
     ReviewCommentResponse,
+    ReviewRevisionRequest,
+    ReviewTaskResponse,
+    ReviewTaskUpdate,
 )
+from app.service.git_operations import GitCommandRunner
 
 ALLOWED_TRANSITIONS: dict[ReviewCaseState, frozenset[ReviewCaseState]] = {
     ReviewCaseState.OPEN: frozenset(
@@ -81,17 +86,28 @@ def _display_name(user: User | None) -> str:
     return f"{user.first_name} {user.last_name}".strip() or user.username
 
 
-def review_response(case: ReviewCase) -> ReviewCaseResponse:
+def review_response(
+    case: ReviewCase, viewer_id: int | None = None
+) -> ReviewCaseResponse:
+    view = next((item for item in case.views if item.user_id == viewer_id), None)
     return ReviewCaseResponse(
         case_id=case.case_id,
         project_id=case.project_id,
         upload_id=case.upload_id,
         resubmitted_upload_id=case.resubmitted_upload_id,
+        resubmitted_upload_status=(
+            case.resubmission.status.value if case.resubmission else None
+        ),
+        contributor_id=case.upload.submitted_by if case.upload else None,
+        original_branch=case.upload.branch_name if case.upload else None,
+        response_branch=case.resubmission.branch_name if case.resubmission else None,
         title=case.title,
         state=ReviewCaseState(case.state),
         filename=case.filename,
         tier_id=case.tier_id,
         annotation_id=case.annotation_id,
+        current_text=case.current_text,
+        suggested_text=case.suggested_text,
         validation_issue_id=case.validation_issue_id,
         start_ms=case.start_ms,
         end_ms=case.end_ms,
@@ -113,6 +129,24 @@ def review_response(case: ReviewCase) -> ReviewCaseResponse:
             )
             for comment in case.comments
         ],
+        tasks=[
+            ReviewTaskResponse(
+                task_id=task.task_id,
+                filename=task.filename,
+                instruction=task.instruction,
+                tier_id=task.tier_id,
+                annotation_id=task.annotation_id,
+                start_ms=task.start_ms,
+                end_ms=task.end_ms,
+                current_text=task.current_text,
+                suggested_text=task.suggested_text,
+                status=task.status,
+                created_at=task.created_at,
+            )
+            for task in case.tasks
+        ],
+        unread=viewer_id is not None
+        and (view is None or view.viewed_at < case.updated_at),
     )
 
 
@@ -121,6 +155,10 @@ def _case_options() -> tuple[ExecutableOption, ...]:
         selectinload(ReviewCase.creator),
         selectinload(ReviewCase.assignee),
         selectinload(ReviewCase.comments).selectinload(ReviewComment.author),
+        selectinload(ReviewCase.tasks),
+        selectinload(ReviewCase.views),
+        selectinload(ReviewCase.upload),
+        selectinload(ReviewCase.resubmission),
     )
 
 
@@ -137,7 +175,10 @@ async def get_case(db: AsyncSession, project_id: int, case_id: uuid.UUID) -> Rev
 
 
 async def list_cases(
-    db: AsyncSession, project_id: int, upload_id: int | None = None
+    db: AsyncSession,
+    project_id: int,
+    upload_id: int | None = None,
+    viewer_id: int | None = None,
 ) -> list[ReviewCaseResponse]:
     query = select(ReviewCase).where(ReviewCase.project_id == project_id)
     if upload_id is not None:
@@ -147,12 +188,13 @@ async def list_cases(
             query.options(*_case_options()).order_by(ReviewCase.updated_at.desc())
         )
     ).all()
-    return [review_response(case) for case in cases]
+    return [review_response(case, viewer_id) for case in cases]
 
 
 async def create_case(
     db: AsyncSession, project_id: int, actor_id: int, request: ReviewCaseCreate
 ) -> ReviewCaseResponse:
+    upload: PendingUpload | None = None
     if request.upload_id is not None:
         upload = await db.scalar(
             select(PendingUpload).where(
@@ -188,6 +230,8 @@ async def create_case(
         filename=request.filename,
         tier_id=request.tier_id,
         annotation_id=request.annotation_id,
+        current_text=(request.current_text or "").strip() or None,
+        suggested_text=(request.suggested_text or "").strip() or None,
         validation_issue_id=request.validation_issue_id,
         start_ms=request.start_ms,
         end_ms=request.end_ms,
@@ -198,6 +242,8 @@ async def create_case(
     )
     db.add(case)
     await db.flush()
+    for task in request.tasks:
+        db.add(ReviewTask(case_id=case.case_id, **task.model_dump()))
     if request.initial_comment:
         db.add(
             ReviewComment(
@@ -220,9 +266,7 @@ async def create_case(
         )
     )
     if request.request_changes:
-        upload_submitter = (
-            upload.submitted_by if request.upload_id is not None else None
-        )
+        upload_submitter = upload.submitted_by if upload is not None else None
         _queue_notification(
             db,
             user_id=upload_submitter,
@@ -236,6 +280,189 @@ async def create_case(
     return review_response(await get_case(db, project_id, case.case_id))
 
 
+async def mark_case_viewed(
+    db: AsyncSession, project_id: int, case_id: uuid.UUID, user_id: int
+) -> ReviewCaseResponse:
+    await get_case(db, project_id, case_id)
+    view = await db.get(ReviewCaseView, {"case_id": case_id, "user_id": user_id})
+    if view is None:
+        db.add(
+            ReviewCaseView(
+                case_id=case_id, user_id=user_id, viewed_at=datetime.now(UTC)
+            )
+        )
+    else:
+        view.viewed_at = datetime.now(UTC)
+    await db.commit()
+    return review_response(await get_case(db, project_id, case_id), user_id)
+
+
+async def _resolve_approved_correction(
+    db: AsyncSession, case: ReviewCase, actor_id: int
+) -> None:
+    """Close a satisfied correction and classify a content-identical response."""
+    now = datetime.now(UTC)
+    case.state = ReviewCaseState.RESOLVED.value
+    case.resolved_at = now
+    case.updated_at = now
+
+    outcome = "correction_approved"
+    resubmission = case.resubmission
+    if resubmission is not None and resubmission.branch_name:
+        project = await db.get(Project, case.project_id)
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        runner = GitCommandRunner(Path(project.project_path), maintain_backup=False)
+        if runner.get_tree_hash(resubmission.branch_name) == runner.get_tree_hash():
+            resubmission.status = Status.NO_CHANGES
+            # PENDING_UPLOAD predates the timezone-aware review tables and its
+            # database column is intentionally TIMESTAMP WITHOUT TIME ZONE.
+            resubmission.resolved_at = now.replace(tzinfo=None)
+            resubmission.resolved_by = actor_id
+            outcome = "no_project_changes"
+            db.add(
+                AuditEvent(
+                    actor_user_id=actor_id,
+                    project_id=case.project_id,
+                    action="contribution.no_project_changes",
+                    resource_type="pending_upload",
+                    resource_id=str(resubmission.upload_id),
+                    details={
+                        "review_case_id": str(case.case_id),
+                        "reason": "correction_matches_shared_project",
+                    },
+                )
+            )
+
+    db.add(
+        AuditEvent(
+            actor_user_id=actor_id,
+            project_id=case.project_id,
+            action="review_case.correction_approved",
+            resource_type="review_case",
+            resource_id=str(case.case_id),
+            details={"outcome": outcome},
+        )
+    )
+    contributor_id = case.upload.submitted_by if case.upload else None
+    _queue_notification(
+        db,
+        user_id=contributor_id,
+        actor_id=actor_id,
+        title="Correction approved",
+        message=(
+            "The correction was confirmed; no project content changed."
+            if outcome == "no_project_changes"
+            else "The correction review was completed."
+        ),
+        project_id=case.project_id,
+        case_id=case.case_id,
+    )
+
+
+async def update_review_task(
+    db: AsyncSession,
+    project_id: int,
+    case_id: uuid.UUID,
+    task_id: uuid.UUID,
+    actor_id: int,
+    request: ReviewTaskUpdate,
+    *,
+    can_manage: bool,
+) -> ReviewCaseResponse:
+    case = await get_case(db, project_id, case_id)
+    task = next((item for item in case.tasks if item.task_id == task_id), None)
+    if task is None:
+        raise FileNotFoundError("Review task not found")
+    contributor_id = case.upload.submitted_by if case.upload else None
+    if request.status == "addressed" and actor_id != contributor_id:
+        raise PermissionError(
+            "Only the researcher who submitted the contribution may mark work done"
+        )
+    if (
+        request.status == "addressed"
+        and ReviewCaseState(case.state) != ReviewCaseState.CHANGES_REQUESTED
+    ):
+        raise ValueError("Work can only be marked done while corrections are requested")
+    if request.status in {"accepted", "reopened"} and not can_manage:
+        raise PermissionError("Only a project administrator may review correction work")
+    if (
+        request.status in {"accepted", "reopened"}
+        and ReviewCaseState(case.state) != ReviewCaseState.RESUBMITTED
+    ):
+        raise ValueError(
+            "Correction work can only be reviewed after a corrected revision is submitted"
+        )
+    task.status = request.status
+    case.updated_at = datetime.now(UTC)
+    db.add(
+        AuditEvent(
+            actor_user_id=actor_id,
+            project_id=project_id,
+            action="review_task.updated",
+            resource_type="review_task",
+            resource_id=str(task_id),
+            details={"status": request.status},
+        )
+    )
+    if request.status == "accepted" and all(
+        item.status == "accepted" for item in case.tasks
+    ):
+        await _resolve_approved_correction(db, case, actor_id)
+    await db.commit()
+    return review_response(await get_case(db, project_id, case_id), actor_id)
+
+
+async def request_review_revision(
+    db: AsyncSession,
+    project_id: int,
+    case_id: uuid.UUID,
+    actor_id: int,
+    request: ReviewRevisionRequest,
+) -> ReviewCaseResponse:
+    """Atomically return selected edits and their required feedback."""
+    case = await get_case(db, project_id, case_id)
+    if ReviewCaseState(case.state) != ReviewCaseState.RESUBMITTED:
+        raise ValueError("Another revision can only be requested after resubmission")
+    selected_ids = set(request.task_ids)
+    selected = [task for task in case.tasks if task.task_id in selected_ids]
+    if len(selected) != len(selected_ids):
+        raise ValueError("One or more requested edits do not belong to this review")
+    for task in selected:
+        task.status = "reopened"
+    case.state = ReviewCaseState.CHANGES_REQUESTED.value
+    case.updated_at = datetime.now(UTC)
+    db.add(
+        ReviewComment(
+            case_id=case.case_id,
+            author_user_id=actor_id,
+            body=request.feedback.strip(),
+        )
+    )
+    db.add(
+        AuditEvent(
+            actor_user_id=actor_id,
+            project_id=project_id,
+            action="review_case.revision_requested",
+            resource_type="review_case",
+            resource_id=str(case_id),
+            details={"task_ids": [str(task_id) for task_id in request.task_ids]},
+        )
+    )
+    contributor_id = case.upload.submitted_by if case.upload else None
+    _queue_notification(
+        db,
+        user_id=contributor_id,
+        actor_id=actor_id,
+        title="Another revision requested",
+        message=case.title,
+        project_id=project_id,
+        case_id=case_id,
+    )
+    await db.commit()
+    return review_response(await get_case(db, project_id, case_id), actor_id)
+
+
 async def add_comment(
     db: AsyncSession,
     project_id: int,
@@ -244,6 +471,11 @@ async def add_comment(
     request: ReviewCommentCreate,
 ) -> ReviewCaseResponse:
     case = await get_case(db, project_id, case_id)
+    if ReviewCaseState(case.state) in {
+        ReviewCaseState.RESOLVED,
+        ReviewCaseState.CLOSED,
+    }:
+        raise ValueError("Closed review discussions cannot be changed")
     if request.parent_comment_id is not None and not any(
         item.comment_id == request.parent_comment_id for item in case.comments
     ):
@@ -317,8 +549,7 @@ async def transition_case(
     if (
         "assigned_to" in request.model_fields_set
         and request.assigned_to is None
-        and request.state
-        not in {ReviewCaseState.RESOLVED, ReviewCaseState.CLOSED}
+        and request.state not in {ReviewCaseState.RESOLVED, ReviewCaseState.CLOSED}
     ):
         raise ValueError("An active review must have a review lead")
     if request.state == ReviewCaseState.RESUBMITTED:
@@ -332,7 +563,28 @@ async def transition_case(
         )
         if resubmission is None:
             raise ValueError("Resubmission does not belong to this project")
-    case.state = request.state.value
+        previous_upload_id = case.resubmitted_upload_id or case.upload_id
+        if (
+            previous_upload_id is not None
+            and previous_upload_id != resubmission.upload_id
+        ):
+            previous_upload = await db.get(PendingUpload, previous_upload_id)
+            if previous_upload is not None:
+                previous_upload.superseded_by_upload_id = resubmission.upload_id
+        # Linking a corrected upload is the contributor's commit-like signal.
+        # The reviewer must still decide whether each requested edit is
+        # acceptable, but requiring a separate "mark done" click adds no state.
+        for task in case.tasks:
+            if task.status in {"requested", "reopened"}:
+                task.status = "addressed"
+    if (
+        request.state == ReviewCaseState.RESOLVED
+        and previous == ReviewCaseState.RESUBMITTED
+        and all(task.status == "accepted" for task in case.tasks)
+    ):
+        await _resolve_approved_correction(db, case, actor_id)
+    else:
+        case.state = request.state.value
     if "assigned_to" in request.model_fields_set:
         case.assigned_to = request.assigned_to
     elif case.assigned_to is None and request.state not in {
@@ -377,6 +629,16 @@ async def transition_case(
             actor_id=actor_id,
             title="Changes requested",
             message=case.title,
+            project_id=project_id,
+            case_id=case_id,
+        )
+    if request.state == ReviewCaseState.RESUBMITTED:
+        _queue_notification(
+            db,
+            user_id=case.created_by,
+            actor_id=actor_id,
+            title="Corrected contribution submitted",
+            message=f"{case.title} · contribution #{case.resubmitted_upload_id}",
             project_id=project_id,
             case_id=case_id,
         )
