@@ -280,5 +280,8 @@ decisions.
 
 Contribution intake request validation, accepted-file detection, Git identity
 setup, failed-branch cleanup, and API response construction now live in
-`ContributionIntakeService`. Recording and deduplicating the pending submission
-is the next intake boundary to move out of `GitService`.
+`ContributionIntakeService`. It now also rejects submissions identical to the
+accepted or an already-pending tree, analyzes and finalizes the review branch,
+and records submission provenance in PostgreSQL. The remaining intake
+orchestration is naming-policy lookup, file transfer and optional automatic
+acceptance; contribution inspection is the next larger service boundary.

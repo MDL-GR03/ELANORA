@@ -1,6 +1,5 @@
 import os
 import re
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -24,7 +23,6 @@ from app.crud.elan_file import (
 from app.crud.pending_upload import (
     get_pending_uploads,
     mark_upload_processed,
-    save_pending_upload,
 )
 from app.crud.project import (
     delete_project_db,
@@ -56,7 +54,12 @@ from app.schema.responses.git import (
     ProjectSyncCheckResponse,
     RenameResult,
 )
-from app.service.contribution_intake import ContributionIntakeService
+from app.service.contribution_intake import (
+    ContributionAlreadyCurrentError,
+    ContributionIntakeService,
+    DuplicatePendingContributionError,
+    SubmissionContext,
+)
 from app.service.database_rename_handler import DatabaseRenameHandler
 from app.service.eaf_review import (
     EafReviewUnavailableError,
@@ -96,31 +99,6 @@ EXPECTED_LOG_FIELDS = 4
 MIN_DECLINE_REASON_LENGTH = 3
 MIN_RECOVERY_REASON_LENGTH = 10
 MIN_NAME_STATUS_FIELDS = 2
-
-
-@dataclass(frozen=True, slots=True)
-class SubmissionContext:
-    """Authenticated provenance and validation evidence for one upload batch."""
-
-    username: str
-    user_id: int
-    base_commit: str
-    protocol_validation: dict[str, str | None]
-    research_context: dict[str, Any]
-
-
-class DuplicatePendingContributionError(ValueError):
-    """Raised when an identical project snapshot is already awaiting review."""
-
-    def __init__(self, upload_id: int) -> None:
-        self.upload_id = upload_id
-        super().__init__(
-            f"This exact contribution is already awaiting review as contribution #{upload_id}."
-        )
-
-
-class ContributionAlreadyCurrentError(ValueError):
-    """Raised when submitted files do not change the accepted project state."""
 
 
 class GitService:
@@ -357,7 +335,7 @@ class GitService:
 
             # Commit
             file_processor.commit_files(uploaded_files, user_name)
-            upload_info = await self._save_upload_for_admin_approval(
+            upload_info = await self.contribution_intake.record_pending_submission(
                 branch_manager,
                 diff_analyzer,
                 branch_name,
@@ -420,162 +398,6 @@ class GitService:
                 self.contribution_intake.discard_failed_submission(project_path, branch_name)
             logger.error(f"Batch file operation failed: {e}")
             raise RuntimeError(f"Failed to add ELAN files: {e}") from e
-
-    async def _save_upload_for_admin_approval(
-        self,
-        branch_manager: GitBranchManager,
-        diff_analyzer: GitDiffAnalyzer,
-        branch_name: str,
-        db: AsyncSession,
-        context: SubmissionContext,
-        project_path: Path,
-        allow_current_tree: bool = False,
-    ) -> dict[str, Any]:
-        """Save upload for admin approval instead of attempting immediate merge."""
-        logger.info(f"Saving upload branch '{branch_name}' for admin approval")
-
-        project = await get_project_by_name(db, project_path.name)
-        if project is None:
-            raise FileNotFoundError("Project disappeared while recording contribution")
-
-        # A Git tree identifies the complete submitted content without being
-        # affected by author, timestamp, or commit-message differences. Prevent
-        # repeated clicks/retries from creating indistinguishable review work.
-        runner = GitCommandRunner(project_path)
-        submitted_tree = runner.get_tree_hash(branch_name)
-        if not allow_current_tree and submitted_tree == runner.get_tree_hash(
-            runner.canonical_branch()
-        ):
-            raise ContributionAlreadyCurrentError(
-                "These files are already the current accepted version; no contribution was created."
-            )
-        for pending in await get_pending_uploads(db, project.project_id):
-            if not pending.branch_name:
-                continue
-            try:
-                if runner.get_tree_hash(pending.branch_name) == submitted_tree:
-                    raise DuplicatePendingContributionError(pending.upload_id)
-            except DuplicatePendingContributionError:
-                raise
-            except Exception:
-                logger.warning(
-                    "Could not inspect pending contribution branch %s",
-                    pending.branch_name,
-                )
-
-        # Analyze what was uploaded
-        branch_manager.switch_to_master()
-        analysis = diff_analyzer.analyze_merge_differences(branch_name)
-        logger.info(
-            f"Upload analysis - New: {len(analysis.new_files)}, Modified: {len(analysis.modified_files)}, Deleted: {len(analysis.deleted_files)}"
-        )
-
-        # Always save for admin approval (no immediate merging)
-        approval_branch_name = f"{branch_name}_pending_approval"
-        try:
-            # Rename upload branch to indicate it's pending approval
-            runner.run(["branch", "-m", branch_name, approval_branch_name], check=True)
-            logger.info(
-                f"Branch renamed to '{approval_branch_name}' for admin approval"
-            )
-
-            # Store basic upload info in database for admin review
-            upload_info = {
-                "status": "pending_admin_approval",
-                "has_conflicts": False,  # Unknown until admin tests merge
-                "has_differences": len(analysis.modified_files) > 0
-                or len(analysis.deleted_files) > 0,
-                "requires_approval": True,
-                "branch_name": approval_branch_name,
-                "original_branch": branch_name,
-                "new_files": analysis.new_files,
-                "modified_files": analysis.modified_files,
-                "deleted_files": analysis.deleted_files,
-                "analysis": analysis,
-                "message": f"Upload saved for admin approval. {len(analysis.new_files)} new files, {len(analysis.modified_files)} modified files.",
-                "pending_approval_since": datetime.now().isoformat(),
-                "uploaded_by": context.username,
-                "base_commit": context.base_commit,
-                "protocol_validation": context.protocol_validation,
-                "research_context": context.research_context,
-            }
-
-            # Save upload info to database for admin dashboard
-            await self._save_pending_upload_to_db(
-                upload_info,
-                project_path,
-                db,
-                context.username,
-                context.user_id,
-                context.base_commit,
-            )
-
-            return upload_info
-
-        except Exception as e:
-            logger.error(f"Failed to save upload for approval: {e}")
-            # Cleanup on error
-            try:
-                runner.run(["branch", "-D", approval_branch_name], check=False)
-            except Exception:
-                logger.exception(
-                    "Failed to clean up approval branch %s", approval_branch_name
-                )
-            raise RuntimeError(f"Failed to save upload for approval: {e}") from e
-
-    async def _save_pending_upload_to_db(
-        self,
-        upload_info: dict,
-        project_path: Path,
-        db: AsyncSession,
-        username: str,
-        user_id: int,
-        base_commit: str,
-    ) -> None:
-        """Save pending upload info to database for admin review."""
-        project = await get_project_by_name(db, project_path.name)
-        if project is None:
-            raise FileNotFoundError("Project disappeared while recording contribution")
-        upload_record = {
-            "type": "PENDING_UPLOAD",
-            "status": "PENDING_ADMIN_APPROVAL",
-            "upload_data": {
-                "branch_name": upload_info["branch_name"],
-                "original_branch": upload_info["original_branch"],
-                "uploaded_by": username,
-                "new_files_count": len(upload_info["new_files"]),
-                "modified_files_count": len(upload_info["modified_files"]),
-                "deleted_files_count": len(upload_info["deleted_files"]),
-                "new_files": upload_info["new_files"],
-                "modified_files": upload_info["modified_files"],
-                "deleted_files": upload_info["deleted_files"],
-                "pending_since": upload_info["pending_approval_since"],
-                "has_differences": upload_info["has_differences"],
-                "has_conflicts": upload_info["has_conflicts"],
-                "protocol_validation": upload_info["protocol_validation"],
-                "research_context": upload_info["research_context"],
-            },
-            "resolution_info": {
-                "can_auto_resolve": False,
-                "requires_admin_approval": True,
-                "suggested_action": "admin_test_merge",
-                "available_strategies": ["test_merge"],
-            },
-            "detected_at": upload_info["pending_approval_since"],
-        }
-        pending_upload = await save_pending_upload(
-            db,
-            project.project_id,
-            upload_info["branch_name"],
-            upload_record,
-            submitted_by=user_id,
-            base_commit=base_commit,
-        )
-        upload_info["upload_id"] = pending_upload.upload_id
-
-        logger.info(
-            f"Saved pending upload info for admin review: {upload_info['branch_name']}"
-        )
 
     async def list_projects(
         self, db: AsyncSession, instance_id: int
