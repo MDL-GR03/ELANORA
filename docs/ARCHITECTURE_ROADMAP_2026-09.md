@@ -290,5 +290,7 @@ annotation-level comparison targets, and Git compatibility previews now live in
 results in `GitService`, while content-identity grouping and annotation-level
 cross-contribution collision detection, protocol-version freshness, and
 topic-versus-baseline scope evaluation now live with the inspection rules.
-Moving the remaining queue DTO assembly completes the inspection boundary
-before administrator review decisions are extracted.
+The stable administrator queue representation, including ready, duplicate,
+superseded and inspection-error variants, now lives there as well. `GitService`
+still coordinates the database query and per-item loop through compatibility
+delegates; administrator review decisions are the next service boundary.

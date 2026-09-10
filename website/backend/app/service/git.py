@@ -650,74 +650,31 @@ class GitService:
 
             if upload.superseded_by_upload_id is not None:
                 upload_status.append(
-                    {
-                        "upload_id": upload.upload_id,
-                        "branch_name": branch_name,
-                        "upload_type": upload.upload_type.value,
-                        "description": upload.upload_description,
-                        "status": upload.status.value,
-                        "uploaded_at": upload.detected_at.isoformat()
-                        if upload.detected_at
-                        else None,
-                        "uploaded_by": upload_data.get("uploaded_by"),
-                        "files": {
-                            "new": upload_data.get("new_files", []),
-                            "modified": upload_data.get("modified_files", []),
-                            "deleted": upload_data.get("deleted_files", []),
-                        },
-                        "quality_checks": {
-                            "eaf": "passed",
-                            "naming": "passed",
-                            "protocol": protocol_outcome,
-                        },
-                        "semantic_summary": semantic_summary,
-                        "research_context": research_context,
-                        "superseded_by_upload_id": upload.superseded_by_upload_id,
-                        "merge_status": "superseded",
-                    }
+                    self.contribution_inspection.queue_item(
+                        upload,
+                        upload_data,
+                        semantic_summary,
+                        research_context,
+                        protocol_outcome,
+                        recorded_protocol_id,
+                        "superseded",
+                        superseded_by_upload_id=upload.superseded_by_upload_id,
+                    )
                 )
                 continue
 
             if upload.upload_id in duplicate_of:
                 upload_status.append(
-                    {
-                        "upload_id": upload.upload_id,
-                        "branch_name": branch_name,
-                        "original_branch": upload_data.get(
-                            "original_branch",
-                            branch_name.replace("_pending_approval", ""),
-                        ),
-                        "upload_type": upload.upload_type.value,
-                        "description": upload.upload_description,
-                        "status": upload.status.value,
-                        "uploaded_at": (
-                            upload.detected_at.isoformat()
-                            if upload.detected_at
-                            else None
-                        ),
-                        "uploaded_by": upload_data.get("uploaded_by"),
-                        "files": {
-                            "new": upload_data.get("new_files", []),
-                            "modified": upload_data.get("modified_files", []),
-                            "deleted": upload_data.get("deleted_files", []),
-                        },
-                        "file_counts": {
-                            "new": upload_data.get("new_files_count", 0),
-                            "modified": upload_data.get("modified_files_count", 0),
-                            "deleted": upload_data.get("deleted_files_count", 0),
-                        },
-                        "quality_checks": {
-                            "eaf": "passed",
-                            "naming": "passed",
-                            "protocol": protocol_outcome,
-                        },
-                        "semantic_summary": semantic_summary,
-                        "research_context": research_context,
-                        "protocol_version_id": recorded_protocol_id,
-                        "duplicate_of_upload_id": duplicate_of[upload.upload_id],
-                        "git_details": upload.git_details,
-                        "merge_status": "duplicate",
-                    }
+                    self.contribution_inspection.queue_item(
+                        upload,
+                        upload_data,
+                        semantic_summary,
+                        research_context,
+                        protocol_outcome,
+                        recorded_protocol_id,
+                        "duplicate",
+                        duplicate_of_upload_id=duplicate_of[upload.upload_id],
+                    )
                 )
                 continue
 
@@ -732,82 +689,25 @@ class GitService:
                     conflicts_count += 1
 
                 upload_status.append(
-                    {
-                        "upload_id": upload.upload_id
-                        if hasattr(upload, "upload_id")
-                        else upload.get("upload_id"),
-                        "branch_name": branch_name,
-                        "original_branch": upload_data.get(
-                            "original_branch",
-                            branch_name.replace("_pending_approval", ""),
-                        ),
-                        "upload_type": upload.upload_type.value
-                        if hasattr(upload, "upload_type")
-                        else upload.get("upload_type", "pending_upload"),
-                        "description": upload.upload_description
-                        if hasattr(upload, "upload_description")
-                        else upload.get("description", ""),
-                        "status": upload.status.value
-                        if hasattr(upload, "status")
-                        else upload.get("status", "pending_admin_approval"),
-                        "uploaded_at": upload.detected_at.isoformat()
-                        if hasattr(upload, "detected_at") and upload.detected_at
-                        else upload.get("uploaded_at"),
-                        "uploaded_by": upload_data.get("uploaded_by"),
-                        "files": {
-                            "new": upload_data.get("new_files", []),
-                            "modified": upload_data.get("modified_files", []),
-                            "deleted": upload_data.get("deleted_files", []),
-                        },
-                        "file_counts": {
-                            "new": upload_data.get("new_files_count", 0),
-                            "modified": upload_data.get("modified_files_count", 0),
-                            "deleted": upload_data.get("deleted_files_count", 0),
-                        },
-                        "quality_checks": {
-                            "eaf": "passed",
-                            "naming": "passed",
-                            "protocol": protocol_outcome,
-                        },
-                        "semantic_summary": semantic_summary,
-                        "research_context": research_context,
-                        "protocol_version_id": recorded_protocol_id,
-                        "git_details": upload.git_details,
-                        "merge_status": status,
-                        "conflicted_files": conflicts,
-                        "conflicted_files_count": len(conflicts),
-                        "tested_at": datetime.now().isoformat(),
-                    }
+                    self.contribution_inspection.queue_item(
+                        upload,
+                        upload_data,
+                        semantic_summary,
+                        research_context,
+                        protocol_outcome,
+                        recorded_protocol_id,
+                        status,
+                        conflicted_files=conflicts,
+                        conflicted_files_count=len(conflicts),
+                        tested_at=datetime.now().isoformat(),
+                    )
                 )
 
             except Exception:
                 upload_status.append(
-                    {
-                        "upload_id": upload.upload_id
-                        if hasattr(upload, "upload_id")
-                        else upload.get("upload_id"),
-                        "branch_name": branch_name,
-                        "original_branch": upload_data.get(
-                            "original_branch",
-                            branch_name.replace("_pending_approval", ""),
-                        ),
-                        "upload_type": upload.upload_type.value
-                        if hasattr(upload, "upload_type")
-                        else upload.get("upload_type", "pending_upload"),
-                        "description": upload.upload_description
-                        if hasattr(upload, "upload_description")
-                        else upload.get("description", ""),
-                        "status": upload.status.value
-                        if hasattr(upload, "status")
-                        else upload.get("status", "pending_admin_approval"),
-                        "uploaded_at": upload.detected_at.isoformat()
-                        if hasattr(upload, "detected_at") and upload.detected_at
-                        else upload.get("uploaded_at"),
-                        "uploaded_by": None,
-                        "merge_status": "error",
-                        "error": "Unable to inspect this pending upload",
-                        "can_auto_merge": False,
-                    }
+                    self.contribution_inspection.inspection_error_item(
+                        upload, upload_data
+                    )
                 )
 
         for item in upload_status:

@@ -148,6 +148,80 @@ class ContributionInspectionService:
             recorded_protocol_id,
         )
 
+    @staticmethod
+    def queue_item(
+        upload: Any,
+        upload_data: dict[str, Any],
+        semantic_summary: dict[str, int],
+        research_context: dict[str, Any],
+        protocol_outcome: str,
+        recorded_protocol_id: str | None,
+        merge_status: str,
+        **extra: Any,
+    ) -> dict[str, Any]:
+        """Build the stable administrator queue representation for one upload."""
+        branch_name = upload.branch_name
+        item = {
+            "upload_id": upload.upload_id,
+            "branch_name": branch_name,
+            "original_branch": upload_data.get(
+                "original_branch",
+                branch_name.replace("_pending_approval", "") if branch_name else None,
+            ),
+            "upload_type": upload.upload_type.value,
+            "description": upload.upload_description,
+            "status": upload.status.value,
+            "uploaded_at": (
+                upload.detected_at.isoformat() if upload.detected_at else None
+            ),
+            "uploaded_by": upload_data.get("uploaded_by"),
+            "files": {
+                "new": upload_data.get("new_files", []),
+                "modified": upload_data.get("modified_files", []),
+                "deleted": upload_data.get("deleted_files", []),
+            },
+            "file_counts": {
+                "new": upload_data.get("new_files_count", 0),
+                "modified": upload_data.get("modified_files_count", 0),
+                "deleted": upload_data.get("deleted_files_count", 0),
+            },
+            "quality_checks": {
+                "eaf": "passed",
+                "naming": "passed",
+                "protocol": protocol_outcome,
+            },
+            "semantic_summary": semantic_summary,
+            "research_context": research_context,
+            "protocol_version_id": recorded_protocol_id,
+            "git_details": upload.git_details,
+            "merge_status": merge_status,
+        }
+        item.update(extra)
+        return item
+
+    @staticmethod
+    def inspection_error_item(upload: Any, upload_data: dict[str, Any]) -> dict[str, Any]:
+        """Return a deliberately sparse queue item when Git inspection fails."""
+        branch_name = upload.branch_name
+        return {
+            "upload_id": upload.upload_id,
+            "branch_name": branch_name,
+            "original_branch": upload_data.get(
+                "original_branch",
+                branch_name.replace("_pending_approval", "") if branch_name else None,
+            ),
+            "upload_type": upload.upload_type.value,
+            "description": upload.upload_description,
+            "status": upload.status.value,
+            "uploaded_at": (
+                upload.detected_at.isoformat() if upload.detected_at else None
+            ),
+            "uploaded_by": None,
+            "merge_status": "error",
+            "error": "Unable to inspect this pending upload",
+            "can_auto_merge": False,
+        }
+
     def semantic_analysis(
         self,
         project_name: str,

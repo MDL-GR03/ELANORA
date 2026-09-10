@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -94,3 +95,37 @@ def test_research_scope_requires_protocol_recheck_after_protocol_change() -> Non
         )
 
     assert protocol == "recheck_required"
+
+
+def test_queue_item_has_one_consistent_shape_for_admin_views() -> None:
+    upload = SimpleNamespace(
+        upload_id=14,
+        branch_name="upload_pending_approval",
+        upload_type=SimpleNamespace(value="modified_files"),
+        upload_description="One modified file",
+        status=SimpleNamespace(value="pending_admin_approval"),
+        detected_at=datetime(2026, 9, 10, tzinfo=UTC),
+        git_details={"evidence": True},
+    )
+    upload_data = {
+        "uploaded_by": "researcher",
+        "modified_files": ["session.eaf"],
+        "modified_files_count": 1,
+    }
+
+    item = ContributionInspectionService.queue_item(
+        upload,
+        upload_data,
+        {"annotations": 2},
+        {"scope_status": "aligned"},
+        "passed",
+        "protocol-2",
+        "ready_to_merge",
+        conflicted_files=[],
+    )
+
+    assert item["original_branch"] == "upload"
+    assert item["files"]["modified"] == ["session.eaf"]
+    assert item["file_counts"]["modified"] == 1
+    assert item["quality_checks"]["protocol"] == "passed"
+    assert item["merge_status"] == "ready_to_merge"
