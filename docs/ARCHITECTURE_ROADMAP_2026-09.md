@@ -277,3 +277,8 @@ records the initial revision within one database transaction, and removes the
 repository if projection or commit fails. The next slice is contribution intake;
 contribution inspection should then be split from review and publication
 decisions.
+
+Contribution intake request validation, accepted-file detection, Git identity
+setup, failed-branch cleanup, and API response construction now live in
+`ContributionIntakeService`. Recording and deduplicating the pending submission
+is the next intake boundary to move out of `GitService`.

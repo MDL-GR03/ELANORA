@@ -56,6 +56,7 @@ from app.schema.responses.git import (
     ProjectSyncCheckResponse,
     RenameResult,
 )
+from app.service.contribution_intake import ContributionIntakeService
 from app.service.database_rename_handler import DatabaseRenameHandler
 from app.service.eaf_review import (
     EafReviewUnavailableError,
@@ -143,6 +144,7 @@ class GitService:
         self.project_history = ProjectHistoryService(self.base_path)
         self.project_integrity = ProjectIntegrityService(self.base_path)
         self.project_lifecycle = ProjectLifecycleService(self.base_path)
+        self.contribution_intake = ContributionIntakeService()
 
     def check_git_availability(self) -> dict[str, Any]:
         """Check if Git is available on the system."""
@@ -325,15 +327,15 @@ class GitService:
                 f"Filename compliance check failed due to data issue: {e}"
             ) from e
         # Proceed with the rest of the method
-        self._validate_upload_request(project_path, files)
+        self.contribution_intake.validate_request(project_path, files)
         logger.info("Upload request validated successfully")
 
         branch_name: str | None = None
         contribution_recorded = False
         try:
             # Setup Git environment
-            self._configure_git_user(project_path, user_name)
-            existing_files = self._get_existing_files(project_path, files)
+            self.contribution_intake.configure_git_user(project_path, user_name)
+            existing_files = self.contribution_intake.existing_files(project_path, files)
 
             # Initialize managers
             branch_manager = GitBranchManager(project_path)
@@ -401,7 +403,7 @@ class GitService:
             logger.info(
                 f"Successfully processed upload for project: {project.project_name}"
             )
-            return self._build_upload_response(
+            return self.contribution_intake.build_response(
                 project.project_name,
                 uploaded_files,
                 failed_files,
@@ -411,24 +413,13 @@ class GitService:
 
         except (DuplicatePendingContributionError, ContributionAlreadyCurrentError):
             if branch_name and not contribution_recorded:
-                self._discard_failed_submission(project_path, branch_name)
+                self.contribution_intake.discard_failed_submission(project_path, branch_name)
             raise
         except Exception as e:
             if branch_name and not contribution_recorded:
-                self._discard_failed_submission(project_path, branch_name)
+                self.contribution_intake.discard_failed_submission(project_path, branch_name)
             logger.error(f"Batch file operation failed: {e}")
             raise RuntimeError(f"Failed to add ELAN files: {e}") from e
-
-    @staticmethod
-    def _discard_failed_submission(project_path: Path, branch_name: str) -> None:
-        """Return to accepted work and remove branches from a failed submission."""
-        runner = GitCommandRunner(project_path, maintain_backup=False)
-        try:
-            runner.checkout(runner.canonical_branch())
-            runner.delete_branch_localy(branch_name)
-            runner.delete_branch_localy(f"{branch_name}_pending_approval")
-        except Exception:
-            logger.exception("Unable to clean up failed contribution %s", branch_name)
 
     async def _save_upload_for_admin_approval(
         self,
@@ -782,32 +773,6 @@ class GitService:
             reason=reason,
             confirmation=confirmation,
         )
-
-    def _validate_upload_request(
-        self, project_path: Path, files: list[UploadFile]
-    ) -> None:
-        """Validate the upload request."""
-        if not project_path.exists():
-            raise FileNotFoundError(
-                "Project not found at the specified path: {project_path}"
-            )
-        if not files:
-            raise ValueError("No files provided")
-        for file in files:
-            if not file.filename:
-                raise ValueError("All files must have filenames")
-
-    def _get_existing_files(
-        self, project_path: Path, files: list[UploadFile]
-    ) -> list[str]:
-        """Get list of files that already exist."""
-        existing_files = []
-        for file in files:
-            filename = file.filename if file.filename is not None else ""
-            dest_path = project_path / "elan_files" / filename
-            if filename and dest_path.exists():
-                existing_files.append(filename)
-        return existing_files
 
     async def get_pending_uploads_with_status(
         self, project_name: str, db: AsyncSession
@@ -1596,59 +1561,6 @@ class GitService:
             logger.exception("Could not remove declined branch %s", upload.branch_name)
         return {"status": "dismissed", "upload_id": upload.upload_id}
 
-    def _build_upload_response(
-        self,
-        project_name: str,
-        uploaded_files,
-        failed_files,
-        existing_files: list[str],
-        upload_info: dict[str, Any],
-    ) -> dict[str, Any]:
-        """Build the upload response for the admin approval workflow."""
-        return {
-            "project_name": project_name,
-            "upload_id": upload_info.get("upload_id"),
-            "branch_name": upload_info.get("branch_name"),  # Use approval branch name
-            "uploaded_files": [self._convert_upload_result(f) for f in uploaded_files],
-            "failed_files": [self._convert_upload_result(f) for f in failed_files],
-            "total_uploaded": len(uploaded_files),
-            "total_failed": len(failed_files),
-            "existing_files_updated": len(existing_files),
-            "new_files_added": len(uploaded_files) - len(existing_files),
-            # Workflow status
-            "status": upload_info["status"],  # "pending_admin_approval"
-            "requires_approval": upload_info.get("requires_approval", True),
-            "has_differences": upload_info.get("has_differences", False),
-            "auto_accepted": upload_info.get("auto_accepted", False),
-            # Upload summary
-            "upload_summary": {
-                "new_files": upload_info.get("new_files", []),
-                "modified_files": upload_info.get("modified_files", []),
-                "deleted_files": upload_info.get("deleted_files", []),
-            },
-            # Admin workflow info
-            "admin_info": {
-                "pending_approval_since": upload_info.get("pending_approval_since"),
-                "approval_branch": upload_info.get("branch_name"),
-                "original_branch": upload_info.get("original_branch"),
-                "next_steps": "Upload saved for admin approval. Admin needs to test merge and resolve any conflicts.",
-            },
-            "uploaded_at": datetime.now().isoformat(),
-            "message": upload_info.get(
-                "message", "Upload completed and saved for admin approval"
-            ),
-        }
-
-    def _convert_upload_result(self, result) -> dict:
-        """Convert FileUploadResult to dict for response."""
-        if hasattr(result, "success"):
-            return {
-                "filename": result.filename,
-                "size": result.size,
-                "existed": result.existed,
-            }
-        return result  # Already a dict
-
     def get_branches(self, project_name: str) -> dict[str, Any]:
         """Get all branches for a project."""
         project_path = safe_project_path(self.base_path, project_name)
@@ -1708,10 +1620,6 @@ class GitService:
 
         except Exception as e:
             raise RuntimeError(f"Failed to resolve conflicts: {e}") from e
-
-    def _configure_git_user(self, project_path: Path, instance_name: str) -> None:
-        runner = GitCommandRunner(project_path)
-        runner.configure_user(instance_name)
 
     def _create_readme(self, project_name: str) -> str:
         """Generate README content for a new project."""
