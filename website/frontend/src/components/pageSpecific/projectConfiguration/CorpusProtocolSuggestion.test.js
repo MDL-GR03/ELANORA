@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
 import CorpusProtocolSuggestion from './CorpusProtocolSuggestion.vue';
+import AppSelect from '@/components/common/AppSelect.vue';
 
 const suggestion = {
   total_files: 2,
@@ -52,6 +53,7 @@ describe('CorpusProtocolSuggestion', () => {
   it('turns selected, consistent corpus evidence into editable rules', async () => {
     const wrapper = mount(CorpusProtocolSuggestion, {
       props: { suggestion },
+      global: { stubs: { 'font-awesome-icon': true } },
     });
 
     await wrapper.get('footer button').trigger('click');
@@ -79,9 +81,10 @@ describe('CorpusProtocolSuggestion', () => {
     };
     const wrapper = mount(CorpusProtocolSuggestion, {
       props: { suggestion: mixedCorpus },
+      global: { stubs: { 'font-awesome-icon': true } },
     });
 
-    expect(wrapper.get('.filter-control select').element.value).toBe('common');
+    expect(wrapper.getComponent(AppSelect).props('modelValue')).toBe('common');
     expect(wrapper.findAll('.candidate')).toHaveLength(2);
     expect(wrapper.text()).toContain('No single tier appears in every file');
   });

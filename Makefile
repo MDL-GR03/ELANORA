@@ -131,6 +131,7 @@ frontend-check:
 	cd website/frontend && npm run lint
 	cd website/frontend && npm run stylelint
 	cd website/frontend && npm run format
+	cd website/frontend && npm run i18n:check
 	cd website/frontend && npm run test
 	cd website/frontend && npm run build
 

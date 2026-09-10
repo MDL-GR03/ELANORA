@@ -475,29 +475,16 @@
                 {{ t('register.country_label') }}
                 <span class="required">*</span>
               </label>
-              <select
+              <AppSelect
                 id="country"
                 v-model="form.address.countryId"
-                class="form-select"
-                :class="{
-                  error: validationErrors.countryId,
-                  valid: form.address.countryId && !validationErrors.countryId,
-                }"
-                required
+                :invalid="Boolean(validationErrors.countryId)"
+                :required="true"
+                :placeholder="t('register.country_placeholder')"
+                :options="countryOptions"
                 @change="onCountryChange"
                 @blur="validateField('countryId')"
-              >
-                <option value="">
-                  {{ t('register.country_placeholder') }}
-                </option>
-                <option
-                  v-for="country in countries"
-                  :key="country.country_id"
-                  :value="country.country_id"
-                >
-                  {{ country.country_name }}
-                </option>
-              </select>
+              />
               <div v-if="validationErrors.countryId" class="error-message">
                 {{ validationErrors.countryId }}
               </div>
@@ -694,6 +681,7 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
+import AppSelect from '@/components/common/AppSelect.vue';
 import { validateInvitation } from '@/api/service/invitationService';
 import { registerWithInvitation } from '@/api/service/authService';
 import {
@@ -722,6 +710,12 @@ const invitationError = ref('');
 const invitationInfo = ref(null);
 const loading = ref(false);
 const countries = ref([]);
+const countryOptions = computed(() =>
+  countries.value.map((country) => ({
+    value: country.country_id,
+    label: country.country_name,
+  }))
+);
 
 const form = ref({
   firstName: '',

@@ -151,6 +151,12 @@ const ConfigureProtocols = defineAsyncComponent(
       '@components/pageSpecific/projectConfiguration/ConfigureProtocols.vue'
     )
 );
+const ConfigureContributionAutomation = defineAsyncComponent(
+  () =>
+    import(
+      '@components/pageSpecific/projectConfiguration/ConfigureContributionAutomation.vue'
+    )
+);
 
 const route = useRoute();
 const router = useRouter();
@@ -208,6 +214,21 @@ const allSectionGroups = [
     ],
   },
   {
+    key: 'workflow',
+    titleKey: 'projectSettings.sectionNames.sections.workflow',
+    sections: [
+      {
+        key: 'contributionAutomation',
+        titleKey:
+          'projectSettings.sectionNames.sections.subsections.contributionAutomation',
+        component: ConfigureContributionAutomation,
+        icon: 'fa-solid fa-code-merge',
+        description:
+          'Control when safe new-file contributions may be merged without manual review.',
+      },
+    ],
+  },
+  {
     key: 'collaborators',
     titleKey: 'projectSettings.sectionNames.sections.collaborators',
     sections: [
@@ -248,6 +269,7 @@ const sectionGroups = computed(() => {
     });
   }
   if (hasProjectPermission(userStore.user, project, 'admin')) {
+    groups.push(allSectionGroups.find((group) => group.key === 'workflow'));
     groups.push({
       key: 'collaborators',
       titleKey: 'projectSettings.sectionNames.sections.collaborators',

@@ -12,74 +12,13 @@
         class="configure-effective-standards-label"
         >{{ t('configureEffectiveStandards.standardLocation') }}</label
       >
-      <div class="configure-effective-standards-custom-dropdown">
-        <div
-          class="configure-effective-standards-dropdown-trigger"
-          tabindex="0"
-          role="combobox"
-          :aria-expanded="isDropdownOpen"
-          :aria-haspopup="true"
-          :aria-controls="'location-dropdown-menu'"
-          @click="toggleDropdown"
-          @keydown="handleKeyDown"
-        >
-          <span class="configure-effective-standards-dropdown-text">
-            {{ getSelectedLocationName() }}
-            <font-awesome-icon
-              v-if="selectedLocationId"
-              icon="fa-solid fa-info-circle"
-              class="configure-effective-standards-trigger-info-icon"
-              :title="getSelectedLocationInfo()"
-            />
-          </span>
-          <font-awesome-icon
-            icon="fa-solid fa-chevron-down"
-            class="configure-effective-standards-dropdown-arrow"
-            :style="{
-              transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-            }"
-          />
-        </div>
-
-        <div
-          v-show="isDropdownOpen"
-          id="location-dropdown-menu"
-          ref="dropdownMenu"
-          class="configure-effective-standards-dropdown-menu"
-          role="listbox"
-        >
-          <div
-            v-for="loc in filteredLocations"
-            :key="loc.id"
-            class="configure-effective-standards-dropdown-option"
-            :class="{
-              'configure-effective-standards-dropdown-option--selected':
-                selectedLocationId === loc.id,
-            }"
-            role="option"
-            :aria-selected="selectedLocationId === loc.id"
-            @click="selectLocation(loc.id)"
-            @mouseenter="hoveredLocation = loc.id"
-            @mouseleave="hoveredLocation = null"
-          >
-            <span class="configure-effective-standards-option-text">
-              {{
-                t('configureEffectiveStandards.standardLocations.' + loc.label)
-              }}
-              <font-awesome-icon
-                icon="fa-solid fa-info-circle"
-                class="configure-effective-standards-option-info-icon"
-                :title="
-                  t(
-                    'configureEffectiveStandards.standardLocationsInfo.' +
-                      loc.label
-                  )
-                "
-              />
-            </span>
-          </div>
-        </div>
-      </div>
+      <AppSelect
+        id="location-select"
+        v-model="selectedLocationId"
+        :options="locationOptions"
+        :placeholder="t('configureEffectiveStandards.selectStandard')"
+        @change="onLocationChange"
+      />
     </div>
     <!-- Drag & Drop File Type Association -->
     <div class="configure-effective-standards-dnd-row">
@@ -151,66 +90,13 @@
               {{ fileTypes.find((ft) => ft.id === fileTypeId)?.name }}
             </td>
             <td class="configure-effective-standards-td">
-              <div class="configure-effective-standards-custom-dropdown">
-                <div
-                  class="configure-effective-standards-standard-dropdown-trigger"
-                  tabindex="0"
-                  role="combobox"
-                  :aria-expanded="openStandardDropdowns.has(fileTypeId)"
-                  :aria-haspopup="true"
-                  :aria-controls="'standard-dropdown-menu-' + fileTypeId"
-                  @click="toggleStandardDropdown(fileTypeId)"
-                  @keydown="handleStandardKeyDown(fileTypeId, $event)"
-                >
-                  <span class="configure-effective-standards-dropdown-text">
-                    {{ getSelectedStandardName(fileTypeId) }}
-                  </span>
-                  <font-awesome-icon
-                    icon="fa-solid fa-chevron-down"
-                    class="configure-effective-standards-dropdown-arrow"
-                    :style="{
-                      transform: openStandardDropdowns.has(fileTypeId)
-                        ? 'rotate(180deg)'
-                        : 'rotate(0deg)',
-                    }"
-                  />
-                </div>
-                <div
-                  v-show="openStandardDropdowns.has(fileTypeId)"
-                  :id="'standard-dropdown-menu-' + fileTypeId"
-                  class="configure-effective-standards-standard-dropdown-menu"
-                  role="listbox"
-                >
-                  <div
-                    class="configure-effective-standards-dropdown-option"
-                    role="option"
-                    :aria-selected="false"
-                    @click="selectStandard(fileTypeId, '')"
-                  >
-                    <span class="configure-effective-standards-option-text">
-                      {{ t('configureEffectiveStandards.selectStandard') }}
-                    </span>
-                  </div>
-                  <div
-                    v-for="standard in filteredStandardsByFileType[fileTypeId]"
-                    :key="standard.id"
-                    class="configure-effective-standards-dropdown-option"
-                    :class="{
-                      'configure-effective-standards-dropdown-option--selected':
-                        effectiveStandards[fileTypeId] === standard.id,
-                    }"
-                    role="option"
-                    :aria-selected="
-                      effectiveStandards[fileTypeId] === standard.id
-                    "
-                    @click="selectStandard(fileTypeId, standard.id)"
-                  >
-                    <span class="configure-effective-standards-option-text">
-                      {{ standard.name }}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <AppSelect
+                :id="`effective-standard-${fileTypeId}`"
+                :model-value="effectiveStandards[fileTypeId] || ''"
+                size="small"
+                :options="standardOptions(fileTypeId)"
+                @change="selectStandard(fileTypeId, $event)"
+              />
             </td>
           </tr>
         </tbody>
@@ -226,7 +112,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useNamingStandardStore } from '@stores/namingStandard';
 import { useFileTypeStore } from '@stores/fileType';
@@ -234,6 +120,7 @@ import { useEffectiveStandardStore } from '@stores/effectiveStandard';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useRoute } from 'vue-router';
 import draggable from 'vuedraggable';
+import AppSelect from '@/components/common/AppSelect.vue';
 
 const { t } = useI18n();
 const namingStandardStore = useNamingStandardStore();
@@ -247,13 +134,16 @@ const selectedLocationId = ref(null);
 const errorMessage = ref('');
 const successMessage = ref('');
 const dragZone = ref(null);
-const isDropdownOpen = ref(false);
-const hoveredLocation = ref(null);
-const openStandardDropdowns = ref(new Set());
 
 const locations = computed(() => effectiveStandardStore.locations);
-const filteredLocations = computed(() =>
-  locations.value.filter((loc) => loc.id !== selectedLocationId.value)
+const locationOptions = computed(() =>
+  locations.value.map((location) => ({
+    value: location.id,
+    label: t(`configureEffectiveStandards.standardLocations.${location.label}`),
+    description: t(
+      `configureEffectiveStandards.standardLocationsInfo.${location.label}`
+    ),
+  }))
 );
 const fileTypes = computed(() => fileTypeStore.fileTypes);
 const activeFileTypes = computed(() => {
@@ -281,17 +171,13 @@ const standardsByFileType = computed(() => {
   }
   return result;
 });
-const filteredStandardsByFileType = computed(() => {
-  const result = {};
-  for (const fileType of fileTypes.value) {
-    const currentStandardId = effectiveStandards.value[fileType.id];
-    result[fileType.id] = namingStandardStore.standards.filter(
-      (s) =>
-        s.project_file_type_id === fileType.id && s.id !== currentStandardId
-    );
-  }
-  return result;
-});
+const standardOptions = (fileTypeId) => [
+  { value: '', label: t('configureEffectiveStandards.selectStandard') },
+  ...(standardsByFileType.value[fileTypeId] || []).map((standard) => ({
+    value: standard.id,
+    label: standard.name,
+  })),
+];
 const availableFileTypesDraggable = computed(() =>
   fileTypes.value.filter((ft) => !activeFileTypes.value.includes(ft.id))
 );
@@ -422,126 +308,13 @@ async function onEffectiveStandardChange(fileTypeId) {
   );
 }
 
-function getSelectedLocationName() {
-  if (!selectedLocationId.value)
-    return t('configureEffectiveStandards.selectStandard');
-  const currentLocation = locations.value.find(
-    (loc) => loc.id === selectedLocationId.value
-  );
-  return currentLocation
-    ? t(
-        'configureEffectiveStandards.standardLocations.' + currentLocation.label
-      )
-    : t('configureEffectiveStandards.selectStandard');
-}
-
-function getSelectedLocationInfo() {
-  if (!selectedLocationId.value) return '';
-  const currentLocation = locations.value.find(
-    (loc) => loc.id === selectedLocationId.value
-  );
-  return currentLocation
-    ? t(
-        'configureEffectiveStandards.standardLocationsInfo.' +
-          currentLocation.label
-      )
-    : '';
-}
-
-function toggleDropdown() {
-  isDropdownOpen.value = !isDropdownOpen.value;
-  if (isDropdownOpen.value) {
-    // Close all standard dropdowns when opening location dropdown
-    openStandardDropdowns.value.clear();
-  }
-}
-
-function selectLocation(locationId) {
-  selectedLocationId.value = locationId;
-  isDropdownOpen.value = false;
-  onLocationChange();
-}
-
-function handleKeyDown(event) {
-  if (event.key === 'Escape') {
-    isDropdownOpen.value = false;
-  } else if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    toggleDropdown();
-  } else if (event.key === 'ArrowDown' && !isDropdownOpen.value) {
-    event.preventDefault();
-    isDropdownOpen.value = true;
-  }
-}
-
-function handleClickOutside(event) {
-  const trigger = event.target.closest(
-    '.configure-effective-standards-dropdown-trigger'
-  );
-  const menu = event.target.closest(
-    '.configure-effective-standards-dropdown-menu'
-  );
-  const standardTrigger = event.target.closest(
-    '.configure-effective-standards-standard-dropdown-trigger'
-  );
-  const standardMenu = event.target.closest(
-    '.configure-effective-standards-standard-dropdown-menu'
-  );
-  if (!trigger && !menu && !standardTrigger && !standardMenu) {
-    isDropdownOpen.value = false;
-    openStandardDropdowns.value.clear();
-  }
-}
-
-function toggleStandardDropdown(fileTypeId) {
-  if (openStandardDropdowns.value.has(fileTypeId)) {
-    openStandardDropdowns.value.delete(fileTypeId);
-  } else {
-    // Close main location dropdown and other standard dropdowns
-    isDropdownOpen.value = false;
-    openStandardDropdowns.value.clear();
-    openStandardDropdowns.value.add(fileTypeId);
-  }
-}
-
 function selectStandard(fileTypeId, standardId) {
   effectiveStandards.value[fileTypeId] = standardId;
-  openStandardDropdowns.value.delete(fileTypeId);
   onEffectiveStandardChange(fileTypeId);
-}
-
-function getSelectedStandardName(fileTypeId) {
-  if (!effectiveStandards.value[fileTypeId]) {
-    return t('configureEffectiveStandards.selectStandard');
-  }
-  const standard = standardsByFileType.value[fileTypeId]?.find(
-    (s) => s.id === effectiveStandards.value[fileTypeId]
-  );
-  return standard?.name || t('configureEffectiveStandards.selectStandard');
-}
-
-function handleStandardKeyDown(fileTypeId, event) {
-  if (event.key === 'Escape') {
-    openStandardDropdowns.value.delete(fileTypeId);
-  } else if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault();
-    toggleStandardDropdown(fileTypeId);
-  } else if (
-    event.key === 'ArrowDown' &&
-    !openStandardDropdowns.value.has(fileTypeId)
-  ) {
-    event.preventDefault();
-    openStandardDropdowns.value.add(fileTypeId);
-  }
 }
 
 onMounted(() => {
   loadInitialData();
-  document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
 });
 </script>
 

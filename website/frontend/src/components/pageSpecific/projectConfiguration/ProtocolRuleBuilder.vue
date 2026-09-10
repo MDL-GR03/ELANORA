@@ -19,19 +19,13 @@
             </div>
             <label>
               Parent tier
-              <select
-                :value="tier.parent"
-                @change="setTierField(tier.name, 'parent', $event.target.value)"
-              >
-                <option value="">No parent</option>
-                <option
-                  v-for="candidate in parentChoices(tier.name)"
-                  :key="candidate"
-                  :value="candidate"
-                >
-                  {{ candidate }}
-                </option>
-              </select>
+              <AppSelect
+                :id="`protocol-parent-${tier.name}`"
+                :model-value="tier.parent"
+                size="small"
+                :options="parentSelectOptions(tier.name)"
+                @change="setTierField(tier.name, 'parent', $event)"
+              />
             </label>
             <label>
               Linguistic type
@@ -76,12 +70,12 @@
         </label>
         <label>
           Parent tier
-          <select v-model="newTier.parent">
-            <option value="">No parent</option>
-            <option v-for="tier in tiers" :key="tier.name" :value="tier.name">
-              {{ tier.name }}
-            </option>
-          </select>
+          <AppSelect
+            id="new-protocol-tier-parent"
+            v-model="newTier.parent"
+            size="small"
+            :options="newTierParentOptions"
+          />
         </label>
         <label>
           Linguistic type
@@ -197,6 +191,7 @@
 
 <script setup>
 import { computed, reactive, ref } from 'vue';
+import AppSelect from '@/components/common/AppSelect.vue';
 import ProtocolTierTree from './ProtocolTierTree.vue';
 
 const props = defineProps({
@@ -254,6 +249,17 @@ const update = (changes) =>
   emit('update:modelValue', { ...props.modelValue, ...changes });
 const parentChoices = (name) =>
   tiers.value.filter((tier) => tier.name !== name).map((tier) => tier.name);
+const parentSelectOptions = (name) => [
+  { value: '', label: 'No parent' },
+  ...parentChoices(name).map((candidate) => ({
+    value: candidate,
+    label: candidate,
+  })),
+];
+const newTierParentOptions = computed(() => [
+  { value: '', label: 'No parent' },
+  ...tiers.value.map((tier) => ({ value: tier.name, label: tier.name })),
+]);
 const setTierField = (name, field, rawValue) => {
   const value = rawValue.trim();
   const key = field === 'parent' ? 'tier_parents' : 'tier_linguistic_types';

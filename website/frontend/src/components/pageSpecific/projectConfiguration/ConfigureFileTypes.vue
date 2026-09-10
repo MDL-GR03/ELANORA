@@ -328,7 +328,9 @@ async function addFileType() {
 <style scoped>
 .configure-filetypes-page {
   width: 100%;
+  min-width: 0;
   min-height: 200px;
+  overflow: hidden;
 }
 
 .configure-filetypes-header {
@@ -387,7 +389,8 @@ async function addFileType() {
 }
 
 .configure-filetypes-add-form {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
   gap: 10px;
   margin-top: 12px;
   align-items: flex-start;
@@ -396,12 +399,14 @@ async function addFileType() {
 .add-form-col {
   display: flex;
   flex-direction: column;
-  width: 20rem;
+  width: auto;
   min-width: 0;
-  flex-shrink: 0;
 }
 
 .configure-filetypes-add-form input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 6px 10px;
   border: 1px solid #d1d5db;
   border-radius: 5px;
@@ -417,6 +422,7 @@ async function addFileType() {
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.18s;
+  white-space: nowrap;
 }
 
 .configure-filetypes-add-form button:hover {
@@ -494,5 +500,21 @@ async function addFileType() {
   box-sizing: border-box;
   overflow-wrap: break-word;
   white-space: normal;
+}
+
+@media (width <= 760px) {
+  .configure-filetypes-add-form {
+    grid-template-columns: 1fr;
+  }
+
+  .configure-filetypes-add-form button {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .configure-filetypes-table th,
+  .configure-filetypes-table td {
+    padding-inline: 0.45rem;
+  }
 }
 </style>

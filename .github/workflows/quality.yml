@@ -78,6 +78,7 @@ jobs:
       - run: npm run lint
       - run: npm run stylelint
       - run: npm run format
+      - run: npm run i18n:check
       - run: npm run test
       - run: npm run build
       - run: npm audit --audit-level=high

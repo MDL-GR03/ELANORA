@@ -75,6 +75,8 @@
     }
   },
   "appHeader": {
+    "profile": "プロフィール",
+    "logout": "ログアウト",
     "reviews": "レビュー",
     "projects": "プロジェクト",
     "dashboard": "ダッシュボード",
@@ -577,6 +579,7 @@
     "sectionNames": {
       "sections": {
         "technical": "技術設定",
+        "workflow": "投稿ワークフロー",
         "collaborators": "協力者",
         "subsections": {
           "fileTypes": "ファイル形式",
@@ -584,7 +587,8 @@
           "effectiveStandards": "有効な基準",
           "members": "メンバーとアクセス",
           "invitations": "招待",
-          "protocols": "版管理されたプロトコル"
+          "protocols": "版管理されたプロトコル",
+          "contributionAutomation": "自動統合"
         }
       }
     },
@@ -1112,6 +1116,39 @@
       "title": "ELANファイルを選択・検証",
       "description": "共同レビューに入る前にファイルを検査します。"
     },
+    "correction": {
+      "title": "修正済みの貢献",
+      "description": "以下に指定されたファイルだけをアップロードしてください。依頼されていないファイルはプロジェクト内で変更されないため、再提出は不要です。",
+      "viewDiscussion": "議論を見る",
+      "addFiles": "依頼された修正済みファイルを追加",
+      "uploadHint": "プロジェクト全体を再アップロードする必要はありません。",
+      "stillRequired": "未提出",
+      "finishLink": "この貢献を修正依頼に関連付ける"
+    },
+    "context": {
+      "title": "貢献内容を説明",
+      "description": "レビュー担当者が意図を推測せずに作業を検証できるよう、研究上の背景を記入してください。",
+      "copyDetected": "研究用コピーを検出しました",
+      "customScope": "カスタム階層範囲",
+      "editableTiers": "編集可能な階層：{count}件",
+      "scopeCheckHint": "宣言された階層範囲と、このアップロードの変更内容が自動的に照合されます。",
+      "topic": "研究トピック",
+      "topicPlaceholder": "既存のトピックを選ぶか、新しく提案",
+      "topicHint": "最も近い既存トピックを選択してください。新しい提案はレビュー前に類似した綴りがないか確認されます。",
+      "suggestedName": "提案するトピック名",
+      "suggestedNamePlaceholder": "例：プロソディー",
+      "suggestedNameHint": "管理者はこの提案を既存トピックに関連付けたり、名前を修正して承認したりできます。",
+      "similarTopic": "類似するトピックがあります",
+      "similarTopicMessage": "「{proposed}」は既存のトピック「{existing}」に似ています。",
+      "useTopic": "{topic}を使用",
+      "summary": "どのような作業をしましたか？",
+      "required": "必須",
+      "summaryPlaceholder": "研究作業と、レビュー担当者が確認すべき変更を要約してください",
+      "summaryHint": "簡潔かつ具体的に記入してください。注釈と階層の差分は自動計算されます。",
+      "reviewEvidence": "申告内容とELANORAが計算した変更情報は、レビュー時にまとめて表示されます。",
+      "addFilesFirst": "先に貢献ファイルを追加してください。",
+      "viewContribution": "貢献 #{id} を見る"
+    },
     "ready": "準備完了",
     "selectedCount": "{count}件選択",
     "selectProjectFirst": "先にプロジェクトを選択してください。",
@@ -1125,11 +1162,273 @@
     "uploadResults": "アップロード結果",
     "resultSuccess": "成功",
     "resultFailed": "失敗",
+    "correctionLinked": "修正済みの貢献をレビュー依頼に関連付けました。",
     "complianceWarning": "命名規則に違反するファイルがあります。",
     "errors": {
+      "failedToLoadProjects": "プロジェクトの読み込みに失敗しました",
       "selectProjectAndFiles": "プロジェクトとファイルを選択してください",
       "uploadFailed": "アップロードに失敗しました",
       "standardsFailed": "命名規則を読み込めないため、未検証の提出を防ぐ目的でアップロードを停止しました。"
+    }
+  },
+  "contributionWorkspace": {
+    "tabs": {
+      "label": "貢献ビュー",
+      "incoming": "受信した作業",
+      "corrections": "質問と修正",
+      "history": "プロジェクト履歴"
+    },
+    "back": "戻る",
+    "contribution": "貢献 #{id}",
+    "updatedVersion": "バージョン {version} · 修正後に更新",
+    "summary": { "all": "すべての処理中項目", "corrections": "修正待ち" },
+    "search": {
+      "label": "受信した作業を検索",
+      "placeholder": "貢献番号、投稿者、またはファイル名",
+      "results": "{count} 件",
+      "example": "例: 「#6」、「external.researcher」、「CLSFB2912_S060.eaf」"
+    },
+    "order": {
+      "label": "並び順",
+      "aria": "受信した貢献の並び順",
+      "oldest": "古い順",
+      "newest": "新しい順"
+    },
+    "actions": {
+      "discussion": "修正についての議論",
+      "requestCorrection": "修正を依頼",
+      "dismissDuplicate": "重複を保管",
+      "more": "その他の操作",
+      "decline": "却下"
+    },
+    "context": {
+      "aria": "貢献者が提供した研究コンテキスト",
+      "general": "一般的な貢献",
+      "noSummary": "作業概要はありません",
+      "detectedTiers": "検出された階層",
+      "noTierChanges": "注釈を含む階層の変更は検出されませんでした",
+      "hideDecision": "トピック判断を隠す",
+      "reviewSuggestion": "トピック提案を確認",
+      "outsideExplanation": "強調された階層は申告されたトピックの範囲外です。貢献を承認する前に例外を確認してください。",
+      "suggestionExplanation": "これは新しいトピックの提案です。貢献を承認する前にプロジェクトトピックを割り当てるか承認してください。",
+      "useExisting": "既存のトピックを使用",
+      "chooseTopic": "プロジェクトトピックを選択",
+      "assignTopic": "トピックを割り当て",
+      "approveName": "または修正した新しい名前を承認",
+      "newTopicName": "新しいトピック名",
+      "createTopic": "変更された階層からトピックを作成",
+      "statusAligned": "範囲は変更と一致",
+      "statusOutside": "範囲外の変更",
+      "statusDecision": "トピックの判断が必要",
+      "statusMissing": "コンテキストなし"
+    },
+    "collision": { "title": "同じ注釈が別の場所でも編集されています" }
+  },
+  "contributionDetails": {
+    "overview": {
+      "title": "提出概要",
+      "description": "この貢献の提出者と処理状況です。",
+      "fileChanges": "ファイル変更",
+      "reviewStatus": "レビュー状態",
+      "submitted": "提出日時",
+      "researcher": "研究者",
+      "checked": "互換性確認日時"
+    },
+    "context": {
+      "title": "研究コンテキスト",
+      "description": "研究者の申告を、検出された ELAN の変更と照合した結果です。",
+      "topic": "研究トピック",
+      "scopeCheck": "範囲チェック",
+      "summary": "研究者の作業概要",
+      "changedTiers": "ELANORA が検出した変更階層",
+      "noTierChanges": "注釈を含む階層の変更はありません",
+      "outsideExplanation": "オレンジ色の階層はアップロードされたファイルで変更されていますが、選択した研究トピックには含まれていません。マージ前にトピックが正しいか確認するか、追加の変更を確認してください。",
+      "general": "一般または複数トピックにまたがる作業"
+    },
+    "scope": {
+      "aligned": "申告されたトピックは検出された変更と一致します",
+      "outside": "変更された階層の一部が申告トピックの範囲外です",
+      "review": "プロジェクトトピックの決定が必要です",
+      "general": "単一の研究トピックは申告されていません",
+      "missing": "研究コンテキストが提供されていません",
+      "unknown": "未評価"
+    },
+    "tiers": {
+      "topic": "申告された研究トピックの階層",
+      "baseline": "プロジェクト基準階層",
+      "correction": "申告された基準階層の修正",
+      "outside": "申告された研究トピックの範囲外"
+    },
+    "quality": {
+      "title": "品質チェック",
+      "description": "管理者レビュー前に完了した自動チェックです。",
+      "structure": "ELAN ファイル構造",
+      "naming": "プロジェクト命名規則",
+      "protocol": "プロジェクトプロトコル"
+    },
+    "files": {
+      "title": "変更されたファイル",
+      "description": "ファイル単位および注釈単位の差分を確認します。",
+      "filterPlaceholder": "パスまたは名前でファイルを絞り込む",
+      "filterLabel": "貢献ファイルを絞り込む",
+      "kindFilterLabel": "変更種別を絞り込む",
+      "range": "一致する {total} ファイル中 {first}～{last} 件を表示",
+      "hideAnnotations": "注釈の変更を隠す",
+      "reviewAnnotations": "注釈の変更を確認",
+      "empty": "この条件に一致するファイルはありません。",
+      "pages": "ファイルページ",
+      "all": "すべての変更",
+      "new": "新規",
+      "modified": "変更",
+      "deleted": "削除"
+    },
+    "conflicts": {
+      "title": "競合",
+      "description": "明示的なマージ判断が必要なファイルです。",
+      "count": "解決が必要なマージ競合が {count} ファイルにあります。"
+    },
+    "protocol": {
+      "changed": "プロトコルが変更されたため、承認前にこの貢献を再確認します",
+      "missing": "このプロジェクトでは未設定です",
+      "unrecorded": "この過去の貢献には記録されていません"
+    },
+    "uploadType": {
+      "mixed": "複数種別のファイル変更",
+      "new": "新規ファイルのみ",
+      "modified": "変更されたファイル",
+      "deleted": "削除されたファイル",
+      "none": "ファイル変更なし"
+    },
+    "status": {
+      "ready": "マージ可能",
+      "resolution": "解決が必要",
+      "error": "エラー",
+      "pending": "レビュー待ち",
+      "superseded": "置換済み"
+    },
+    "passed": "合格",
+    "previous": "前へ",
+    "next": "次へ",
+    "page": "{page} / {total} ページ",
+    "unknown": "不明",
+    "unknownResearcher": "不明な研究者"
+  },
+  "researchScopes": {
+    "title": "研究範囲",
+    "description": "目的に合ったELAN作業用コピーを作成し、再利用可能な研究トピックを管理します。",
+    "workspaceLabel": "研究範囲ワークスペース",
+    "tabs": { "prepare": "研究用コピーを作成", "topics": "研究トピック" },
+    "loading": "研究範囲を読み込み中…",
+    "matchingFiles": "該当ファイル：{count}件",
+    "searchFiles": "ELANファイルを検索",
+    "bestMatch": "最適な一致",
+    "noSearchResults": "検索に一致するファイル名がありません。",
+    "prepare": {
+      "eyebrow": "研究用作業コピー",
+      "title": "必要な注釈レイヤーだけを使用",
+      "description": "ファイルと再利用可能なトピックを選び、この作業用コピーの階層を調整します。",
+      "safetyTitle": "別のダウンロードを作成します",
+      "safetyText": "共有プロジェクトのファイルは変更されません。",
+      "noFiles": "階層を含むELANファイルがありません。",
+      "topicStepTitle": "研究トピックを選択",
+      "topicStepText": "ELANORAがこの範囲に最も適したファイルを探します。",
+      "custom": "カスタム選択",
+      "customHint": "定義済みの範囲を使わずに開始",
+      "fileStepTitle": "ELANファイルを選択",
+      "fileStepRanked": "選択したトピックをどの程度含むかでファイルを並べています。",
+      "fileStepText": "作業する共有録画またはセッションを選択してください。",
+      "tierStepTitle": "階層を確認",
+      "tierStepText": "必要な親階層は自動的に含まれます。"
+    },
+    "topicTierCoverage": "トピック階層 {available}/{total}",
+    "tierCount": "{count}階層",
+    "fileCount": "{count}ファイル",
+    "topicInFile": "{file}内の{topic}",
+    "noDescription": "説明はありません。",
+    "coverageMissing": "利用可能：{available}/{total}・不足：{missing}",
+    "coverageComplete": "トピックを完全に含んでいます",
+    "selectAll": "すべて選択",
+    "clear": "クリア",
+    "selectedResearchTiers": "研究階層を{count}件選択",
+    "usingTopic": "「{topic}」を使用",
+    "customWorkingScope": "カスタム作業範囲",
+    "preparing": "準備中…",
+    "download": "研究用コピーをダウンロード",
+    "pagination": {
+      "label": "ELANファイルのページ移動",
+      "previousLabel": "前のELANファイルページ",
+      "previous": "前へ",
+      "page": "{page}/{total}ページ",
+      "nextLabel": "次のELANファイルページ",
+      "next": "次へ",
+      "empty": "0ファイル",
+      "range": "{total}件中{first}〜{last}件"
+    },
+    "roundtrip": {
+      "title": "ELANで作業を続ける",
+      "text": "この範囲限定コピーを編集し、同じファイル名でアップロードしてください。ELANORAは宣言された階層だけを再統合し、他の研究者の作業を保持します。"
+    },
+    "baseline": {
+      "copyTitle": "このコピーの共有コンテキスト",
+      "copyText": "初期状態で含まれます。不要なコンテキストを外すか、基準階層の修正を明示してください。",
+      "removeAll": "すべて外す",
+      "includeAll": "すべて含める",
+      "proposeCorrection": "修正を提案",
+      "correctionWarning": "選択した基準階層への変更は明示的なレビュー対象になります。他の基準階層は保護されたままです。",
+      "title": "プロジェクト基準階層",
+      "description": "各研究トピックには属さず、すべての研究用コピーに含められるコンテキストです。",
+      "cancelEditing": "基準階層の編集をキャンセル",
+      "edit": "基準階層を編集",
+      "empty": "基準階層は未設定です。",
+      "editorHint": "研究者が参照する必要があり、通常は編集しない安定したコンテキスト階層を選びます。",
+      "selected": "基準階層を{count}件選択",
+      "save": "基準階層を保存"
+    },
+    "topics": {
+      "eyebrow": "共有研究範囲",
+      "title": "研究テーマ別に階層をグループ化",
+      "description": "プロソディー、視線、参照追跡などのトピックを互換性のあるELANファイルで再利用できます。",
+      "create": "トピックを作成",
+      "editEyebrow": "トピックを編集",
+      "newEyebrow": "新しいトピック",
+      "editorTitle": "再利用可能な階層範囲を定義",
+      "name": "トピック名",
+      "namePlaceholder": "例：プロソディー",
+      "explanation": "短い説明",
+      "explanationPlaceholder": "この範囲の目的は何ですか？",
+      "findTiers": "階層を検索",
+      "findTiersPlaceholder": "プロジェクト内の階層名を検索",
+      "allowNew": "不足している場合に選択階層の追加を許可",
+      "allowNewHint": "元のファイルにない場合、返却された研究用コピーに選択済み階層を追加できます。一覧にない階層名は追加できません。",
+      "selected": "階層名を{count}件選択",
+      "save": "研究トピックを保存",
+      "emptyTitle": "研究トピックはまだありません",
+      "emptyText": "同じ階層選択をコーパス内で再利用するにはトピックを作成してください。",
+      "newTiersAllowed": "選択階層を追加できます",
+      "prepareCopy": "コピーを作成",
+      "edit": "トピックを編集",
+      "delete": "トピックを削除",
+      "hideCoverage": "ファイルの対応状況を隠す",
+      "viewCoverage": "階層とファイルの対応状況を見る",
+      "noMatchingFiles": "一致するファイルがありません。",
+      "searchInTopic": "{topic} 内のファイルを検索",
+      "moreTiers": "+{count} 個の階層",
+      "coverageAria": "全 {total} 階層中 {available} 階層が利用可能",
+      "showMoreFiles": "さらに {count} ファイルを表示"
+    },
+    "messages": {
+      "selectProject": "研究範囲を使用するプロジェクトを選択してください。",
+      "topicsUnavailable": "研究トピックは一時的に利用できません。カスタム研究用コピーは引き続き作成できます。",
+      "loadFailed": "研究範囲を読み込めませんでした。",
+      "baselineSaved": "プロジェクト基準階層を保存しました。",
+      "baselineSaveFailed": "基準階層を保存できませんでした。",
+      "downloaded": "研究用コピーをダウンロードしました。ELANで開く準備ができています。",
+      "downloadFailed": "研究用コピーを準備できませんでした。",
+      "topicSaved": "研究トピックを保存しました。",
+      "topicSaveFailed": "研究トピックを保存できませんでした。",
+      "deleteTitle": "「{topic}」を削除しますか？",
+      "deleteText": "トピック定義を削除します。ELANファイルとダウンロード済みコピーは変更されません。",
+      "topicDeleted": "研究トピックを削除しました。"
     }
   },
   "tiersPage": {

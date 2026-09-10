@@ -23,6 +23,7 @@
         </svg>
         <span
           class="project-section-current-name"
+          :data-tooltip="currentProjectName"
           :title="
             currentProjectName || t('appHeader.projectSection.selectProject')
           "
@@ -156,26 +157,28 @@ onBeforeUnmount(() => {
   gap: 0.7rem;
   background: #f3e8ff;
   color: #7c3aed;
-  border: none;
-  border-radius: 20px;
-  padding: 0.4rem 1.1rem;
-  font-size: 1rem;
-  font-weight: 600;
+  border: 1px solid #eadcff;
+  border-radius: 0.65rem;
+  padding: 0.48rem 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
   transition:
     background 0.18s,
     color 0.18s;
-  box-shadow: 0 1px 4px 0 #e0e7ef;
+  box-shadow: 0 1px 2px rgb(76 29 149 / 5%);
   min-width: 0;
   max-width: 18vw;
   overflow: hidden;
 }
 
 .project-section-trigger:hover,
-.project-section-trigger:focus {
-  background: #c7d2fe;
+.project-section-trigger:focus-visible {
+  background: #ede9fe;
   color: #5b21b6;
-  outline: none;
+  border-color: #c4b5fd;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(124 58 237 / 12%);
 }
 
 .project-section-current {
@@ -194,6 +197,35 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
+}
+
+.project-section-current-name::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 120;
+  top: calc(100% + 0.55rem);
+  left: 50%;
+  max-width: min(22rem, 80vw);
+  padding: 0.42rem 0.65rem;
+  border-radius: 0.45rem;
+  background: #17243a;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -0.25rem);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.project-section-trigger:hover .project-section-current-name::after,
+.project-section-trigger:focus-visible .project-section-current-name::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .project-section-icon {
@@ -233,20 +265,19 @@ onBeforeUnmount(() => {
 .project-section-menu {
   position: absolute;
   left: 0;
-  top: 110%;
-  min-width: 200px;
-  max-width: 18vw;
-  background: rgb(255 255 255 / 98%);
+  top: calc(100% + 0.55rem);
+  min-width: 15rem;
+  max-width: min(22rem, 88vw);
+  background: #fff;
   color: #4b5563;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgb(60 60 100 / 12%);
-  padding: 0.5rem 0;
+  border-radius: 0.75rem;
+  box-shadow: 0 16px 36px rgb(15 23 42 / 16%);
+  padding: 0.4rem;
   z-index: 100;
   display: flex;
   flex-direction: column;
   animation: project-section-slide 0.18s;
-  backdrop-filter: blur(8px);
-  border: 1px solid #e0e7ef;
+  border: 1px solid #dbe3ef;
   overflow-x: hidden;
 }
 
@@ -271,8 +302,9 @@ onBeforeUnmount(() => {
   background: none;
   border: none;
   color: inherit;
-  font-size: 1rem;
-  padding: 0.85rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.65rem 0.75rem;
   text-align: left;
   cursor: pointer;
   display: flex;
@@ -292,7 +324,7 @@ onBeforeUnmount(() => {
 
 .project-section-menuitem-name {
   display: inline-block;
-  max-width: 11vw;
+  max-width: 18rem;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -302,7 +334,7 @@ onBeforeUnmount(() => {
 
 .project-section-action:hover,
 .project-section-action:focus {
-  background: #e6eaff;
+  background: #f1f5ff;
   color: #7c3aed;
   outline: none;
 }

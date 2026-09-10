@@ -12,12 +12,20 @@
         <font-awesome-icon icon="fa-solid fa-rotate" />
       </div>
       <div>
-        <span>Corrected contribution</span>
+        <span>{{ t('uploadPage.correction.title') }}</span>
         <strong>{{ correctionCase.title }}</strong>
         <p>
-          Upload the corrected ELAN file(s). The completed contribution will be
-          linked to this request automatically.
+          {{ t('uploadPage.correction.description') }}
         </p>
+        <ul v-if="correctionTasks.length" class="correction-file-list">
+          <li v-for="task in correctionTasks" :key="task.task_id">
+            <font-awesome-icon icon="fa-solid fa-file-circle-exclamation" />
+            <span>
+              <strong>{{ task.filename }}</strong>
+              <small>{{ task.instruction }}</small>
+            </span>
+          </li>
+        </ul>
       </div>
       <router-link
         :to="{
@@ -28,7 +36,7 @@
             case: correctionCase.case_id,
           },
         }"
-        >View discussion</router-link
+        >{{ t('uploadPage.correction.viewDiscussion') }}</router-link
       >
     </section>
 
@@ -51,23 +59,14 @@
           <label for="projectSelect" class="project-label">
             {{ t('uploadPage.projectSelection.label') }}
           </label>
-          <select
+          <AppSelect
             id="projectSelect"
             v-model="selectedProject"
-            class="project-select"
+            class="project-select-control"
             :disabled="loading || uploading"
-          >
-            <option value="">
-              {{ t('uploadPage.projectSelection.placeholder') }}
-            </option>
-            <option
-              v-for="project in projects"
-              :key="project.project_id"
-              :value="project.project_id"
-            >
-              {{ project.project_name }}
-            </option>
-          </select>
+            :placeholder="t('uploadPage.projectSelection.placeholder')"
+            :options="projectOptions"
+          />
         </div>
       </section>
 
@@ -95,12 +94,32 @@
           <div v-if="selectedProject">
             <UploadFolder
               v-model="selectedFiles"
-              :title="t('uploadPage.uploadZone.title')"
-              :subtitle="t('uploadPage.uploadZone.subtitle')"
+              :title="
+                correctionCase
+                  ? t('uploadPage.correction.addFiles')
+                  : t('uploadPage.uploadZone.title')
+              "
+              :subtitle="
+                correctionCase
+                  ? t('uploadPage.correction.uploadHint')
+                  : t('uploadPage.uploadZone.subtitle')
+              "
               :files-with-compliance="filesWithCompliance"
               :disabled="uploading || standardsLoading || standardsLoadFailed"
               @error="error = $event"
             />
+
+            <div
+              v-if="correctionCase && missingCorrectionFiles.length"
+              class="upload-compliance-banner upload-compliance-banner--warning"
+              role="status"
+            >
+              <font-awesome-icon icon="fa-solid fa-file-circle-exclamation" />
+              <span>
+                {{ t('uploadPage.correction.stillRequired') }}:
+                {{ missingCorrectionFiles.join(', ') }}
+              </span>
+            </div>
 
             <div
               v-if="selectedFiles.length && nonCompliantCount > 0"
@@ -124,11 +143,142 @@
               <font-awesome-icon icon="fa-solid fa-circle-check" />
               {{ t('uploadPage.compliantSummary') }}
             </div>
+          </div>
+          <div v-else class="upload-step-placeholder">
+            <font-awesome-icon icon="fa-solid fa-arrow-up" />
+            {{ t('uploadPage.selectProjectFirst') }}
+          </div>
+        </div>
+      </section>
 
-            <div v-if="selectedFiles.length" class="upload-submit-bar">
+      <section
+        class="upload-step"
+        :class="{ 'upload-step--disabled': !selectedFiles.length }"
+        aria-labelledby="upload-context-heading"
+      >
+        <div class="upload-step-marker">3</div>
+        <div class="upload-step-content">
+          <div class="upload-step-heading">
+            <div>
+              <h2 id="upload-context-heading">
+                {{ t('uploadPage.context.title') }}
+              </h2>
+              <p>{{ t('uploadPage.context.description') }}</p>
+            </div>
+            <span v-if="contributionContextReady" class="upload-step-complete">
+              <font-awesome-icon icon="fa-solid fa-check" />
+              {{ t('uploadPage.ready') }}
+            </span>
+          </div>
+
+          <div v-if="selectedFiles.length" class="contribution-context-fields">
+            <div
+              v-if="detectedResearchScope"
+              class="detected-research-scope"
+              role="status"
+            >
+              <font-awesome-icon icon="fa-solid fa-layer-group" />
+              <div>
+                <strong>{{ t('uploadPage.context.copyDetected') }}</strong>
+                <span>
+                  {{
+                    detectedResearchScope.topicName ||
+                    t('uploadPage.context.customScope')
+                  }}
+                  ·
+                  {{
+                    t('uploadPage.context.editableTiers', {
+                      count: detectedResearchScope.tiers.length,
+                    })
+                  }}
+                </span>
+                <small>
+                  {{ t('uploadPage.context.scopeCheckHint') }}
+                </small>
+              </div>
+            </div>
+
+            <label v-else class="contribution-context-field">
+              <span>{{ t('uploadPage.context.topic') }}</span>
+              <AppSelect
+                v-model="researchTopicChoice"
+                :disabled="researchTopicsLoading || uploading"
+                :placeholder="t('uploadPage.context.topicPlaceholder')"
+                :options="researchTopicOptions"
+              />
+              <small>
+                {{ t('uploadPage.context.topicHint') }}
+              </small>
+            </label>
+
+            <label
+              v-if="
+                !detectedResearchScope && researchTopicChoice === '__propose__'
+              "
+              class="contribution-context-field"
+            >
+              <span>{{ t('uploadPage.context.suggestedName') }}</span>
+              <input
+                v-model.trim="proposedTopicName"
+                maxlength="100"
+                :placeholder="t('uploadPage.context.suggestedNamePlaceholder')"
+              />
+              <small>
+                {{ t('uploadPage.context.suggestedNameHint') }}
+              </small>
+            </label>
+
+            <div
+              v-if="suggestedExistingTopic"
+              class="research-topic-suggestion"
+              role="status"
+            >
+              <div>
+                <strong>{{ t('uploadPage.context.similarTopic') }}</strong>
+                <span>
+                  {{
+                    t('uploadPage.context.similarTopicMessage', {
+                      proposed: proposedTopicName,
+                      existing: suggestedExistingTopic.name,
+                    })
+                  }}
+                </span>
+              </div>
+              <button
+                type="button"
+                class="secondary-button"
+                @click="acceptSuggestedTopic"
+              >
+                {{
+                  t('uploadPage.context.useTopic', {
+                    topic: suggestedExistingTopic.name,
+                  })
+                }}
+              </button>
+            </div>
+
+            <label class="contribution-context-field">
+              <span>{{ t('uploadPage.context.summary') }}</span>
+              <strong class="required-field-label">{{
+                t('uploadPage.context.required')
+              }}</strong>
+              <textarea
+                v-model.trim="contributionSummary"
+                rows="3"
+                maxlength="1000"
+                :placeholder="t('uploadPage.context.summaryPlaceholder')"
+              ></textarea>
+              <small>
+                {{ t('uploadPage.context.summaryHint') }}
+              </small>
+            </label>
+
+            <div class="upload-submit-bar">
               <div>
                 <strong>{{ t('uploadPage.submitTitle') }}</strong>
-                <span>{{ t('uploadPage.submitDescription') }}</span>
+                <span>
+                  {{ t('uploadPage.context.reviewEvidence') }}
+                </span>
               </div>
               <button
                 type="button"
@@ -137,6 +287,8 @@
                   uploading ||
                   standardsLoading ||
                   standardsLoadFailed ||
+                  !contributionContextReady ||
+                  missingCorrectionFiles.length > 0 ||
                   nonCompliantCount > 0
                 "
                 @click="uploadFiles"
@@ -159,7 +311,7 @@
           </div>
           <div v-else class="upload-step-placeholder">
             <font-awesome-icon icon="fa-solid fa-arrow-up" />
-            {{ t('uploadPage.selectProjectFirst') }}
+            {{ t('uploadPage.context.addFilesFirst') }}
           </div>
         </div>
       </section>
@@ -220,7 +372,27 @@
           },
         }"
       >
-        Finish linking this contribution to the correction request
+        {{ t('uploadPage.correction.finishLink') }}
+        <font-awesome-icon icon="fa-solid fa-arrow-right" />
+      </router-link>
+      <router-link
+        v-else-if="completedUploadId"
+        class="finish-correction-link"
+        :to="{
+          name: 'PendingUpload',
+          query: {
+            project: selectedProject,
+            view: 'queue',
+            workspace: 'details',
+            upload: completedUploadId,
+          },
+        }"
+      >
+        {{
+          t('uploadPage.context.viewContribution', {
+            id: completedUploadId,
+          })
+        }}
         <font-awesome-icon icon="fa-solid fa-arrow-right" />
       </router-link>
     </section>
@@ -235,7 +407,9 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import gitService from '@/api/service/gitService';
 import reviewService from '@/api/service/reviewService';
+import { fetchResearchTopics } from '@/api/service/tierService';
 import UploadFolder from '@/components/common/UploadFolder.vue';
+import AppSelect from '@/components/common/AppSelect.vue';
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
 import { useEventMessageStore } from '@/stores/eventMessage';
@@ -244,6 +418,11 @@ import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { formatEafUploadError } from '@/utils/eafValidationError';
 import { isFilenameCompliant } from '@/utils/filenameCompliance';
+import { findSimilarResearchTopic } from '@/utils/researchTopics';
+import {
+  activeCorrectionTasks,
+  findMissingCorrectionFiles,
+} from '@/utils/correctionFiles';
 import '@/assets/css/upload-page.css';
 
 const { t } = useI18n();
@@ -267,10 +446,58 @@ const hasEffectiveStandard = ref(false);
 const standard = ref(null);
 const standardsLoading = ref(false);
 const standardsLoadFailed = ref(false);
+const researchTopics = ref([]);
+const researchTopicsLoading = ref(false);
+const researchTopicChoice = ref('');
+const proposedTopicName = ref('');
+const contributionSummary = ref('');
+const detectedResearchScope = ref(null);
 let standardsRequest = 0;
 
 const username = computed(() => userStore.user?.username || '');
 const projects = computed(() => projectStore.projects || []);
+const projectOptions = computed(() =>
+  projects.value.map((project) => ({
+    value: project.project_id,
+    label: project.project_name,
+  }))
+);
+const researchTopicOptions = computed(() => [
+  ...researchTopics.value.map((topic) => ({
+    value: String(topic.topic_id),
+    label: topic.name,
+  })),
+  { value: '__general__', label: 'General or cross-topic work' },
+  { value: '__propose__', label: 'Suggest a new research topic…' },
+]);
+const suggestedExistingTopic = computed(() => {
+  if (
+    detectedResearchScope.value ||
+    researchTopicChoice.value !== '__propose__' ||
+    proposedTopicName.value.trim().length < 2
+  ) {
+    return null;
+  }
+  return findSimilarResearchTopic(
+    proposedTopicName.value,
+    researchTopics.value
+  );
+});
+const contributionContextReady = computed(
+  () =>
+    contributionSummary.value.trim().length >= 3 &&
+    (detectedResearchScope.value ||
+      (researchTopicChoice.value &&
+        (researchTopicChoice.value !== '__propose__' ||
+          (proposedTopicName.value.trim().length >= 2 &&
+            !suggestedExistingTopic.value))))
+);
+
+function acceptSuggestedTopic() {
+  if (!suggestedExistingTopic.value) return;
+  researchTopicChoice.value = String(suggestedExistingTopic.value.topic_id);
+  proposedTopicName.value = '';
+}
 const currentProjectName = computed(
   () =>
     projects.value.find(
@@ -295,6 +522,12 @@ const nonCompliantCount = computed(
 const successfulResultCount = computed(
   () => uploadResults.value.filter((result) => result.success).length
 );
+const correctionTasks = computed(() =>
+  activeCorrectionTasks(correctionCase.value)
+);
+const missingCorrectionFiles = computed(() =>
+  findMissingCorrectionFiles(correctionCase.value, selectedFiles.value)
+);
 
 onMounted(async () => {
   projectStore.initializeFromStorage();
@@ -306,7 +539,11 @@ onMounted(async () => {
     ? requestedProjectId
     : projectStore.currentProject?.project_id || '';
   if (selectedProject.value) {
-    await Promise.all([fetchStandards(), loadCorrectionContext()]);
+    await Promise.all([
+      fetchStandards(),
+      loadCorrectionContext(),
+      loadResearchTopics(),
+    ]);
   }
   loading.value = false;
   projectStore.initBroadcastChannel();
@@ -339,14 +576,78 @@ watch(selectedProject, async (newProjectId, oldProjectId) => {
   completedUploadId.value = null;
   correctionCase.value = null;
   error.value = '';
+  researchTopicChoice.value = '';
+  proposedTopicName.value = '';
+  contributionSummary.value = '';
+  detectedResearchScope.value = null;
   if (newProjectId)
-    await Promise.all([fetchStandards(), loadCorrectionContext()]);
+    await Promise.all([
+      fetchStandards(),
+      loadCorrectionContext(),
+      loadResearchTopics(),
+    ]);
   else {
     hasEffectiveStandard.value = false;
     standard.value = null;
     standardsLoadFailed.value = false;
   }
 });
+
+watch(selectedFiles, async (files) => {
+  detectedResearchScope.value = await detectResearchScope(files);
+  const detectedTopicId = detectedResearchScope.value?.topicId;
+  if (
+    detectedTopicId &&
+    researchTopics.value.some(
+      (topic) => topic.topic_id === Number(detectedTopicId)
+    )
+  ) {
+    researchTopicChoice.value = String(detectedTopicId);
+  }
+});
+
+async function loadResearchTopics() {
+  researchTopics.value = [];
+  if (!selectedProject.value) return;
+  researchTopicsLoading.value = true;
+  try {
+    researchTopics.value = await fetchResearchTopics(selectedProject.value);
+  } catch {
+    error.value =
+      'Research topics could not be loaded. Try again before submitting.';
+  } finally {
+    researchTopicsLoading.value = false;
+  }
+}
+
+async function detectResearchScope(files) {
+  const scopes = [];
+  for (const file of files) {
+    try {
+      const document = new DOMParser().parseFromString(
+        await file.text(),
+        'application/xml'
+      );
+      const property = Array.from(document.querySelectorAll('PROPERTY')).find(
+        (item) => item.getAttribute('NAME') === 'ELANORA_RESEARCH_EXTRACT'
+      );
+      if (!property?.textContent) continue;
+      const metadata = JSON.parse(property.textContent);
+      if (metadata.purpose !== 'tier_scoped_edit') continue;
+      scopes.push(metadata);
+    } catch {
+      // The server remains authoritative for malformed provenance and EAF data.
+    }
+  }
+  if (!scopes.length) return null;
+  const topicIds = [...new Set(scopes.map((item) => item.research_topic_id))];
+  const topicNames = [...new Set(scopes.map((item) => item.research_topic))];
+  return {
+    topicId: topicIds.length === 1 ? topicIds[0] : null,
+    topicName: topicNames.length === 1 ? topicNames[0] : null,
+    tiers: [...new Set(scopes.flatMap((item) => item.selected_tiers || []))],
+  };
+}
 
 async function fetchStandards() {
   const request = ++standardsRequest;
@@ -413,6 +714,10 @@ async function uploadFiles() {
     error.value = t('uploadPage.errors.selectProjectAndFiles');
     return;
   }
+  if (missingCorrectionFiles.value.length) {
+    error.value = `Add every requested correction file before submitting: ${missingCorrectionFiles.value.join(', ')}`;
+    return;
+  }
   if (nonCompliantCount.value) {
     eventMessageStore.addMessage('uploadPage.complianceWarning', 'warning');
     return;
@@ -428,7 +733,20 @@ async function uploadFiles() {
     const response = await gitService.uploadElanFiles(
       selectedProject.value,
       selectedFiles.value,
-      username.value
+      username.value,
+      correctionCase.value?.case_id || null,
+      {
+        topicId:
+          !detectedResearchScope.value &&
+          /^\d+$/.test(researchTopicChoice.value)
+            ? Number(researchTopicChoice.value)
+            : detectedResearchScope.value?.topicId || null,
+        proposedTopicName:
+          researchTopicChoice.value === '__propose__'
+            ? proposedTopicName.value.trim()
+            : '',
+        summary: contributionSummary.value.trim(),
+      }
     );
     completedUploadId.value = response.upload_id;
     uploadResults.value = [
@@ -442,6 +760,10 @@ async function uploadFiles() {
       })),
     ];
     selectedFiles.value = [];
+    researchTopicChoice.value = '';
+    proposedTopicName.value = '';
+    contributionSummary.value = '';
+    detectedResearchScope.value = null;
     if (correctionCase.value && response.upload_id) {
       try {
         const linkedCase = await reviewService.resubmit(

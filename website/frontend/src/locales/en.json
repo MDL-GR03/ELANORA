@@ -89,6 +89,8 @@
     }
   },
   "appHeader": {
+    "profile": "Profile",
+    "logout": "Log out",
     "projects": "Projects",
     "dashboard": "Dashboard",
     "upload": "File Upload",
@@ -641,6 +643,7 @@
     "sectionNames": {
       "sections": {
         "technical": "Technical Settings",
+        "workflow": "Contribution Workflow",
         "collaborators": "Collaborators",
         "subsections": {
           "fileTypes": "File Types",
@@ -648,7 +651,8 @@
           "effectiveStandards": "Effective Standards",
           "members": "Members and Access",
           "invitations": "Invitations",
-          "protocols": "Versioned Protocol"
+          "protocols": "Versioned Protocol",
+          "contributionAutomation": "Automatic Merging"
         }
       }
     },
@@ -1069,6 +1073,269 @@
     }
   },
 
+  "contributionWorkspace": {
+    "tabs": {
+      "label": "Contribution views",
+      "incoming": "Incoming work",
+      "corrections": "Questions and corrections",
+      "history": "Project history"
+    },
+    "back": "Back",
+    "contribution": "Contribution #{id}",
+    "updatedVersion": "Version {version} · updated after correction",
+    "summary": { "all": "All active", "corrections": "Awaiting corrections" },
+    "search": {
+      "label": "Search incoming work",
+      "placeholder": "Contribution number, contributor, or filename",
+      "results": "{count} result(s)",
+      "example": "For example: “#6”, “external.researcher”, or “CLSFB2912_S060.eaf”"
+    },
+    "order": {
+      "label": "Order",
+      "aria": "Order incoming contributions",
+      "oldest": "Oldest first",
+      "newest": "Newest first"
+    },
+    "actions": {
+      "discussion": "Correction discussion",
+      "requestCorrection": "Request correction",
+      "dismissDuplicate": "Dismiss duplicate",
+      "more": "More actions",
+      "decline": "Decline"
+    },
+    "context": {
+      "aria": "Research context supplied by the contributor",
+      "general": "General contribution",
+      "noSummary": "No work summary supplied",
+      "detectedTiers": "Detected tiers",
+      "noTierChanges": "No annotation-bearing tier changes detected",
+      "hideDecision": "Hide topic decision",
+      "reviewSuggestion": "Review topic suggestion",
+      "outsideExplanation": "The highlighted tiers fall outside the declared topic. Review those exceptions before accepting this contribution.",
+      "suggestionExplanation": "This is a new topic suggestion. Assign or approve its project topic before accepting the contribution.",
+      "useExisting": "Use an existing topic",
+      "chooseTopic": "Choose a project topic",
+      "assignTopic": "Assign topic",
+      "approveName": "Or approve a corrected new name",
+      "newTopicName": "New topic name",
+      "createTopic": "Create topic from changed tiers",
+      "statusAligned": "Scope matches changes",
+      "statusOutside": "Changes outside scope",
+      "statusDecision": "Topic decision needed",
+      "statusMissing": "Context missing"
+    },
+    "collision": { "title": "Same annotation edited elsewhere" }
+  },
+  "contributionDetails": {
+    "overview": {
+      "title": "Submission overview",
+      "description": "Who submitted this contribution and how it is being handled.",
+      "fileChanges": "File changes",
+      "reviewStatus": "Review status",
+      "submitted": "Submitted",
+      "researcher": "Researcher",
+      "checked": "Compatibility checked"
+    },
+    "context": {
+      "title": "Research context",
+      "description": "The researcher’s declaration, checked against the detected ELAN changes.",
+      "topic": "Research topic",
+      "scopeCheck": "Scope check",
+      "summary": "Researcher’s work summary",
+      "changedTiers": "Changed tiers detected by ELANORA",
+      "noTierChanges": "No annotation-bearing tier changes",
+      "outsideExplanation": "Orange tiers were changed in the uploaded file but are not included in the selected research topic. Confirm that the topic is correct, or review those additional changes before merging.",
+      "general": "General or cross-topic work"
+    },
+    "scope": {
+      "aligned": "Declared topic matches the detected changes",
+      "outside": "Some changed tiers are outside the declared topic",
+      "review": "A project topic decision is required",
+      "general": "No single research topic was declared",
+      "missing": "Research context was not supplied",
+      "unknown": "Not evaluated"
+    },
+    "tiers": {
+      "topic": "Declared research topic tier",
+      "baseline": "Project baseline tier",
+      "correction": "Declared baseline correction",
+      "outside": "Outside the declared research topic"
+    },
+    "quality": {
+      "title": "Quality checks",
+      "description": "Automated checks completed before administrative review.",
+      "structure": "ELAN file structure",
+      "naming": "Project naming rules",
+      "protocol": "Project protocol"
+    },
+    "files": {
+      "title": "Changed files",
+      "description": "Inspect the file-level and annotation-level differences.",
+      "filterPlaceholder": "Filter files by path or name",
+      "filterLabel": "Filter contribution files",
+      "kindFilterLabel": "Filter contribution change type",
+      "range": "Showing {first}–{last} of {total} matching files",
+      "hideAnnotations": "Hide annotation changes",
+      "reviewAnnotations": "Review annotation changes",
+      "empty": "No files match these filters.",
+      "pages": "File pages",
+      "all": "All changes",
+      "new": "New",
+      "modified": "Modified",
+      "deleted": "Deleted"
+    },
+    "conflicts": {
+      "title": "Conflicts",
+      "description": "Files that require an explicit merge decision.",
+      "count": "{count} file(s) have merge conflicts that need resolution."
+    },
+    "protocol": {
+      "changed": "Protocol changed; this contribution will be checked again before acceptance",
+      "missing": "Not configured for this project",
+      "unrecorded": "Not recorded for this older contribution"
+    },
+    "uploadType": {
+      "mixed": "Mixed file changes",
+      "new": "New files only",
+      "modified": "Modified files",
+      "deleted": "Deleted files",
+      "none": "No file changes"
+    },
+    "status": {
+      "ready": "Ready to merge",
+      "resolution": "Needs resolution",
+      "error": "Error",
+      "pending": "Pending review",
+      "superseded": "Superseded"
+    },
+    "passed": "Passed",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {total}",
+    "unknown": "Unknown",
+    "unknownResearcher": "Unknown researcher"
+  },
+  "researchScopes": {
+    "title": "Research scopes",
+    "description": "Prepare focused ELAN working copies and manage reusable research topics.",
+    "workspaceLabel": "Research scope workspace",
+    "tabs": {
+      "prepare": "Prepare a research copy",
+      "topics": "Research topics"
+    },
+    "loading": "Loading research scopes…",
+    "matchingFiles": "{count} matching file(s)",
+    "searchFiles": "Search ELAN files",
+    "bestMatch": "Best match",
+    "noSearchResults": "No filenames match your search.",
+    "prepare": {
+      "eyebrow": "RESEARCH WORKING COPY",
+      "title": "Take only the annotation layers you need",
+      "description": "Choose a file, apply a reusable topic, then adjust its tiers for this working copy.",
+      "safetyTitle": "Creates a separate download",
+      "safetyText": "The shared project file is not changed.",
+      "noFiles": "No ELAN files with tiers are available.",
+      "topicStepTitle": "Choose your research topic",
+      "topicStepText": "ELANORA will find the files that best match this scope.",
+      "custom": "Custom selection",
+      "customHint": "Start without a predefined scope",
+      "fileStepTitle": "Choose an ELAN file",
+      "fileStepRanked": "Files are ranked by how well they cover the selected topic.",
+      "fileStepText": "Choose the shared recording or session you want to work on.",
+      "tierStepTitle": "Review the tiers",
+      "tierStepText": "Required parent tiers are included automatically."
+    },
+    "topicTierCoverage": "{available} of {total} topic tiers",
+    "tierCount": "{count} tier(s)",
+    "fileCount": "{count} file(s)",
+    "topicInFile": "{topic} in {file}",
+    "noDescription": "No description provided.",
+    "coverageMissing": "Available: {available}/{total} · Missing: {missing}",
+    "coverageComplete": "Complete topic coverage",
+    "selectAll": "Select all",
+    "clear": "Clear",
+    "selectedResearchTiers": "{count} research tier(s) selected",
+    "usingTopic": "Using “{topic}”",
+    "customWorkingScope": "Custom working scope",
+    "preparing": "Preparing…",
+    "download": "Download research copy",
+    "pagination": {
+      "label": "ELAN file pagination",
+      "previousLabel": "Previous page of ELAN files",
+      "previous": "Previous",
+      "page": "Page {page} of {total}",
+      "nextLabel": "Next page of ELAN files",
+      "next": "Next",
+      "empty": "0 files",
+      "range": "Files {first} to {last} of {total}"
+    },
+    "roundtrip": {
+      "title": "Continue in ELAN",
+      "text": "Edit this scoped copy and upload it under the same filename. ELANORA reintegrates its declared tiers and preserves everyone else’s."
+    },
+    "baseline": {
+      "copyTitle": "Shared context for this copy",
+      "copyText": "Included by default. Remove context you do not need, or explicitly declare a baseline correction.",
+      "removeAll": "Remove all",
+      "includeAll": "Include all",
+      "proposeCorrection": "Propose correction",
+      "correctionWarning": "Changes to the selected baseline tiers will be submitted for explicit review. Other included baseline tiers remain protected.",
+      "title": "Project baseline tiers",
+      "description": "Context included in every research copy without becoming part of each research topic.",
+      "cancelEditing": "Cancel baseline editing",
+      "edit": "Edit baseline tiers",
+      "empty": "No baseline tiers configured yet.",
+      "editorHint": "Choose stable context tiers that researchers need to see but do not normally edit.",
+      "selected": "{count} baseline tier(s) selected",
+      "save": "Save baseline tiers"
+    },
+    "topics": {
+      "eyebrow": "SHARED RESEARCH SCOPES",
+      "title": "Group tiers by research subject",
+      "description": "Topics such as prosody, gaze, or reference tracking can be reused across compatible ELAN files.",
+      "create": "Create topic",
+      "editEyebrow": "EDIT TOPIC",
+      "newEyebrow": "NEW TOPIC",
+      "editorTitle": "Define a reusable tier scope",
+      "name": "Topic name",
+      "namePlaceholder": "e.g. Prosody",
+      "explanation": "Short explanation",
+      "explanationPlaceholder": "What is this scope intended for?",
+      "findTiers": "Find tiers",
+      "findTiersPlaceholder": "Search all tier names in this project",
+      "allowNew": "Allow selected tiers to be added when missing",
+      "allowNewHint": "A returned research copy may add one of this topic’s selected tiers when the original file did not contain it. Unlisted tier names remain blocked.",
+      "selected": "{count} tier name(s) selected",
+      "save": "Save research topic",
+      "emptyTitle": "No research topics yet",
+      "emptyText": "Create one to reuse the same tier selection across the corpus.",
+      "newTiersAllowed": "Selected tiers may be added",
+      "prepareCopy": "Prepare a copy",
+      "edit": "Edit topic",
+      "delete": "Delete topic",
+      "hideCoverage": "Hide file coverage",
+      "viewCoverage": "View tiers and file coverage",
+      "noMatchingFiles": "No matching files found.",
+      "searchInTopic": "Search files in {topic}",
+      "moreTiers": "+{count} more tier(s)",
+      "coverageAria": "{available} of {total} tiers available",
+      "showMoreFiles": "Show {count} more file(s)"
+    },
+    "messages": {
+      "selectProject": "Select a project to work with its research scopes.",
+      "topicsUnavailable": "Research topics are temporarily unavailable. You can still prepare a custom research copy.",
+      "loadFailed": "Research scopes could not be loaded.",
+      "baselineSaved": "Project baseline tiers saved.",
+      "baselineSaveFailed": "The baseline tiers could not be saved.",
+      "downloaded": "Research copy downloaded and ready to open in ELAN.",
+      "downloadFailed": "The research copy could not be prepared.",
+      "topicSaved": "Research topic saved.",
+      "topicSaveFailed": "The research topic could not be saved.",
+      "deleteTitle": "Delete “{topic}”?",
+      "deleteText": "The topic definition will be deleted. ELAN files and downloaded copies are not changed.",
+      "topicDeleted": "Research topic deleted."
+    }
+  },
   "tiersPage": {
     "pageTitle": "Tier hierarchy",
     "pageDescription": "Inspect and organize the linguistic annotation layers found in this project's ELAN files.",
@@ -1115,7 +1382,7 @@
     },
     "summary": {
       "totalPending": "Total Pending",
-      "readyToMerge": "Ready to Accept",
+      "readyToMerge": "Ready to merge",
       "needResolution": "Need Resolution"
     },
     "uploadedBy": "by User {user}",
@@ -1127,8 +1394,8 @@
     "conflictedFiles": "Conflicted Files",
     "actions": {
       "viewDetails": "View Details",
-      "mergeNow": "Accept Contribution",
-      "merging": "Accepting...",
+      "mergeNow": "Merge into project",
+      "merging": "Merging...",
       "resolveConflicts": "Review Differences",
       "testMerge": "Check Compatibility",
       "testing": "Checking...",
@@ -1142,10 +1409,10 @@
     },
     "mergeConfirmation": {
       "title": "Accept this contribution?",
-      "message": "The validated files from {branch} will become the new accepted project revision. The previous revision remains preserved in history."
+      "message": "The validated files from {branch} will be merged into the project as its new current version. The previous project version remains preserved in history."
     },
     "status": {
-      "readyToMerge": "Ready to Accept",
+      "readyToMerge": "Ready to merge",
       "needsResolution": "Review Needed",
       "error": "Error",
       "pendingReview": "Pending Review"
@@ -1158,7 +1425,7 @@
     "errors": {
       "loadFailed": "Failed to load pending uploads",
       "testMergeFailed": "The contribution compatibility check failed",
-      "notReadyToMerge": "This contribution is not ready to accept. Check its differences first.",
+      "notReadyToMerge": "This contribution cannot be merged yet. Review its differences first.",
       "mergeFailed": "The contribution could not be accepted",
       "noReadyUploads": "No uploads are ready to merge",
       "batchMergeFailed": "Failed to merge uploads"
@@ -1208,6 +1475,39 @@
     "filesStep": {
       "title": "Select and validate ELAN files",
       "description": "Files are checked before they enter the collaborative review workflow."
+    },
+    "correction": {
+      "title": "Corrected contribution",
+      "description": "Upload only the files listed below. Files that were not requested stay unchanged in the project and do not need to be submitted again.",
+      "viewDiscussion": "View discussion",
+      "addFiles": "Add the requested corrected files",
+      "uploadHint": "You do not need to upload the complete project again.",
+      "stillRequired": "Still required",
+      "finishLink": "Finish linking this contribution to the correction request"
+    },
+    "context": {
+      "title": "Describe your contribution",
+      "description": "Give reviewers the research context they need to validate your work without reconstructing your intent.",
+      "copyDetected": "Research copy detected",
+      "customScope": "Custom tier scope",
+      "editableTiers": "{count} editable tier(s)",
+      "scopeCheckHint": "Its declared tier scope will be checked automatically against the changes in this upload.",
+      "topic": "Research topic",
+      "topicPlaceholder": "Choose an existing topic or suggest one",
+      "topicHint": "Choose the closest existing topic. New suggestions are checked for similar spellings before review.",
+      "suggestedName": "Suggested topic name",
+      "suggestedNamePlaceholder": "For example: Prosody",
+      "suggestedNameHint": "An administrator can match, rename, or approve this suggestion.",
+      "similarTopic": "Similar topic found",
+      "similarTopicMessage": "“{proposed}” looks like the existing topic “{existing}”.",
+      "useTopic": "Use {topic}",
+      "summary": "What did you work on?",
+      "required": "Required",
+      "summaryPlaceholder": "Summarize the research task and the changes reviewers should expect",
+      "summaryHint": "Be concise but concrete. Annotation and tier differences are calculated automatically.",
+      "reviewEvidence": "Your declaration and ELANORA’s computed change evidence will be shown together during review.",
+      "addFilesFirst": "Add the contribution files first.",
+      "viewContribution": "View contribution #{id}"
     },
     "ready": "Ready",
     "selectedCount": "{count} file(s) selected",

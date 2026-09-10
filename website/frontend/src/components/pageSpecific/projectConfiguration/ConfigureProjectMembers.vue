@@ -47,37 +47,44 @@
           </div>
 
           <div class="member-permission">
-            <div v-if="canEditUser(user)" class="permission-selector">
-              <select
-                :value="user.permission"
-                :disabled="updatingUsers.has(user.user_id)"
-                class="permission-select"
-                :class="{ updating: updatingUsers.has(user.user_id) }"
-                @change="handlePermissionChange(user, $event)"
-              >
-                <option
-                  v-for="permission in getAvailablePermissions(user)"
-                  :key="permission"
-                  :value="permission"
-                  :class="permission"
+            <template v-if="canEditUser(user)">
+              <div class="member-permission-row">
+                <div class="permission-selector">
+                  <AppSelect
+                    :id="`member-permission-${user.user_id}`"
+                    :model-value="user.permission"
+                    :disabled="updatingUsers.has(user.user_id)"
+                    class="permission-select-control"
+                    size="small"
+                    :options="permissionOptionsFor(user)"
+                    @change="handlePermissionChange(user, $event)"
+                  />
+                  <div
+                    v-if="updatingUsers.has(user.user_id)"
+                    class="update-spinner"
+                  >
+                    <div class="spinner-small"></div>
+                  </div>
+                </div>
+                <button
+                  v-if="canRemoveUser(user)"
+                  type="button"
+                  class="btn-remove"
+                  :disabled="updatingUsers.has(user.user_id) || removingUser"
+                  @click="confirmRemoveUser(user)"
                 >
-                  {{ t(`projectSettings.permissions.${permission}`) }}
-                </option>
-              </select>
-              <div
-                v-if="updatingUsers.has(user.user_id)"
-                class="update-spinner"
-              >
-                <div class="spinner-small"></div>
+                  <font-awesome-icon icon="trash" />
+                  <span>{{ t('common.remove') }}</span>
+                </button>
               </div>
-            </div>
+            </template>
             <span v-else class="permission-badge" :class="user.permission">
               {{ t(`projectSettings.permissions.${user.permission}`) }}
             </span>
             <label
               v-if="canEditUser(user)"
               class="capability-toggle"
-              :title="t('projectSettings.members.protocol_manager_help')"
+              :title="t('project.users.protocol_manager_help')"
             >
               <input
                 type="checkbox"
@@ -85,21 +92,12 @@
                 :disabled="updatingCapabilities.has(user.user_id)"
                 @change="handleProtocolCapabilityChange(user, $event)"
               />
-              {{ t('projectSettings.members.protocol_manager') }}
+              {{ t('project.users.protocol_manager') }}
             </label>
           </div>
 
-          <div class="member-actions">
-            <button
-              v-if="canRemoveUser(user)"
-              class="btn-remove"
-              :disabled="updatingUsers.has(user.user_id) || removingUser"
-              :title="t('common.remove')"
-              @click="confirmRemoveUser(user)"
-            >
-              ×
-            </button>
-            <div v-else class="no-actions">
+          <div v-if="!canEditUser(user)" class="member-actions">
+            <div class="no-actions">
               <span v-if="user.permission === 'owner'" class="owner-badge">
                 {{ t('projectSettings.permissions.owner') }}
               </span>
@@ -154,51 +152,30 @@
               >{{ t('project.share.select_user') }}
               <span class="share-required">*</span></label
             >
-            <select
+            <AppSelect
               id="userId"
               v-model="newUser.user_id"
-              class="form-select"
               :disabled="loadingAvailableUsers"
-              required
-            >
-              <option value="" disabled>
-                {{
-                  loadingAvailableUsers
-                    ? t('common.loading')
-                    : t('project.share.choose_user')
-                }}
-              </option>
-              <option
-                v-for="user in filteredAvailableUsers"
-                :key="user.user_id"
-                :value="user.user_id"
-              >
-                {{ user.first_name }} {{ user.last_name }} ({{ user.username }})
-                - {{ user.email }}
-              </option>
-            </select>
+              :required="true"
+              :placeholder="
+                loadingAvailableUsers
+                  ? t('common.loading')
+                  : t('project.share.choose_user')
+              "
+              :options="availableUserOptions"
+            />
           </div>
 
           <div class="form-group">
             <label for="permission">{{
               t('projectSettings.members.add_modal.permission')
             }}</label>
-            <select
+            <AppSelect
               id="permission"
               v-model="newUser.permission"
-              class="form-select"
-              required
-            >
-              <option value="read">
-                {{ t('projectSettings.permissions.read') }}
-              </option>
-              <option value="write">
-                {{ t('projectSettings.permissions.write') }}
-              </option>
-              <option value="admin">
-                {{ t('projectSettings.permissions.admin') }}
-              </option>
-            </select>
+              :required="true"
+              :options="permissionOptions"
+            />
           </div>
 
           <div class="form-actions">
@@ -219,13 +196,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue';
+import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useUserConfirm } from '@/composables/useUserConfirm';
+import AppSelect from '@/components/common/AppSelect.vue';
 import {
   getProjectUsers,
   getAvailableProjectUsers,
@@ -272,6 +250,23 @@ const filteredAvailableUsers = computed(() => {
   const existingIds = new Set(users.value.map((u) => u.user_id));
   return availableUsers.value.filter((u) => !existingIds.has(u.user_id));
 });
+const permissionOptions = computed(() =>
+  ['read', 'write', 'admin'].map((permission) => ({
+    value: permission,
+    label: t(`projectSettings.permissions.${permission}`),
+  }))
+);
+const permissionOptionsFor = (user) =>
+  getAvailablePermissions(user).map((permission) => ({
+    value: permission,
+    label: t(`projectSettings.permissions.${permission}`),
+  }));
+const availableUserOptions = computed(() =>
+  filteredAvailableUsers.value.map((user) => ({
+    value: user.user_id,
+    label: `${user.first_name} ${user.last_name} (${user.username}) - ${user.email}`,
+  }))
+);
 
 // Computed properties
 const currentUserRole = computed(() => {
@@ -371,8 +366,7 @@ const getAvailablePermissions = () => {
   return [];
 };
 
-const handlePermissionChange = async (user, changeEvent) => {
-  const newPermission = changeEvent.target.value;
+const handlePermissionChange = async (user, newPermission) => {
   if (user.permission === newPermission) return;
 
   const oldPermission = user.permission;
@@ -389,11 +383,6 @@ const handlePermissionChange = async (user, changeEvent) => {
 
   if (confirmed) {
     await updateUserPermissionHandler(user, newPermission);
-  } else {
-    // Force re-render to reset select value
-    nextTick(() => {
-      changeEvent.target.value = oldPermission;
-    });
   }
 };
 
@@ -683,7 +672,7 @@ defineExpose({
 
 .member-card {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 18rem) auto;
   align-items: center;
   gap: 1rem;
   background: #f9fafb;
@@ -729,6 +718,7 @@ defineExpose({
 
 .member-details {
   flex: 1;
+  min-width: 0;
 }
 
 .member-name {
@@ -740,6 +730,24 @@ defineExpose({
 .member-email {
   font-size: 0.875rem;
   color: #6b7280;
+  overflow-wrap: anywhere;
+}
+
+.member-permission-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.permission-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: min(17rem, 100%);
+}
+
+.permission-select-control {
+  min-width: 8rem;
 }
 
 .permission-select {
@@ -857,24 +865,56 @@ defineExpose({
 }
 
 .btn-remove {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: #fee2e2;
-  color: #dc2626;
-  cursor: pointer;
-  font-size: 1.125rem;
-  font-weight: bold;
-  display: flex;
+  min-height: 2.35rem;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
   transition: all 0.2s ease;
 }
 
 .btn-remove:hover:not(:disabled) {
-  background: #fecaca;
+  background: #fef2f2;
   transform: scale(1.1);
+}
+
+@media (width <= 760px) {
+  .member-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .member-permission-row {
+    align-items: stretch;
+  }
+
+  .permission-selector {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .member-actions {
+    justify-self: start;
+  }
+}
+
+@media (width <= 460px) {
+  .member-permission-row {
+    flex-direction: column;
+  }
+
+  .btn-remove {
+    width: 100%;
+  }
 }
 
 .btn-remove:disabled {

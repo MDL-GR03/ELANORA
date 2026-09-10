@@ -15,7 +15,7 @@
         <p class="panel-description">
           {{
             composerOnly
-              ? 'Describe what the researcher should review before this contribution can be accepted.'
+              ? 'Describe what the researcher must correct before this contribution can be merged into the project.'
               : 'Track questions raised during review, requested changes, corrected uploads, and final decisions.'
           }}
         </p>
@@ -40,20 +40,177 @@
         <span>Short title</span>
         <input v-model.trim="draft.title" required maxlength="200" />
       </label>
-      <label v-if="filenames.length">
-        <span>Related EAF file (optional)</span>
-        <select v-model="draft.filename">
-          <option value="">Whole submission</option>
-          <option
-            v-for="filename in filenames"
-            :key="filename"
-            :value="filename"
+      <fieldset v-if="filenames.length" class="file-task-builder">
+        <legend>Select files and describe each requested change</legend>
+        <div class="builder-introduction">
+          <p class="builder-help">
+            Select only files that need another revision. Add as many precise
+            changes as needed inside each selected file.
+          </p>
+          <strong
+            >{{ selectedFileCount }} of {{ taskDrafts.length }} selected</strong
           >
-            {{ filename }}
-          </option>
-        </select>
-      </label>
-      <label>
+        </div>
+        <label v-if="taskDrafts.length > 8" class="file-builder-search">
+          <span>Find a file</span>
+          <input
+            v-model.trim="fileQuery"
+            type="search"
+            placeholder="Search by project-relative filename"
+          />
+        </label>
+        <article
+          v-for="task in visibleTaskDrafts"
+          :key="task.filename"
+          class="file-task-draft"
+          :class="{ selected: task.selected }"
+        >
+          <label class="file-selector">
+            <input
+              v-model="task.selected"
+              type="checkbox"
+              @change="selectTask(task)"
+            />
+            <span class="file-selector-box" aria-hidden="true">
+              <font-awesome-icon icon="fa-solid fa-check" />
+            </span>
+            <span>
+              <strong>{{ task.filename }}</strong>
+              <small>{{
+                task.selected
+                  ? `${task.changes.length} requested change${task.changes.length === 1 ? '' : 's'}`
+                  : 'No correction requested'
+              }}</small>
+            </span>
+          </label>
+          <button
+            v-if="task.selected && activeFilename !== task.filename"
+            type="button"
+            class="edit-file-changes"
+            @click="activeFilename = task.filename"
+          >
+            Edit requested changes
+          </button>
+          <div
+            v-if="task.selected && activeFilename === task.filename"
+            class="change-request-list"
+          >
+            <article
+              v-for="(change, changeIndex) in task.changes"
+              :key="change.id"
+              class="change-request-draft"
+            >
+              <header>
+                <strong>Requested change {{ changeIndex + 1 }}</strong>
+                <button
+                  v-if="task.changes.length > 1"
+                  type="button"
+                  class="remove-change"
+                  :aria-label="`Remove requested change ${changeIndex + 1} for ${task.filename}`"
+                  @click="removeTaskChange(task, change.id)"
+                >
+                  <font-awesome-icon icon="fa-solid fa-trash" />
+                  Remove
+                </button>
+              </header>
+              <label>
+                <span>What must be corrected?</span>
+                <textarea
+                  v-model.trim="change.instruction"
+                  required
+                  maxlength="10000"
+                  placeholder="Give the researcher one concrete, verifiable instruction"
+                ></textarea>
+              </label>
+              <div class="change-target-grid">
+                <label>
+                  <span>Tier <small>Optional</small></span>
+                  <input v-model.trim="change.tier_id" maxlength="255" />
+                </label>
+                <label>
+                  <span>Annotation ID <small>Optional</small></span>
+                  <input v-model.trim="change.annotation_id" maxlength="255" />
+                </label>
+                <label>
+                  <span>Start time (ms) <small>Optional</small></span>
+                  <input
+                    v-model.number="change.start_ms"
+                    type="number"
+                    min="0"
+                  />
+                </label>
+                <label>
+                  <span>End time (ms) <small>Optional</small></span>
+                  <input v-model.number="change.end_ms" type="number" min="0" />
+                </label>
+              </div>
+              <div class="text-suggestion">
+                <label>
+                  <span>Current text <small>Optional</small></span>
+                  <textarea
+                    v-model.trim="change.current_text"
+                    maxlength="10000"
+                  ></textarea>
+                </label>
+                <span class="suggestion-arrow" aria-hidden="true">→</span>
+                <label>
+                  <span>Suggested replacement <small>Optional</small></span>
+                  <textarea
+                    v-model.trim="change.suggested_text"
+                    maxlength="10000"
+                  ></textarea>
+                </label>
+              </div>
+            </article>
+            <button
+              type="button"
+              class="add-change"
+              @click="addTaskChange(task)"
+            >
+              <font-awesome-icon icon="fa-solid fa-plus" />
+              Add another change for this file
+            </button>
+          </div>
+        </article>
+        <div v-if="filePageCount > 1" class="file-builder-pagination">
+          <button
+            type="button"
+            :disabled="filePage === 1"
+            @click="filePage -= 1"
+          >
+            Previous
+          </button>
+          <span>Page {{ filePage }} of {{ filePageCount }}</span>
+          <button
+            type="button"
+            :disabled="filePage === filePageCount"
+            @click="filePage += 1"
+          >
+            Next
+          </button>
+        </div>
+      </fieldset>
+      <div v-if="!requestChangesOnCreate" class="target-fields">
+        <label>
+          <span>Tier (optional)</span>
+          <input v-model.trim="draft.tier_id" maxlength="255" />
+        </label>
+        <label>
+          <span>Annotation ID (optional)</span>
+          <input v-model.trim="draft.annotation_id" maxlength="255" />
+        </label>
+      </div>
+      <div v-if="!requestChangesOnCreate" class="target-fields">
+        <label>
+          <span>Start time in ms (optional)</span>
+          <input v-model.number="draft.start_ms" type="number" min="0" />
+        </label>
+        <label>
+          <span>End time in ms (optional)</span>
+          <input v-model.number="draft.end_ms" type="number" min="0" />
+        </label>
+      </div>
+      <label v-if="!requestChangesOnCreate">
         <span>{{
           requestChangesOnCreate
             ? 'Explain what must be corrected'
@@ -65,8 +222,29 @@
           maxlength="10000"
         ></textarea>
       </label>
+      <div v-if="!requestChangesOnCreate" class="text-suggestion">
+        <label>
+          <span>Current text (optional)</span>
+          <textarea
+            v-model.trim="draft.current_text"
+            maxlength="10000"
+          ></textarea>
+        </label>
+        <span class="suggestion-arrow" aria-hidden="true">→</span>
+        <label>
+          <span>Suggested replacement (optional)</span>
+          <textarea
+            v-model.trim="draft.suggested_text"
+            maxlength="10000"
+          ></textarea>
+        </label>
+      </div>
       <div class="composer-actions">
-        <button type="submit" class="primary" :disabled="busy">
+        <button
+          type="submit"
+          class="primary"
+          :disabled="busy || (requestChangesOnCreate && !hasSelectedTasks)"
+        >
           {{
             requestChangesOnCreate ? 'Send correction request' : 'Open question'
           }}
@@ -99,16 +277,39 @@
       <div v-else-if="error" class="panel-state error" role="alert">
         {{ error }}
       </div>
-      <div v-else-if="!cases.length" class="panel-state">
+      <div v-else-if="!activeCases.length" class="panel-state">
         {{
           uploadId
             ? 'No correction requests have been opened for this contribution.'
-            : 'No correction requests have been opened for this project.'
+            : closedCases.length
+              ? 'There are no active correction requests for this project.'
+              : 'No correction requests have been opened for this project.'
         }}
       </div>
-      <div v-else class="case-list">
+      <div
+        v-if="!loading && !error && activeCases.length > 5"
+        class="review-list-filters"
+      >
+        <input
+          v-model.trim="reviewQuery"
+          type="search"
+          placeholder="Find by title, contribution, file, tier, annotation, or instruction"
+          aria-label="Search correction requests"
+        />
+        <AppSelect
+          id="review-status-filter"
+          v-model="reviewStatus"
+          size="small"
+          aria-label="Filter correction requests by status"
+          :options="reviewStatusOptions"
+        />
+      </div>
+      <div v-if="!loading && !error && activeCases.length" class="case-list">
+        <div v-if="!visibleActiveCases.length" class="panel-state">
+          No correction requests match these filters.
+        </div>
         <article
-          v-for="item in cases"
+          v-for="item in visibleActiveCases"
           :id="`review-${item.case_id}`"
           :key="item.case_id"
           class="case-card"
@@ -116,9 +317,15 @@
         >
           <div class="case-heading">
             <div class="case-identity">
-              <span class="state-badge" :class="`state-${item.state}`">
-                {{ formatState(item.state) }}
-              </span>
+              <div class="case-flags">
+                <span class="state-badge" :class="`state-${item.state}`">
+                  {{ formatState(item.state) }}
+                </span>
+                <span v-if="item.unread" class="activity-badge">
+                  <font-awesome-icon icon="fa-solid fa-circle" />
+                  Unread activity
+                </span>
+              </div>
               <h5>{{ item.title }}</h5>
               <p v-if="item.filename" class="target">
                 {{ item.filename
@@ -127,46 +334,375 @@
                   · {{ item.annotation_id }}</template
                 >
               </p>
-              <p class="case-origin">Contribution #{{ item.upload_id }}</p>
+              <div class="contribution-lineage">
+                <span>
+                  <small>Originally reviewed</small>
+                  Contribution #{{ item.upload_id }}
+                </span>
+                <template v-if="item.resubmitted_upload_id">
+                  <font-awesome-icon icon="fa-solid fa-arrow-right" />
+                  <span class="current-contribution">
+                    <small>Corrected version to review</small>
+                    Contribution #{{ item.resubmitted_upload_id }}
+                  </span>
+                </template>
+              </div>
             </div>
             <label
               v-if="canManage && !isFinished(item.state)"
               class="reviewer-field"
             >
               <span>Review lead</span>
-              <select
-                :value="item.assigned_to || ''"
+              <AppSelect
+                :id="`review-lead-${item.case_id}`"
+                :model-value="item.assigned_to || ''"
                 :aria-label="`Choose the reviewer responsible for ${item.title}`"
                 title="The review lead follows the discussion, checks corrected uploads, and makes sure a final decision is recorded."
                 :disabled="busy || membersLoading"
-                @change="assign(item, $event.target.value)"
-              >
-                <option value="" disabled>Select a review lead</option>
-                <option
-                  v-for="member in members"
-                  :key="member.user_id"
-                  :value="member.user_id"
-                >
-                  {{ memberDisplayName(member) }}
-                </option>
-              </select>
+                placeholder="Select a review lead"
+                :options="reviewLeadOptions"
+                @change="assign(item, $event)"
+              />
             </label>
           </div>
 
-          <div class="case-next-step" :class="`next-${item.state}`">
+          <div
+            v-if="item.current_text || item.suggested_text"
+            class="suggestion-diff"
+            aria-label="Requested text replacement"
+          >
+            <div v-if="item.current_text" class="diff-before">
+              <span>Current</span>
+              <p>{{ item.current_text }}</p>
+            </div>
+            <div v-if="item.suggested_text" class="diff-after">
+              <span>Suggested</span>
+              <p>{{ item.suggested_text }}</p>
+            </div>
+          </div>
+
+          <section v-if="item.tasks?.length" class="file-task-list">
+            <div class="file-task-heading">
+              <div>
+                <span>Required work</span>
+                <h6>
+                  {{
+                    isFinished(item.state)
+                      ? 'Files included in this review'
+                      : item.state === 'resubmitted'
+                        ? 'Requested edits to review'
+                        : 'Files marked for correction'
+                  }}
+                </h6>
+              </div>
+              <strong>
+                {{
+                  isFinished(item.state)
+                    ? 'Review closed'
+                    : item.state === 'resubmitted'
+                      ? canManage
+                        ? unresolvedTaskCount(item) + ' decision remaining'
+                        : 'Awaiting reviewer decision'
+                      : unresolvedTaskCount(item) + ' remaining'
+                }}
+              </strong>
+            </div>
+            <div v-if="item.tasks.length > 5" class="file-task-filters">
+              <input
+                v-model.trim="taskQuery"
+                type="search"
+                placeholder="Filter by filename, tier, annotation, or instruction"
+                aria-label="Filter correction files"
+              />
+              <AppSelect
+                id="correction-task-status-filter"
+                v-model="taskStatus"
+                size="small"
+                aria-label="Filter by task status"
+                :options="taskStatusOptions"
+              />
+            </div>
+            <article
+              v-for="task in visibleTasks(item)"
+              :key="task.task_id"
+              class="file-task"
+            >
+              <div>
+                <strong>{{ task.filename }}</strong>
+                <span
+                  v-if="
+                    !(
+                      item.state === 'resubmitted' &&
+                      !canManage &&
+                      task.status !== 'accepted'
+                    )
+                  "
+                  class="task-status"
+                  :class="`task-${task.status}`"
+                >
+                  {{ formatTaskStatus(task.status, item) }}
+                </span>
+              </div>
+              <p>{{ task.instruction }}</p>
+              <div
+                v-if="
+                  task.tier_id ||
+                  task.annotation_id ||
+                  task.start_ms != null ||
+                  task.end_ms != null
+                "
+                class="task-targets"
+                aria-label="Requested change location"
+              >
+                <span v-if="task.tier_id">Tier: {{ task.tier_id }}</span>
+                <span v-if="task.annotation_id"
+                  >Annotation: {{ task.annotation_id }}</span
+                >
+                <span v-if="task.start_ms != null || task.end_ms != null">
+                  Time: {{ task.start_ms ?? 'start' }}–{{
+                    task.end_ms ?? 'end'
+                  }}
+                  ms
+                </span>
+              </div>
+              <div
+                v-if="task.current_text || task.suggested_text"
+                class="task-text-suggestion"
+              >
+                <div v-if="task.current_text">
+                  <span>Current text</span>
+                  <p>{{ task.current_text }}</p>
+                </div>
+                <font-awesome-icon
+                  v-if="task.current_text && task.suggested_text"
+                  icon="fa-solid fa-arrow-right"
+                />
+                <div v-if="task.suggested_text">
+                  <span>Suggested replacement</span>
+                  <p>{{ task.suggested_text }}</p>
+                </div>
+              </div>
+              <button
+                v-if="
+                  canComment &&
+                  projectName &&
+                  item.response_branch &&
+                  task.filename.endsWith('.eaf')
+                "
+                type="button"
+                class="comparison-disclosure"
+                :class="{ active: activeDiff === task.task_id }"
+                :aria-expanded="activeDiff === task.task_id"
+                :disabled="busy"
+                @click="
+                  activeDiff = activeDiff === task.task_id ? '' : task.task_id
+                "
+              >
+                <span class="comparison-disclosure-icon">
+                  <font-awesome-icon icon="fa-solid fa-eye" />
+                </span>
+                <span>
+                  <strong>{{
+                    activeDiff === task.task_id
+                      ? 'Close annotation comparison'
+                      : 'Review annotation changes'
+                  }}</strong>
+                  <small>Compare accepted and submitted ELAN annotations</small>
+                </span>
+                <font-awesome-icon
+                  class="comparison-chevron"
+                  :icon="
+                    activeDiff === task.task_id
+                      ? 'fa-solid fa-chevron-up'
+                      : 'fa-solid fa-chevron-down'
+                  "
+                />
+              </button>
+              <ConflictMergeView
+                v-if="activeDiff === task.task_id"
+                :project-name="projectName"
+                :branch-name="item.response_branch"
+                :filename="task.filename"
+                :allow-open-review="canManage && item.state === 'resubmitted'"
+                :selected-annotation-ids="selectedAnnotationIds(item, task)"
+                review-action-label="Add to correction request"
+                @open-review="selectRevisionTarget(item, task, $event)"
+              />
+              <div
+                v-if="canComment && canManage && item.state === 'resubmitted'"
+                class="task-decision"
+              >
+                <span>
+                  {{
+                    isTaskSelectedForRevision(item, task)
+                      ? 'Correction request drafted'
+                      : 'Decision for this file'
+                  }}
+                </span>
+                <div class="task-actions">
+                  <button
+                    v-if="
+                      canManage &&
+                      task.status !== 'accepted' &&
+                      !isTaskSelectedForRevision(item, task)
+                    "
+                    type="button"
+                    class="task-action accept-action"
+                    :disabled="busy"
+                    @click="approveTask(item, task)"
+                  >
+                    <font-awesome-icon icon="fa-solid fa-circle-check" />
+                    {{
+                      taskBusyLabel(task, 'accepted', approveTaskLabel(item))
+                    }}
+                  </button>
+                  <button
+                    v-if="
+                      canManage &&
+                      ['addressed', 'accepted', 'reopened'].includes(
+                        task.status
+                      )
+                    "
+                    type="button"
+                    class="task-action reopen-action"
+                    :class="{
+                      selected: isTaskSelectedForRevision(item, task),
+                    }"
+                    :disabled="busy"
+                    @click="toggleTaskForRevision(item, task)"
+                  >
+                    <font-awesome-icon
+                      :icon="
+                        isTaskSelectedForRevision(item, task)
+                          ? 'fa-solid fa-check'
+                          : 'fa-solid fa-rotate-left'
+                      "
+                    />
+                    {{
+                      isTaskSelectedForRevision(item, task)
+                        ? 'Cancel correction request'
+                        : 'Request another revision'
+                    }}
+                  </button>
+                </div>
+                <small
+                  v-if="
+                    unresolvedTaskCount(item) === 1 &&
+                    !isTaskSelectedForRevision(item, task)
+                  "
+                  class="task-decision-note"
+                >
+                  Approving this final correction closes the review. Merging the
+                  contribution remains a separate decision.
+                </small>
+              </div>
+            </article>
+            <button
+              v-if="filteredTasks(item).length > visibleTaskLimit"
+              type="button"
+              class="load-more-tasks"
+              @click="visibleTaskLimit += 20"
+            >
+              Show 20 more requested edits
+            </button>
+          </section>
+
+          <div
+            v-if="showNextStep(item)"
+            class="case-next-step"
+            :class="[
+              `next-${item.state}`,
+              { 'feedback-open': revisionFeedbackCaseId === item.case_id },
+            ]"
+          >
             <div class="next-step-copy">
               <font-awesome-icon :icon="nextStepIcon(item.state)" />
               <div>
-                <strong>{{ nextStepTitle(item.state) }}</strong>
-                <span>{{ nextStepDescription(item.state) }}</span>
+                <strong>{{ nextStepTitle(item.state, item) }}</strong>
+                <span>{{ nextStepDescription(item.state, item) }}</span>
+                <button
+                  v-if="isFinished(item.state)"
+                  type="button"
+                  class="next-step-link"
+                  @click="openReviewArchive"
+                >
+                  Open archived review
+                </button>
               </div>
+            </div>
+            <div
+              v-if="
+                canManage &&
+                item.state === 'resubmitted' &&
+                revisionFeedbackCaseId === item.case_id
+              "
+              class="revision-feedback"
+            >
+              <section
+                v-if="revisionTargets[item.case_id]?.length"
+                class="revision-targets"
+                aria-label="Selected annotation corrections"
+              >
+                <div class="revision-targets-heading">
+                  <strong>Selected corrections</strong>
+                  <span>{{ revisionTargets[item.case_id].length }}</span>
+                </div>
+                <article
+                  v-for="target in revisionTargets[item.case_id]"
+                  :key="`${target.task_id}:${target.annotation_id}`"
+                  class="revision-target"
+                >
+                  <div class="revision-target-identity">
+                    <div>
+                      <strong>{{ target.annotation_id }}</strong>
+                      <span>{{ target.tier_id || 'Unknown tier' }}</span>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Remove annotation from correction request"
+                      @click="removeRevisionTarget(item, target)"
+                    >
+                      <font-awesome-icon icon="fa-solid fa-xmark" />
+                    </button>
+                  </div>
+                  <span class="revision-target-location">
+                    {{ revisionTargetSummary(target) }}
+                  </span>
+                  <label>
+                    <span>Instruction for this annotation (optional)</span>
+                    <input
+                      v-model.trim="target.comment"
+                      maxlength="1000"
+                      placeholder="Add a specific correction or suggested wording"
+                    />
+                  </label>
+                </article>
+              </section>
+              <label class="revision-general-note">
+                <span>
+                  {{
+                    revisionTargets[item.case_id]?.length
+                      ? 'Note for the whole revision (optional)'
+                      : 'Correction instructions'
+                  }}
+                </span>
+                <textarea
+                  v-model.trim="replies[item.case_id]"
+                  maxlength="10000"
+                  :required="!revisionTargets[item.case_id]?.length"
+                  placeholder="Add guidance that applies to every selected correction"
+                ></textarea>
+              </label>
             </div>
             <div
               v-if="canManage && !isFinished(item.state)"
               class="case-actions"
             >
               <router-link
-                v-if="item.state === 'changes_requested'"
+                v-if="
+                  item.state === 'changes_requested' &&
+                  canActAsContributor(item)
+                "
                 class="correct-upload-link"
                 :to="{
                   name: 'UploadPage',
@@ -177,21 +713,56 @@
                 Upload corrected files
               </router-link>
               <button
-                v-if="item.state !== 'changes_requested'"
+                v-if="item.state === 'open'"
                 type="button"
                 :disabled="busy || !item.assigned_to"
                 @click="transition(item, 'changes_requested')"
               >
-                Ask for corrected upload
+                Request first revision
               </button>
               <button
+                v-if="
+                  item.state === 'resubmitted' &&
+                  selectedRevisionTaskIds(item).length > 0
+                "
+                type="button"
+                class="request-another-revision"
+                :disabled="
+                  busy ||
+                  !item.assigned_to ||
+                  (revisionFeedbackCaseId === item.case_id &&
+                    !hasRevisionFeedback(item))
+                "
+                @click="beginOrRequestAnotherRevision(item)"
+              >
+                <font-awesome-icon icon="fa-solid fa-rotate-left" />
+                {{
+                  revisionFeedbackCaseId === item.case_id
+                    ? `Send revision request (${revisionRequestCount(item)})`
+                    : 'Add feedback and continue'
+                }}
+              </button>
+              <button
+                v-if="
+                  item.state === 'resubmitted' &&
+                  unresolvedTaskCount(item) === 0
+                "
                 class="resolve-case"
                 type="button"
-                title="Finish this review when no further action is needed. It can be reopened later."
                 :disabled="busy || !item.assigned_to"
                 @click="transition(item, 'resolved')"
               >
-                Mark resolved
+                <font-awesome-icon icon="fa-solid fa-circle-check" />
+                Approve correction and close review
+              </button>
+              <button
+                v-if="item.state === 'open'"
+                class="resolve-case"
+                type="button"
+                :disabled="busy || !item.assigned_to"
+                @click="transition(item, 'resolved')"
+              >
+                Close without changes
               </button>
             </div>
             <button
@@ -207,6 +778,7 @@
             <router-link
               v-else-if="
                 canComment &&
+                canActAsContributor(item) &&
                 !resubmissionUploadId &&
                 item.state === 'changes_requested'
               "
@@ -222,6 +794,7 @@
             <button
               v-else-if="
                 canComment &&
+                canActAsContributor(item) &&
                 resubmissionUploadId &&
                 item.state === 'changes_requested'
               "
@@ -244,7 +817,11 @@
             </li>
           </ol>
           <form
-            v-if="canComment"
+            v-if="
+              canComment &&
+              !isFinished(item.state) &&
+              revisionFeedbackCaseId !== item.case_id
+            "
             class="reply"
             @submit.prevent="addComment(item)"
           >
@@ -261,24 +838,85 @@
             </div>
           </form>
         </article>
+        <div v-if="reviewPageCount > 1" class="review-pagination">
+          <button
+            type="button"
+            :disabled="reviewPage === 1"
+            @click="reviewPage -= 1"
+          >
+            Previous
+          </button>
+          <span>Page {{ reviewPage }} of {{ reviewPageCount }}</span>
+          <button
+            type="button"
+            :disabled="reviewPage === reviewPageCount"
+            @click="reviewPage += 1"
+          >
+            Next
+          </button>
+        </div>
       </div>
+      <button
+        v-if="closedCases.length"
+        id="closed-review-history"
+        type="button"
+        class="closed-history-toggle"
+        :aria-expanded="showClosedCases"
+        @click="showClosedCases = !showClosedCases"
+      >
+        <span class="closed-history-icon">
+          <font-awesome-icon icon="fa-solid fa-box-archive" />
+        </span>
+        <span class="closed-history-copy">
+          <strong>Archived review history</strong>
+          <small>Browse completed decisions and their discussions</small>
+        </span>
+        <span class="closed-history-count">{{ closedCases.length }}</span>
+        <font-awesome-icon
+          class="closed-history-chevron"
+          :icon="
+            showClosedCases
+              ? 'fa-solid fa-chevron-up'
+              : 'fa-solid fa-chevron-down'
+          "
+        />
+      </button>
+      <ArchivedReviewList
+        v-if="showClosedCases && closedCases.length"
+        :cases="closedCases"
+        :highlighted-case-id="highlightedCaseId"
+      />
     </template>
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 import reviewService from '@/api/service/reviewService';
+import ConflictMergeView from '@/components/common/ConflictMergeView.vue';
+import ArchivedReviewList from '@/components/common/ArchivedReviewList.vue';
+import AppSelect from '@/components/common/AppSelect.vue';
 import { getProjectUsers } from '@/api/service/projectAssociationService';
 import { useUserConfirm } from '@/composables/useUserConfirm';
+import { useEventMessageStore } from '@/stores/eventMessage.js';
 
 const props = defineProps({
   projectId: { type: Number, required: true },
+  projectName: { type: String, default: '' },
   uploadId: { type: Number, default: null },
   filenames: { type: Array, default: () => [] },
   allowCreate: { type: Boolean, default: true },
   canManage: { type: Boolean, default: true },
   canComment: { type: Boolean, default: true },
+  currentUserId: { type: Number, default: null },
   highlightedCaseId: { type: String, default: '' },
   resubmissionUploadId: { type: Number, default: null },
   composerOnly: { type: Boolean, default: false },
@@ -286,14 +924,70 @@ const props = defineProps({
 });
 const emit = defineEmits(['created', 'cancel', 'count-change']);
 const confirmAction = useUserConfirm();
+const eventMessages = useEventMessageStore();
 const cases = ref([]);
 const replies = reactive({});
 const loading = ref(true);
 const busy = ref(false);
 const error = ref('');
+const activeDiff = ref('');
+const taskQuery = ref('');
+const taskStatus = ref('');
+const updatingTask = ref({ id: '', status: '' });
 const showComposer = ref(false);
+const showClosedCases = ref(false);
+const fileQuery = ref('');
+const filePage = ref(1);
+const activeFilename = ref('');
+const visibleTaskLimit = ref(20);
+const revisionFeedbackCaseId = ref('');
+const revisionTaskSelections = reactive({});
+const revisionTargets = reactive({});
+const reviewQuery = ref('');
+const reviewStatus = ref('');
+const reviewPage = ref(1);
 const members = ref([]);
 const membersLoading = ref(false);
+const reviewStatusOptions = [
+  { value: '', label: 'All active statuses' },
+  { value: 'open', label: 'Open questions' },
+  { value: 'changes_requested', label: 'Awaiting corrections' },
+  { value: 'resubmitted', label: 'Ready for review' },
+];
+const taskStatusOptions = [
+  { value: '', label: 'All statuses' },
+  { value: 'requested', label: 'Needs change' },
+  { value: 'reopened', label: 'Needs another change' },
+  { value: 'addressed', label: 'Marked done' },
+  { value: 'accepted', label: 'Accepted' },
+];
+const reviewLeadOptions = computed(() =>
+  members.value.map((member) => ({
+    value: member.user_id,
+    label: memberDisplayName(member),
+  }))
+);
+let taskChangeSequence = 0;
+function newTaskChange() {
+  taskChangeSequence += 1;
+  return {
+    id: taskChangeSequence,
+    instruction: '',
+    tier_id: '',
+    annotation_id: '',
+    start_ms: null,
+    end_ms: null,
+    current_text: '',
+    suggested_text: '',
+  };
+}
+const taskDrafts = reactive(
+  props.filenames.map((filename) => ({
+    filename,
+    selected: false,
+    changes: [newTaskChange()],
+  }))
+);
 const draft = reactive({
   title: '',
   filename: '',
@@ -302,36 +996,172 @@ const draft = reactive({
   start_ms: null,
   end_ms: null,
   initial_comment: '',
+  current_text: '',
+  suggested_text: '',
 });
 const activeCount = computed(
   () => cases.value.filter((item) => !isFinished(item.state)).length
 );
+const closedCases = computed(() =>
+  cases.value.filter((item) => isFinished(item.state))
+);
+const activeCases = computed(() =>
+  cases.value.filter((item) => !isFinished(item.state))
+);
+watch(
+  [closedCases, () => props.highlightedCaseId],
+  ([archived, highlightedCaseId]) => {
+    if (archived.some((item) => item.case_id === highlightedCaseId)) {
+      showClosedCases.value = true;
+    }
+  },
+  { immediate: true }
+);
+const filteredActiveCases = computed(() => {
+  const needle = reviewQuery.value.toLocaleLowerCase();
+  return activeCases.value.filter((item) => {
+    const searchable = [
+      item.title,
+      item.upload_id,
+      item.resubmitted_upload_id,
+      item.creator_name,
+      ...(item.tasks || []).flatMap((task) => [
+        task.filename,
+        task.tier_id,
+        task.annotation_id,
+        task.instruction,
+        task.current_text,
+        task.suggested_text,
+      ]),
+    ]
+      .filter((value) => value != null)
+      .join(' ')
+      .toLocaleLowerCase();
+    return (
+      (!reviewStatus.value || item.state === reviewStatus.value) &&
+      (!needle || searchable.includes(needle))
+    );
+  });
+});
+const reviewPageCount = computed(() =>
+  Math.max(1, Math.ceil(filteredActiveCases.value.length / 10))
+);
+const visibleActiveCases = computed(() => {
+  const start = (reviewPage.value - 1) * 10;
+  return filteredActiveCases.value.slice(start, start + 10);
+});
 const changesRequestedCount = computed(
   () => cases.value.filter((item) => item.state === 'changes_requested').length
 );
 const resubmittedCount = computed(
   () => cases.value.filter((item) => item.state === 'resubmitted').length
 );
+const selectedFileCount = computed(
+  () => taskDrafts.filter((task) => task.selected).length
+);
+const filteredTaskDrafts = computed(() => {
+  const needle = fileQuery.value.toLocaleLowerCase();
+  return taskDrafts.filter(
+    (task) => !needle || task.filename.toLocaleLowerCase().includes(needle)
+  );
+});
+const filePageCount = computed(() =>
+  Math.max(1, Math.ceil(filteredTaskDrafts.value.length / 10))
+);
+const visibleTaskDrafts = computed(() => {
+  const start = (filePage.value - 1) * 10;
+  return filteredTaskDrafts.value.slice(start, start + 10);
+});
+const hasSelectedTasks = computed(() => {
+  const selected = taskDrafts.filter((task) => task.selected);
+  return (
+    selected.length > 0 &&
+    selected.every(
+      (task) =>
+        task.changes.length > 0 &&
+        task.changes.every((change) => Boolean(change.instruction.trim()))
+    )
+  );
+});
+const canActAsContributor = (item) =>
+  Number.isInteger(props.currentUserId) &&
+  item.contributor_id === props.currentUserId;
 
 const formatState = (state) => state.replaceAll('_', ' ');
+const formatTaskStatus = (status, item = null) => {
+  if (item?.state === 'resubmitted' && status !== 'accepted') {
+    return props.canManage ? 'Decision needed' : 'In review';
+  }
+  return (
+    {
+      requested: 'Needs change',
+      reopened: 'Needs another change',
+      addressed: 'Submitted for review',
+      accepted: 'Approved',
+    }[status] || status
+  );
+};
+const unresolvedTaskCount = (item) =>
+  item.tasks.filter((task) => task.status !== 'accepted').length;
+const approveTaskLabel = (item) =>
+  unresolvedTaskCount(item) === 1 ? 'Approve correction' : 'Approve edit';
 const isFinished = (state) => ['resolved', 'closed'].includes(state);
-const nextStepDescription = (state) =>
+async function openReviewArchive() {
+  showClosedCases.value = true;
+  await nextTick();
+  document.getElementById('review-archive')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  });
+}
+function filteredTasks(item) {
+  const needle = taskQuery.value.toLocaleLowerCase();
+  return item.tasks.filter((task) => {
+    const searchable = [
+      task.filename,
+      task.tier_id,
+      task.annotation_id,
+      task.instruction,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLocaleLowerCase();
+    return (
+      (!needle || searchable.includes(needle)) &&
+      (!taskStatus.value || task.status === taskStatus.value)
+    );
+  });
+}
+const visibleTasks = (item) =>
+  filteredTasks(item).slice(0, visibleTaskLimit.value);
+const showNextStep = (item) =>
+  !(props.canManage && item.state === 'resubmitted') ||
+  selectedRevisionTaskIds(item).length > 0;
+const nextStepDescription = (state, item) =>
   ({
     open: 'Discuss the question, then either ask for a corrected upload or finish the review.',
     changes_requested:
       'The contributor must revise the ELAN file and submit a corrected version.',
-    resubmitted:
-      'Inspect the corrected contribution and decide whether it is ready or needs another revision.',
+    resubmitted: props.canManage
+      ? revisionFeedbackCaseId.value === item.case_id
+        ? revisionTargets[item.case_id]?.length
+          ? 'Review the selected annotations and add a note only when more context is needed.'
+          : 'Explain precisely what still needs to change before sending the request.'
+        : `Draft only — nothing has been sent. ${selectedRevisionTaskIds(item).length} edit${selectedRevisionTaskIds(item).length === 1 ? '' : 's'} will be included if you continue.`
+      : `Your corrected contribution #${item.resubmitted_upload_id} was sent to the review lead. You can follow the decision and discussion here.`,
     resolved:
       'No further action is required. Reopen the review if this decision was premature.',
-    closed:
-      'This review is complete. Its discussion remains available as project history.',
+    closed: 'This review is closed. Its discussion remains preserved below.',
   })[state] || 'Continue the research review.';
-const nextStepTitle = (state) =>
+const nextStepTitle = (state, item) =>
   ({
     open: 'Decide the next step',
     changes_requested: 'Waiting for corrected files',
-    resubmitted: 'Review the corrected upload',
+    resubmitted: props.canManage
+      ? revisionFeedbackCaseId.value === item.case_id
+        ? 'Request another revision'
+        : 'Correction request not sent'
+      : 'Corrected version submitted',
     resolved: 'Review resolved',
     closed: 'Review closed',
   })[state] || 'Review in progress';
@@ -349,18 +1179,27 @@ const formatDate = (value) =>
     timeStyle: 'short',
   }).format(new Date(value));
 
-async function loadCases() {
-  loading.value = true;
+async function loadCases(showLoading = true) {
+  if (showLoading) loading.value = true;
   error.value = '';
   try {
     cases.value = await reviewService.list(props.projectId, props.uploadId);
+    if (props.highlightedCaseId) {
+      const selected = cases.value.find(
+        (item) => item.case_id === props.highlightedCaseId && item.unread
+      );
+      if (selected)
+        replaceCase(
+          await reviewService.markViewed(props.projectId, selected.case_id)
+        );
+    }
     emit('count-change', activeCount.value);
   } catch (requestError) {
     error.value =
       requestError?.response?.data?.detail ||
       'Review cases could not be loaded.';
   } finally {
-    loading.value = false;
+    if (showLoading) loading.value = false;
   }
 }
 async function loadMembers() {
@@ -390,7 +1229,23 @@ async function createCase() {
       annotation_id: draft.annotation_id,
       start_ms: draft.start_ms,
       end_ms: draft.end_ms,
-      initial_comment: draft.initial_comment,
+      initial_comment: draft.initial_comment || null,
+      current_text: draft.current_text || null,
+      suggested_text: draft.suggested_text || null,
+      tasks: taskDrafts
+        .filter((task) => task.selected)
+        .flatMap((task) =>
+          task.changes.map((change) => ({
+            filename: task.filename,
+            instruction: change.instruction,
+            tier_id: change.tier_id || null,
+            annotation_id: change.annotation_id || null,
+            start_ms: change.start_ms ?? null,
+            end_ms: change.end_ms ?? null,
+            current_text: change.current_text || null,
+            suggested_text: change.suggested_text || null,
+          }))
+        ),
     });
     cases.value.unshift(created);
     resetDraft();
@@ -424,19 +1279,131 @@ async function addComment(item) {
     busy.value = false;
   }
 }
+async function approveTask(item, task) {
+  if (isTaskSelectedForRevision(item, task)) {
+    toggleTaskForRevision(item, task);
+  }
+  const completesReview = unresolvedTaskCount(item) === 1;
+  updatingTask.value = { id: task.task_id, status: 'accepted' };
+  busy.value = true;
+  error.value = '';
+  try {
+    const updated = await reviewService.updateTask(
+      props.projectId,
+      item.case_id,
+      task.task_id,
+      'accepted'
+    );
+    if (completesReview) {
+      replaceCase(updated);
+      eventMessages.addMessage(
+        updated.resubmitted_upload_status === 'no_changes'
+          ? 'Correction approved. No project content changed.'
+          : 'Correction approved and review completed.',
+        'success'
+      );
+    } else {
+      replaceCase(updated);
+      eventMessages.addMessage('Requested edit approved.', 'success');
+    }
+  } catch (requestError) {
+    error.value =
+      requestError?.response?.data?.detail ||
+      'The requested edit could not be approved.';
+    eventMessages.addMessage(error.value, 'error');
+  } finally {
+    busy.value = false;
+    updatingTask.value = { id: '', status: '' };
+  }
+}
+function selectedRevisionTaskIds(item) {
+  if (revisionTaskSelections[item.case_id]) {
+    return revisionTaskSelections[item.case_id];
+  }
+  // Recover reviews left in the former non-atomic intermediate state.
+  return item.state === 'resubmitted'
+    ? item.tasks
+        .filter((task) => task.status === 'reopened')
+        .map((task) => task.task_id)
+    : [];
+}
+function isTaskSelectedForRevision(item, task) {
+  return selectedRevisionTaskIds(item).includes(task.task_id);
+}
+function toggleTaskForRevision(item, task) {
+  const selected = [...selectedRevisionTaskIds(item)];
+  const index = selected.indexOf(task.task_id);
+  if (index === -1) selected.push(task.task_id);
+  else selected.splice(index, 1);
+  revisionTaskSelections[item.case_id] = selected;
+  revisionFeedbackCaseId.value = selected.length ? item.case_id : '';
+  if (!selected.length) delete revisionTargets[item.case_id];
+}
+function selectRevisionTarget(item, task, target) {
+  const targets = [...(revisionTargets[item.case_id] || [])];
+  const key = `${task.task_id}:${target.annotation_id}`;
+  const index = targets.findIndex(
+    (entry) => `${entry.task_id}:${entry.annotation_id}` === key
+  );
+  if (index === -1)
+    targets.push({ ...target, task_id: task.task_id, comment: '' });
+  else targets.splice(index, 1);
+  revisionTargets[item.case_id] = targets;
+  revisionTaskSelections[item.case_id] = [
+    ...new Set(targets.map((entry) => entry.task_id)),
+  ];
+  revisionFeedbackCaseId.value = targets.length ? item.case_id : '';
+}
+function removeRevisionTarget(item, target) {
+  selectRevisionTarget(item, { task_id: target.task_id }, target);
+}
+function selectedAnnotationIds(item, task) {
+  return (revisionTargets[item.case_id] || [])
+    .filter((target) => target.task_id === task.task_id)
+    .map((target) => target.annotation_id);
+}
+function revisionTargetSummary(target) {
+  const time =
+    target.start_ms != null || target.end_ms != null
+      ? ` · ${target.start_ms ?? 'start'}–${target.end_ms ?? 'end'} ms`
+      : '';
+  return `Target: ${target.annotation_id} · Tier: ${target.tier_id || 'unknown'}${time}`;
+}
+function taskBusyLabel(task, status, label) {
+  return updatingTask.value.id === task.task_id &&
+    updatingTask.value.status === status
+    ? 'Saving…'
+    : label;
+}
 async function transition(item, state) {
   const confirmation = {
     changes_requested: {
-      title: 'Ask for a corrected upload?',
+      title:
+        item.state === 'resubmitted'
+          ? 'Request another revision?'
+          : 'Request a revision?',
       message:
-        'The researcher will be asked to revise this contribution and upload corrected ELAN files. The discussion remains available.',
-      confirmText: 'Ask for corrected upload',
+        item.state === 'resubmitted'
+          ? 'This corrected version will not be approved yet. The same review remains open and the researcher will be asked to submit another version.'
+          : 'The researcher will be asked to revise this contribution. The same discussion will track the corrected version.',
+      confirmText:
+        item.state === 'resubmitted'
+          ? 'Request another revision'
+          : 'Request revision',
     },
     resolved: {
-      title: 'Mark this review as resolved?',
+      title:
+        item.state === 'resubmitted'
+          ? 'Approve this correction?'
+          : 'Close this review?',
       message:
-        'This means no further action is required and removes the case from the active count. You can reopen it later.',
-      confirmText: 'Mark resolved',
+        item.state === 'resubmitted'
+          ? 'This records that the corrected version satisfies the request and closes the correction review. It does not merge the contribution; a separate merge decision is still required.'
+          : 'This closes the question without requesting file changes. It can be reopened later.',
+      confirmText:
+        item.state === 'resubmitted'
+          ? 'Approve correction and close review'
+          : 'Close review',
     },
     open: {
       title: 'Reopen this review?',
@@ -456,13 +1423,82 @@ async function transition(item, state) {
     replaceCase(
       await reviewService.transition(props.projectId, item.case_id, state)
     );
+    eventMessages.addMessage('Review status updated.', 'success');
   } catch (requestError) {
     error.value =
       requestError?.response?.data?.detail ||
       'The review state could not be changed.';
+    eventMessages.addMessage(error.value, 'error');
   } finally {
     busy.value = false;
   }
+}
+async function requestAnotherRevision(item) {
+  const feedback = replies[item.case_id]?.trim();
+  const selectedTaskIds = selectedRevisionTaskIds(item);
+  if (!hasRevisionFeedback(item) || !selectedTaskIds.length) return;
+  const selectedTargets = revisionTargets[item.case_id] || [];
+  const targetDetails = selectedTargets
+    .map(
+      (target) =>
+        `- ${revisionTargetSummary(target)}${target.comment?.trim() ? `\n  Instruction: ${target.comment.trim()}` : ''}`
+    )
+    .join('\n');
+  const recordedFeedback = targetDetails
+    ? `${feedback ? `${feedback}\n\n` : ''}Requested annotation corrections:\n${targetDetails}`
+    : feedback;
+  if (
+    !(await confirmAction({
+      title: 'Request another revision?',
+      message: `This will return ${selectedTaskIds.length} requested edit${selectedTaskIds.length === 1 ? '' : 's'} to the researcher. Your required feedback will be added to the discussion, and another corrected upload will be required.`,
+      confirmText: 'Send revision request',
+      cancelText: 'Cancel',
+    }))
+  ) {
+    return;
+  }
+  busy.value = true;
+  error.value = '';
+  try {
+    replaceCase(
+      await reviewService.requestRevision(
+        props.projectId,
+        item.case_id,
+        selectedTaskIds,
+        recordedFeedback
+      )
+    );
+    replies[item.case_id] = '';
+    revisionFeedbackCaseId.value = '';
+    revisionTaskSelections[item.case_id] = [];
+    delete revisionTargets[item.case_id];
+    eventMessages.addMessage('Another revision was requested.', 'success');
+  } catch (requestError) {
+    error.value =
+      requestError?.response?.data?.detail ||
+      'The new revision request could not be recorded.';
+    eventMessages.addMessage(error.value, 'error');
+  } finally {
+    busy.value = false;
+  }
+}
+function hasRevisionFeedback(item) {
+  return Boolean(
+    replies[item.case_id]?.trim() || revisionTargets[item.case_id]?.length
+  );
+}
+function revisionRequestCount(item) {
+  return (
+    revisionTargets[item.case_id]?.length ||
+    selectedRevisionTaskIds(item).length
+  );
+}
+function beginOrRequestAnotherRevision(item) {
+  if (revisionFeedbackCaseId.value !== item.case_id) {
+    revisionFeedbackCaseId.value = item.case_id;
+    return;
+  }
+  void requestAnotherRevision(item);
 }
 async function assign(item, value) {
   busy.value = true;
@@ -497,10 +1533,15 @@ async function linkResubmission(item) {
         props.resubmissionUploadId
       )
     );
+    eventMessages.addMessage(
+      'Corrected upload linked to this review.',
+      'success'
+    );
   } catch (requestError) {
     error.value =
       requestError?.response?.data?.detail ||
       'The corrected upload could not be linked.';
+    eventMessages.addMessage(error.value, 'error');
   } finally {
     busy.value = false;
   }
@@ -514,7 +1555,28 @@ function resetDraft() {
     start_ms: null,
     end_ms: null,
     initial_comment: '',
+    current_text: '',
+    suggested_text: '',
   });
+  for (const task of taskDrafts) {
+    task.selected = false;
+    task.changes.splice(0, task.changes.length, newTaskChange());
+  }
+  activeFilename.value = '';
+  fileQuery.value = '';
+  filePage.value = 1;
+}
+
+function addTaskChange(task) {
+  task.changes.push(newTaskChange());
+}
+function selectTask(task) {
+  if (task.selected) activeFilename.value = task.filename;
+  else if (activeFilename.value === task.filename) activeFilename.value = '';
+}
+function removeTaskChange(task, changeId) {
+  const index = task.changes.findIndex((change) => change.id === changeId);
+  if (index !== -1 && task.changes.length > 1) task.changes.splice(index, 1);
 }
 function memberDisplayName(member) {
   const fullName = [member.first_name, member.last_name]
@@ -540,11 +1602,35 @@ function replaceCase(updated) {
   if (index !== -1) cases.value[index] = updated;
   emit('count-change', activeCount.value);
 }
-onMounted(() => Promise.all([loadCases(), loadMembers()]));
+let refreshInterval = null;
+function refreshWhenVisible() {
+  if (document.visibilityState === 'visible') void loadCases(false);
+}
+onMounted(() => {
+  refreshInterval = window.setInterval(refreshWhenVisible, 15_000);
+  document.addEventListener('visibilitychange', refreshWhenVisible);
+  return Promise.all([loadCases(), loadMembers()]);
+});
+onUnmounted(() => {
+  if (refreshInterval) window.clearInterval(refreshInterval);
+  document.removeEventListener('visibilitychange', refreshWhenVisible);
+});
 watch(
   () => [props.projectId, props.uploadId],
   () => Promise.all([loadCases(), loadMembers()])
 );
+watch(fileQuery, () => {
+  filePage.value = 1;
+});
+watch(filePageCount, (count) => {
+  if (filePage.value > count) filePage.value = count;
+});
+watch([reviewQuery, reviewStatus], () => {
+  reviewPage.value = 1;
+});
+watch(reviewPageCount, (count) => {
+  if (reviewPage.value > count) reviewPage.value = count;
+});
 defineExpose({ openComposer });
 </script>
 
@@ -582,7 +1668,7 @@ p {
 }
 
 h5 {
-  margin-top: 0.45rem;
+  margin-top: 0.65rem;
   font-size: 1rem;
 }
 
@@ -621,14 +1707,52 @@ h5 {
   font-size: 1.25rem;
 }
 
-.review-summary span,
-.case-origin {
+.review-summary span {
   color: var(--color-text-muted);
   font-size: 0.78rem;
 }
 
-.case-origin {
-  margin-top: 0.45rem;
+.case-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.contribution-lineage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.contribution-lineage > span {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--color-surface-subtle);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.contribution-lineage small {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.contribution-lineage > svg {
+  color: var(--color-text-muted);
+}
+
+.contribution-lineage .current-contribution {
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  background: #eff6ff;
 }
 
 .review-panel.composer-only {
@@ -686,6 +1810,11 @@ textarea {
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: white;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 400;
 }
 
 textarea {
@@ -696,6 +1825,85 @@ textarea {
 .case-list {
   display: grid;
   gap: 0.8rem;
+}
+
+.review-list-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.35fr);
+  gap: 0.65rem;
+  margin-bottom: 0.8rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+.review-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.closed-history-toggle {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-color: #cbd5e1;
+  color: var(--color-text);
+  background: white;
+  text-align: left;
+}
+
+.closed-history-toggle:hover {
+  color: var(--color-text);
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.closed-history-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #475569;
+  background: #eef2f7;
+}
+
+.closed-history-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.closed-history-copy small {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.closed-history-count {
+  min-width: 1.7rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  color: #334155;
+  background: #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.closed-history-chevron {
+  color: #64748b;
 }
 
 .case-card {
@@ -738,7 +1946,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.8rem 1rem;
+  padding: 1rem;
   border-block: 1px solid var(--color-border);
   background: #f7f9fc;
 }
@@ -766,8 +1974,155 @@ textarea {
   font-size: 0.78rem;
 }
 
+.next-step-link {
+  margin-top: 0.35rem;
+  padding: 0;
+  border: 0;
+  color: var(--primary-color);
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .case-next-step.next-changes_requested {
   background: #fffbeb;
+}
+
+.case-next-step.next-resubmitted {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1fr) auto;
+  align-items: end;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.case-next-step.next-resubmitted.feedback-open {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem 1.1rem;
+}
+
+.feedback-open .next-step-copy {
+  grid-column: 1 / -1;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #bfdbfe;
+}
+
+.feedback-open .next-step-copy > svg {
+  width: 2rem;
+  height: 2rem;
+  padding: 0.55rem;
+  border-radius: 50%;
+  background: white;
+}
+
+.revision-feedback {
+  display: grid;
+  gap: 0.85rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.revision-general-note {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.revision-general-note textarea {
+  width: 100%;
+  min-height: 3.75rem;
+  background: white;
+}
+
+.revision-targets {
+  overflow: hidden;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-md);
+  background: white;
+}
+
+.revision-targets-heading,
+.revision-target-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.revision-targets-heading {
+  padding: 0.65rem 0.75rem;
+  color: var(--color-text);
+  background: #f8fafc;
+}
+
+.revision-targets-heading > span {
+  min-width: 1.5rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  color: #1e40af;
+  background: #dbeafe;
+  text-align: center;
+}
+
+.revision-target {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.revision-target-identity > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.revision-target-identity strong {
+  color: var(--primary-color);
+}
+
+.revision-target-identity button {
+  width: 1.8rem;
+  height: 1.8rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-color: transparent;
+  color: #64748b;
+  background: transparent;
+}
+
+.revision-target-location {
+  font-family: monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.revision-target label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.revision-target input {
+  width: 100%;
+  background: white;
+}
+
+.feedback-open .case-actions {
+  justify-content: flex-end;
+  padding-top: 0.85rem;
+  border-top: 1px solid #bfdbfe;
+}
+
+.feedback-open .request-another-revision {
+  min-height: 2.75rem;
+  padding-inline: 1rem;
+  white-space: nowrap;
 }
 
 .case-next-step.next-resolved,
@@ -778,7 +2133,27 @@ textarea {
 .case-actions {
   display: flex;
   flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.case-actions button {
+  display: inline-flex;
+  align-items: center;
   gap: 0.4rem;
+  min-height: 2.5rem;
+  font-weight: 700;
+}
+
+.case-actions .resolve-case {
+  border-color: #15803d;
+  color: white;
+  background: #15803d;
+}
+
+.case-actions .request-another-revision {
+  border-color: #b45309;
+  color: #92400e;
+  background: #fffbeb;
 }
 
 .reopen-case {
@@ -835,6 +2210,605 @@ textarea {
   margin-top: 0.25rem;
   color: var(--color-text-muted);
   font-size: 0.83rem;
+}
+
+.target-fields,
+.text-suggestion {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.text-suggestion {
+  position: relative;
+}
+
+.suggestion-arrow {
+  position: absolute;
+  top: 2.5rem;
+  left: 50%;
+  z-index: 1;
+  display: grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--primary-color);
+  background: white;
+  transform: translateX(-50%);
+}
+
+.activity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  color: #fff;
+  background: #7c3aed;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.activity-badge svg {
+  width: 0.4rem;
+}
+
+.suggestion-diff {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 1rem;
+}
+
+.suggestion-diff > div {
+  padding: 0.7rem;
+  border-radius: var(--radius-sm);
+}
+
+.suggestion-diff span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.suggestion-diff p {
+  margin: 0.35rem 0 0;
+  white-space: pre-wrap;
+}
+
+.diff-before {
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.diff-after {
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.file-task-builder,
+.file-task-list {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.builder-help {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.builder-introduction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.builder-introduction > strong {
+  flex: none;
+  color: var(--primary-color);
+  font-size: 0.75rem;
+}
+
+.file-task-draft {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.file-task-draft.selected {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 8%);
+}
+
+.file-selector {
+  display: flex !important;
+  align-items: center;
+  gap: 0.7rem !important;
+  padding: 0.75rem;
+  color: var(--color-text) !important;
+  cursor: pointer;
+}
+
+.file-selector > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.file-selector-box {
+  width: 1.45rem;
+  height: 1.45rem;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid #94a3b8;
+  border-radius: 0.35rem;
+  color: transparent;
+  background: #fff;
+}
+
+.file-selector input:checked + .file-selector-box {
+  border-color: var(--primary-color);
+  color: #fff;
+  background: var(--primary-color);
+}
+
+.file-selector input:focus-visible + .file-selector-box {
+  outline: 3px solid rgb(37 99 235 / 20%);
+}
+
+.file-selector > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.file-selector strong {
+  overflow-wrap: anywhere;
+}
+
+.file-selector small {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.change-request-list {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-top: 1px solid #dbeafe;
+  background: #f8fbff;
+}
+
+.change-request-draft {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid #dbe5f1;
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.change-request-draft > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.change-request-draft textarea {
+  min-height: 4.5rem;
+}
+
+.change-target-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.change-target-grid label span,
+.text-suggestion label span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.change-target-grid small,
+.text-suggestion label small {
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+button.add-change {
+  justify-self: start;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  background: #fff;
+  font-weight: 700;
+}
+
+.file-builder-search {
+  padding: 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-subtle);
+}
+
+button.edit-file-changes {
+  width: calc(100% - 1.5rem);
+  margin: 0 0.75rem 0.75rem;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-weight: 700;
+}
+
+.file-builder-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+button.load-more-tasks {
+  justify-self: center;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  background: #eff6ff;
+  font-weight: 700;
+}
+
+button.remove-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border-color: #fecaca;
+  color: #b91c1c;
+  font-size: 0.72rem;
+}
+
+.file-task-list {
+  margin: 1rem;
+  padding: 1rem;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.file-task-list h6 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.file-task-heading,
+.file-task-heading > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.file-task-heading > div {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.file-task-heading span {
+  color: #b45309;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.file-task-heading > strong {
+  align-self: center;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  color: #92400e;
+  background: #fef3c7;
+  font-size: 0.72rem;
+}
+
+.file-task-filters {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(9rem, auto);
+  gap: 0.55rem;
+}
+
+.file-task-filters input,
+.file-task-filters select {
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  color: var(--color-text);
+  background: white;
+  font: inherit;
+}
+
+@media (width <= 700px) {
+  .file-task-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+.file-task {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.file-task > div:first-child {
+  display: flex;
+  justify-content: space-between;
+}
+
+.task-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.task-targets span {
+  padding: 0.25rem 0.45rem;
+  border-radius: 999px;
+  color: #334155;
+  background: #eef2f7;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.task-text-suggestion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.task-text-suggestion > div {
+  min-width: 0;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+}
+
+.task-text-suggestion span {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.task-text-suggestion p {
+  margin-top: 0.25rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.task-text-suggestion > svg {
+  color: var(--primary-color);
+}
+
+.task-status {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  color: #92400e;
+  background: #fef3c7;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.task-addressed {
+  color: #1e40af;
+  background: #dbeafe;
+}
+
+.task-accepted {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.file-task p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.task-decision {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.15rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.task-decision > span {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.task-decision-note {
+  grid-column: 1 / -1;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.task-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.4rem;
+  font-weight: 750;
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.task-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.task-action:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.comparison-disclosure {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #cbd9eb;
+  border-radius: 0.55rem;
+  color: #1e3a8a;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.comparison-disclosure:hover:not(:disabled) {
+  border-color: #60a5fa;
+  background: #f8fbff;
+}
+
+.comparison-disclosure:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 22%);
+  outline-offset: 2px;
+}
+
+.comparison-disclosure.active {
+  border-color: #60a5fa;
+  background: #f0f7ff;
+}
+
+.comparison-disclosure > span:nth-child(2) {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.comparison-disclosure small {
+  color: #526987;
+  font-weight: 500;
+}
+
+.comparison-disclosure-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid #bfdbfe;
+  border-radius: 50%;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.comparison-chevron {
+  color: #2563eb;
+}
+
+@media (width <= 700px) {
+  .file-task-list {
+    margin: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .file-task {
+    padding: 0.8rem;
+  }
+
+  .file-task > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .comparison-disclosure {
+    gap: 0.6rem;
+    padding: 0.7rem;
+  }
+
+  .task-decision {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .task-decision-note {
+    grid-column: auto;
+    text-align: left;
+  }
+
+  .task-actions {
+    justify-content: stretch;
+  }
+
+  .task-action {
+    justify-content: center;
+    flex: 1;
+  }
+}
+
+.addressed-action,
+.accept-action {
+  border-color: #6fc58d;
+  color: #166534;
+  background: #f3fbf6;
+}
+
+.accept-action:hover:not(:disabled) {
+  border-color: #249052;
+  background: #e8f7ee;
+}
+
+.accept-action {
+  color: white;
+  border-color: #15803d;
+  background: #15803d;
+}
+
+.reopen-action {
+  border-color: #fcd34d;
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.reopen-action.selected {
+  border-color: #b45309;
+  color: white;
+  background: #b45309;
 }
 
 .discussion {
@@ -894,6 +2868,22 @@ textarea {
 }
 
 @media (width <= 700px) {
+  .target-fields,
+  .change-target-grid,
+  .text-suggestion,
+  .task-text-suggestion,
+  .suggestion-diff {
+    grid-template-columns: 1fr;
+  }
+
+  .suggestion-arrow {
+    display: none;
+  }
+
+  .task-text-suggestion > svg {
+    display: none;
+  }
+
   .review-summary {
     grid-template-columns: 1fr;
   }
@@ -915,8 +2905,30 @@ textarea {
     flex-direction: column;
   }
 
+  .case-next-step.next-resubmitted {
+    grid-template-columns: 1fr;
+  }
+
   .reviewer-field {
     width: 100%;
+  }
+
+  .builder-introduction {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .review-list-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .file-task-builder {
+    padding: 0.55rem;
+  }
+
+  .change-request-list,
+  .change-request-draft {
+    padding: 0.65rem;
   }
 }
 </style>

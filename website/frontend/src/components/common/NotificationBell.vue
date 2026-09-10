@@ -46,12 +46,12 @@
     <transition name="dropdown-fade">
       <div
         v-if="showDropdown"
-        class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
+        class="notification-dropdown absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
         @click.stop
       >
         <!-- Dropdown Header -->
         <div
-          class="px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200"
+          class="notification-dropdown-header px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200"
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
@@ -76,7 +76,7 @@
             </div>
             <button
               v-if="unreadCount > 0"
-              class="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors duration-200"
+              class="mark-all-read px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors duration-200"
               :disabled="loading"
               @click="markAllAsRead"
             >
@@ -462,6 +462,85 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.notification-dropdown {
+  max-width: calc(100vw - 2rem);
+  overflow: visible;
+}
+
+.notification-dropdown::before {
+  position: absolute;
+  z-index: 1;
+  top: -0.45rem;
+  right: 1rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-top: 1px solid #e5e7eb;
+  border-left: 1px solid #e5e7eb;
+  background: #eff6ff;
+  content: '';
+  transform: rotate(45deg);
+}
+
+.notification-dropdown-header {
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+@media (width <= 1024px) {
+  .notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: auto;
+    left: 50%;
+    width: min(20rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 7rem);
+    margin-top: 0.65rem;
+    transform: translateX(-50%);
+  }
+
+  .notification-dropdown::before {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  .notification-dropdown-header > div:first-child {
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .mark-all-read {
+    padding-inline: 0.65rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (width <= 420px) {
+  .notification-dropdown {
+    right: auto;
+    left: 50%;
+    width: calc(100vw - 1rem);
+    max-width: none;
+    transform: translateX(-50%);
+  }
+
+  .notification-dropdown-header > div:first-child {
+    flex-wrap: wrap;
+  }
+
+  .mark-all-read {
+    width: 100%;
+  }
+
+  .mark-all-read > span {
+    justify-content: center;
+  }
+}
+
+.mark-all-read {
+  min-height: 2.25rem;
+  flex: none;
+}
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;

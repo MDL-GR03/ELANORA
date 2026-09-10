@@ -83,11 +83,12 @@
         </label>
         <label class="filter-control">
           <span>Show</span>
-          <select v-model="filter">
-            <option value="core">In every file</option>
-            <option value="common">Common candidates</option>
-            <option value="all">All tiers</option>
-          </select>
+          <AppSelect
+            id="protocol-tier-evidence-filter"
+            v-model="filter"
+            size="small"
+            :options="filterOptions"
+          />
         </label>
       </div>
 
@@ -201,6 +202,13 @@
 <script setup>
 import { computed, ref } from 'vue';
 import HelpTooltip from '@/components/common/HelpTooltip.vue';
+import AppSelect from '@/components/common/AppSelect.vue';
+
+const filterOptions = [
+  { value: 'core', label: 'In every file' },
+  { value: 'common', label: 'Common candidates' },
+  { value: 'all', label: 'All tiers' },
+];
 
 const props = defineProps({
   suggestion: {

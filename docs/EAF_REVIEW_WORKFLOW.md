@@ -82,6 +82,39 @@ Repositories created by current ELANORA versions use `main`. The workflow also
 detects and supports retained legacy repositories whose accepted branch is
 named `master`.
 
+## Research topics and scoped working copies
+
+Project administrators can define reusable research topics as named sets of
+ELAN tier identifiers. A researcher may select an existing topic when preparing
+a working copy or propose a new topic during submission. Similar names are
+presented as suggestions and are never silently mapped: the researcher or an
+administrator must make the final choice. Creating, renaming, assigning, or
+approving a topic is an explicit project-scoped action.
+
+A scoped working copy is a separate EAF download. Creating it does not modify
+the accepted project file. ELANORA records provenance inside the copy,
+including its source checksum, topic, editable tiers, automatically required
+parent tiers, allowed new tiers, and baseline context fingerprints. On upload,
+ELANORA uses that provenance to apply only the declared editable tier subset to
+the current accepted EAF. Unselected tiers remain sourced from the current
+project version rather than from the researcher's reduced copy.
+
+Project administrators can configure baseline tiers that provide common
+context across topics. Researchers choose whether to include that context in a
+particular download. Included baseline tiers are protected by default and may
+be made editable only when the researcher explicitly declares them as baseline
+corrections before downloading. Undeclared baseline changes are rejected rather
+than silently discarded or accepted.
+
+Submission requires a researcher work summary. ELANORA independently detects
+the changed tiers and compares them with the declared topic and baseline scope.
+The declaration reduces administrative reconstruction work but is not treated
+as proof: administrators see topic-tier changes, declared baseline corrections,
+and out-of-scope changes as distinct evidence. Out-of-scope evidence requires a
+review decision; it does not silently expand a topic. Accepted contributions
+retain their submitted research context and topic decision as historical
+review evidence.
+
 ## Retroactive corpus compliance
 
 A published protocol can be evaluated against the latest accepted revision of

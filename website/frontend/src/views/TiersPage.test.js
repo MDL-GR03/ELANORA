@@ -10,15 +10,19 @@ import { useProjectStore } from '@/stores/project';
 import TiersPage from './TiersPage.vue';
 
 const fetchSectionsAndGroups = vi.fn();
+const fetchResearchTopics = vi.fn();
+const fetchProjectBaselineTiers = vi.fn();
 
 vi.mock('@unhead/vue', () => ({ useHead: vi.fn() }));
 vi.mock('@/api/service/tierService', () => ({
-  createSection: vi.fn(),
-  deleteSection: vi.fn(),
+  createResearchTopic: vi.fn(),
+  deleteResearchTopic: vi.fn(),
   fetchSectionsAndGroups: (...args) => fetchSectionsAndGroups(...args),
+  fetchResearchTopics: (...args) => fetchResearchTopics(...args),
+  fetchProjectBaselineTiers: (...args) => fetchProjectBaselineTiers(...args),
   exportTierSubset: vi.fn(),
-  moveTierGroup: vi.fn(),
-  renameSection: vi.fn(),
+  updateResearchTopic: vi.fn(),
+  updateProjectBaselineTiers: vi.fn(),
 }));
 
 function deferred() {
@@ -42,8 +46,7 @@ function mountPage(pinia) {
           props: ['context'],
           template: '<div data-testid="project-context">{{ context }}</div>',
         },
-        TierGroupRow: true,
-        draggable: { template: '<div><slot name="footer" /></div>' },
+        TierSelectionTree: true,
       },
     },
   });
@@ -53,6 +56,10 @@ describe('TiersPage project synchronization', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     fetchSectionsAndGroups.mockReset();
+    fetchResearchTopics.mockReset();
+    fetchResearchTopics.mockResolvedValue([]);
+    fetchProjectBaselineTiers.mockReset();
+    fetchProjectBaselineTiers.mockResolvedValue({ tier_names: ['Role1'] });
   });
 
   it('reloads for the global project and ignores a stale prior response', async () => {
@@ -61,8 +68,10 @@ describe('TiersPage project synchronization', () => {
       projectId === 1
         ? firstRequest.promise
         : Promise.resolve({
-            sections: [{ section_id: 22, name: 'LSFB corpus' }],
-            tier_groups: [],
+            sections: [],
+            tier_groups: [
+              { tier_group_id: 22, elan_file_name: 'LSFB.eaf', tiers: [] },
+            ],
           })
     );
 
@@ -78,20 +87,28 @@ describe('TiersPage project synchronization', () => {
 
     expect(fetchSectionsAndGroups).toHaveBeenCalledWith(1);
     expect(fetchSectionsAndGroups).toHaveBeenCalledWith(2);
+    expect(fetchProjectBaselineTiers).toHaveBeenCalledWith(1);
+    expect(fetchProjectBaselineTiers).toHaveBeenCalledWith(2);
     expect(wrapper.get('[data-testid="project-context"]').text()).toBe('lsfb');
-    await wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Organize project files'))
-      .trigger('click');
-    expect(wrapper.text()).toContain('LSFB corpus');
+    expect(wrapper.text()).toContain('LSFB.eaf');
+    expect(wrapper.text()).toContain('Creates a separate download');
+    expect(wrapper.text()).toContain('The shared project file is not changed.');
 
     firstRequest.resolve({
-      sections: [{ section_id: 11, name: 'Stale frapé corpus' }],
-      tier_groups: [],
+      sections: [],
+      tier_groups: [
+        { tier_group_id: 11, elan_file_name: 'Stale.eaf', tiers: [] },
+      ],
     });
     await flushPromises();
 
-    expect(wrapper.text()).toContain('LSFB corpus');
-    expect(wrapper.text()).not.toContain('Stale frapé corpus');
+    expect(wrapper.text()).toContain('LSFB.eaf');
+    expect(wrapper.text()).not.toContain('Stale.eaf');
+
+    await wrapper
+      .findAll('.tiers-mode-tabs button')
+      .find((button) => button.text().includes('Research topics'))
+      .trigger('click');
+    expect(wrapper.get('.baseline-tier-chips').text()).toContain('Role1');
   });
 });

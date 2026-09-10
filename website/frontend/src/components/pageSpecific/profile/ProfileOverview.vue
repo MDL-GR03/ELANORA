@@ -439,7 +439,6 @@
                   <input
                     id="edit-affiliation"
                     v-model="editedProfessional.affiliation"
-                    class="modern-input"
                     :class="{
                       error:
                         professionalValidation.affiliation.isValid === false,
@@ -745,24 +744,15 @@
                     >{{ t('register.country_label') }}
                     <span class="required">*</span></label
                   >
-                  <select
+                  <AppSelect
                     id="edit-country"
                     v-model="editedAddress.countryId"
                     class="modern-input"
                     :disabled="savingAddress"
+                    :placeholder="t('register.country_placeholder')"
+                    :options="countryOptions"
                     @change="onCountryChange"
-                  >
-                    <option value="">
-                      {{ t('register.country_placeholder') }}
-                    </option>
-                    <option
-                      v-for="country in countries"
-                      :key="country.country_id"
-                      :value="country.country_id"
-                    >
-                      {{ country.country_name }}
-                    </option>
-                  </select>
+                  />
                 </div>
 
                 <div class="edit-field">
@@ -1325,6 +1315,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import AppSelect from '@/components/common/AppSelect.vue';
 import {
   updateUserProfile,
   updateUserAddress,
@@ -1339,6 +1330,12 @@ import {
 } from '@/api/service/locationService';
 
 const { t } = useI18n();
+const countryOptions = computed(() =>
+  countries.value.map((country) => ({
+    value: country.country_id,
+    label: country.country_name,
+  }))
+);
 
 const props = defineProps({
   userProfile: {

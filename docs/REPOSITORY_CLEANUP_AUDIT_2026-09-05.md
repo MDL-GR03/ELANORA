@@ -67,8 +67,8 @@ also covers only the new architectural core, not the large legacy services.
 - protocol drafts, immutable published versions, project pinning, validator
   releases, and validation evidence;
 - transactional email outbox and Mailpit development catcher;
-- `website/static` while the one-way legacy migration still needs its sanitized
-  source corpus;
+- `website/static` while development and EAF regression workflows use its
+  sanitized source corpus;
 - the recovery cache until verified encrypted off-host backup and restoration
   exist. It is not itself a sufficient backup.
 

@@ -15,29 +15,25 @@
     />
     <label class="tier-group-move-control">
       <span>{{ t('tiersPage.moveTo') }}</span>
-      <select
-        :value="currentSectionId ?? ''"
+      <AppSelect
+        :id="`tier-group-section-${group.tier_group_id}`"
+        :model-value="currentSectionId ?? ''"
         :disabled="disabled"
+        size="small"
+        :options="sectionOptions"
         @change="handleMove"
-      >
-        <option
-          v-for="section in sections"
-          :key="section.section_id"
-          :value="section.section_id"
-        >
-          {{ section.name }}
-        </option>
-        <option value="">{{ t('tiersPage.unsectioned') }}</option>
-      </select>
+      />
     </label>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import TierTree from '@/components/common/TierTree.vue';
+import AppSelect from '@/components/common/AppSelect.vue';
 
-defineProps({
+const props = defineProps({
   group: { type: Object, required: true },
   sections: { type: Array, required: true },
   currentSectionId: { type: Number, default: null },
@@ -46,9 +42,15 @@ defineProps({
 
 const emit = defineEmits(['move']);
 const { t } = useI18n();
+const sectionOptions = computed(() => [
+  ...props.sections.map((section) => ({
+    value: section.section_id,
+    label: section.name,
+  })),
+  { value: '', label: t('tiersPage.unsectioned') },
+]);
 
-function handleMove(event) {
-  const value = event.target.value;
+function handleMove(value) {
   emit('move', value === '' ? null : Number(value));
 }
 </script>

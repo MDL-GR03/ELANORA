@@ -42,12 +42,31 @@ const gitService = {
   },
 
   // Upload ELAN files to a project
-  async uploadElanFiles(projectId, files, userName, requestConfig = {}) {
+  async uploadElanFiles(
+    projectId,
+    files,
+    userName,
+    correctionCaseId = null,
+    researchContext = {},
+    requestConfig = {}
+  ) {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
     });
     formData.append('user_name', userName);
+    if (correctionCaseId) {
+      formData.append('correction_case_id', correctionCaseId);
+    }
+    if (researchContext.topicId) {
+      formData.append('research_topic_id', researchContext.topicId);
+    }
+    if (researchContext.proposedTopicName) {
+      formData.append('proposed_topic_name', researchContext.proposedTopicName);
+    }
+    if (researchContext.summary) {
+      formData.append('contribution_summary', researchContext.summary);
+    }
 
     const { data } = await axiosInstance.post(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectId)}/upload`,
@@ -75,6 +94,29 @@ const gitService = {
   async getPendingUploadsWithStatus(projectName) {
     const { data } = await axiosInstance.get(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads`
+    );
+    return data;
+  },
+
+  async getAcceptedProjectHistory(projectName) {
+    const { data } = await axiosInstance.get(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/accepted-history`
+    );
+    return data;
+  },
+
+  async previewProjectVersionRestore(projectName, targetCommit) {
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/accepted-history/preview`,
+      { target_commit: targetCommit }
+    );
+    return data;
+  },
+
+  async restoreProjectVersion(projectName, payload) {
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/accepted-history/restore`,
+      payload
     );
     return data;
   },
@@ -113,6 +155,22 @@ const gitService = {
   async dismissDuplicateUpload(projectName, uploadId) {
     const { data } = await axiosInstance.delete(
       `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads/${encodeURIComponent(uploadId)}/duplicate`
+    );
+    return data;
+  },
+
+  async declinePendingUpload(projectName, uploadId, reason) {
+    const { data } = await axiosInstance.post(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads/${encodeURIComponent(uploadId)}/decline`,
+      { reason }
+    );
+    return data;
+  },
+
+  async setContributionResearchTopic(projectName, uploadId, decision) {
+    const { data } = await axiosInstance.put(
+      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/admin/pending-uploads/${encodeURIComponent(uploadId)}/research-topic`,
+      decision
     );
     return data;
   },

@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import messages from '@/locales/en.json';
 import TierGroupRow from './TierGroupRow.vue';
+import AppSelect from '@/components/common/AppSelect.vue';
 
 function renderRow(currentSectionId = 1) {
   return mount(TierGroupRow, {
@@ -36,11 +37,12 @@ function renderRow(currentSectionId = 1) {
 describe('TierGroupRow', () => {
   it('offers a keyboard-operable alternative to dragging', async () => {
     const wrapper = renderRow();
-    const select = wrapper.get('select');
+    const select = wrapper.getComponent(AppSelect);
 
-    expect(select.element.value).toBe('1');
-    await select.setValue('2');
-    await select.setValue('');
+    expect(select.props('modelValue')).toBe(1);
+    select.vm.$emit('change', 2);
+    select.vm.$emit('change', '');
+    await wrapper.vm.$nextTick();
 
     expect(wrapper.emitted('move')).toEqual([[2], [null]]);
   });

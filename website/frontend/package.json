@@ -16,6 +16,7 @@
     "stylelint": "stylelint \"src/**/*.{css,vue}\"",
     "stylelint:fix": "stylelint \"src/**/*.{css,vue}\" --fix",
     "i18n:report": "vue-i18n-extract report --vueFiles \"src/**/*.vue\" --languageFiles \"src/locales/*.json\"",
+    "i18n:check": "node scripts/check-i18n-parity.cjs",
     "i18n:extract": "vue-i18n-extract extract --vueFiles \"src/**/*.vue\" --languageFiles \"src/locales/*.json\" --add",
     "i18n:clean-empty": "node scripts/clean-vue-i18n-extraction.js",
     "i18n:extract-clean": "npm run i18n:extract && npm run i18n:clean-empty",

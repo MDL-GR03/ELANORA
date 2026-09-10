@@ -69,11 +69,13 @@
                 >Timezone<input v-model.trim="form.timezone" required
               /></label>
               <label
-                >Language<select v-model="form.default_language">
-                  <option value="en">English</option>
-                  <option value="fr">Français</option>
-                </select></label
-              >
+                >Language
+                <AppSelect
+                  id="setup-default-language"
+                  v-model="form.default_language"
+                  :options="languageOptions"
+                />
+              </label>
             </div>
           </fieldset>
           <fieldset>
@@ -145,7 +147,13 @@
 import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import setupService from '@/api/service/setupService';
+import AppSelect from '@/components/common/AppSelect.vue';
 import { useAppInfoStore } from '@/stores/appInfo';
+
+const languageOptions = [
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
+];
 
 const router = useRouter();
 const appInfoStore = useAppInfoStore();

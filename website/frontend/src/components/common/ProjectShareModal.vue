@@ -96,35 +96,22 @@
               <label for="share-language" class="form-label">
                 {{ t('project.share.language_label') }}
               </label>
-              <select
+              <AppSelect
                 id="share-language"
                 v-model="form.language"
-                class="share-form-select"
-              >
-                <option value="en">English</option>
-                <option value="fr">Français</option>
-              </select>
+                :options="languageOptions"
+              />
             </div>
 
             <div class="share-form-group">
               <label for="share-email-permission" class="form-label">
                 {{ t('project.share.permission_label') }}
               </label>
-              <select
+              <AppSelect
                 id="share-email-permission"
                 v-model="form.emailPermission"
-                class="share-form-select"
-              >
-                <option value="read">
-                  {{ t('project.share.permission_read') }}
-                </option>
-                <option value="write">
-                  {{ t('project.share.permission_write') }}
-                </option>
-                <option value="admin">
-                  {{ t('project.share.permission_admin') }}
-                </option>
-              </select>
+                :options="permissionOptions"
+              />
             </div>
 
             <button
@@ -146,31 +133,19 @@
                 {{ t('project.share.select_user') }}
                 <span class="share-required">*</span>
               </label>
-              <select
+              <AppSelect
                 id="share-user"
                 v-model="form.selectedUserId"
-                class="form-input"
-                :class="{ error: userError }"
-                required
+                :invalid="Boolean(userError)"
+                :required="true"
                 :disabled="loadingUsers"
-              >
-                <option value="" disabled>
-                  {{
-                    loadingUsers
-                      ? t('common.loading')
-                      : t('project.share.choose_user')
-                  }}
-                </option>
-                <option
-                  v-for="user in availableUsers"
-                  :key="user.user_id"
-                  :value="user.user_id"
-                >
-                  {{ user.first_name }} {{ user.last_name }} ({{
-                    user.username
-                  }}) - {{ user.email }}
-                </option>
-              </select>
+                :placeholder="
+                  loadingUsers
+                    ? t('common.loading')
+                    : t('project.share.choose_user')
+                "
+                :options="userOptions"
+              />
               <div v-if="userError" class="share-error-message">
                 {{ userError }}
               </div>
@@ -193,35 +168,22 @@
               <label for="share-user-language" class="form-label">
                 {{ t('project.share.language_label') }}
               </label>
-              <select
+              <AppSelect
                 id="share-user-language"
                 v-model="form.userLanguage"
-                class="share-form-select"
-              >
-                <option value="en">English</option>
-                <option value="fr">Français</option>
-              </select>
+                :options="languageOptions"
+              />
             </div>
 
             <div class="share-form-group">
               <label for="share-permission" class="form-label">
                 {{ t('project.share.permission_label') }}
               </label>
-              <select
+              <AppSelect
                 id="share-permission"
                 v-model="form.permission"
-                class="share-form-select"
-              >
-                <option value="read">
-                  {{ t('project.share.permission_read') }}
-                </option>
-                <option value="write">
-                  {{ t('project.share.permission_write') }}
-                </option>
-                <option value="admin">
-                  {{ t('project.share.permission_admin') }}
-                </option>
-              </select>
+                :options="permissionOptions"
+              />
             </div>
 
             <button
@@ -255,6 +217,7 @@ import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { sendInvitation as sendInvitationAPI } from '@/api/service/invitationService';
 import { getAvailableProjectUsers } from '@/api/service/projectAssociationService';
+import AppSelect from '@/components/common/AppSelect.vue';
 import '@/assets/css/ProjectShareModal.css';
 
 const props = defineProps({
@@ -302,6 +265,21 @@ const loadingUsers = ref(false);
 const availableUsers = ref([]);
 
 const projectName = computed(() => props.projectName);
+const languageOptions = [
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
+];
+const permissionOptions = computed(() => [
+  { value: 'read', label: t('project.share.permission_read') },
+  { value: 'write', label: t('project.share.permission_write') },
+  { value: 'admin', label: t('project.share.permission_admin') },
+]);
+const userOptions = computed(() =>
+  availableUsers.value.map((user) => ({
+    value: user.user_id,
+    label: `${user.first_name} ${user.last_name} (${user.username}) - ${user.email}`,
+  }))
+);
 
 // Get selected user's email
 const selectedUserEmail = computed(() => {

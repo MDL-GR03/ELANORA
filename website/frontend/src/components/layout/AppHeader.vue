@@ -1,5 +1,12 @@
 <template>
   <header>
+    <button
+      v-if="menuOpen"
+      type="button"
+      class="mobile-menu-backdrop"
+      aria-label="Close navigation"
+      @click="menuOpen = false"
+    ></button>
     <div class="navbar-container">
       <div class="elanora-header-left">
         <router-link to="/homePage" class="elanora-header-logo-link">
@@ -26,6 +33,7 @@
           :class="{ open: menuOpen }"
         >
           <router-link to="/projects" class="elanora-header-menu-link">
+            <font-awesome-icon icon="fa-solid fa-folder" />
             {{ t('appHeader.projects') }}
           </router-link>
           <router-link
@@ -33,6 +41,7 @@
             to="/upload"
             class="elanora-header-menu-link"
           >
+            <font-awesome-icon icon="fa-solid fa-cloud-arrow-up" />
             {{ t('appHeader.upload') }}
           </router-link>
           <router-link
@@ -40,6 +49,7 @@
             to="/contribution"
             class="elanora-header-menu-link"
           >
+            <font-awesome-icon icon="fa-solid fa-code-branch" />
             {{ t('appHeader.contribution') }}
           </router-link>
           <router-link
@@ -47,8 +57,16 @@
             :to="{ name: 'TiersPage' }"
             class="elanora-header-menu-link"
           >
+            <font-awesome-icon icon="fa-solid fa-layer-group" />
             {{ t('appHeader.tiers') || 'Tiers' }}
           </router-link>
+          <div class="mobile-nav-footer">
+            <ProjectSection />
+            <NotificationBell v-if="userStore.isAuthenticated" />
+            <div class="mobile-instance-mark">
+              <img :src="instanceLogo" :alt="`${instanceName} logo`" />
+            </div>
+          </div>
         </nav>
       </div>
       <div class="elanora-header-right" :class="{ open: menuOpen }">
@@ -132,7 +150,7 @@ watch(
 .elanora-header-logo {
   height: 3rem;
   width: 3rem;
-  border-radius: 0.65rem;
+  object-fit: contain;
 }
 
 .elanora-header-logo-link {
@@ -143,23 +161,73 @@ watch(
 
 .elanora-header-nav {
   display: flex;
+  align-items: stretch;
+}
+
+.mobile-nav-footer {
+  display: none;
 }
 
 .mobile-menu-button {
   display: none;
 }
 
-.elanora-header-menu-link {
-  color: #2563eb;
-  font-weight: 500;
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  transition: background 0.2s;
+.mobile-menu-backdrop {
+  display: none;
 }
 
-.elanora-header-menu-link:hover {
+.elanora-header-menu-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  color: #334155;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.55rem;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
+}
+
+.elanora-header-menu-link + .elanora-header-menu-link::before {
+  position: absolute;
+  top: 25%;
+  bottom: 25%;
+  left: 0;
+  width: 1px;
+  background: #e5eaf2;
+  content: '';
+}
+
+.elanora-header-menu-link svg {
+  width: 0.9rem;
+  color: #64748b;
+  transition: color 0.18s ease;
+}
+
+.elanora-header-menu-link:hover,
+.elanora-header-menu-link:focus-visible {
   background: #e8f0fe;
+  color: #1d4ed8;
+  outline: none;
+}
+
+.elanora-header-menu-link:focus-visible {
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 16%);
+}
+
+.elanora-header-menu-link.router-link-active {
+  color: #1d4ed8;
+  background: #edf4ff;
+}
+
+.elanora-header-menu-link:hover svg,
+.elanora-header-menu-link:focus-visible svg,
+.elanora-header-menu-link.router-link-active svg {
+  color: #2563eb;
 }
 
 .elanora-header-right {
@@ -178,9 +246,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fbf9f6;
-  border: 1px solid var(--color-border);
-  border-radius: 0.65rem;
+  background: transparent;
   overflow: hidden;
 }
 
@@ -292,10 +358,23 @@ watch(
 }
 
 @media (width <= 1024px) {
+  .mobile-menu-backdrop {
+    position: fixed;
+    z-index: 30;
+    inset: 0;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
   .navbar-container {
     position: relative;
+    z-index: 31;
     min-height: 4rem;
     gap: 0.75rem;
+    width: 100%;
+    padding-inline: 0.75rem;
   }
 
   .elanora-header-logo,
@@ -327,30 +406,108 @@ watch(
     display: none;
     position: absolute;
     z-index: 40;
-    right: 0;
-    left: 0;
-    padding: 0.75rem;
+    right: auto;
+    left: 0.75rem;
+    width: min(26rem, calc(100% - 1.5rem));
+    padding: 0.5rem;
     border: 1px solid #e2e8f0;
     background: #fff;
-    box-shadow: 0 1rem 2rem rgb(15 23 42 / 12%);
+    box-shadow: 0 1rem 2rem rgb(15 23 42 / 16%);
   }
 
   .elanora-header-nav.open {
     top: calc(100% + 0.5rem);
     display: grid;
+    gap: 0;
+    border-radius: 0.75rem;
   }
 
   .elanora-header-right.open {
-    top: calc(100% + 13.5rem);
-    display: flex;
-    max-width: none;
-    flex-wrap: wrap;
+    display: none;
   }
 
   .elanora-header-menu-link {
     min-height: 2.75rem;
     display: flex;
     align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.7rem;
+    border: 0;
+    border-bottom: 1px solid #edf1f6;
+    border-radius: 0;
+    color: #334155;
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  .elanora-header-menu-link + .elanora-header-menu-link::before {
+    display: none;
+  }
+
+  .elanora-header-menu-link:first-child {
+    border-radius: 0.5rem 0.5rem 0 0;
+  }
+
+  .elanora-header-menu-link:last-of-type {
+    border-bottom-color: transparent;
+    border-radius: 0 0 0.5rem 0.5rem;
+  }
+
+  .elanora-header-menu-link svg {
+    display: block;
+    width: 1rem;
+    color: #64748b;
+  }
+
+  .elanora-header-menu-link:hover {
+    background: #f8fafc;
+    color: #1d4ed8;
+  }
+
+  .elanora-header-menu-link.router-link-active {
+    border-bottom-color: #dbeafe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    box-shadow: inset 3px 0 #2563eb;
+  }
+
+  .elanora-header-menu-link.router-link-active svg {
+    color: #2563eb;
+  }
+
+  .mobile-nav-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin: 0.35rem -0.5rem -0.5rem;
+    padding: 0.65rem 0.75rem;
+    border-top: 1px solid #e5eaf2;
+    background: #f8fafc;
+  }
+
+  .mobile-nav-footer :deep(.project-section-root) {
+    max-width: min(13rem, 60vw);
+  }
+
+  .mobile-nav-footer :deep(.project-section-trigger) {
+    max-width: 100%;
+  }
+
+  .mobile-instance-mark {
+    width: 2.35rem;
+    height: 2.35rem;
+    display: grid;
+    margin-left: auto;
+    place-items: center;
+    overflow: hidden;
+    border: 0;
+    background: transparent;
+  }
+
+  .mobile-instance-mark img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
   }
 
   .elanora-header-instance-logo-container {
@@ -367,6 +524,12 @@ watch(
   .elanora-header-logo {
     width: 3rem;
     height: 3rem;
+  }
+
+  .elanora-header-nav,
+  .elanora-header-right {
+    left: 0.5rem;
+    width: calc(100% - 1rem);
   }
 }
 </style>

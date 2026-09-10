@@ -40,6 +40,29 @@ const reviewService = {
     );
     return data;
   },
+
+  async markViewed(projectId, caseId) {
+    const { data } = await axiosInstance.post(
+      `/review/projects/${encodeURIComponent(projectId)}/cases/${encodeURIComponent(caseId)}/view`
+    );
+    return data;
+  },
+
+  async updateTask(projectId, caseId, taskId, status) {
+    const { data } = await axiosInstance.patch(
+      `/review/projects/${encodeURIComponent(projectId)}/cases/${encodeURIComponent(caseId)}/tasks/${encodeURIComponent(taskId)}`,
+      { status }
+    );
+    return data;
+  },
+
+  async requestRevision(projectId, caseId, taskIds, feedback) {
+    const { data } = await axiosInstance.post(
+      `/review/projects/${encodeURIComponent(projectId)}/cases/${encodeURIComponent(caseId)}/revision-request`,
+      { task_ids: taskIds, feedback }
+    );
+    return data;
+  },
 };
 
 export default reviewService;

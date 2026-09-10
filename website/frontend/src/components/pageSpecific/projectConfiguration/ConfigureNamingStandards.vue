@@ -203,21 +203,14 @@
             <label for="standard-filetype">{{
               t('configureNamingStandards.fileType')
             }}</label>
-            <select
+            <AppSelect
               id="standard-filetype"
               v-model="newStandard.project_file_type_id"
-              required
+              :required="true"
+              :placeholder="t('configureNamingStandards.fileType')"
+              :options="fileTypeOptions"
               @change="onFileTypeChange"
-            >
-              <option disabled value="">
-                {{ t('configureNamingStandards.fileType') }}
-              </option>
-              <option v-for="ft in fileTypes" :key="ft.id" :value="ft.id">
-                {{ ft.name }} ({{ ft.extension }}){{
-                  ft.description ? ' — ' + ft.description : ''
-                }}
-              </option>
-            </select>
+            />
           </div>
           <!-- Pattern: prefix + comma pattern -->
           <div class="configure-naming-form-row">
@@ -447,21 +440,15 @@
             {{ t('configureNamingStandards.importModal.selectProject') }}
           </h3>
           <div class="import-project-select-row">
-            <select
+            <AppSelect
+              id="import-naming-project"
               v-model="selectedImportProject"
-              class="import-project-select"
-            >
-              <option disabled value="">
-                {{ t('configureNamingStandards.importModal.chooseProject') }}
-              </option>
-              <option
-                v-for="proj in importProjects"
-                :key="proj.id"
-                :value="proj.id"
-              >
-                {{ proj.name }}
-              </option>
-            </select>
+              class="import-project-select-control"
+              :placeholder="
+                t('configureNamingStandards.importModal.chooseProject')
+              "
+              :options="importProjectOptions"
+            />
             <button
               class="configure-naming-btn"
               :disabled="!selectedImportProject"
@@ -690,6 +677,7 @@
 
 <script setup>
 import UserPrompt from '@components/common/UserPrompt.vue';
+import AppSelect from '@/components/common/AppSelect.vue';
 import projectNamingStandardApi from '@/api/service/projectNamingStandard.js';
 import fileTypeService from '@/api/service/fileTypeService.js';
 import { ref, onMounted, watch, computed, nextTick } from 'vue';
@@ -870,6 +858,13 @@ function getFileTypeDisplay(project_file_type_id) {
 }
 
 const fileTypes = ref([]);
+const fileTypeOptions = computed(() =>
+  fileTypes.value.map((fileType) => ({
+    value: fileType.id,
+    label: `${fileType.name} (${fileType.extension})`,
+    description: fileType.description || undefined,
+  }))
+);
 const exampleFilename = ref('');
 const regexExtractionError = ref('');
 const commaPattern = ref('');
@@ -1645,6 +1640,12 @@ function getAcceptedValuesPlaceholder(comp) {
 const showImportModal = ref(false);
 const importStep = ref(1);
 const importProjects = ref([]);
+const importProjectOptions = computed(() =>
+  importProjects.value.map((project) => ({
+    value: project.id,
+    label: project.name,
+  }))
+);
 const selectedImportProject = ref(null);
 const importStandards = ref([]);
 const selectedStandardIds = ref([]);
@@ -2372,14 +2373,8 @@ function splitPatternBlocks(pattern, sep) {
   }
 }
 
-.import-project-select {
+.import-project-select-control {
   flex: 1;
-  padding: 10px 14px;
-  font-size: 1.1em;
-  border-radius: 6px;
-  border: 1.5px solid #d1d5db;
-  background: #f9fafb;
-  color: #222;
 }
 
 .import-standards-list {

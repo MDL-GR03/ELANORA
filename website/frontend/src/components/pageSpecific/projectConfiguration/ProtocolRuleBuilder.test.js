@@ -18,12 +18,13 @@ describe('ProtocolRuleBuilder', () => {
   it('builds a required tier without exposing JSON editing', async () => {
     const wrapper = mount(ProtocolRuleBuilder, {
       props: { modelValue: emptyRules() },
+      global: { stubs: { 'font-awesome-icon': true } },
     });
 
     await wrapper
       .get('input[placeholder="For example: Manual signs"]')
       .setValue('Manual signs');
-    await wrapper.get('.add-tier button').trigger('click');
+    await wrapper.get('.add-tier > button').trigger('click');
 
     const update = wrapper.emitted('update:modelValue')[0][0];
     expect(update.required_tiers).toEqual(['Manual signs']);
@@ -42,6 +43,7 @@ describe('ProtocolRuleBuilder', () => {
           },
         },
       },
+      global: { stubs: { 'font-awesome-icon': true } },
     });
 
     expect(wrapper.get('.hierarchy-preview').text()).toContain('Manual signs');

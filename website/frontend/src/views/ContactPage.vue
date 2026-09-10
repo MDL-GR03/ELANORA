@@ -23,28 +23,14 @@
 
           <div class="form-group">
             <label for="request_type">{{ t('contact.request_type') }} *</label>
-            <select
+            <AppSelect
               id="request_type"
               v-model="contactForm.request_type"
-              required
+              :options="requestTypeOptions"
+              :required="true"
               :disabled="isSubmitting"
-            >
-              <option value="">{{ t('contact.select_request_type') }}</option>
-              <option value="bug_report">{{ t('contact.bug_report') }}</option>
-              <option value="feature_request">
-                {{ t('contact.feature_request') }}
-              </option>
-              <option value="technical_support">
-                {{ t('contact.technical_support') }}
-              </option>
-              <option value="account_issue">
-                {{ t('contact.account_issue') }}
-              </option>
-              <option value="general_inquiry">
-                {{ t('contact.general_inquiry') }}
-              </option>
-              <option value="other">{{ t('contact.other') }}</option>
-            </select>
+              :placeholder="t('contact.select_request_type')"
+            />
           </div>
 
           <div class="form-group">
@@ -168,6 +154,7 @@ import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 import { contactService } from '@api/service/contactService.js';
+import AppSelect from '@/components/common/AppSelect.vue';
 import '@assets/css/contact-page.css';
 
 const { t } = useI18n();
@@ -175,6 +162,14 @@ const eventMessageStore = useEventMessageStore();
 const userStore = useUserStore();
 
 const isSubmitting = ref(false);
+const requestTypeOptions = computed(() => [
+  { value: 'bug_report', label: t('contact.bug_report') },
+  { value: 'feature_request', label: t('contact.feature_request') },
+  { value: 'technical_support', label: t('contact.technical_support') },
+  { value: 'account_issue', label: t('contact.account_issue') },
+  { value: 'general_inquiry', label: t('contact.general_inquiry') },
+  { value: 'other', label: t('contact.other') },
+]);
 
 const contactForm = reactive({
   email: '',

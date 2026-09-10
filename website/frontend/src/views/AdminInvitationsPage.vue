@@ -32,22 +32,14 @@
               {{ t('invitation.project_label') }}
               <span class="required">*</span>
             </label>
-            <select
+            <AppSelect
               id="project"
               v-model="form.projectName"
-              class="form-select"
-              :class="{ error: projectError }"
-              required
-            >
-              <option value="">{{ t('invitation.selectProject') }}</option>
-              <option
-                v-for="project in projects"
-                :key="project.project_id || project"
-                :value="project.project_name || project"
-              >
-                {{ project.project_name || project }}
-              </option>
-            </select>
+              :invalid="Boolean(projectError)"
+              :required="true"
+              :placeholder="t('invitation.selectProject')"
+              :options="projectOptions"
+            />
             <div v-if="projectError" class="error-message">
               {{ projectError }}
             </div>
@@ -70,10 +62,11 @@
             <label for="language" class="form-label">
               {{ t('invitation.language_label') }}
             </label>
-            <select id="language" v-model="form.language" class="form-select">
-              <option value="en">English</option>
-              <option value="fr">Français</option>
-            </select>
+            <AppSelect
+              id="language"
+              v-model="form.language"
+              :options="languageOptions"
+            />
           </div>
 
           <button
@@ -130,7 +123,8 @@
 
 <script setup>
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
-import { ref, onMounted } from 'vue';
+import AppSelect from '@/components/common/AppSelect.vue';
+import { computed, ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import {
@@ -156,6 +150,16 @@ const projectError = ref('');
 const sentInvitations = ref([]);
 const loadingInvitations = ref(false);
 const projects = ref([]);
+const languageOptions = [
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
+];
+const projectOptions = computed(() =>
+  projects.value.map((project) => ({
+    value: project.project_name || project,
+    label: project.project_name || project,
+  }))
+);
 
 // Load data on mount
 onMounted(async () => {

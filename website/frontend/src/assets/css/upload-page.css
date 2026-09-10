@@ -93,20 +93,8 @@
   font-weight: 680;
 }
 
-.project-select {
+.project-select-control {
   width: min(32rem, 100%);
-  min-height: 2.75rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--color-border-strong, #cbd5e1);
-  border-radius: 0.55rem;
-  color: var(--color-text);
-  background: white;
-  font: inherit;
-}
-
-.project-select:focus {
-  border-color: var(--primary-color);
-  outline: 3px solid color-mix(in srgb, var(--primary-color) 14%, transparent);
 }
 
 .upload-step-placeholder {
@@ -142,6 +130,136 @@
   border-color: #a6d8b5;
   color: #176b3a;
   background: #effaf3;
+}
+
+.contribution-context-fields {
+  display: grid;
+  gap: 1rem;
+}
+
+.contribution-context-field {
+  display: grid;
+  gap: 0.4rem;
+  max-width: 46rem;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.required-field-label {
+  justify-self: start;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  color: #9a4d00;
+  background: #fff2cf;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.contribution-context-field input,
+.contribution-context-field textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  color: var(--color-text);
+  background: white;
+  font: inherit;
+  font-weight: 500;
+  resize: vertical;
+}
+
+.contribution-context-field input:focus,
+.contribution-context-field textarea:focus {
+  border-color: var(--primary-color);
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 14%, transparent);
+}
+
+.contribution-context-field small {
+  color: var(--color-text-muted);
+  font-size: 0.77rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.detected-research-scope {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  max-width: 46rem;
+  padding: 0.85rem;
+  border: 1px solid #a7d7b6;
+  border-radius: 0.65rem;
+  color: #176b3a;
+  background: #effaf3;
+}
+
+.detected-research-scope > svg {
+  margin-top: 0.15rem;
+}
+
+.detected-research-scope div,
+.detected-research-scope strong,
+.detected-research-scope span,
+.detected-research-scope small {
+  display: block;
+}
+
+.research-topic-suggestion {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 46rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #f1c76b;
+  border-radius: 0.7rem;
+  color: #704800;
+  background: #fff9e8;
+}
+
+.research-topic-suggestion .secondary-button {
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.research-topic-suggestion .secondary-button:hover {
+  border-color: #c88716;
+  background: #fff;
+  box-shadow: 0 5px 14px rgb(112 72 0 / 14%);
+  transform: translateY(-1px);
+}
+
+.research-topic-suggestion div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.research-topic-suggestion span {
+  font-size: 0.9rem;
+}
+
+@media (width <= 640px) {
+  .research-topic-suggestion {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.detected-research-scope span {
+  margin-top: 0.15rem;
+  color: #245b3c;
+  font-size: 0.86rem;
+}
+
+.detected-research-scope small {
+  margin-top: 0.25rem;
+  color: #52745e;
+  font-size: 0.77rem;
 }
 
 .upload-submit-bar {
@@ -383,6 +501,43 @@
   color: var(--primary-color);
   font-weight: 700;
   text-decoration: none;
+}
+
+.correction-file-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.correction-file-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.6rem;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  background: white;
+}
+
+.correction-file-list li > svg {
+  margin-top: 0.15rem;
+  color: #d97706;
+}
+
+.correction-context .correction-file-list span {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.correction-file-list small {
+  color: var(--color-text-muted);
 }
 
 .finish-correction-link {

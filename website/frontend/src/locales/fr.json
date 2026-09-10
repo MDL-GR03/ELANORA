@@ -632,6 +632,7 @@
     "sectionNames": {
       "sections": {
         "technical": "Paramètres techniques",
+        "workflow": "Flux des contributions",
         "collaborators": "Collaborateurs",
         "subsections": {
           "fileTypes": "Types de Fichiers",
@@ -639,7 +640,8 @@
           "effectiveStandards": "Normes Effectives",
           "members": "Membres et Accès",
           "invitations": "Invitations",
-          "protocols": "Protocole versionné"
+          "protocols": "Protocole versionné",
+          "contributionAutomation": "Fusion automatique"
         }
       }
     },
@@ -1061,6 +1063,272 @@
     }
   },
 
+  "contributionWorkspace": {
+    "tabs": {
+      "label": "Vues des contributions",
+      "incoming": "Travail reçu",
+      "corrections": "Questions et corrections",
+      "history": "Historique du projet"
+    },
+    "back": "Retour",
+    "contribution": "Contribution n° {id}",
+    "updatedVersion": "Version {version} · mise à jour après correction",
+    "summary": {
+      "all": "Toutes les contributions actives",
+      "corrections": "Corrections attendues"
+    },
+    "search": {
+      "label": "Rechercher dans le travail reçu",
+      "placeholder": "Numéro, contributeur ou nom de fichier",
+      "results": "{count} résultat(s)",
+      "example": "Par exemple : « #6 », « external.researcher » ou « CLSFB2912_S060.eaf »"
+    },
+    "order": {
+      "label": "Ordre",
+      "aria": "Trier les contributions reçues",
+      "oldest": "Plus anciennes d’abord",
+      "newest": "Plus récentes d’abord"
+    },
+    "actions": {
+      "discussion": "Discussion de correction",
+      "requestCorrection": "Demander une correction",
+      "dismissDuplicate": "Classer le doublon",
+      "more": "Autres actions",
+      "decline": "Refuser"
+    },
+    "context": {
+      "aria": "Contexte de recherche fourni par le contributeur",
+      "general": "Contribution générale",
+      "noSummary": "Aucun résumé du travail fourni",
+      "detectedTiers": "Tiers détectés",
+      "noTierChanges": "Aucune modification de tier contenant des annotations détectée",
+      "hideDecision": "Masquer la décision sur le sujet",
+      "reviewSuggestion": "Examiner la suggestion de sujet",
+      "outsideExplanation": "Les tiers surlignés sont hors du sujet déclaré. Examinez ces exceptions avant d’accepter la contribution.",
+      "suggestionExplanation": "Il s’agit d’une nouvelle suggestion de sujet. Attribuez ou approuvez son sujet de projet avant d’accepter la contribution.",
+      "useExisting": "Utiliser un sujet existant",
+      "chooseTopic": "Choisir un sujet du projet",
+      "assignTopic": "Attribuer le sujet",
+      "approveName": "Ou approuver un nouveau nom corrigé",
+      "newTopicName": "Nom du nouveau sujet",
+      "createTopic": "Créer le sujet à partir des tiers modifiés",
+      "statusAligned": "Le périmètre correspond aux modifications",
+      "statusOutside": "Modifications hors périmètre",
+      "statusDecision": "Décision sur le sujet requise",
+      "statusMissing": "Contexte manquant"
+    },
+    "collision": { "title": "La même annotation a été modifiée ailleurs" }
+  },
+  "contributionDetails": {
+    "overview": {
+      "title": "Vue d’ensemble de la soumission",
+      "description": "Identité de la personne ayant soumis cette contribution et état de son traitement.",
+      "fileChanges": "Modifications de fichiers",
+      "reviewStatus": "État de la révision",
+      "submitted": "Soumise",
+      "researcher": "Chercheur",
+      "checked": "Compatibilité vérifiée"
+    },
+    "context": {
+      "title": "Contexte de recherche",
+      "description": "Déclaration du chercheur, comparée aux modifications ELAN détectées.",
+      "topic": "Sujet de recherche",
+      "scopeCheck": "Vérification du périmètre",
+      "summary": "Résumé du travail du chercheur",
+      "changedTiers": "Tiers modifiés détectés par ELANORA",
+      "noTierChanges": "Aucune modification de tier contenant des annotations",
+      "outsideExplanation": "Les tiers orange ont été modifiés dans le fichier envoyé, mais ne font pas partie du sujet de recherche sélectionné. Confirmez le sujet ou examinez ces modifications supplémentaires avant la fusion.",
+      "general": "Travail général ou transversal"
+    },
+    "scope": {
+      "aligned": "Le sujet déclaré correspond aux modifications détectées",
+      "outside": "Certains tiers modifiés sont hors du sujet déclaré",
+      "review": "Une décision sur le sujet du projet est requise",
+      "general": "Aucun sujet de recherche unique n’a été déclaré",
+      "missing": "Le contexte de recherche n’a pas été fourni",
+      "unknown": "Non évalué"
+    },
+    "tiers": {
+      "topic": "Tier du sujet de recherche déclaré",
+      "baseline": "Tier de référence du projet",
+      "correction": "Correction de référence déclarée",
+      "outside": "Hors du sujet de recherche déclaré"
+    },
+    "quality": {
+      "title": "Contrôles qualité",
+      "description": "Contrôles automatiques effectués avant la révision administrative.",
+      "structure": "Structure du fichier ELAN",
+      "naming": "Règles de nommage du projet",
+      "protocol": "Protocole du projet"
+    },
+    "files": {
+      "title": "Fichiers modifiés",
+      "description": "Examinez les différences au niveau des fichiers et des annotations.",
+      "filterPlaceholder": "Filtrer par chemin ou nom",
+      "filterLabel": "Filtrer les fichiers de la contribution",
+      "kindFilterLabel": "Filtrer le type de modification",
+      "range": "Affichage de {first} à {last} sur {total} fichiers correspondants",
+      "hideAnnotations": "Masquer les modifications d’annotations",
+      "reviewAnnotations": "Examiner les modifications d’annotations",
+      "empty": "Aucun fichier ne correspond à ces filtres.",
+      "pages": "Pages de fichiers",
+      "all": "Toutes les modifications",
+      "new": "Nouveau",
+      "modified": "Modifié",
+      "deleted": "Supprimé"
+    },
+    "conflicts": {
+      "title": "Conflits",
+      "description": "Fichiers nécessitant une décision de fusion explicite.",
+      "count": "{count} fichier(s) présente(nt) des conflits à résoudre."
+    },
+    "protocol": {
+      "changed": "Le protocole a changé ; cette contribution sera revérifiée avant acceptation",
+      "missing": "Non configuré pour ce projet",
+      "unrecorded": "Non enregistré pour cette ancienne contribution"
+    },
+    "uploadType": {
+      "mixed": "Modifications de fichiers mixtes",
+      "new": "Nouveaux fichiers uniquement",
+      "modified": "Fichiers modifiés",
+      "deleted": "Fichiers supprimés",
+      "none": "Aucune modification de fichier"
+    },
+    "status": {
+      "ready": "Prête à fusionner",
+      "resolution": "Résolution requise",
+      "error": "Erreur",
+      "pending": "Révision en attente",
+      "superseded": "Remplacée"
+    },
+    "passed": "Réussi",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "page": "Page {page} sur {total}",
+    "unknown": "Inconnu",
+    "unknownResearcher": "Chercheur inconnu"
+  },
+  "researchScopes": {
+    "title": "Périmètres de recherche",
+    "description": "Préparez des copies de travail ELAN ciblées et gérez des sujets de recherche réutilisables.",
+    "workspaceLabel": "Espace des périmètres de recherche",
+    "tabs": {
+      "prepare": "Préparer une copie de recherche",
+      "topics": "Sujets de recherche"
+    },
+    "loading": "Chargement des périmètres de recherche…",
+    "matchingFiles": "{count} fichier(s) correspondant(s)",
+    "searchFiles": "Rechercher des fichiers ELAN",
+    "bestMatch": "Meilleure correspondance",
+    "noSearchResults": "Aucun nom de fichier ne correspond à la recherche.",
+    "prepare": {
+      "eyebrow": "COPIE DE TRAVAIL DE RECHERCHE",
+      "title": "Conserver uniquement les couches d'annotation nécessaires",
+      "description": "Choisissez un fichier et un sujet réutilisable, puis adaptez ses tiers pour cette copie de travail.",
+      "safetyTitle": "Crée un téléchargement séparé",
+      "safetyText": "Le fichier partagé du projet n'est pas modifié.",
+      "noFiles": "Aucun fichier ELAN contenant des tiers n'est disponible.",
+      "topicStepTitle": "Choisir votre sujet de recherche",
+      "topicStepText": "ELANORA trouvera les fichiers qui correspondent le mieux à ce périmètre.",
+      "custom": "Sélection personnalisée",
+      "customHint": "Commencer sans périmètre prédéfini",
+      "fileStepTitle": "Choisir un fichier ELAN",
+      "fileStepRanked": "Les fichiers sont classés selon leur couverture du sujet sélectionné.",
+      "fileStepText": "Choisissez l'enregistrement ou la session partagée sur laquelle travailler.",
+      "tierStepTitle": "Vérifier les tiers",
+      "tierStepText": "Les tiers parents requis sont inclus automatiquement."
+    },
+    "topicTierCoverage": "{available} tier(s) sur {total}",
+    "tierCount": "{count} tier(s)",
+    "fileCount": "{count} fichier(s)",
+    "topicInFile": "{topic} dans {file}",
+    "noDescription": "Aucune description fournie.",
+    "coverageMissing": "Disponibles : {available}/{total} · Manquants : {missing}",
+    "coverageComplete": "Couverture complète du sujet",
+    "selectAll": "Tout sélectionner",
+    "clear": "Effacer",
+    "selectedResearchTiers": "{count} tier(s) de recherche sélectionné(s)",
+    "usingTopic": "Sujet utilisé : « {topic} »",
+    "customWorkingScope": "Périmètre de travail personnalisé",
+    "preparing": "Préparation…",
+    "download": "Télécharger la copie de recherche",
+    "pagination": {
+      "label": "Pagination des fichiers ELAN",
+      "previousLabel": "Page précédente des fichiers ELAN",
+      "previous": "Précédent",
+      "page": "Page {page} sur {total}",
+      "nextLabel": "Page suivante des fichiers ELAN",
+      "next": "Suivant",
+      "empty": "0 fichier",
+      "range": "Fichiers {first} à {last} sur {total}"
+    },
+    "roundtrip": {
+      "title": "Continuer dans ELAN",
+      "text": "Modifiez cette copie ciblée puis renvoyez-la sous le même nom. ELANORA réintègre les tiers déclarés et préserve le travail des autres."
+    },
+    "baseline": {
+      "copyTitle": "Contexte partagé pour cette copie",
+      "copyText": "Inclus par défaut. Retirez le contexte inutile ou déclarez explicitement une correction de référence.",
+      "removeAll": "Tout retirer",
+      "includeAll": "Tout inclure",
+      "proposeCorrection": "Proposer une correction",
+      "correctionWarning": "Les changements apportés aux tiers de référence sélectionnés feront l'objet d'une révision explicite. Les autres tiers inclus restent protégés.",
+      "title": "Tiers de référence du projet",
+      "description": "Contexte inclus dans chaque copie de recherche sans appartenir à chaque sujet.",
+      "cancelEditing": "Annuler la modification des tiers de référence",
+      "edit": "Modifier les tiers de référence",
+      "empty": "Aucun tier de référence configuré.",
+      "editorHint": "Choisissez les tiers de contexte stables que les chercheurs doivent voir sans les modifier habituellement.",
+      "selected": "{count} tier(s) de référence sélectionné(s)",
+      "save": "Enregistrer les tiers de référence"
+    },
+    "topics": {
+      "eyebrow": "PÉRIMÈTRES DE RECHERCHE PARTAGÉS",
+      "title": "Regrouper les tiers par sujet de recherche",
+      "description": "Des sujets tels que la prosodie, le regard ou le suivi des références peuvent être réutilisés dans les fichiers ELAN compatibles.",
+      "create": "Créer un sujet",
+      "editEyebrow": "MODIFIER LE SUJET",
+      "newEyebrow": "NOUVEAU SUJET",
+      "editorTitle": "Définir un périmètre de tiers réutilisable",
+      "name": "Nom du sujet",
+      "namePlaceholder": "p. ex. Prosodie",
+      "explanation": "Courte explication",
+      "explanationPlaceholder": "Quel est l'objectif de ce périmètre ?",
+      "findTiers": "Rechercher des tiers",
+      "findTiersPlaceholder": "Rechercher tous les noms de tiers du projet",
+      "allowNew": "Autoriser l'ajout des tiers sélectionnés lorsqu'ils sont absents",
+      "allowNewHint": "Une copie renvoyée peut ajouter un tier sélectionné si le fichier d'origine ne le contenait pas. Les noms non répertoriés restent bloqués.",
+      "selected": "{count} nom(s) de tier sélectionné(s)",
+      "save": "Enregistrer le sujet de recherche",
+      "emptyTitle": "Aucun sujet de recherche",
+      "emptyText": "Créez-en un pour réutiliser la même sélection de tiers dans le corpus.",
+      "newTiersAllowed": "Les tiers sélectionnés peuvent être ajoutés",
+      "prepareCopy": "Préparer une copie",
+      "edit": "Modifier le sujet",
+      "delete": "Supprimer le sujet",
+      "hideCoverage": "Masquer la couverture des fichiers",
+      "viewCoverage": "Voir les tiers et la couverture des fichiers",
+      "noMatchingFiles": "Aucun fichier correspondant.",
+      "searchInTopic": "Rechercher des fichiers dans {topic}",
+      "moreTiers": "+{count} tier(s) supplémentaire(s)",
+      "coverageAria": "{available} tier(s) disponible(s) sur {total}",
+      "showMoreFiles": "Afficher {count} fichier(s) supplémentaire(s)"
+    },
+    "messages": {
+      "selectProject": "Sélectionnez un projet pour utiliser ses périmètres de recherche.",
+      "topicsUnavailable": "Les sujets de recherche sont temporairement indisponibles. Vous pouvez toujours préparer une copie personnalisée.",
+      "loadFailed": "Impossible de charger les périmètres de recherche.",
+      "baselineSaved": "Tiers de référence du projet enregistrés.",
+      "baselineSaveFailed": "Impossible d'enregistrer les tiers de référence.",
+      "downloaded": "La copie de recherche est téléchargée et prête à être ouverte dans ELAN.",
+      "downloadFailed": "Impossible de préparer la copie de recherche.",
+      "topicSaved": "Sujet de recherche enregistré.",
+      "topicSaveFailed": "Impossible d'enregistrer le sujet de recherche.",
+      "deleteTitle": "Supprimer « {topic} » ?",
+      "deleteText": "La définition du sujet sera supprimée. Les fichiers ELAN et les copies téléchargées ne seront pas modifiés.",
+      "topicDeleted": "Sujet de recherche supprimé."
+    }
+  },
   "tiersPage": {
     "pageTitle": "Hiérarchie des tiers",
     "pageDescription": "Inspectez et organisez les couches d'annotation linguistique présentes dans les fichiers ELAN de ce projet.",
@@ -1201,6 +1469,39 @@
       "title": "Sélectionner et valider les fichiers ELAN",
       "description": "Les fichiers sont vérifiés avant d'entrer dans le processus de révision collaborative."
     },
+    "correction": {
+      "title": "Contribution corrigée",
+      "description": "Envoyez uniquement les fichiers indiqués ci-dessous. Les fichiers non demandés restent inchangés dans le projet et ne doivent pas être renvoyés.",
+      "viewDiscussion": "Voir la discussion",
+      "addFiles": "Ajouter les fichiers corrigés demandés",
+      "uploadHint": "Il n'est pas nécessaire de renvoyer le projet complet.",
+      "stillRequired": "Encore requis",
+      "finishLink": "Associer cette contribution à la demande de correction"
+    },
+    "context": {
+      "title": "Décrire votre contribution",
+      "description": "Donnez aux responsables le contexte nécessaire pour valider votre travail sans devoir reconstituer votre intention.",
+      "copyDetected": "Copie de recherche détectée",
+      "customScope": "Sélection personnalisée de tiers",
+      "editableTiers": "{count} tier(s) modifiable(s)",
+      "scopeCheckHint": "La sélection déclarée sera automatiquement comparée aux changements de cet envoi.",
+      "topic": "Sujet de recherche",
+      "topicPlaceholder": "Choisir un sujet existant ou en proposer un",
+      "topicHint": "Choisissez le sujet existant le plus proche. L'orthographe des nouvelles propositions est vérifiée avant révision.",
+      "suggestedName": "Nom du sujet proposé",
+      "suggestedNamePlaceholder": "Par exemple : Prosodie",
+      "suggestedNameHint": "Un administrateur peut associer, renommer ou approuver cette proposition.",
+      "similarTopic": "Sujet similaire trouvé",
+      "similarTopicMessage": "« {proposed} » ressemble au sujet existant « {existing} ».",
+      "useTopic": "Utiliser {topic}",
+      "summary": "Sur quoi avez-vous travaillé ?",
+      "required": "Obligatoire",
+      "summaryPlaceholder": "Résumez la tâche de recherche et les changements attendus",
+      "summaryHint": "Soyez concis mais précis. Les différences d'annotations et de tiers sont calculées automatiquement.",
+      "reviewEvidence": "Votre déclaration et les changements calculés par ELANORA seront présentés ensemble lors de la révision.",
+      "addFilesFirst": "Ajoutez d'abord les fichiers de la contribution.",
+      "viewContribution": "Voir la contribution n°{id}"
+    },
     "ready": "Prêt",
     "selectedCount": "{count} fichier(s) sélectionné(s)",
     "selectProjectFirst": "Choisissez un projet pour activer la sélection de fichiers.",
@@ -1213,6 +1514,7 @@
     "uploadResults": "Résultats de l'upload",
     "resultSuccess": "✓ Succès",
     "resultFailed": "✗ Échec",
+    "correctionLinked": "La contribution corrigée a été associée à sa demande de révision.",
     "errors": {
       "failedToLoadProjects": "Échec du chargement des projets",
       "selectProjectAndFiles": "Veuillez sélectionner un projet et des fichiers",

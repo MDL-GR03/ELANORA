@@ -181,15 +181,14 @@
           <span class="eyebrow">Corpus compliance</span>
           <h3>Latest impact scan</h3>
         </div>
-        <select
+        <AppSelect
           v-if="latestScan"
+          id="protocol-scan-filter"
           v-model="filter"
+          size="small"
           aria-label="Filter scan files"
-        >
-          <option value="all">All files</option>
-          <option value="failed">Needs attention</option>
-          <option value="passed">Passed</option>
-        </select>
+          :options="scanFilterOptions"
+        />
       </header>
       <div v-if="scanning || loading" class="loading-state">
         Checking accepted ELAN revisions…
@@ -272,8 +271,14 @@ import { useRoute } from 'vue-router';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import reviewService from '@/api/service/reviewService';
+import AppSelect from '@/components/common/AppSelect.vue';
 import CorpusProtocolSuggestion from './CorpusProtocolSuggestion.vue';
 import ProtocolRuleBuilder from './ProtocolRuleBuilder.vue';
+const scanFilterOptions = [
+  { value: 'all', label: 'All files' },
+  { value: 'failed', label: 'Needs attention' },
+  { value: 'passed', label: 'Passed' },
+];
 import {
   archiveProtocolVersion,
   createProtocol,
