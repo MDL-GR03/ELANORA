@@ -1269,14 +1269,22 @@ class GitService:
         for file_path in files:
             if file_path.name in existing_names:
                 await elan_service.process_single_file_and_update(
-                    str(file_path), user_id, project_name
+                    str(file_path),
+                    user_id,
+                    project_name,
+                    commit_changes=commit_changes,
                 )
             else:
                 await elan_service.process_single_file(
-                    str(file_path), user_id, project_name
+                    str(file_path),
+                    user_id,
+                    project_name,
+                    commit_changes=commit_changes,
                 )
         for filename in existing_names - canonical_names:
-            if not await elan_service.delete_elan_files_from_db(filename, project_name):
+            if not await elan_service.delete_elan_files_from_db(
+                filename, project_name, commit_changes=commit_changes
+            ):
                 raise RuntimeError(f"Could not remove stale database file {filename}")
         if commit_changes:
             await db.commit()
@@ -1868,59 +1876,67 @@ class GitService:
         parent_commit = runner.get_commit_hash()
         result = runner.complete_pending_merge(branch_name, resolution_strategy)
         accepted_commit = runner.get_commit_hash()
-        await self._sync_elan_files_with_db(project_path, db, user_id, project_name)
-        await mark_upload_processed(
-            db,
-            project.project_id,
-            branch_name,
-            user_id,
-            accepted_commit,
-        )
-        await append_project_revision(
-            db,
-            project_id=project.project_id,
-            git_commit=accepted_commit,
-            parent_git_commit=parent_commit,
-            source_type="contribution",
-            actor_user_id=user_id,
-            contribution_id=pending_upload.upload_id,
-            details={
-                "branch_name": branch_name,
-                "base_commit": pending_upload.base_commit or "",
-                "resolution_strategy": resolution_strategy,
-            },
-        )
-        db.add(
-            AuditEvent(
-                actor_user_id=user_id,
+        try:
+            await self.rebuild_project_database(
+                project_name, db, user_id, commit_changes=False
+            )
+            await mark_upload_processed(
+                db,
+                project.project_id,
+                branch_name,
+                user_id,
+                accepted_commit,
+            )
+            await append_project_revision(
+                db,
                 project_id=project.project_id,
-                action="contribution.accepted",
-                resource_type="pending_upload",
-                resource_id=str(pending_upload.upload_id),
+                git_commit=accepted_commit,
+                parent_git_commit=parent_commit,
+                source_type="contribution",
+                actor_user_id=user_id,
+                contribution_id=pending_upload.upload_id,
                 details={
                     "branch_name": branch_name,
-                    "base_commit": pending_upload.base_commit,
-                    "accepted_commit": accepted_commit,
+                    "base_commit": pending_upload.base_commit or "",
                     "resolution_strategy": resolution_strategy,
-                    "merge_status": result["status"],
-                    "protocol_version_id": (
-                        str(current_protocol.protocol_version_id)
-                        if current_protocol is not None
-                        else None
-                    ),
                 },
             )
-        )
-        if pending_upload.submitted_by not in {None, user_id}:
             db.add(
-                Notification(
-                    user_id=pending_upload.submitted_by,
-                    title="Contribution accepted",
-                    message=f"Your contribution to {project_name} is now part of the project.",
-                    action_url=f"/contribution?project={project.project_id}",
+                AuditEvent(
+                    actor_user_id=user_id,
+                    project_id=project.project_id,
+                    action="contribution.accepted",
+                    resource_type="pending_upload",
+                    resource_id=str(pending_upload.upload_id),
+                    details={
+                        "branch_name": branch_name,
+                        "base_commit": pending_upload.base_commit,
+                        "accepted_commit": accepted_commit,
+                        "resolution_strategy": resolution_strategy,
+                        "merge_status": result["status"],
+                        "protocol_version_id": (
+                            str(current_protocol.protocol_version_id)
+                            if current_protocol is not None
+                            else None
+                        ),
+                    },
                 )
             )
-        await db.commit()
+            if pending_upload.submitted_by not in {None, user_id}:
+                db.add(
+                    Notification(
+                        user_id=pending_upload.submitted_by,
+                        title="Contribution accepted",
+                        message=f"Your contribution to {project_name} is now part of the project.",
+                        action_url=f"/contribution?project={project.project_id}",
+                    )
+                )
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            runner.reset_hard(parent_commit)
+            update_backup(project_path.name, project_path.parent)
+            raise
         runner.delete_branch_localy(branch_name)
         update_backup(project_path.name, project_path.parent)
         return {

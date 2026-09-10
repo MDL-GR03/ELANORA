@@ -146,3 +146,45 @@ async def test_restore_rejects_stale_preview_and_wrong_confirmation(
             db,
             7,
         )
+
+
+@pytest.mark.asyncio
+async def test_restore_resets_git_when_database_commit_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = tmp_path / "test-project"
+    repo.mkdir()
+    git(repo, "init", "--initial-branch=main")
+    git(repo, "config", "user.name", "ELANORA test")
+    git(repo, "config", "user.email", "test@elanora.local")
+    first = commit_file(repo, "first\n", "Initial state")
+    current = commit_file(repo, "second\n", "Accepted contribution")
+    service = GitService(str(tmp_path))
+    service.rebuild_project_database = AsyncMock()
+
+    async def project_lookup(*_args: object) -> object:
+        return SimpleNamespace(project_id=12, project_name="test-project")
+
+    monkeypatch.setattr("app.service.git.get_project_by_name", project_lookup)
+    monkeypatch.setattr(
+        "app.service.git.get_pending_uploads", AsyncMock(return_value=[])
+    )
+    monkeypatch.setattr("app.service.git.update_backup", lambda *_args: None)
+    db = AsyncMock()
+    db.add = MagicMock()
+    db.commit.side_effect = RuntimeError("simulated database commit failure")
+
+    with pytest.raises(RuntimeError, match="simulated database commit failure"):
+        await service.restore_project_version(
+            "test-project",
+            first,
+            current,
+            "Rollback this failed restoration.",
+            "RESTORE test-project",
+            db,
+            7,
+        )
+
+    assert git(repo, "rev-parse", "HEAD") == current
+    assert git(repo, "show", "HEAD:README.md") == "second"
+    db.rollback.assert_awaited_once()

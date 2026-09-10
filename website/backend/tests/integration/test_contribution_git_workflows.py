@@ -1,6 +1,7 @@
 """End-to-end contribution decisions using PostgreSQL and real Git history."""
 
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy import select
@@ -216,6 +217,70 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
         b"Researcher B session 12"
         in (project_path / "elan_files" / "session-12.eaf").read_bytes()
     )
+
+
+@pytest.mark.asyncio
+async def test_failed_database_commit_restores_git_and_keeps_contribution_pending(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    project, admin, researcher, _, project_path, runner = await _domain(
+        session, tmp_path, "failed-acceptance"
+    )
+    baseline_commit = runner.get_commit_hash()
+    original = b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>"
+    _branch_with_changes(
+        runner,
+        project_path,
+        "researcher-failed-acceptance",
+        {
+            "video-11.eaf": (
+                original,
+                b"<ANNOTATION_VALUE>Must be rolled back</ANNOTATION_VALUE>",
+            )
+        },
+    )
+    upload = await _pending(
+        session,
+        project,
+        researcher,
+        runner,
+        "researcher-failed-acceptance",
+        ["video-11.eaf"],
+    )
+    project_id = project.project_id
+    project_name = project.project_name
+    upload_id = upload.upload_id
+    branch_name = upload.branch_name
+    admin_id = admin.user_id
+    await session.commit()
+
+    with (
+        patch.object(
+            session,
+            "commit",
+            AsyncMock(side_effect=RuntimeError("simulated database commit failure")),
+        ),
+        pytest.raises(RuntimeError, match="simulated database commit failure"),
+    ):
+        await GitService(base_path=str(tmp_path)).complete_pending_upload(
+            project_name,
+            branch_name,
+            "auto",
+            session,
+            admin_id,
+        )
+
+    assert runner.get_commit_hash() == baseline_commit
+    assert original in (project_path / "elan_files" / "video-11.eaf").read_bytes()
+    remaining = await get_pending_uploads(session, project_id)
+    assert [item.upload_id for item in remaining] == [upload_id]
+    revisions = await session.scalars(
+        select(ProjectRevision).where(ProjectRevision.project_id == project_id)
+    )
+    assert list(revisions) == []
+    assert "researcher-failed-acceptance" in {
+        branch.lstrip("* ") for branch in runner.get_branches()
+    }
 
 
 @pytest.mark.asyncio

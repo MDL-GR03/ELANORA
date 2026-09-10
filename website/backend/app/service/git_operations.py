@@ -807,7 +807,6 @@ class GitCommandRunner:
             ["commit", "-m", f"Merge reviewed contribution {branch_name}"],
             check=True,
         )
-        self._update_backup()
         return {
             "branch_name": branch_name,
             "resolution_strategy": resolution_strategy,

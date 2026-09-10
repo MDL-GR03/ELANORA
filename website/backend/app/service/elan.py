@@ -134,7 +134,12 @@ class ElanService:
         logger.info(f"Total _store_tiers_and_annotations time: {total_time:.3f}s")
 
     async def store_elan_file_data(
-        self, file_info: dict, user_id: int, project_id: int
+        self,
+        file_info: dict,
+        user_id: int,
+        project_id: int,
+        *,
+        commit_changes: bool = True,
     ) -> int:
         """Store parsed ELAN file data in the database and sync associations."""
         logger.info(f"Storing ELAN file data: {file_info['filename']}")
@@ -159,19 +164,28 @@ class ElanService:
             tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]
             await sync_elan_file_to_tiers(self.db, elan_id, tier_ids)
 
-            await self.db.commit()
+            if commit_changes:
+                await self.db.commit()
+            else:
+                await self.db.flush()
             logger.info(f"Successfully stored: {file_info['filename']} (ID: {elan_id})")
             return elan_id
 
         except Exception as e:
-            await self.db.rollback()
+            if commit_changes:
+                await self.db.rollback()
             logger.error(
                 f"Failed to store ELAN file data for {file_info['filename']}: {e}"
             )
             raise
 
     async def update_elan_file_data(
-        self, file_info: dict, user_id: int, project_id: int
+        self,
+        file_info: dict,
+        user_id: int,
+        project_id: int,
+        *,
+        commit_changes: bool = True,
     ) -> int:
         """Store parsed ELAN file data in the database and sync associations."""
         logger.info(f"Storing ELAN file data: {file_info['filename']}")
@@ -203,19 +217,28 @@ class ElanService:
             tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]
             await sync_elan_file_to_tiers(self.db, elan_id, tier_ids)
 
-            await self.db.commit()
+            if commit_changes:
+                await self.db.commit()
+            else:
+                await self.db.flush()
             logger.info(f"Successfully stored: {file_info['filename']} (ID: {elan_id})")
             return elan_id
 
         except Exception as e:
-            await self.db.rollback()
+            if commit_changes:
+                await self.db.rollback()
             logger.error(
                 f"Failed to store ELAN file data for {file_info['filename']}: {e}"
             )
             raise
 
     async def process_single_file(
-        self, file_path: str, user_id: int, project_name: str
+        self,
+        file_path: str,
+        user_id: int,
+        project_name: str,
+        *,
+        commit_changes: bool = True,
     ) -> dict:
         """Process and store a single ELAN file for the given project."""
         logger.info("Processing single ELAN file: %s", file_path)
@@ -253,13 +276,21 @@ class ElanService:
         logger.debug("Processing new file: %s for project: %s", filename, project_name)
         file_info = self.parse_elan_file(file_path)
         elan_id = await self.store_elan_file_data(
-            file_info, user_id, project.project_id
+            file_info,
+            user_id,
+            project.project_id,
+            commit_changes=commit_changes,
         )
         logger.info("Successfully processed file: %s with ID: %d", filename, elan_id)
         return {"status": "processed", "filename": filename, "elan_id": elan_id}
 
     async def process_single_file_and_update(
-        self, file_path: str, user_id: int, project_name: str
+        self,
+        file_path: str,
+        user_id: int,
+        project_name: str,
+        *,
+        commit_changes: bool = True,
     ) -> dict:
         """Process and update a single ELAN file for the given project."""
         logger.info("Processing single ELAN file for update: %s", file_path)
@@ -274,7 +305,10 @@ class ElanService:
 
         file_info = self.parse_elan_file(file_path)
         elan_id = await self.update_elan_file_data(
-            file_info, user_id, project.project_id
+            file_info,
+            user_id,
+            project.project_id,
+            commit_changes=commit_changes,
         )
         logger.info("Successfully updated file: %s with ID: %d", filename, elan_id)
         return {"status": "updated", "filename": filename, "elan_id": elan_id}
@@ -477,7 +511,9 @@ class ElanService:
         logger.info(f"Deleted {deleted_count} annotations for tier {tier_id}")
         return deleted_count
 
-    async def delete_elan_files_from_db(self, filename: str, project_name: str) -> bool:
+    async def delete_elan_files_from_db(
+        self, filename: str, project_name: str, *, commit_changes: bool = True
+    ) -> bool:
         """Delete all DB data for an ELAN file by filename and project.
 
         This removes the ELAN file, its tiers, annotations, media links, and cleans up orphans.
@@ -523,12 +559,18 @@ class ElanService:
 
             await delete_tiers_for_elan_file(self.db, elan_file_obj.elan_id)
             await delete_elan_file_full(self.db, elan_file_obj.elan_id)
-            await self.db.commit()
+            if commit_changes:
+                await self.db.commit()
+            else:
+                await self.db.flush()
             return True
 
         except Exception as e:
-            await self.db.rollback()
+            if commit_changes:
+                await self.db.rollback()
             logger.error(
                 f"[ELAN-DELETE] Error during deletion of ELAN file '{base_filename}': {e}"
             )
-            return False
+            if commit_changes:
+                return False
+            raise
