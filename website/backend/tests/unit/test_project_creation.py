@@ -32,11 +32,18 @@ async def test_project_creation_succeeds_without_optional_central_hooks(
 
     with (
         patch(
-            "app.service.git.project_exists_by_name", new=AsyncMock(return_value=False)
+            "app.service.project_lifecycle.project_exists_by_name",
+            new=AsyncMock(return_value=False),
         ),
-        patch("app.service.git.create_project_db", new=AsyncMock(return_value=project)),
-        patch("app.service.git.append_project_revision", new=append_revision),
-        patch("app.service.git.update_backup"),
+        patch(
+            "app.service.project_lifecycle.create_project_db",
+            new=AsyncMock(return_value=project),
+        ),
+        patch(
+            "app.service.project_lifecycle.append_project_revision",
+            new=append_revision,
+        ),
+        patch("app.service.project_lifecycle.update_backup"),
     ):
         result = await service.create_project(
             project_name="research-corpus",
@@ -67,13 +74,14 @@ async def test_failed_project_creation_removes_partial_repository(
 
     with (
         patch(
-            "app.service.git.project_exists_by_name", new=AsyncMock(return_value=False)
+            "app.service.project_lifecycle.project_exists_by_name",
+            new=AsyncMock(return_value=False),
         ),
-        patch("app.service.git.remove_project_backup") as remove_backup,
-        patch("app.service.git.copy_githooks"),
+        patch("app.service.project_lifecycle.remove_project_backup") as remove_backup,
+        patch("app.service.project_lifecycle.copy_githooks"),
         patch("app.service.git_operations.update_backup"),
         patch(
-            "app.service.git.create_project_db",
+            "app.service.project_lifecycle.create_project_db",
             new=AsyncMock(side_effect=RuntimeError("database unavailable")),
         ),
         pytest.raises(RuntimeError, match="Project creation failed"),

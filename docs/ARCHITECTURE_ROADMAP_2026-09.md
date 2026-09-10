@@ -270,6 +270,9 @@ in a dedicated `ProjectHistoryService`. Revision projection rebuilding,
 integrity diagnosis and incident notifications, installation-wide scanning, and
 administrator-confirmed manifest recovery now live in
 `ProjectIntegrityService`. `GitService` retains thin compatibility delegates so
-API and CLI callers do not change. The next extraction should separate project
-creation/import from contribution intake, then split contribution inspection
-from review and publication decisions.
+API and CLI callers do not change. Atomic empty-project creation now lives in a
+dedicated `ProjectLifecycleService`. Folder import remains separate for the next
+slice because its legacy transaction commits the project row before parsing and
+recording the initial revision; that consistency flaw should be repaired while
+it is moved. Contribution intake follows, then contribution inspection should
+be split from review and publication decisions.
