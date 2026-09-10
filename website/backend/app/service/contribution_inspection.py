@@ -19,6 +19,59 @@ class ContributionInspectionService:
     def __init__(self, base_path: Path) -> None:
         self.base_path = base_path
 
+    @staticmethod
+    def duplicate_map(pending_uploads: list[Any], runner: GitCommandRunner) -> dict[int, int]:
+        """Map later pending uploads to the earliest identical submitted tree."""
+        tree_groups: dict[str, list[int]] = {}
+        for upload in pending_uploads:
+            if not upload.branch_name:
+                continue
+            try:
+                tree_hash = runner.get_tree_hash(upload.branch_name)
+                tree_groups.setdefault(tree_hash, []).append(upload.upload_id)
+            except Exception:
+                logger.warning(
+                    "Could not determine content identity for contribution %s",
+                    upload.upload_id,
+                )
+        return {
+            upload_id: min(upload_ids)
+            for upload_ids in tree_groups.values()
+            for upload_id in upload_ids
+            if upload_id != min(upload_ids)
+        }
+
+    @staticmethod
+    def annotation_collisions(
+        upload_id: int,
+        targets_by_upload: dict[int, dict[str, dict[str, tuple[Any, ...]]]],
+        candidate_ids: set[int],
+    ) -> list[dict[str, Any]]:
+        """Describe differing edits to the same annotation in active submissions."""
+        if upload_id not in candidate_ids:
+            return []
+        targets = targets_by_upload.get(upload_id, {})
+        collisions: list[dict[str, Any]] = []
+        for other_id, other_targets in targets_by_upload.items():
+            if other_id == upload_id or other_id not in candidate_ids:
+                continue
+            shared: dict[str, list[str]] = {}
+            for filename in targets.keys() & other_targets.keys():
+                differing_ids = sorted(
+                    annotation_id
+                    for annotation_id in targets[filename].keys()
+                    & other_targets[filename].keys()
+                    if targets[filename][annotation_id]
+                    != other_targets[filename][annotation_id]
+                )
+                if differing_ids:
+                    shared[filename] = differing_ids
+            if shared:
+                collisions.append(
+                    {"contribution_id": other_id, "annotations": shared}
+                )
+        return sorted(collisions, key=lambda item: item["contribution_id"])
+
     def semantic_analysis(
         self,
         project_name: str,

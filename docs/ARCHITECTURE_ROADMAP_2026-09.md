@@ -287,5 +287,7 @@ orchestration is naming-policy lookup, file transfer and optional automatic
 acceptance. Read-only EAF semantic summaries, changed-tier detection,
 annotation-level comparison targets, and Git compatibility previews now live in
 `ContributionInspectionService`. Queue presentation still composes these
-results in `GitService`; moving that composition completes the inspection
-boundary before review decisions are extracted.
+results in `GitService`, while content-identity grouping and annotation-level
+cross-contribution collision detection now live with the inspection rules.
+Moving the remaining queue DTO composition completes the inspection boundary
+before review decisions are extracted.

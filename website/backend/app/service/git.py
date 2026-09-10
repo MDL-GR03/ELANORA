@@ -616,24 +616,9 @@ class GitService:
             ).all()
         )
 
-        tree_groups: dict[str, list[int]] = {}
-        for upload in pending_uploads:
-            if not upload.branch_name:
-                continue
-            try:
-                tree_hash = runner.get_tree_hash(upload.branch_name)
-                tree_groups.setdefault(tree_hash, []).append(upload.upload_id)
-            except Exception:
-                logger.warning(
-                    "Could not determine content identity for contribution %s",
-                    upload.upload_id,
-                )
-        duplicate_of = {
-            upload_id: min(upload_ids)
-            for upload_ids in tree_groups.values()
-            for upload_id in upload_ids
-            if upload_id != min(upload_ids)
-        }
+        duplicate_of = self.contribution_inspection.duplicate_map(
+            pending_uploads, runner
+        )
         collision_candidate_ids = {
             upload.upload_id
             for upload in pending_uploads
@@ -872,31 +857,12 @@ class GitService:
 
         for item in upload_status:
             upload_id = int(item["upload_id"])
-            if upload_id not in collision_candidate_ids:
-                item["annotation_collisions"] = []
-                continue
-            targets = semantic_targets_by_upload.get(upload_id, {})
-            collisions = []
-            for other_id, other_targets in semantic_targets_by_upload.items():
-                if other_id == upload_id or other_id not in collision_candidate_ids:
-                    continue
-                shared: dict[str, list[str]] = {}
-                for filename in targets.keys() & other_targets.keys():
-                    differing_ids = sorted(
-                        annotation_id
-                        for annotation_id in targets[filename].keys()
-                        & other_targets[filename].keys()
-                        if targets[filename][annotation_id]
-                        != other_targets[filename][annotation_id]
-                    )
-                    if differing_ids:
-                        shared[filename] = differing_ids
-                if shared:
-                    collisions.append(
-                        {"contribution_id": other_id, "annotations": shared}
-                    )
-            item["annotation_collisions"] = sorted(
-                collisions, key=lambda collision: collision["contribution_id"]
+            item["annotation_collisions"] = (
+                self.contribution_inspection.annotation_collisions(
+                    upload_id,
+                    semantic_targets_by_upload,
+                    collision_candidate_ids,
+                )
             )
 
         return {
