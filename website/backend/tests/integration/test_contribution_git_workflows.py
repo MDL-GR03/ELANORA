@@ -306,7 +306,7 @@ async def test_two_researchers_can_merge_different_subjects_from_same_baseline(
 
     with (
         patch.object(
-            service,
+            service.project_integrity,
             "rebuild_current_revision_projection",
             AsyncMock(side_effect=RuntimeError("simulated rebuild failure")),
         ),

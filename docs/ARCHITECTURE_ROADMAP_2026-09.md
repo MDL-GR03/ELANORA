@@ -266,8 +266,10 @@ frontend components by use case while preserving the tested public contracts.
 
 **Item 6 progress, 10 September 2026:** accepted-history queries, safe Git export
 identifier resolution, restoration preview, and restoration publication now live
-in a dedicated `ProjectHistoryService`. `GitService` retains thin compatibility
-delegates so API callers do not change. Restoration input is an explicit command
-and its projection rebuilder is injected at the use-case boundary. The next
-extraction should move revision integrity scanning and recovery, followed by the
-contribution intake and review workflow.
+in a dedicated `ProjectHistoryService`. Revision projection rebuilding,
+integrity diagnosis and incident notifications, installation-wide scanning, and
+administrator-confirmed manifest recovery now live in
+`ProjectIntegrityService`. `GitService` retains thin compatibility delegates so
+API and CLI callers do not change. The next extraction should separate project
+creation/import from contribution intake, then split contribution inspection
+from review and publication decisions.
