@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,17 +14,28 @@ from app.model.association import (
     UserToProject,
 )
 from app.model.elan_file import ElanFile
-from app.model.enums import ProjectCapability
+from app.model.enums import ProjectCapability, ProjectPermission
 from app.model.project_file_type import ProjectFileType
 from app.model.user import User
 from app.utils.database import DatabaseUtils
 
 logger = get_logger()
 
+
+class ProjectUserRecord(TypedDict):
+    """Serialized membership data returned to project administration APIs."""
+
+    user_id: int
+    username: str
+    email: str
+    permission: ProjectPermission
+    capabilities: list[str]
+
+
 # --- ElanFileToMedia ---
 
 
-async def add_elan_file_to_media(db: AsyncSession, elan_id: int, media_id: int):
+async def add_elan_file_to_media(db: AsyncSession, elan_id: int, media_id: int) -> None:
     filters = {"elan_id": elan_id, "media_id": media_id}
     exists = await DatabaseUtils.get_one_by_filter(db, ElanFileToMedia, filters)
     if not exists:
@@ -31,7 +44,9 @@ async def add_elan_file_to_media(db: AsyncSession, elan_id: int, media_id: int):
         await db.flush()
 
 
-async def remove_elan_file_from_media(db: AsyncSession, elan_id: int, media_id: int):
+async def remove_elan_file_from_media(
+    db: AsyncSession, elan_id: int, media_id: int
+) -> None:
     await DatabaseUtils.delete_by_filter(
         db, ElanFileToMedia, elan_id=elan_id, media_id=media_id
     )
@@ -39,7 +54,7 @@ async def remove_elan_file_from_media(db: AsyncSession, elan_id: int, media_id: 
 
 async def update_elan_file_media(
     db: AsyncSession, elan_id: int, old_media_id: int, new_media_id: int
-):
+) -> None:
     await DatabaseUtils.update_by_filter(
         db,
         ElanFileToMedia,
@@ -51,7 +66,7 @@ async def update_elan_file_media(
 # --- ElanFileToTier ---
 
 
-async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int):
+async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int) -> None:
     filters = {"elan_id": elan_id, "tier_id": tier_id}
     exists = await DatabaseUtils.get_one_by_filter(db, ElanFileToTier, filters)
     if not exists:
@@ -59,7 +74,9 @@ async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int):
         await DatabaseUtils.create(db, assoc)
 
 
-async def remove_elan_file_from_tier(db: AsyncSession, elan_id: int, tier_id: int):
+async def remove_elan_file_from_tier(
+    db: AsyncSession, elan_id: int, tier_id: int
+) -> None:
     await DatabaseUtils.delete_by_filter(
         db, ElanFileToTier, elan_id=elan_id, tier_id=tier_id
     )
@@ -67,7 +84,7 @@ async def remove_elan_file_from_tier(db: AsyncSession, elan_id: int, tier_id: in
 
 async def update_elan_file_tier(
     db: AsyncSession, elan_id: int, old_tier_id: int, new_tier_id: int
-):
+) -> None:
     await DatabaseUtils.update_by_filter(
         db,
         ElanFileToTier,
@@ -80,46 +97,44 @@ async def update_elan_file_tier(
 
 
 async def add_project_annot_standard(
-    db: AsyncSession, project_id: int, annot_standard_id: int
-):
-    filters = {"project_id": project_id, "annot_standard_id": annot_standard_id}
+    db: AsyncSession, project_id: int, standard_id: str
+) -> None:
+    filters = {"project_id": project_id, "standard_id": standard_id}
     exists = await DatabaseUtils.get_one_by_filter(db, ProjectAnnotStandard, filters)
     if not exists:
-        assoc = ProjectAnnotStandard(
-            project_id=project_id, annot_standard_id=annot_standard_id
-        )
+        assoc = ProjectAnnotStandard(project_id=project_id, standard_id=standard_id)
         await DatabaseUtils.create(db, assoc)
 
 
 async def remove_project_annot_standard(
-    db: AsyncSession, project_id: int, annot_standard_id: int
-):
+    db: AsyncSession, project_id: int, standard_id: str
+) -> None:
     await DatabaseUtils.delete_by_filter(
         db,
         ProjectAnnotStandard,
         project_id=project_id,
-        annot_standard_id=annot_standard_id,
+        standard_id=standard_id,
     )
 
 
 async def update_project_annot_standard(
     db: AsyncSession,
     project_id: int,
-    old_annot_standard_id: int,
-    new_annot_standard_id: int,
-):
+    old_standard_id: str,
+    new_standard_id: str,
+) -> None:
     await DatabaseUtils.update_by_filter(
         db,
         ProjectAnnotStandard,
-        {"project_id": project_id, "annot_standard_id": old_annot_standard_id},
-        {"annot_standard_id": new_annot_standard_id},
+        {"project_id": project_id, "standard_id": old_standard_id},
+        {"standard_id": new_standard_id},
     )
 
 
 # --- UserToProject ---
 
 
-async def add_user_to_project(db: AsyncSession, user_id: int, project_id: int):
+async def add_user_to_project(db: AsyncSession, user_id: int, project_id: int) -> None:
     filters = {"user_id": user_id, "project_id": project_id}
     exists = await DatabaseUtils.get_one_by_filter(db, UserToProject, filters)
     if not exists:
@@ -129,7 +144,7 @@ async def add_user_to_project(db: AsyncSession, user_id: int, project_id: int):
 
 async def update_user_project(
     db: AsyncSession, user_id: int, old_project_id: int, new_project_id: int
-):
+) -> None:
     await DatabaseUtils.update_by_filter(
         db,
         UserToProject,
@@ -141,7 +156,7 @@ async def update_user_project(
 # --- ProjectFileType ---
 async def remove_file_type_from_project(
     db: AsyncSession, project_id: int, file_type_id: int
-):
+) -> None:
     await DatabaseUtils.delete_by_filter(
         db, ProjectFileType, project_id=project_id, file_type_id=file_type_id
     )
@@ -152,7 +167,7 @@ async def add_project_file_type(
     project_id: int,
     name: str,
     file_type_id: int,
-):
+) -> ProjectFileType:
     filters = {"project_id": project_id, "name": name}
     exists = await DatabaseUtils.get_one_by_filter(db, ProjectFileType, filters)
     if not exists:
@@ -167,7 +182,9 @@ async def add_project_file_type(
     return exists
 
 
-async def get_project_file_types(db: AsyncSession, project_id: int):
+async def get_project_file_types(
+    db: AsyncSession, project_id: int
+) -> list[ProjectFileType]:
     return await DatabaseUtils.get_by_filter(
         db,
         ProjectFileType,
@@ -178,7 +195,7 @@ async def get_project_file_types(db: AsyncSession, project_id: int):
 
 async def delete_project_file_type(
     db: AsyncSession, project_file_type_id: int, project_id: int
-):
+) -> None:
     # Delete the association between the project and the project file type
     await DatabaseUtils.delete_by_filter(
         db, ProjectFileType, project_id=project_id, id=project_file_type_id
@@ -186,21 +203,27 @@ async def delete_project_file_type(
 
 
 async def update_project_file_type(
-    db: AsyncSession, project_file_type_id: int, update_fields: dict
-):
+    db: AsyncSession,
+    project_file_type_id: int,
+    update_fields: dict[str, object],
+) -> None:
     # Only update name or file_type_id (not extension here)
-    allowed = {}
-    if "name" in update_fields:
-        allowed["name"] = update_fields["name"]
-    if "file_type_id" in update_fields:
-        allowed["file_type_id"] = update_fields["file_type_id"]
+    allowed: dict[str, str | int] = {}
+    name = update_fields.get("name")
+    file_type_id = update_fields.get("file_type_id")
+    if isinstance(name, str):
+        allowed["name"] = name
+    if isinstance(file_type_id, int):
+        allowed["file_type_id"] = file_type_id
     if allowed:
         await DatabaseUtils.update_by_filter(
             db, ProjectFileType, {"id": project_file_type_id}, allowed
         )
 
 
-async def get_project_file_type_by_id(db: AsyncSession, project_file_type_id: int):
+async def get_project_file_type_by_id(
+    db: AsyncSession, project_file_type_id: int
+) -> ProjectFileType | None:
     return await DatabaseUtils.get_one_by_filter(
         db,
         ProjectFileType,
@@ -219,7 +242,7 @@ async def count_project_file_types_by_file_type_id(
 
 async def update_project_file_type_name(
     db: AsyncSession, project_file_type_id: int, name: str
-):
+) -> int:
     return await DatabaseUtils.update_by_filter(
         db, ProjectFileType, {"id": project_file_type_id}, {"name": name}
     )
@@ -227,7 +250,7 @@ async def update_project_file_type_name(
 
 async def update_project_file_type_file_type_id(
     db: AsyncSession, project_file_type_id: int, new_file_type_id: int
-):
+) -> int:
     return await DatabaseUtils.update_by_filter(
         db,
         ProjectFileType,
@@ -237,15 +260,17 @@ async def update_project_file_type_file_type_id(
 
 
 async def get_project_file_type_by_project_and_file_type(
-    db, project_id: int, file_type_id: int
-):
+    db: AsyncSession, project_id: int, file_type_id: int
+) -> ProjectFileType | None:
     """Get the ProjectFileType for a given project and file_type_id."""
     return await DatabaseUtils.get_one_by_filter(
         db, ProjectFileType, {"project_id": project_id, "file_type_id": file_type_id}
     )
 
 
-async def get_project_file_type_with_file_type(db, project_file_type_id: int):
+async def get_project_file_type_with_file_type(
+    db: AsyncSession, project_file_type_id: int
+) -> ProjectFileType | None:
     result = await db.execute(
         select(ProjectFileType)
         .options(selectinload(ProjectFileType.file_type))
@@ -257,7 +282,7 @@ async def get_project_file_type_with_file_type(db, project_file_type_id: int):
 # --- Bulk delete for project associations (unchanged) ---
 
 
-async def delete_project_associations(db: AsyncSession, project_id: int):
+async def delete_project_associations(db: AsyncSession, project_id: int) -> None:
     logger.info("Bulk deleting project associations for project_id=%s", project_id)
     try:
         await DatabaseUtils.bulk_delete(
@@ -272,13 +297,14 @@ async def delete_project_associations(db: AsyncSession, project_id: int):
         )
         logger.info("Bulk deleted project associations successfully")
         await db.flush()
-    except Exception as e:
+    except Exception as error:
         await db.rollback()
         logger.error(
-            "Failed to bulk delete project associations for project_id=%s: %s",
+            "Failed to bulk delete project associations; project_id=%s error_type=%s",
             project_id,
-            e,
+            safe_exception_type(error),
         )
+        raise
 
 
 # --- Utility fetchers (unchanged) ---
@@ -292,7 +318,7 @@ async def get_elan_ids_for_project(db: AsyncSession, project_id: int) -> list[in
     return [r.elan_id for r in records]
 
 
-async def get_tier_ids_for_elan_file(db, elan_id: int) -> list[int]:
+async def get_tier_ids_for_elan_file(db: AsyncSession, elan_id: int) -> list[int]:
     """Get all tier IDs associated with an ELAN file."""
     records = await DatabaseUtils.get_by_filter(
         db, ElanFileToTier, {"elan_id": elan_id}
@@ -300,7 +326,9 @@ async def get_tier_ids_for_elan_file(db, elan_id: int) -> list[int]:
     return [r.tier_id for r in records]
 
 
-async def get_project_users(db: AsyncSession, project_id: int) -> list[dict]:
+async def get_project_users(
+    db: AsyncSession, project_id: int
+) -> list[ProjectUserRecord]:
     """Get all users associated with a project with their permissions."""
     stmt = (
         select(UserToProject, User)
