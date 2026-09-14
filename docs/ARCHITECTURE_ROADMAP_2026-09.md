@@ -358,5 +358,8 @@ to be selected. Cross-project naming-standard import state and requests now live
 in `useNamingStandardImport`, including source project loading, source file-type
 recovery, folded selection state, refresh and translated outcomes. Duplicate
 filtering now compares the stable underlying file type instead of unrelated
-project-local file-type row IDs. The remaining naming-standard work can proceed
-with form and modal presentation decomposition behind these tested boundaries.
+project-local file-type row IDs. `NamingStandardImportDialog` now owns the
+responsive, keyboard-dismissible import presentation with direct tests for its
+dialog semantics, duplicate filtering, missing-file-type recovery and immutable
+selection events. The final action appears only at the applicable selection
+step. The add/edit form is the next naming-standard presentation boundary.
