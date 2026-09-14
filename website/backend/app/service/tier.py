@@ -18,7 +18,14 @@ from app.crud.tier_section import (
     update_tier_section_name,
 )
 from app.model.tier import Tier
-from app.schema.responses.tier import SectionInfo, TierGroupInfo, TierNode
+from app.model.tier_group import TierGroup
+from app.model.tier_section import TierSection
+from app.schema.responses.tier import (
+    SectionInfo,
+    SectionsAndGroupsResponse,
+    TierGroupInfo,
+    TierNode,
+)
 
 logger = get_logger()
 
@@ -29,7 +36,7 @@ class TierService:
     @staticmethod
     def build_tier_tree(tiers: list[Tier]) -> list[TierNode]:
         tier_map = {tier.tier_id: tier for tier in tiers}
-        children_map = {tier.tier_id: [] for tier in tiers}
+        children_map: dict[int, list[Tier]] = {tier.tier_id: [] for tier in tiers}
         for tier in tiers:
             if tier.parent_tier_id and tier.parent_tier_id in tier_map:
                 children_map[tier.parent_tier_id].append(tier)
@@ -40,7 +47,7 @@ class TierService:
             if not tier.parent_tier_id or tier.parent_tier_id not in tier_map
         ]
 
-        def serialize(tier):
+        def serialize(tier: Tier) -> TierNode:
             return TierNode(
                 tier_id=tier.tier_id,
                 tier_name=tier.tier_name,
@@ -51,7 +58,9 @@ class TierService:
         return [serialize(root) for root in roots]
 
     @staticmethod
-    async def get_project_tiers_grouped_by_file(db: AsyncSession, project_name: str):
+    async def get_project_tiers_grouped_by_file(
+        db: AsyncSession, project_name: str
+    ) -> dict[str, dict[str, list[TierNode]]]:
         project_id = await get_project_id_by_name(db, project_name)
         if not project_id:
             logger.error(f"Project not found: {project_name}")
@@ -61,7 +70,7 @@ class TierService:
         if not elan_ids:
             return {}
 
-        result = {}
+        result: dict[str, list[TierNode]] = {}
         for elan_id in elan_ids:
             elan_file = await get_elan_file_by_id(db, elan_id)
             if not elan_file:
@@ -77,7 +86,9 @@ class TierService:
 
 class TierSectionService:
     @staticmethod
-    async def create_section(db, project_id: int, name: str):
+    async def create_section(
+        db: AsyncSession, project_id: int, name: str
+    ) -> TierSection:
         try:
             section = await create_tier_section(db, project_id, name)
             await db.commit()
@@ -87,7 +98,9 @@ class TierSectionService:
             raise
 
     @staticmethod
-    async def rename_section(db, tier_section_id: int, new_name: str):
+    async def rename_section(
+        db: AsyncSession, tier_section_id: int, new_name: str
+    ) -> int:
         try:
             section = await update_tier_section_name(db, tier_section_id, new_name)
             await db.commit()
@@ -97,7 +110,7 @@ class TierSectionService:
             raise
 
     @staticmethod
-    async def delete_section(db, tier_section_id: int):
+    async def delete_section(db: AsyncSession, tier_section_id: int) -> int:
         try:
             result = await delete_tier_section(db, tier_section_id)
             await db.commit()
@@ -107,28 +120,32 @@ class TierSectionService:
             raise
 
     @staticmethod
-    async def get_sections_for_project(db, project_id: int):
+    async def get_sections_for_project(
+        db: AsyncSession, project_id: int
+    ) -> list[TierSection]:
         return await get_tier_sections_by_project(db, project_id)
 
     @staticmethod
-    async def get_sections_and_groups(db, project_id: int):
+    async def get_sections_and_groups(
+        db: AsyncSession, project_id: int
+    ) -> SectionsAndGroupsResponse:
         sections = await get_tier_sections_by_project(db, project_id)
         tier_groups = await get_tier_groups_by_project(db, project_id)
 
         project = await get_project_by_id(db, project_id)
         if not project:
-            return {"sections": [], "tier_groups": []}
+            return SectionsAndGroupsResponse(sections=[], tier_groups=[])
         tiers_by_file = await TierService.get_project_tiers_grouped_by_file(
             db, project.project_name
         )
         tiers_dict = tiers_by_file.get("tiers", {})
 
-        return {
-            "sections": [
+        return SectionsAndGroupsResponse(
+            sections=[
                 SectionInfo(section_id=s.tier_section_id, name=s.section_name)
                 for s in sections
             ],
-            "tier_groups": [
+            tier_groups=[
                 TierGroupInfo(
                     tier_group_id=g.tier_group_id,
                     elan_file_name=g.elan_file_name,
@@ -137,12 +154,14 @@ class TierSectionService:
                 )
                 for g in tier_groups
             ],
-        }
+        )
 
 
 class TierGroupService:
     @staticmethod
-    async def assign_group_to_section(db, tier_group_id: int, section_id: int | None):
+    async def assign_group_to_section(
+        db: AsyncSession, tier_group_id: int, section_id: int | None
+    ) -> int:
         try:
             result = await update_tier_group_section(db, tier_group_id, section_id)
             await db.commit()
@@ -153,8 +172,11 @@ class TierGroupService:
 
     @staticmethod
     async def create_group(
-        db, section_id: int | None, project_id: int, elan_file_name: str
-    ):
+        db: AsyncSession,
+        section_id: int | None,
+        project_id: int,
+        elan_file_name: str,
+    ) -> TierGroup:
         try:
             group = await create_tier_group(db, section_id, project_id, elan_file_name)
             await db.commit()
@@ -164,5 +186,7 @@ class TierGroupService:
             raise
 
     @staticmethod
-    async def get_groups_for_section(db, section_id: int):
+    async def get_groups_for_section(
+        db: AsyncSession, section_id: int
+    ) -> list[TierGroup]:
         return await get_tier_groups_by_section(db, section_id)

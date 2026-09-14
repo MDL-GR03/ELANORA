@@ -17,6 +17,7 @@ from app.model.research_topic import (
     ResearchTopic,
     ResearchTopicTier,
 )
+from app.model.user import User
 from app.schema.requests.tier import (
     CreateSectionRequest,
     DeleteSectionRequest,
@@ -29,6 +30,7 @@ from app.schema.requests.tier import (
 from app.schema.responses.tier import (
     ProjectBaselineTiersInfo,
     ResearchTopicInfo,
+    SectionInfo,
     SectionsAndGroupsResponse,
     TierTreeResponse,
 )
@@ -50,7 +52,7 @@ async def export_tier_subset(
     request: TierSubsetExportRequest,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_read_dep,
-):
+) -> Response:
     """Download a derived EAF containing only selected tiers and dependencies."""
     filename = Path(request.filename)
     if filename.name != request.filename or filename.suffix.lower() != ".eaf":
@@ -149,7 +151,7 @@ async def get_project_baseline_tiers(
     project_id: int,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_read_dep,
-):
+) -> ProjectBaselineTiersInfo:
     names = (
         await db.scalars(
             select(ProjectBaselineTier.tier_name)
@@ -166,7 +168,7 @@ async def update_project_baseline_tiers(
     request: ProjectBaselineTiersRequest,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> ProjectBaselineTiersInfo:
     existing = list(
         (
             await db.scalars(
@@ -191,7 +193,7 @@ async def get_research_topics(
     project_id: int,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_read_dep,
-):
+) -> list[ResearchTopicInfo]:
     topics = (
         await db.scalars(
             select(ResearchTopic)
@@ -208,7 +210,7 @@ async def create_research_topic(
     request: ResearchTopicRequest,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> ResearchTopicInfo:
     existing_topics = list(
         (
             await db.scalars(
@@ -252,7 +254,7 @@ async def update_research_topic(
     request: ResearchTopicRequest,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> ResearchTopicInfo:
     topic = await db.scalar(
         select(ResearchTopic).where(
             ResearchTopic.topic_id == topic_id,
@@ -301,7 +303,7 @@ async def delete_research_topic(
     topic_id: int,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> Response:
     topic = await db.scalar(
         select(ResearchTopic).where(
             ResearchTopic.topic_id == topic_id,
@@ -320,7 +322,7 @@ async def get_tiers(
     project_name: str,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_read_dep,
-):
+) -> TierTreeResponse:
     """Get all tiers for a project, grouped by ELAN file.
 
     Returns a list of tier trees (one per file).
@@ -332,11 +334,11 @@ async def get_tiers(
         )
 
     # Unwrap the 'tiers' key if present
-    tiers_dict = result.get("tiers", result)
+    tiers_dict = result.get("tiers", {})
 
     # Now serialize
     serialized = {k: [n.model_dump() for n in v] for k, v in tiers_dict.items()}
-    return {"tiers": serialized}
+    return TierTreeResponse(tiers=serialized)
 
 
 @router.get("/{project_id}/sections", response_model=SectionsAndGroupsResponse)
@@ -344,25 +346,31 @@ async def get_sections_and_groups(
     project_id: int,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_read_dep,
-):
+) -> SectionsAndGroupsResponse:
     return await TierSectionService.get_sections_and_groups(db, project_id)
 
 
-@router.post("/sections/create")
+@router.post("/sections/create", response_model=SectionInfo)
 async def create_section(
     request: CreateSectionRequest,
     db: AsyncSession = get_db_dep,
-    admin_user=get_admin_dep,
-):
-    return await TierSectionService.create_section(db, request.project_id, request.name)
+    admin_user: User = get_admin_dep,
+) -> SectionInfo:
+    section = await TierSectionService.create_section(
+        db, request.project_id, request.name
+    )
+    return SectionInfo(
+        section_id=section.tier_section_id,
+        name=section.section_name,
+    )
 
 
 @router.post("/sections/rename")
 async def rename_section(
     request: RenameSectionRequest,
     db: AsyncSession = get_db_dep,
-    admin_user=get_admin_dep,
-):
+    admin_user: User = get_admin_dep,
+) -> int:
     return await TierSectionService.rename_section(
         db, request.section_id, request.new_name
     )
@@ -372,8 +380,8 @@ async def rename_section(
 async def delete_section(
     request: DeleteSectionRequest,
     db: AsyncSession = get_db_dep,
-    admin_user=get_admin_dep,
-):
+    admin_user: User = get_admin_dep,
+) -> int:
     return await TierSectionService.delete_section(db, request.section_id)
 
 
@@ -381,8 +389,8 @@ async def delete_section(
 async def move_tier_group(
     request: MoveTierGroupRequest,
     db: AsyncSession = get_db_dep,
-    admin_user=get_admin_dep,
-):
+    admin_user: User = get_admin_dep,
+) -> int:
     return await TierGroupService.assign_group_to_section(
         db, request.tier_group_id, request.section_id
     )

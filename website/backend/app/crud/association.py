@@ -284,7 +284,7 @@ async def delete_project_associations(db: AsyncSession, project_id: int):
 # --- Utility fetchers (unchanged) ---
 
 
-async def get_elan_ids_for_project(db, project_id):
+async def get_elan_ids_for_project(db: AsyncSession, project_id: int) -> list[int]:
     """Get all ELAN file IDs for a project - now uses direct project_id FK."""
     records = await DatabaseUtils.get_by_filter(
         db, ElanFile, {"project_id": project_id}
