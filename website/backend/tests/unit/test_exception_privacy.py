@@ -4,7 +4,7 @@ import ast
 import json
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import HTTPException
@@ -109,6 +109,28 @@ async def test_csrf_failure_log_excludes_client_address(monkeypatch) -> None:
 
     assert response.status_code == 403
     assert SENSITIVE_VALUE not in _calls(logger)
+
+
+@pytest.mark.asyncio
+async def test_docs_referer_cannot_bypass_csrf_validation() -> None:
+    middleware = CSRFMiddleware(lambda _scope, _receive, _send: None)
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/private",
+            "query_string": b"",
+            "headers": [(b"referer", b"http://localhost/docs")],
+            "server": ("testserver", 80),
+            "scheme": "http",
+        }
+    )
+    call_next = AsyncMock()
+
+    response = await middleware.dispatch(request, call_next)
+
+    assert response.status_code == 403
+    call_next.assert_not_awaited()
 
 
 @pytest.mark.asyncio

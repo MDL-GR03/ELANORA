@@ -32,23 +32,12 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         """Process incoming requests and enforce CSRF checks unless excluded."""
-        # Check if request is coming from Swagger UI
-        referer = request.headers.get("referer", "")
-        is_swagger_request = (
-            "/docs" in referer
-            or "/redoc" in referer
-            or (
-                request.headers.get("sec-fetch-mode") == "cors"
-                and request.headers.get("sec-fetch-site") == "same-origin"
-                and "/docs" in referer
-            )
-        )
-
-        # Skip CSRF check for excluded paths, non-mutating methods, or Swagger requests
+        # Never trust Referer or fetch-metadata headers as an authentication
+        # signal: clients can forge them. Only explicit public paths and
+        # non-mutating methods bypass the double-submit check.
         if (
             request.method in ["GET", "HEAD", "OPTIONS"]
             or request.url.path in self.exclude_paths
-            or is_swagger_request
         ):
             return await call_next(request)
 

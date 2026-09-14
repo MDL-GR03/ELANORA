@@ -17,8 +17,6 @@ from app.core.jwt import create_access_token, create_refresh_token
 from app.core.limiter import limiter
 from app.crud.project import get_project_by_id
 from app.dependency.database import get_db_dep
-from app.dependency.user import get_user_dep
-from app.model.user import User
 from app.schema.common.token import TokenData
 from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
 from app.schema.requests.user import (
@@ -37,6 +35,13 @@ from app.service.outbox import (
 from app.service.user import UserService
 
 router = APIRouter()
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    """Expire every browser credential using its original cookie path."""
+    response.delete_cookie(ACCESS_TOKEN_COOKIE_NAME)
+    response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME, path=REFRESH_TOKEN_PATH)
+    response.delete_cookie(CSRF_TOKEN_NAME)
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -86,6 +91,7 @@ async def login(
         secure=COOKIE_SECURE,
         samesite="lax",
     )
+    response.headers["Cache-Control"] = "no-store"
 
     response.set_cookie(
         REFRESH_TOKEN_COOKIE_NAME,
@@ -135,6 +141,7 @@ async def refresh_tokens(
     # Get refresh token from cookies
     refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
     if not refresh_token:
+        _clear_auth_cookies(response)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is missing"
         )
@@ -158,6 +165,7 @@ async def refresh_tokens(
             secure=COOKIE_SECURE,
             samesite="lax",
         )
+        response.headers["Cache-Control"] = "no-store"
 
         response.set_cookie(
             REFRESH_TOKEN_COOKIE_NAME,
@@ -185,12 +193,10 @@ async def refresh_tokens(
 
     except HTTPException:
         # Clear invalid tokens
-        response.delete_cookie(ACCESS_TOKEN_COOKIE_NAME)
-        response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME, path=REFRESH_TOKEN_PATH)
+        _clear_auth_cookies(response)
         raise
     except Exception as e:
-        response.delete_cookie(ACCESS_TOKEN_COOKIE_NAME)
-        response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME, path=REFRESH_TOKEN_PATH)
+        _clear_auth_cookies(response)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to refresh tokens"
         ) from e
@@ -199,12 +205,10 @@ async def refresh_tokens(
 @router.post("/logout")
 async def logout(
     response: Response,
-    user: User = get_user_dep,
 ) -> dict[str, Any]:
-    """Log out the user by deleting all auth cookies."""
-    response.delete_cookie(ACCESS_TOKEN_COOKIE_NAME)
-    response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME, path=REFRESH_TOKEN_PATH)
-    response.delete_cookie(CSRF_TOKEN_NAME)
+    """Clear browser credentials even if the access token has expired."""
+    _clear_auth_cookies(response)
+    response.headers["Cache-Control"] = "no-store"
     return {"message": "Logged out successfully, cookies cleared."}
 
 
