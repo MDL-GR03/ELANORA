@@ -305,9 +305,30 @@ topic, open-review, EAF and pinned-protocol checks. Accepted contribution
 publication now lives in `ContributionPublicationService`, which coordinates the
 Git publication, relational projection, immutable revision ledger, audit event,
 contributor notification, database rollback, Git rollback and backup refresh.
-`GitService` retains a compatibility delegate while callers migrate. The next
-item 6 slice is decomposing the contribution frontend by workflow and removing
-the remaining presentation and request orchestration from its page component.
+`GitService` retains a compatibility delegate while callers migrate.
+
+**Item 6 progress, 15 September 2026:** file renaming now lives in
+`FileRenameService`, upload naming-standard enforcement in
+`upload_naming_compliance`, and folder reconciliation in
+`ProjectFilesystemSyncService`. `GitService` is down from about 1,700 to about
+1,070 lines and delegates to each. Three defects surfaced while writing the
+tests these paths had been missing. A bulk rename that failed while committing
+rolled back the database but left its filesystem renames applied; renames are
+now reversed together. `GitCommandRunner.commit` returns nothing, so both
+rename responses reported success with a null commit hash; the hash is now read
+back. A non-compliant filename was reported to the researcher as a server data
+issue because the specific error was raised inside the handler that replaced
+it; resolving the standard and judging a filename are now separate, and the
+latter surfaces as a 422 naming the file and expected pattern. Applying and
+previewing a synchronization also each carried their own copy of the same Git
+status reading, so an approved preview could drift from the batch that ran;
+both now share one reading.
+
+The next item 6 slices are `add_elan_files` upload orchestration and the
+pending-upload queue presentation, which are the two largest remaining blocks
+in `GitService`, followed by decomposing the contribution frontend by workflow
+and removing the remaining presentation and request orchestration from its page
+component.
 
 The contribution workspace tab navigation; queue summary, filtering, search and
 ordering controls; contribution card header and permission-aware actions; and
