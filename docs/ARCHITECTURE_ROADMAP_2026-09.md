@@ -296,5 +296,7 @@ still coordinates the database query and per-item loop through compatibility
 delegates. Administrator assignment of an existing research topic or explicit
 approval of a distinct proposed topic now lives in `ContributionReviewService`;
 it preserves the researcher's summary and derives a new topic's tiers from the
-inspected contribution. Decline, duplicate dismissal, correction decisions and
-acceptance eligibility remain the next review boundaries to extract.
+inspected contribution. Verified duplicate dismissal and terminal decline now
+live there too, including audit records, contributor notifications, review-case
+closure, reason validation and best-effort branch cleanup. Correction decisions
+and acceptance eligibility remain the next review boundaries to extract.

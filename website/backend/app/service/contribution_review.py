@@ -1,22 +1,37 @@
 """Administrator decisions about pending researcher contributions."""
 
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centralized_logging import get_logger
+from app.crud.pending_upload import get_pending_uploads
 from app.crud.project import get_project_by_name
-from app.model.enums import Status
+from app.model.audit_event import AuditEvent
+from app.model.enums import ReviewCaseState, Status
+from app.model.notification import Notification
 from app.model.pending_upload import PendingUpload
 from app.model.research_topic import ResearchTopic, ResearchTopicTier
+from app.model.review import ReviewCase
 from app.service.contribution_inspection import ContributionInspectionService
+from app.service.git_operations import GitCommandRunner
 from app.service.research_topics import require_distinct_topic_name
+from app.storage.paths import safe_project_path
+
+logger = get_logger()
+MIN_DECLINE_REASON_LENGTH = 3
 
 
 class ContributionReviewService:
     """Apply explicit administrator review decisions without publishing Git."""
 
-    def __init__(self, inspection: ContributionInspectionService) -> None:
+    def __init__(
+        self, base_path: Path, inspection: ContributionInspectionService
+    ) -> None:
+        self.base_path = base_path
         self.inspection = inspection
 
     async def assign_research_topic(
@@ -105,3 +120,155 @@ class ContributionReviewService:
         upload.git_details = details
         await db.commit()
         return context
+
+    async def dismiss_duplicate(
+        self, project_name: str, upload_id: int, db: AsyncSession, user_id: int
+    ) -> dict[str, Any]:
+        """Dismiss a verified duplicate while retaining its audit record."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+        pending = await get_pending_uploads(db, project.project_id)
+        upload = next((item for item in pending if item.upload_id == upload_id), None)
+        if upload is None or not upload.branch_name:
+            raise FileNotFoundError("Pending contribution not found")
+
+        runner = GitCommandRunner(safe_project_path(self.base_path, project_name))
+        submitted_tree = runner.get_tree_hash(upload.branch_name)
+        original = next(
+            (
+                item
+                for item in sorted(pending, key=lambda item: item.upload_id)
+                if item.upload_id < upload.upload_id
+                and item.branch_name
+                and runner.get_tree_hash(item.branch_name) == submitted_tree
+            ),
+            None,
+        )
+        if original is None:
+            raise ValueError(
+                "This contribution is not a duplicate of an earlier pending contribution"
+            )
+
+        upload.status = Status.DISMISSED
+        upload.resolved_at = datetime.now()
+        upload.resolved_by = user_id
+        db.add(
+            AuditEvent(
+                actor_user_id=user_id,
+                project_id=project.project_id,
+                action="contribution.duplicate_dismissed",
+                resource_type="pending_upload",
+                resource_id=str(upload.upload_id),
+                details={"duplicate_of_upload_id": original.upload_id},
+            )
+        )
+        if upload.submitted_by not in {None, user_id}:
+            db.add(
+                Notification(
+                    user_id=upload.submitted_by,
+                    title="Duplicate contribution dismissed",
+                    message=(
+                        f"Your contribution to {project_name} matched contribution "
+                        f"#{original.upload_id}; no research data was lost."
+                    ),
+                    action_url=f"/contribution?project={project.project_id}",
+                )
+            )
+        await db.commit()
+        try:
+            runner.delete_branch_localy(upload.branch_name)
+        except Exception:
+            logger.exception(
+                "Could not remove dismissed duplicate branch %s", upload.branch_name
+            )
+        return {
+            "status": "dismissed",
+            "upload_id": upload.upload_id,
+            "duplicate_of_upload_id": original.upload_id,
+        }
+
+    async def decline(
+        self,
+        project_name: str,
+        upload_id: int,
+        reason: str,
+        db: AsyncSession,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Terminally decline pending work without erasing its audit history."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+        upload = await db.get(PendingUpload, upload_id)
+        if (
+            upload is None
+            or upload.project_id != project.project_id
+            or upload.status != Status.PENDING_ADMIN_APPROVAL
+            or not upload.branch_name
+        ):
+            raise FileNotFoundError("Pending contribution not found")
+
+        decline_reason = reason.strip()
+        if len(decline_reason) < MIN_DECLINE_REASON_LENGTH:
+            raise ValueError("A decline reason is required")
+        now = datetime.now()
+        upload.status = Status.DISMISSED
+        upload.resolved_at = now
+        upload.resolved_by = user_id
+        review_cases = list(
+            (
+                await db.scalars(
+                    select(ReviewCase).where(
+                        ReviewCase.project_id == project.project_id,
+                        (
+                            (ReviewCase.upload_id == upload.upload_id)
+                            | (ReviewCase.resubmitted_upload_id == upload.upload_id)
+                        ),
+                        ReviewCase.state.not_in(
+                            [ReviewCaseState.RESOLVED, ReviewCaseState.CLOSED]
+                        ),
+                    )
+                )
+            ).all()
+        )
+        for review_case in review_cases:
+            review_case.state = ReviewCaseState.CLOSED
+            review_case.resolved_at = now
+            review_case.updated_at = now
+        db.add(
+            AuditEvent(
+                actor_user_id=user_id,
+                project_id=project.project_id,
+                action="contribution.declined",
+                resource_type="pending_upload",
+                resource_id=str(upload.upload_id),
+                details={
+                    "branch_name": upload.branch_name,
+                    "reason": decline_reason,
+                    "closed_review_case_ids": [
+                        str(review_case.case_id) for review_case in review_cases
+                    ],
+                },
+            )
+        )
+        if upload.submitted_by not in {None, user_id}:
+            db.add(
+                Notification(
+                    user_id=upload.submitted_by,
+                    title="Contribution declined",
+                    message=(
+                        f"Your contribution to {project_name} was declined: "
+                        f"{decline_reason}"
+                    ),
+                    action_url=f"/contribution?project={project.project_id}",
+                )
+            )
+        await db.commit()
+        try:
+            GitCommandRunner(
+                safe_project_path(self.base_path, project_name)
+            ).delete_branch_localy(upload.branch_name)
+        except Exception:
+            logger.exception("Could not remove declined branch %s", upload.branch_name)
+        return {"status": "dismissed", "upload_id": upload.upload_id}

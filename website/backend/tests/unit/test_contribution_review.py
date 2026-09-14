@@ -1,3 +1,4 @@
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,7 +12,7 @@ from app.service.contribution_review import ContributionReviewService
 async def test_admin_assigns_existing_topic_without_rewriting_research_summary() -> None:
     inspection = MagicMock()
     inspection.semantic_analysis.return_value = ({}, {}, {"Prosody"})
-    service = ContributionReviewService(inspection)
+    service = ContributionReviewService(MagicMock(), inspection)
     upload = SimpleNamespace(
         upload_id=17,
         project_id=3,
@@ -52,7 +53,7 @@ async def test_admin_assigns_existing_topic_without_rewriting_research_summary()
 
 @pytest.mark.asyncio
 async def test_admin_must_choose_existing_or_new_topic_not_both() -> None:
-    service = ContributionReviewService(MagicMock())
+    service = ContributionReviewService(MagicMock(), MagicMock())
     upload = SimpleNamespace(
         project_id=3,
         status=Status.PENDING_ADMIN_APPROVAL,
@@ -69,5 +70,56 @@ async def test_admin_must_choose_existing_or_new_topic_not_both() -> None:
         pytest.raises(ValueError, match="existing topic or create a new one"),
     ):
         await service.assign_research_topic("corpus", 17, 8, "Prosody", db)
+
+    db.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_duplicate_dismissal_requires_an_earlier_identical_tree(
+    tmp_path: Path,
+) -> None:
+    service = ContributionReviewService(tmp_path, MagicMock())
+    upload = SimpleNamespace(upload_id=17, branch_name="later")
+    earlier = SimpleNamespace(upload_id=16, branch_name="earlier")
+    db = AsyncMock()
+    runner = MagicMock()
+    runner.get_tree_hash.side_effect = ["later-tree", "earlier-tree"]
+
+    with (
+        patch(
+            "app.service.contribution_review.get_project_by_name",
+            new=AsyncMock(return_value=SimpleNamespace(project_id=3)),
+        ),
+        patch(
+            "app.service.contribution_review.get_pending_uploads",
+            new=AsyncMock(return_value=[earlier, upload]),
+        ),
+        patch("app.service.contribution_review.GitCommandRunner", return_value=runner),
+        pytest.raises(ValueError, match="not a duplicate"),
+    ):
+        await service.dismiss_duplicate("corpus", 17, db, 2)
+
+    db.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_decline_requires_a_meaningful_reason(tmp_path: Path) -> None:
+    service = ContributionReviewService(tmp_path, MagicMock())
+    upload = SimpleNamespace(
+        project_id=3,
+        status=Status.PENDING_ADMIN_APPROVAL,
+        branch_name="pending",
+    )
+    db = AsyncMock()
+    db.get.return_value = upload
+
+    with (
+        patch(
+            "app.service.contribution_review.get_project_by_name",
+            new=AsyncMock(return_value=SimpleNamespace(project_id=3)),
+        ),
+        pytest.raises(ValueError, match="decline reason"),
+    ):
+        await service.decline("corpus", 17, "  ", db, 2)
 
     db.commit.assert_not_awaited()
