@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.error_diagnostics import safe_failure_summary
 from app.crud.project import get_project_by_name
 from app.model.audit_event import AuditEvent
 from app.model.project_sync_operation import ProjectSyncOperation
@@ -92,7 +93,9 @@ class ProjectSyncCoordinator:
                 operation.resulting_commit = (
                     head if head != operation.starting_commit else None
                 )
-                operation.error = str(error)[:4000]
+                operation.error = safe_failure_summary(
+                    error, operation="Project synchronization failed"
+                )
                 self._add_audit(db, operation, f"project.server_sync.{operation.state}")
                 await db.commit()
             raise
@@ -231,7 +234,9 @@ class ProjectSyncCoordinator:
             operation = await db.get(ProjectSyncOperation, operation.operation_id)
             if operation is not None:
                 operation.state = "failed"
-                operation.error = str(error)[:4000]
+                operation.error = safe_failure_summary(
+                    error, operation="Discarding server changes failed"
+                )
                 self._add_audit(db, operation, "project.server_sync.failed")
                 await db.commit()
             raise

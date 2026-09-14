@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.error_diagnostics import safe_failure_summary
 from app.crud.elan_file import get_elan_files_by_project
 from app.crud.project import get_project_by_name
 from app.elan import parse_eaf
@@ -149,7 +150,9 @@ class ProjectIntegrityService:
                 "status": "ledger_invalid",
                 "recoverable": False,
                 "git_export_matches": git_commit == revision.git_commit,
-                "detail": str(exc),
+                "detail": safe_failure_summary(
+                    exc, operation="Revision ledger verification failed"
+                ),
             }
         expected = {entry.filename: entry.sha256 for entry in manifest}
         disk_paths = {
@@ -243,7 +246,9 @@ class ProjectIntegrityService:
                 "git_commit": "",
                 "status": "scan_failed",
                 "recoverable": False,
-                "detail": str(exc),
+                "detail": safe_failure_summary(
+                    exc, operation="Project integrity scan failed"
+                ),
             }
         now = datetime.now(UTC)
         record = await db.get(ProjectIntegrityStatus, project.project_id)

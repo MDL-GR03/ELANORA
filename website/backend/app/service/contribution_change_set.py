@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.error_diagnostics import safe_failure_summary
 from app.crud.project import get_project_by_name
 from app.model.audit_event import AuditEvent
 from app.model.contribution_change_set import ContributionChangeSet
@@ -194,7 +195,9 @@ class ContributionChangeSetCoordinator:
             refreshed = await db.get(ContributionChangeSet, change_set_id)
             if refreshed is not None:
                 refreshed.state = "review_needed"
-                refreshed.error = str(error)
+                refreshed.error = safe_failure_summary(
+                    error, operation="Contribution publication requires review"
+                )
                 await db.commit()
             raise
         except Exception:

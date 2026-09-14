@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.core.outbox_crypto import EncryptedPayload, OutboxKeyRing
 from app.core.settings import get_settings
 from app.model.audit_event import OutboxEvent
@@ -200,7 +201,7 @@ class OutboxDispatcher:
                     "event_id": str(event.event_id),
                     "event_type": event.event_type,
                     "attempts": event.attempts,
-                    "error": str(error),
+                    "error_type": safe_exception_type(error),
                 },
             )
             return DispatchResult.FAILED

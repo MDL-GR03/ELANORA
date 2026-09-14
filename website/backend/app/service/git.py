@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_MAX_FILE_SIZE_MB, ELAN_PROJECTS_BASE_PATH
 from app.core.effective_naming_standard_locations import get_location_id_by_name
+from app.core.error_diagnostics import safe_exception_type, safe_failure_summary
 from app.core.exceptions import RenameConflictError
 from app.crud import elan_file_media as elan_media_crud
 from app.crud.effective_naming_standard import get_effective_standards_for_project
@@ -1610,7 +1611,8 @@ class GitService:
 
         except RenameConflictError as e:
             logger.warning(
-                f"Rename conflict for elan_id {rename_info.get('elan_id')}: {e!s}"
+                "Rename conflict detected; error_type=%s",
+                safe_exception_type(e),
             )
 
             # Try to get old filename for error reporting
@@ -1630,15 +1632,13 @@ class GitService:
                 old_filename=old_filename,
                 new_filename=rename_info.get("new_filename", ""),
                 success=False,
-                error=str(e),
+                error="The requested filename conflicts with an existing file",
                 conflict_elan_id=e.conflict_elan_id,
                 message_key=e.message_key,
             )
 
         except Exception as e:
-            logger.error(
-                f"Failed to rename file with elan_id {rename_info.get('elan_id')}: {e!s}"
-            )
+            logger.error("File rename failed; error_type=%s", safe_exception_type(e))
 
             # Try to get old filename for error reporting
             old_filename = ""
@@ -1657,7 +1657,7 @@ class GitService:
                 old_filename=old_filename,
                 new_filename=rename_info.get("new_filename", ""),
                 success=False,
-                error=str(e),
+                error=safe_failure_summary(e, operation="File rename failed"),
             )
 
     async def _finalize_bulk_rename(

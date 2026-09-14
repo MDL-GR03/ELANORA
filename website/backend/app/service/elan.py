@@ -7,6 +7,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type, safe_failure_summary
 from app.crud.annotation import (
     bulk_create_annotations,
     delete_annotations_by_tier,
@@ -343,11 +344,16 @@ class ElanService:
                     logger.debug("Skipped an existing ELAN file")
 
             except Exception as e:
-                logger.error("Failed to process %s: %s", eaf_file.name, e)
+                logger.error(
+                    "ELAN file processing failed; error_type=%s",
+                    safe_exception_type(e),
+                )
                 results[eaf_file.name] = {
                     "status": "failed",
                     "filename": eaf_file.name,
-                    "error": str(e),
+                    "error": safe_failure_summary(
+                        e, operation="ELAN file processing failed"
+                    ),
                 }
                 failed_count += 1
 

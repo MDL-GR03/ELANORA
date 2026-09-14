@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type, safe_failure_summary
 from app.service.git_diff_parser import GitDiffParser
 from app.utils.project_backup import update_backup
 
@@ -339,8 +340,10 @@ class GitMerger:
                 "message": f"Successfully merged {len(new_files)} new files",
             }
         except subprocess.CalledProcessError as e:
-            logger.error(f"Auto-merge failed for branch '{branch_name}': {e}")
-            raise RuntimeError(f"Auto-merge failed: {e}") from e
+            logger.error(
+                "Automatic merge failed; error_type=%s", safe_exception_type(e)
+            )
+            raise RuntimeError("Automatic merge failed") from e
 
     def _create_conflict_response(
         self, branch_name: str, analysis: MergeAnalysis
@@ -362,7 +365,10 @@ class GitMerger:
             )
             logger.debug(f"Generated diff stats for branch '{branch_name}'")
         except Exception as e:
-            logger.error(f"Failed to generate diff stats: {e}")
+            logger.error(
+                "Generating diff statistics failed; error_type=%s",
+                safe_exception_type(e),
+            )
             detailed_diff = subprocess.CompletedProcess([], 0, "", "")
 
         logger.warning(
@@ -408,10 +414,13 @@ class FileUploadProcessor:
                     size=file.size or 0,
                     existed=file.filename in existing_files,
                     success=False,
-                    error=str(e),
+                    error=safe_failure_summary(e, operation="File processing failed"),
                 )
                 failed_files.append(failed_result)
-                logger.error(f"Failed to process file {file.filename}: {e}")
+                logger.error(
+                    "Uploaded file processing failed; error_type=%s",
+                    safe_exception_type(e),
+                )
 
         return uploaded_files, failed_files
 
@@ -450,8 +459,11 @@ class FileUploadProcessor:
             logger.debug(f"Git add successful for {filename}")
 
         except subprocess.CalledProcessError as e:
-            logger.error(f"Git add failed for {file.filename}: {e}")
-            raise RuntimeError(f"Failed to add file to Git: {e}") from e
+            logger.error(
+                "Staging an uploaded file failed; error_type=%s",
+                safe_exception_type(e),
+            )
+            raise RuntimeError("Failed to stage uploaded file") from e
 
         return FileUploadResult(
             filename=filename,
@@ -513,8 +525,11 @@ class FileUploadProcessor:
                 logger.info("No changes to commit - all files are identical")
                 return  # Success case
             else:
-                logger.error(f"Git commit failed: {e.stderr}")
-                raise RuntimeError(f"Git commit failed: {e.stderr}") from e
+                logger.error(
+                    "Committing uploaded files failed; error_type=%s",
+                    safe_exception_type(e),
+                )
+                raise RuntimeError("Failed to commit uploaded files") from e
 
 
 class GitCommandRunner:
