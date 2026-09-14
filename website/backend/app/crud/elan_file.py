@@ -15,6 +15,7 @@ from app.crud.elan_file_media import (
     delete_orphaned_media,
 )
 from app.crud.file_content import get_or_create_file_content
+from app.elan.persistence import PersistedEafFile
 from app.model.association import ElanFileToMedia, ElanFileToTier
 from app.model.elan_file import ElanFile
 from app.model.file_content import FileContent
@@ -39,7 +40,7 @@ async def get_orphan_elan_files_by_project(
     return elan_files
 
 
-async def delete_elan_file_associations(db: AsyncSession, elan_id: int):
+async def delete_elan_file_associations(db: AsyncSession, elan_id: int) -> None:
     """Delete ELAN file associations - now only handles media/tier links since project link is direct FK."""
     logger.info("Attempting to delete ELAN file associations for elan_id=%s", elan_id)
     try:
@@ -52,10 +53,13 @@ async def delete_elan_file_associations(db: AsyncSession, elan_id: int):
         )
         await DatabaseUtils.delete_by_filter(db, TierGroup, elan_id=elan_id)
         logger.info("Deleted ELAN file associations for elan_id=%s", elan_id)
-    except Exception as e:
+    except Exception as error:
         logger.error(
-            "Failed to delete ELAN file associations for elan_id=%s: %s", elan_id, e
+            "Failed to delete ELAN file associations; elan_id=%s error_type=%s",
+            elan_id,
+            safe_exception_type(error),
         )
+        raise
 
 
 async def get_elan_file_by_id(db: AsyncSession, elan_id: int) -> ElanFile | None:
@@ -238,7 +242,7 @@ async def sync_elan_file_to_tiers(
 async def get_projects_for_elan_file(db: AsyncSession, elan_id: int) -> list[int]:
     """Get the project_id associated with an ELAN file."""
     # With new schema, each ELAN file belongs to only one project
-    elan_file = await DatabaseUtils.get_by_id(db, ElanFile, elan_id)
+    elan_file = await DatabaseUtils.get_by_id(db, ElanFile, "elan_id", elan_id)
     if elan_file and elan_file.project_id:
         return [elan_file.project_id]
     return []
@@ -250,39 +254,30 @@ async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
     Returns True if the file was deleted, False otherwise.
     """
     logger.info(f"Full deletion for ELAN file ID: {elan_id}")
-    try:
-        # Get the ELAN file object
-        elan_file_obj = await get_elan_file_by_id(db, elan_id)
-        if not elan_file_obj:
-            logger.warning(f"ELAN file ID {elan_id} not found.")
-            return False
-
-        # Delete associations (tiers, projects, etc.)
-        await delete_elan_file_associations(db, elan_id)
-
-        # ELAN_FILE has a direct, non-null project foreign key. There is no
-        # many-to-many ownership relation to preserve after this point.
-        logger.info(f"Deleting ELAN file row for elan_id={elan_id}")
-        await db.delete(elan_file_obj)
-        await db.flush()
-
-        # Clean up orphaned media
-        deleted_count = await delete_orphaned_media(db)
-        # Clean up unused annotation values
-        await delete_unused_annotation_values(db)
-        logger.info(f"Deleted {deleted_count} orphaned media files.")
-        return True
-
-    except Exception as e:
-        logger.error(
-            "Failed to fully delete an ELAN file; error_type=%s",
-            safe_exception_type(e),
-        )
+    elan_file_obj = await get_elan_file_by_id(db, elan_id)
+    if not elan_file_obj:
+        logger.warning("ELAN file was not found during deletion")
         return False
+
+    await delete_elan_file_associations(db, elan_id)
+
+    # ELAN_FILE has a direct, non-null project foreign key. There is no
+    # many-to-many ownership relation to preserve after this point.
+    logger.info("Deleting an ELAN file row")
+    await db.delete(elan_file_obj)
+    await db.flush()
+
+    deleted_count = await delete_orphaned_media(db)
+    await delete_unused_annotation_values(db)
+    logger.info("Deleted %s orphaned media records", deleted_count)
+    return True
 
 
 async def store_elan_file_data_in_db(
-    db: AsyncSession, file_info: dict, user_id: int, project_id: int
+    db: AsyncSession,
+    file_info: PersistedEafFile,
+    user_id: int,
+    project_id: int,
 ) -> int:
     """Store parsed ELAN file data in the database and sync associations.
 

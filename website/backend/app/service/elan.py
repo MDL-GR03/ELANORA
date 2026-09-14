@@ -569,7 +569,9 @@ class ElanService:
             )
 
             await delete_tiers_for_elan_file(self.db, elan_file_obj.elan_id)
-            await delete_elan_file_full(self.db, elan_file_obj.elan_id)
+            deleted = await delete_elan_file_full(self.db, elan_file_obj.elan_id)
+            if not deleted:
+                raise RuntimeError("ELAN file disappeared during deletion")
             if commit_changes:
                 await self.db.commit()
             else:

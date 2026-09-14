@@ -15,7 +15,7 @@ logger = get_logger()
 async def create_project_db(
     db: AsyncSession,
     project_name: str,
-    description: str,
+    description: str | None,
     project_path: str,
     instance_id: int,
     creator_user_id: int,
