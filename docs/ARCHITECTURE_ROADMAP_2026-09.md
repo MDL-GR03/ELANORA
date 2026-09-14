@@ -315,5 +315,8 @@ research-context decision panel now live in focused Vue components with
 component-level permission, accessibility and interaction tests. Collision
 warnings, version history, duplicate and supersession evidence, quality checks,
 file counts, semantic recaps and conflicted filenames now live in a tested card
-body component as well. The page still owns queue data and mutations. Moving
-request orchestration into a composable is the next frontend slice.
+body component as well. Project-scoped contribution loading, stale-project race
+protection, proposed-topic initialization, review counts, research-topic loading
+and read-side error state now live in `useContributionQueueData`. The page still
+owns administrator mutations, confirmations and navigation. Moving those
+mutation workflows into a dedicated composable is the next frontend slice.

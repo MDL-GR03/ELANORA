@@ -292,8 +292,6 @@
 <script setup>
 import { ref, onMounted, computed, onUnmounted, watch, nextTick } from 'vue';
 import gitService from '@/api/service/gitService';
-import reviewService from '@/api/service/reviewService';
-import { fetchResearchTopics } from '@/api/service/tierService';
 import '@/assets/css/pending-uploads-page.css';
 import UploadDetailsView from '@/components/common/UploadDetailsView.vue';
 import UploadResolutionView from '@/components/common/UploadResolutionView.vue';
@@ -309,6 +307,7 @@ import { useUserStore } from '@/stores/user.js';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
+import { useContributionQueueData } from '@/composables/useContributionQueueData';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { hasProjectPermission } from '@/utils/authorization';
 import {
@@ -324,14 +323,7 @@ const router = useRouter();
 const confirmAction = useUserConfirm();
 const userStore = useUserStore();
 const eventMessages = useEventMessageStore();
-const pendingUploads = ref([]);
-const uploadsLoading = ref(false);
-const error = ref('');
-const activeReviewCount = ref(0);
-const reviewCases = ref([]);
-const researchTopics = ref([]);
 const topicDecisions = ref({});
-const topicSuggestionNames = ref({});
 const topicDecisionBusy = ref(false);
 const expandedTopicDecision = ref(null);
 
@@ -355,12 +347,6 @@ const actionBusy = computed(
 const queueFilter = ref('all');
 const queueQuery = ref('');
 const queueSort = ref('oldest');
-const researchTopicOptions = computed(() =>
-  researchTopics.value.map((topic) => ({
-    value: topic.topic_id,
-    label: topic.name,
-  }))
-);
 
 // Project store
 const projectStore = useProjectStore();
@@ -374,6 +360,29 @@ const currentProjectName = computed(() => {
     ? currentProject.value.project_name
     : currentProject.value;
 });
+const {
+  pendingUploads,
+  uploadsLoading,
+  error,
+  activeReviewCount,
+  reviewCases,
+  researchTopics,
+  topicSuggestionNames,
+  fetchPendingUploads,
+  loadResearchTopics,
+  fetchReviewCount,
+  clear: clearQueueData,
+} = useContributionQueueData({
+  currentProject,
+  currentProjectName,
+  translate: t,
+});
+const researchTopicOptions = computed(() =>
+  researchTopics.value.map((topic) => ({
+    value: topic.topic_id,
+    label: topic.name,
+  }))
+);
 const activeView = computed(() => {
   if (route.query.view === 'reviews') return 'reviews';
   if (route.query.view === 'history' && canAdminister.value) return 'history';
@@ -495,8 +504,6 @@ function scrollToContribution(uploadId) {
 
 // Auto-refresh interval
 let refreshInterval = null;
-let fetchSequence = 0;
-let fetchInFlight = false;
 
 // Watch for project changes
 watch(
@@ -515,8 +522,7 @@ watch(
   () => currentProject.value?.project_id,
   async (newProjectId, oldProjectId) => {
     if (newProjectId === oldProjectId) return;
-    pendingUploads.value = [];
-    error.value = '';
+    clearQueueData();
     if (newProjectId) {
       await Promise.all([
         fetchPendingUploads(),
@@ -556,71 +562,6 @@ onUnmounted(() => {
     clearInterval(refreshInterval);
   }
 });
-
-async function fetchPendingUploads(showLoading = true) {
-  if (!currentProjectName.value) {
-    pendingUploads.value = [];
-    return;
-  }
-
-  if (fetchInFlight) return;
-  const requestedProject = currentProjectName.value;
-  const request = ++fetchSequence;
-  fetchInFlight = true;
-  try {
-    if (showLoading) uploadsLoading.value = true;
-    error.value = '';
-
-    const response =
-      await gitService.getPendingUploadsWithStatus(requestedProject);
-    if (
-      request === fetchSequence &&
-      requestedProject === currentProjectName.value
-    ) {
-      pendingUploads.value = response.pending_uploads || [];
-      topicSuggestionNames.value = Object.fromEntries(
-        pendingUploads.value
-          .filter((upload) => upload.research_context?.proposed_topic_name)
-          .map((upload) => [
-            upload.upload_id,
-            upload.research_context.proposed_topic_name,
-          ])
-      );
-    }
-  } catch {
-    if (
-      showLoading &&
-      request === fetchSequence &&
-      requestedProject === currentProjectName.value
-    ) {
-      error.value = t('pendingUploads.errors.loadFailed');
-      pendingUploads.value = [];
-    }
-  } finally {
-    fetchInFlight = false;
-    if (showLoading && request === fetchSequence) uploadsLoading.value = false;
-    if (
-      requestedProject !== currentProjectName.value &&
-      currentProjectName.value
-    ) {
-      void fetchPendingUploads(showLoading);
-    }
-  }
-}
-
-async function loadResearchTopics() {
-  if (!currentProject.value?.project_id) {
-    researchTopics.value = [];
-    return;
-  }
-  try {
-    researchTopics.value = await fetchResearchTopics(
-      currentProject.value.project_id
-    );
-  } catch {
-    researchTopics.value = [];
-  }
-}
 
 async function assignResearchTopic(upload) {
   const topicId = Number(topicDecisions.value[upload.upload_id]);
@@ -670,24 +611,6 @@ async function createResearchTopicFromContribution(upload) {
     eventMessages.addMessage(error.value, 'error');
   } finally {
     topicDecisionBusy.value = false;
-  }
-}
-
-async function fetchReviewCount() {
-  if (!currentProject.value?.project_id) {
-    activeReviewCount.value = 0;
-    reviewCases.value = [];
-    return;
-  }
-  try {
-    const cases = await reviewService.list(currentProject.value.project_id);
-    reviewCases.value = cases;
-    activeReviewCount.value = cases.filter(
-      (item) => !['resolved', 'closed'].includes(item.state)
-    ).length;
-  } catch {
-    activeReviewCount.value = 0;
-    reviewCases.value = [];
   }
 }
 
