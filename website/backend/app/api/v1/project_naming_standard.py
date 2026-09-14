@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +22,9 @@ router = APIRouter(dependencies=[get_admin_dep])
 @router.get(
     "/projects-with-standards", response_model=list[ProjectWithStandardsResponse]
 )
-async def get_projects_with_standards(db: AsyncSession = get_db_dep):
+async def get_projects_with_standards(
+    db: AsyncSession = get_db_dep,
+) -> list[ProjectWithStandardsResponse]:
     return await ProjectNamingStandardService.get_projects_with_standards(db)
 
 
@@ -28,7 +32,7 @@ async def get_projects_with_standards(db: AsyncSession = get_db_dep):
 async def import_selected_standards(
     req: ImportSelectedStandardsRequest,
     db: AsyncSession = get_db_dep,
-):
+) -> ImportSelectedStandardsResponse:
     return await ProjectNamingStandardService.import_selected_standards(
         db, req.target_project_id, req.standard_ids
     )
@@ -38,7 +42,7 @@ async def import_selected_standards(
 async def create_standard_with_components(
     req: CreateNamingStandardRequest,
     db: AsyncSession = get_db_dep,
-):
+) -> dict[str, Any]:
     components = [c.model_dump() for c in req.components]
     return await ProjectNamingStandardService.create_standard_with_components(
         db,
@@ -52,12 +56,16 @@ async def create_standard_with_components(
 
 
 @router.get("/project/{project_id}")
-async def get_standards_for_project(project_id: int, db: AsyncSession = get_db_dep):
+async def get_standards_for_project(
+    project_id: int, db: AsyncSession = get_db_dep
+) -> list[dict[str, Any]]:
     return await ProjectNamingStandardService.get_standards_for_project(db, project_id)
 
 
 @router.get("/{standard_id}")
-async def get_standard_with_components(standard_id: int, db: AsyncSession = get_db_dep):
+async def get_standard_with_components(
+    standard_id: int, db: AsyncSession = get_db_dep
+) -> dict[str, Any]:
     result = await ProjectNamingStandardService.get_standard_with_components(
         db, standard_id
     )
@@ -67,12 +75,14 @@ async def get_standard_with_components(standard_id: int, db: AsyncSession = get_
 
 
 @router.delete("/{standard_id}")
-async def delete_standard(standard_id: int, db: AsyncSession = get_db_dep):
+async def delete_standard(standard_id: int, db: AsyncSession = get_db_dep) -> bool:
     return await ProjectNamingStandardService.delete_standard(db, standard_id)
 
 
 @router.get("/project/{project_id}/component-names")
-async def get_component_names(project_id: int, db: AsyncSession = get_db_dep):
+async def get_component_names(
+    project_id: int, db: AsyncSession = get_db_dep
+) -> list[str]:
     return await ProjectNamingStandardService.get_unique_component_names_by_project(
         db, project_id
     )
@@ -81,7 +91,7 @@ async def get_component_names(project_id: int, db: AsyncSession = get_db_dep):
 @router.get("/project/{project_id}/full")
 async def get_project_naming_standards_full(
     project_id: int, db: AsyncSession = get_db_dep
-):
+) -> dict[str, Any]:
     return await ProjectNamingStandardService.get_project_naming_standards_full(
         db, project_id
     )

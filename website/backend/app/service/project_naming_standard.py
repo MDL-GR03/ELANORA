@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,7 +35,9 @@ def _is_duplicate_standard_error(error: IntegrityError) -> bool:
 
 class ProjectNamingStandardService:
     @staticmethod
-    async def get_standards_for_project(db: AsyncSession, project_id: int):
+    async def get_standards_for_project(
+        db: AsyncSession, project_id: int
+    ) -> list[dict[str, Any]]:
         try:
             standards = await project_naming_standard.get_standards_by_project(
                 db, project_id
@@ -58,7 +62,9 @@ class ProjectNamingStandardService:
             raise
 
     @staticmethod
-    async def get_standard_with_components(db: AsyncSession, standard_id: int):
+    async def get_standard_with_components(
+        db: AsyncSession, standard_id: int
+    ) -> dict[str, Any] | None:
         try:
             return await get_standard_with_components_full(db, standard_id)
         except Exception as e:
@@ -77,8 +83,10 @@ class ProjectNamingStandardService:
         project_file_type_id: int,
         pattern: str,
         description: str | None,
-        components: list[dict],
-    ):
+        components: list[dict[str, Any]],
+        *,
+        commit: bool = True,
+    ) -> dict[str, Any]:
         try:
             # Block if any regex is empty or only whitespace
             for comp in components:
@@ -116,10 +124,14 @@ class ProjectNamingStandardService:
                     await component_accepted_value.link_component_to_accepted_value(
                         db, template.id, acc_val.id
                     )
-            await db.commit()
-            return await ProjectNamingStandardService.get_standard_with_components(
+            if commit:
+                await db.commit()
+            created = await ProjectNamingStandardService.get_standard_with_components(
                 db, standard.id
             )
+            if created is None:
+                raise RuntimeError("Created naming standard could not be reloaded")
+            return created
         except IntegrityError as e:
             await db.rollback()
             logger.error(
@@ -141,7 +153,7 @@ class ProjectNamingStandardService:
             raise
 
     @staticmethod
-    async def _delete_standard_and_cleanup(db: AsyncSession, standard_id: int):
+    async def _delete_standard_and_cleanup(db: AsyncSession, standard_id: int) -> None:
         logger.info(f"Deleting ProjectNamingStandard with id={standard_id}")
         await project_naming_standard.delete_standard(db, standard_id)
         logger.info(
@@ -154,7 +166,7 @@ class ProjectNamingStandardService:
         await accepted_value.delete_orphaned_accepted_values(db)
 
     @staticmethod
-    async def delete_standard(db: AsyncSession, standard_id: int):
+    async def delete_standard(db: AsyncSession, standard_id: int) -> bool:
         try:
             await ProjectNamingStandardService._delete_standard_and_cleanup(
                 db, standard_id
@@ -173,7 +185,9 @@ class ProjectNamingStandardService:
             raise
 
     @staticmethod
-    async def delete_all_standards_by_project(db: AsyncSession, project_id: int):
+    async def delete_all_standards_by_project(
+        db: AsyncSession, project_id: int
+    ) -> None:
         try:
             standard_ids = await project_naming_standard.get_standards_ids_by_project(
                 db, project_id
@@ -191,7 +205,9 @@ class ProjectNamingStandardService:
             raise
 
     @staticmethod
-    async def get_unique_component_names_by_project(db, project_id: int):
+    async def get_unique_component_names_by_project(
+        db: AsyncSession, project_id: int
+    ) -> list[str]:
         try:
             return await component_template.get_unique_component_names_by_project(
                 db, project_id
@@ -205,12 +221,14 @@ class ProjectNamingStandardService:
             raise
 
     @staticmethod
-    async def get_project_naming_standards_full(db: AsyncSession, project_id: int):
+    async def get_project_naming_standards_full(
+        db: AsyncSession, project_id: int
+    ) -> dict[str, Any]:
         try:
             standards = await project_naming_standard.get_standards_by_project(
                 db, project_id
             )
-            standards_with_components = []
+            standards_with_components: list[dict[str, Any] | None] = []
             for standard in standards:
                 detail = (
                     await ProjectNamingStandardService.get_standard_with_components(
@@ -236,7 +254,9 @@ class ProjectNamingStandardService:
             raise
 
     @staticmethod
-    async def get_projects_with_standards(db: AsyncSession):
+    async def get_projects_with_standards(
+        db: AsyncSession,
+    ) -> list[ProjectWithStandardsResponse]:
         try:
             projects = await project_naming_standard.get_projects_with_standards(db)
             return [
@@ -256,9 +276,9 @@ class ProjectNamingStandardService:
         db: AsyncSession,
         target_project_id: int,
         standard_ids: list[int],
-    ):
+    ) -> ImportSelectedStandardsResponse:
         try:
-            imported_standards = []
+            imported_standards: list[NamingStandardResponse] = []
             for standard_id in standard_ids:
                 # Get the source standard with components
                 source_standard = (
@@ -267,12 +287,20 @@ class ProjectNamingStandardService:
                     )
                 )
                 if not source_standard:
-                    continue
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Naming standard {standard_id} was not found.",
+                    )
 
                 # Get the file_type_id from the source's project_file_type_id
                 source_pft = await db.get(
                     ProjectFileType, source_standard["project_file_type_id"]
                 )
+                if source_pft is None:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="The source naming standard has no valid file type.",
+                    )
                 file_type_id = source_pft.file_type_id
 
                 # Use the new CRUD util to get the ProjectFileType for the target project
@@ -307,6 +335,7 @@ class ProjectNamingStandardService:
                         source_standard["pattern"],
                         source_standard.get("description", ""),
                         components,
+                        commit=False,
                     )
                     imported_standards.append(NamingStandardResponse(**new_standard))
                 except IntegrityError as e:
