@@ -1,4 +1,6 @@
-from pydantic import Field
+from typing import Annotated
+
+from pydantic import Field, StringConstraints
 
 from app.schema.common.base import CustomBaseModel
 
@@ -38,12 +40,20 @@ class TierSubsetExportRequest(CustomBaseModel):
     )
 
 
+TopicName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)
+]
+TierName = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)
+]
+
+
 class ResearchTopicRequest(CustomBaseModel):
-    name: str = Field(min_length=1, max_length=100)
+    name: TopicName
     description: str | None = Field(default=None, max_length=1000)
-    tier_names: list[str] = Field(min_length=1, max_length=500)
+    tier_names: list[TierName] = Field(min_length=1, max_length=500)
     allow_new_tiers: bool = False
 
 
 class ProjectBaselineTiersRequest(CustomBaseModel):
-    tier_names: list[str] = Field(default_factory=list, max_length=500)
+    tier_names: list[TierName] = Field(default_factory=list, max_length=500)
