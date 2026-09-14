@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   acceptedValuesPlaceholder,
   extractPatternComponents,
+  findPatternSeparator,
+  inferPatternComponents,
   normalizeNumericAcceptedValues,
   splitPatternBlocks,
   splitTypeGroups,
@@ -57,6 +59,65 @@ describe('naming standard pattern utilities', () => {
     expect(
       splitPatternBlocks('{prefix_video}_{participant}_{session}', '_')
     ).toEqual(['{prefix_video}', '{participant}', '{session}']);
+    expect(findPatternSeparator('{prefix_video}-{participant}')).toBe('-');
+  });
+
+  it('infers prefix and numeric rules using the visible pattern separator', async () => {
+    const showPrompt = vi.fn().mockResolvedValue('1-150');
+    const result = await inferPatternComponents({
+      pattern: '{prefix_video}-{session}',
+      example: 'CLSFBI-040',
+      showPrompt,
+      translate: (key) => key,
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.components).toMatchObject([
+      {
+        name: 'prefix_video',
+        regex: '\\p{L}{6}',
+        accepted_values: ['CLSFBI'],
+      },
+      {
+        name: 'session',
+        regex: '\\p{N}{3}',
+        accepted_values: ['001-150'],
+      },
+    ]);
+  });
+
+  it('asks how to divide ambiguous same-type components', async () => {
+    const showPrompt = vi.fn().mockResolvedValue('2');
+    const result = await inferPatternComponents({
+      pattern: '{site}{participant}',
+      example: 'ABCD',
+      showPrompt,
+      translate: (key) => key,
+    });
+
+    expect(showPrompt).toHaveBeenCalledWith(
+      expect.stringContaining('component "site"'),
+      2,
+      expect.any(Function),
+      'number'
+    );
+    expect(
+      result.components.map((component) => component.accepted_values)
+    ).toEqual([['AB'], ['CD']]);
+  });
+
+  it('returns a useful error when ambiguous inference is cancelled', async () => {
+    const result = await inferPatternComponents({
+      pattern: '{site}{participant}',
+      example: 'ABCD',
+      showPrompt: async () => null,
+      translate: (key) => key,
+    });
+
+    expect(result).toEqual({
+      components: null,
+      error: 'Invalid length for "site".',
+    });
   });
 
   it('provides examples appropriate to letter and numeric regex widths', () => {

@@ -689,11 +689,9 @@ import { useUserConfirm } from '@/composables/useUserConfirm';
 import { useI18n } from 'vue-i18n';
 import {
   acceptedValuesPlaceholder,
-  extractPatternComponents,
+  inferPatternComponents,
   KNOWN_NAMING_SEPARATORS,
   normalizeNumericAcceptedValues,
-  splitPatternBlocks,
-  splitTypeGroups,
 } from '@/utils/namingStandardPattern';
 
 const namingStandardStore = useNamingStandardStore();
@@ -904,264 +902,41 @@ async function extractRegexFromExample() {
   const pattern = newStandard.value.pattern;
   const example = exampleFilename.value.trim();
 
-  // Check if file type is selected
   if (!newStandard.value.project_file_type_id) {
     regexExtractionError.value = t(
       'configureNamingStandards.selectFileTypeFirst'
     );
     return;
   }
-  // Check if comma pattern is entered
   if (!commaPattern.value) {
     regexExtractionError.value = t(
       'configureNamingStandards.commaPatternRequired'
     );
     return;
   }
-  // Check if example filename is entered
   if (!example) {
     regexExtractionError.value = t(
       'configureNamingStandards.exampleFileRequired'
     );
     return;
   }
-  // Check if pattern is built
   if (!pattern) {
     regexExtractionError.value = t('configureNamingStandards.patternRequired');
     return;
   }
 
-  // Split pattern and example into blocks using known separators
-  const separators = ['_', '-', '.', ' '];
-  let sep = separators.find((s) => pattern.includes(s));
-  if (!sep) sep = '_';
-
-  const patternBlocks = splitPatternBlocks(pattern, sep);
-  const exampleBlocks = example.split(sep);
-
-  if (patternBlocks.length !== exampleBlocks.length) {
-    regexExtractionError.value = t(
-      'configureNamingStandards.patternExampleBlockCount'
-    );
+  const result = await inferPatternComponents({
+    pattern,
+    example,
+    showPrompt: showUserPrompt,
+    translate: t,
+  });
+  if (result.error) {
+    regexExtractionError.value = result.error;
     return;
   }
-
-  const comps = extractPatternComponents(pattern);
-
-  for (let blockIdx = 0; blockIdx < patternBlocks.length; blockIdx++) {
-    const patBlock = patternBlocks[blockIdx];
-    const exBlock = exampleBlocks[blockIdx];
-    // Extract component names in this block
-    const blockCompNames = [];
-    const matches = patBlock.matchAll(/\{([^}]+)\}/g);
-    for (const m of matches) blockCompNames.push(m[1]);
-    if (blockCompNames.length === 0) continue;
-
-    // Special handling for prefix: always extract all leading same-type chars
-    if (blockCompNames[0].startsWith('prefix_')) {
-      const comp = comps.find((c) => c.name === blockCompNames[0]);
-      let prefix = '';
-      for (const char of exBlock) {
-        if (/[A-Z]/.test(char)) prefix += char;
-        else break;
-      }
-      await assignRegexAndAcceptable(comp, prefix);
-      // Remove prefix from exBlock for further processing if more comps in block
-      if (blockCompNames.length > 1) {
-        await processBlockIterative(
-          blockCompNames.slice(1),
-          exBlock.slice(prefix.length),
-          comps
-        );
-      }
-      continue;
-    }
-
-    await processBlockIterative(blockCompNames, exBlock, comps);
-  }
-
-  newStandard.value.components = comps;
-
-  async function processBlockIterative(compNames, str, comps) {
-    if (!compNames.length || !str) return;
-    let typeGroups = splitTypeGroups(str);
-    let compIdx = 0;
-    let groupIdx = 0;
-
-    while (compIdx < compNames.length && groupIdx < typeGroups.length) {
-      // If number of remaining components > number of remaining type groups,
-      // prompt for the length for the current component from the current type group.
-      if (compNames.length - compIdx > typeGroups.length - groupIdx) {
-        let remaining = typeGroups[groupIdx].length;
-        let compsLeft = compNames.length - compIdx;
-        let lengthValidator = (input) => {
-          input = (input ?? '').toString().trim();
-          if (!input) return 'Please enter a correct numbered value.';
-          if (!/^\d+$/.test(input)) return 'Please enter a valid number.';
-          const num = parseInt(input, 10);
-          if (num < 1) return 'Length must be at least 1.';
-          if (num > remaining) return `Length must not exceed ${remaining}.`;
-          return false;
-        };
-
-        let len = await showUserPrompt(
-          `Ambiguous block "${typeGroups[groupIdx]}": Please specify the length for component "${compNames[compIdx]}"`,
-          Math.floor(remaining / compsLeft),
-          lengthValidator,
-          'number'
-        );
-        len = parseInt(len);
-        if (!len || isNaN(len) || len < 1 || len > remaining) {
-          regexExtractionError.value = `Invalid length for "${compNames[compIdx]}".`;
-          return;
-        }
-        const val = typeGroups[groupIdx].slice(0, len);
-        await assignRegexAndAcceptable(
-          comps.find((c) => c.name === compNames[compIdx]),
-          val
-        );
-
-        // Update the type group with the remaining part
-        const leftover = typeGroups[groupIdx].slice(len);
-        if (leftover) {
-          // Now, assign leftover to the next component(s) in order
-          compIdx++;
-          // If only one component left, assign all leftover to it
-          if (compNames.length - compIdx === 1) {
-            await assignRegexAndAcceptable(
-              comps.find((c) => c.name === compNames[compIdx]),
-              leftover
-            );
-            compIdx++;
-            groupIdx++;
-            continue;
-          }
-          // Otherwise, replace current type group with leftover and continue
-          typeGroups[groupIdx] = leftover;
-        } else {
-          groupIdx++;
-          compIdx++;
-        }
-        continue;
-      }
-
-      // If enough type groups left for components, assign directly
-      if (compNames.length - compIdx === typeGroups.length - groupIdx) {
-        for (; compIdx < compNames.length; compIdx++, groupIdx++) {
-          const comp = comps.find((c) => c.name === compNames[compIdx]);
-          if (!comp) {
-            regexExtractionError.value = `Component "${compNames[compIdx]}" not found.`;
-            return;
-          }
-          await assignRegexAndAcceptable(comp, typeGroups[groupIdx]);
-        }
-        return;
-      }
-
-      // Otherwise, assign type group to component
-      const comp = comps.find((c) => c.name === compNames[compIdx]);
-      await assignRegexAndAcceptable(comp, typeGroups[groupIdx]);
-      compIdx++;
-      groupIdx++;
-    }
-  }
-
-  async function assignRegexAndAcceptable(comp, val) {
-    // Unicode-aware collapseRegex
-    function collapseRegex(str) {
-      let out = '';
-      let i = 0;
-      while (i < str.length) {
-        let c = str[i];
-        let charClass = '';
-        if (/\p{L}/u.test(c)) charClass = '\\p{L}';
-        else if (/\p{N}/u.test(c)) charClass = '\\p{N}';
-        else charClass = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        let run = 1;
-        while (
-          i + run < str.length &&
-          ((/\p{L}/u.test(c) && /\p{L}/u.test(str[i + run])) ||
-            (/\p{N}/u.test(c) && /\p{N}/u.test(str[i + run])) ||
-            c === str[i + run])
-        ) {
-          run++;
-        }
-        if ((charClass === '\\p{L}' || charClass === '\\p{N}') && run >= 1) {
-          out += `${charClass}{${run}}`;
-        } else {
-          out += charClass.repeat(run);
-        }
-        i += run;
-      }
-      return out;
-    }
-
-    // Assign type
-    if (/^\p{L}+$/u.test(val)) comp.type = 'L';
-    else if (/^\p{N}+$/u.test(val)) comp.type = 'D';
-    else comp.type = 'O';
-
-    // Prefix: accept only the full string, regex matches length and case
-    if (comp.name.startsWith('prefix_')) {
-      let regex = '';
-      if (/^\p{L}+$/u.test(val)) {
-        regex = `\\p{L}{${val.length}}`;
-      } else if (/^\p{N}+$/u.test(val)) {
-        regex = `\\p{N}{${val.length}}`;
-      } else {
-        regex = collapseRegex(val);
-      }
-      comp.regex = regex;
-      comp.accepted_values = [val];
-      comp.accepted_values_str = val;
-      return;
-    }
-
-    // Letters (Unicode)
-    if (comp.type === 'L') {
-      let regex = `\\p{L}{${val.length}}`;
-      comp.regex = regex;
-      comp.accepted_values = [val];
-      comp.accepted_values_str = val;
-      return;
-    }
-
-    // Digits (Unicode)
-    if (comp.type === 'D') {
-      comp.regex = `\\p{N}{${val.length}}`;
-      let accepted = await showUserPrompt(
-        t('configureNamingStandards.promptExtractedValue', {
-          name: comp.name,
-          value: val,
-          length: val.length,
-          example: val.length === 3 ? '001-150' : '01-99',
-        }),
-        '',
-        (input) => {
-          if (!input) return false;
-          const { error } = normalizeNumericAcceptedValues(input, val.length);
-          return error || false;
-        },
-        'text'
-      );
-      if (accepted && accepted.trim()) {
-        const { values } = normalizeNumericAcceptedValues(accepted, val.length);
-        comp.accepted_values = values;
-        comp.accepted_values_str = values.join(', ');
-      } else {
-        comp.accepted_values = [val];
-        comp.accepted_values_str = val;
-      }
-      return;
-    }
-
-    // Fallback
-    comp.regex = '.+';
-    comp.accepted_values = [];
-    comp.accepted_values_str = '';
-  }
+  newStandard.value.components = result.components;
 }
-
 const addFormRef = ref(null);
 const standardsTopRef = ref(null);
 

@@ -83,6 +83,235 @@ export function splitPatternBlocks(pattern, separator) {
   return blocks;
 }
 
+export function findPatternSeparator(pattern) {
+  let depth = 0;
+  for (const character of pattern) {
+    if (character === '{') depth += 1;
+    else if (character === '}') depth -= 1;
+    else if (depth === 0 && KNOWN_NAMING_SEPARATORS.includes(character)) {
+      return character;
+    }
+  }
+  return '_';
+}
+
+function collapsedCharacterRegex(value) {
+  let output = '';
+  let index = 0;
+  while (index < value.length) {
+    const character = value[index];
+    let characterClass = '';
+    if (/\p{L}/u.test(character)) characterClass = '\\p{L}';
+    else if (/\p{N}/u.test(character)) characterClass = '\\p{N}';
+    else characterClass = character.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let run = 1;
+    while (
+      index + run < value.length &&
+      ((/\p{L}/u.test(character) && /\p{L}/u.test(value[index + run])) ||
+        (/\p{N}/u.test(character) && /\p{N}/u.test(value[index + run])) ||
+        character === value[index + run])
+    ) {
+      run += 1;
+    }
+    output +=
+      characterClass === '\\p{L}' || characterClass === '\\p{N}'
+        ? `${characterClass}{${run}}`
+        : characterClass.repeat(run);
+    index += run;
+  }
+  return output;
+}
+
+export async function inferPatternComponents({
+  pattern,
+  example,
+  showPrompt,
+  translate,
+}) {
+  const separator = findPatternSeparator(pattern);
+  const patternBlocks = splitPatternBlocks(pattern, separator);
+  const exampleBlocks = example.split(separator);
+  if (patternBlocks.length !== exampleBlocks.length) {
+    return {
+      components: null,
+      error: translate('configureNamingStandards.patternExampleBlockCount'),
+    };
+  }
+
+  const components = extractPatternComponents(pattern);
+  let inferenceError = '';
+
+  async function assignRegexAndAcceptedValues(component, value) {
+    if (/^\p{L}+$/u.test(value)) component.type = 'L';
+    else if (/^\p{N}+$/u.test(value)) component.type = 'D';
+    else component.type = 'O';
+
+    if (component.name.startsWith('prefix_')) {
+      component.regex = /^\p{L}+$/u.test(value)
+        ? `\\p{L}{${value.length}}`
+        : /^\p{N}+$/u.test(value)
+          ? `\\p{N}{${value.length}}`
+          : collapsedCharacterRegex(value);
+      component.accepted_values = [value];
+      component.accepted_values_str = value;
+      return;
+    }
+    if (component.type === 'L') {
+      component.regex = `\\p{L}{${value.length}}`;
+      component.accepted_values = [value];
+      component.accepted_values_str = value;
+      return;
+    }
+    if (component.type === 'D') {
+      component.regex = `\\p{N}{${value.length}}`;
+      const accepted = await showPrompt(
+        translate('configureNamingStandards.promptExtractedValue', {
+          name: component.name,
+          value,
+          length: value.length,
+          example: value.length === 3 ? '001-150' : '01-99',
+        }),
+        '',
+        (input) => {
+          if (!input) return false;
+          return (
+            normalizeNumericAcceptedValues(input, value.length).error || false
+          );
+        },
+        'text'
+      );
+      const normalized =
+        accepted && accepted.trim()
+          ? normalizeNumericAcceptedValues(accepted, value.length).values
+          : [value];
+      component.accepted_values = normalized;
+      component.accepted_values_str = normalized.join(', ');
+      return;
+    }
+    component.regex = '.+';
+    component.accepted_values = [];
+    component.accepted_values_str = '';
+  }
+
+  async function processBlock(componentNames, value) {
+    if (!componentNames.length || !value) return;
+    const typeGroups = splitTypeGroups(value);
+    let componentIndex = 0;
+    let groupIndex = 0;
+    while (
+      componentIndex < componentNames.length &&
+      groupIndex < typeGroups.length
+    ) {
+      if (
+        componentNames.length - componentIndex >
+        typeGroups.length - groupIndex
+      ) {
+        const remaining = typeGroups[groupIndex].length;
+        const componentsLeft = componentNames.length - componentIndex;
+        const validator = (input) => {
+          const normalized = (input ?? '').toString().trim();
+          if (!normalized) return 'Please enter a correct numbered value.';
+          if (!/^\d+$/.test(normalized)) return 'Please enter a valid number.';
+          const number = Number.parseInt(normalized, 10);
+          if (number < 1) return 'Length must be at least 1.';
+          if (number > remaining) return `Length must not exceed ${remaining}.`;
+          return false;
+        };
+        const promptedLength = await showPrompt(
+          `Ambiguous block "${typeGroups[groupIndex]}": Please specify the length for component "${componentNames[componentIndex]}"`,
+          Math.floor(remaining / componentsLeft),
+          validator,
+          'number'
+        );
+        const length = Number.parseInt(promptedLength, 10);
+        if (!length || length < 1 || length > remaining) {
+          inferenceError = `Invalid length for "${componentNames[componentIndex]}".`;
+          return;
+        }
+        const component = components.find(
+          (entry) => entry.name === componentNames[componentIndex]
+        );
+        await assignRegexAndAcceptedValues(
+          component,
+          typeGroups[groupIndex].slice(0, length)
+        );
+        const leftover = typeGroups[groupIndex].slice(length);
+        if (leftover) {
+          componentIndex += 1;
+          if (componentNames.length - componentIndex === 1) {
+            await assignRegexAndAcceptedValues(
+              components.find(
+                (entry) => entry.name === componentNames[componentIndex]
+              ),
+              leftover
+            );
+            componentIndex += 1;
+            groupIndex += 1;
+          } else typeGroups[groupIndex] = leftover;
+        } else {
+          groupIndex += 1;
+          componentIndex += 1;
+        }
+        continue;
+      }
+
+      if (
+        componentNames.length - componentIndex ===
+        typeGroups.length - groupIndex
+      ) {
+        for (
+          ;
+          componentIndex < componentNames.length;
+          componentIndex += 1, groupIndex += 1
+        ) {
+          const component = components.find(
+            (entry) => entry.name === componentNames[componentIndex]
+          );
+          if (!component) {
+            inferenceError = `Component "${componentNames[componentIndex]}" not found.`;
+            return;
+          }
+          await assignRegexAndAcceptedValues(component, typeGroups[groupIndex]);
+        }
+        return;
+      }
+
+      await assignRegexAndAcceptedValues(
+        components.find(
+          (entry) => entry.name === componentNames[componentIndex]
+        ),
+        typeGroups[groupIndex]
+      );
+      componentIndex += 1;
+      groupIndex += 1;
+    }
+  }
+
+  for (let index = 0; index < patternBlocks.length; index += 1) {
+    const componentNames = [
+      ...patternBlocks[index].matchAll(/\{([^}]+)\}/g),
+    ].map((match) => match[1]);
+    if (!componentNames.length) continue;
+    let value = exampleBlocks[index];
+    if (componentNames[0].startsWith('prefix_')) {
+      const prefix = [...value].findIndex(
+        (character) => !/\p{Lu}/u.test(character)
+      );
+      const prefixLength = prefix === -1 ? value.length : prefix;
+      await assignRegexAndAcceptedValues(
+        components.find((entry) => entry.name === componentNames[0]),
+        value.slice(0, prefixLength)
+      );
+      componentNames.shift();
+      value = value.slice(prefixLength);
+    }
+    await processBlock(componentNames, value);
+    if (inferenceError) return { components: null, error: inferenceError };
+  }
+
+  return { components, error: null };
+}
+
 export function acceptedValuesPlaceholder(regex) {
   if (!regex) return 'Accepted Values';
 

@@ -349,5 +349,10 @@ largest remaining frontend component and one without a direct test boundary.
 Numeric accepted-value normalization, pattern-component extraction,
 separator-aware block parsing, example character grouping and regex-specific
 field guidance now live in `namingStandardPattern` with direct edge-case tests.
-The next naming-standard slices should isolate example-to-regex inference and
-then the import workflow before decomposing the form presentation.
+Example-to-regex inference now uses that same tested boundary, including
+interactive division of ambiguous character runs, Unicode-aware prefix
+detection, numeric-range prompts and explicit cancellation errors. Separator
+detection ignores separator characters inside component braces, fixing
+hyphenated patterns whose `prefix_*` component previously caused the underscore
+to be selected. The naming-standard import workflow is the next slice before
+decomposing the form presentation.
