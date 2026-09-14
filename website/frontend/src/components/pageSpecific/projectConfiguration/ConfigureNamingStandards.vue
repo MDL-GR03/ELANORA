@@ -305,6 +305,7 @@ import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { useNamingStandardImport } from '@/composables/useNamingStandardImport';
+import { useNamingStandardMutations } from '@/composables/useNamingStandardMutations';
 import { useI18n } from 'vue-i18n';
 import {
   acceptedValuesPlaceholder,
@@ -568,116 +569,6 @@ async function handleShowAddStandard() {
   });
 }
 
-async function addStandard() {
-  const exists = namingStandardStore.standards.some(
-    (std) =>
-      std.name.trim().toLowerCase() ===
-        newStandard.value.name.trim().toLowerCase() &&
-      std.project_file_type_id === newStandard.value.project_file_type_id
-  );
-  if (exists) {
-    eventMessageStore.addMessage(
-      t('configureNamingStandards.eventMessages.addFailedDuplicate'),
-      'error',
-      7000
-    );
-    return;
-  }
-
-  // Block if any regex is empty or only whitespace
-  const hasEmptyRegex = newStandard.value.components.some(
-    (c) => !c.regex || !c.regex.trim()
-  );
-  if (hasEmptyRegex) {
-    eventMessageStore.addMessage(
-      t('configureNamingStandards.eventMessages.addFailedEmptyRegex'),
-      'error',
-      7000
-    );
-    return;
-  }
-
-  if (regexExtractionError.value) return;
-  try {
-    const standardData = {
-      name: newStandard.value.name.trim(),
-      project_id: projectId.value,
-      project_file_type_id: newStandard.value.project_file_type_id,
-      pattern: newStandard.value.pattern,
-      description: newStandard.value.description.trim(),
-      components: newStandard.value.components.map((c) => ({
-        name: c.name,
-        regex: c.regex,
-        description: c.description,
-        order: c.order,
-        accepted_values: c.accepted_values,
-        project_file_type_id: newStandard.value.project_file_type_id,
-      })),
-    };
-
-    // Clear cache before adding
-    exampleValuesCache.value = {};
-
-    await namingStandardStore.addNamingStandard(standardData, projectId.value);
-    showAddStandard.value = false;
-    resetAddForm();
-    eventMessageStore.addMessage(
-      t('configureNamingStandards.eventMessages.addSuccess'),
-      'success',
-      4000
-    );
-
-    // Ensure DOM updates and scroll to top
-    await nextTick();
-    if (standardsTopRef.value) {
-      standardsTopRef.value.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
-  } catch (err) {
-    if (err?.response?.status === 409) {
-      eventMessageStore.addMessage(
-        t('configureNamingStandards.eventMessages.addFailedDuplicate'),
-        'error',
-        7000
-      );
-    } else {
-      eventMessageStore.addMessage(
-        t('configureNamingStandards.eventMessages.addFailed'),
-        'error',
-        7000
-      );
-    }
-  }
-}
-
-async function deleteStandard(id) {
-  const confirmed = await userConfirm({
-    message: t('configureNamingStandards.deleteConfirm'),
-    confirmText: t('common.confirm'),
-    cancelText: t('common.cancel'),
-  });
-  if (!confirmed) return;
-  try {
-    // Clear cache before deleting
-    exampleValuesCache.value = {};
-
-    await namingStandardStore.deleteNamingStandard(id, projectId.value);
-    eventMessageStore.addMessage(
-      'configureNamingStandards.eventMessages.deleteSuccess',
-      'success',
-      4000
-    );
-  } catch {
-    eventMessageStore.addMessage(
-      'configureNamingStandards.eventMessages.deleteFailed',
-      'error',
-      7000
-    );
-  }
-}
-
 // --- Composition API setup ---
 const fileTypeStore = useFileTypeStore();
 const eventMessageStore = useEventMessageStore();
@@ -905,6 +796,21 @@ function resetAddForm() {
     }
   });
 }
+
+const { addStandard, deleteStandard } = useNamingStandardMutations({
+  projectId,
+  draft: newStandard,
+  standards,
+  extractionError: regexExtractionError,
+  store: namingStandardStore,
+  confirmAction: userConfirm,
+  eventMessages: eventMessageStore,
+  translate: t,
+  clearExampleCache: () => {
+    exampleValuesCache.value = {};
+  },
+  resetDraft: resetAddForm,
+});
 
 // Detect if any accepted_values_str looks like "B A W" (single value, multiple tokens separated by space)
 const detectedUnusualAcceptedValue = computed(() => {
