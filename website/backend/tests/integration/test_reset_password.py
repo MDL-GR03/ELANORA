@@ -1,10 +1,17 @@
 """Administrative password recovery tests."""
 
+import uuid
+
 import pytest
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cli.bootstrap import BootstrapConfig, bootstrap
 from app.cli.reset_password import reset_password
+from app.core.jwt import create_refresh_token
+from app.model.refresh_session import RefreshSession
+from app.schema.common.token import TokenData
+from app.service.refresh_session import create_refresh_session
 from app.service.user import UserService
 
 
@@ -27,9 +34,22 @@ async def test_reset_password_replaces_hash_and_preserves_account(
         admin_department="Research IT",
     )
     _, original = await bootstrap(session, config, "old-password-123")
+    session_id = uuid.uuid4()
+    refresh_token = create_refresh_token(
+        TokenData(sub=str(original.user_id), session_id=str(session_id))
+    )
+    await create_refresh_session(session, original.user_id, session_id, refresh_token)
+    await session.commit()
 
     updated = await reset_password(session, "administrator", "new-password-456")
 
     assert updated.user_id == original.user_id
     assert UserService.verify_password("new-password-456", updated.hashed_password)
     assert not UserService.verify_password("old-password-123", updated.hashed_password)
+    stored_session = await session.scalar(
+        select(RefreshSession).where(RefreshSession.session_id == session_id)
+    )
+    assert stored_session is not None
+    assert stored_session.revoked_at is not None
+    rejected = await UserService.refresh_user_tokens(session, refresh_token)
+    assert rejected["success"] is False

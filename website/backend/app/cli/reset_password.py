@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.cli.bootstrap import MINIMUM_BOOTSTRAP_PASSWORD_LENGTH
 from app.db.database import close_database, get_session_maker, init_database
 from app.model.user import User
+from app.service.refresh_session import revoke_all_refresh_sessions
 from app.service.user import UserService
 
 
@@ -23,6 +24,7 @@ async def reset_password(db: AsyncSession, username: str, password: str) -> User
     if user is None:
         raise ValueError(f"user {username!r} does not exist")
     user.hashed_password = UserService.hash_password(password)
+    await revoke_all_refresh_sessions(db, user.user_id)
     await db.commit()
     await db.refresh(user)
     return user

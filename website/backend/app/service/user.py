@@ -30,7 +30,10 @@ from app.schema.requests.user import (
 from app.service.address import AddressService
 from app.service.notification import NotificationService
 from app.service.outbox import enqueue_account_verification_email
-from app.service.refresh_session import rotate_refresh_session
+from app.service.refresh_session import (
+    revoke_all_refresh_sessions,
+    rotate_refresh_session,
+)
 from app.utils.database import DatabaseUtils
 
 # Get logger for this module
@@ -287,7 +290,12 @@ class UserService:
 
     @classmethod
     async def update_password(
-        cls, db: AsyncSession, user: User, new_password: str
+        cls,
+        db: AsyncSession,
+        user: User,
+        new_password: str,
+        *,
+        commit: bool = True,
     ) -> bool:
         """Update user's password with bcrypt hashing.
 
@@ -306,7 +314,9 @@ class UserService:
 
         if success:
             user.updated_at = datetime.now(UTC)
-            await db.commit()
+            if commit:
+                await revoke_all_refresh_sessions(db, user.user_id)
+                await db.commit()
             logger.info("Account password updated successfully")
         else:
             logger.error("Failed to update account password")
@@ -546,12 +556,13 @@ class UserService:
             return {"success": False, "message": "Invalid reset code"}
 
         # Update password
-        success = await cls.update_password(db, user, new_password)
+        success = await cls.update_password(db, user, new_password, commit=False)
 
         if success:
             # Clear activation code after successful reset
             user.activation_code = ""
             user.updated_at = datetime.now(UTC)
+            await revoke_all_refresh_sessions(db, user.user_id)
             await db.commit()
 
         logger.info("Password reset successfully")
@@ -581,10 +592,11 @@ class UserService:
             return {"success": False, "message": "Current password is incorrect"}
 
         # Update password
-        success = await cls.update_password(db, user, new_password)
+        success = await cls.update_password(db, user, new_password, commit=False)
 
         if success:
             user.updated_at = datetime.now(UTC)
+            await revoke_all_refresh_sessions(db, user.user_id)
             await db.commit()
 
             logger.info("Password changed successfully")
