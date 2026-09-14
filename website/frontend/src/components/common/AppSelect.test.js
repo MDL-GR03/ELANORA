@@ -38,9 +38,43 @@ describe('AppSelect', () => {
 
     await button.trigger('keydown', { key: 'ArrowDown' });
     await button.trigger('keydown', { key: 'ArrowDown' });
+    expect(button.attributes('aria-activedescendant')).toBe('order-option-1');
+    expect(wrapper.findAll('[role="option"]')[1].classes()).toContain('active');
     await button.trigger('keydown', { key: 'Enter' });
 
     expect(wrapper.emitted('update:modelValue')).toEqual([['newest']]);
+  });
+
+  it('exposes listbox relationships without putting options in the tab order', async () => {
+    const wrapper = mount(AppSelect, {
+      props: {
+        modelValue: 'oldest',
+        options,
+        id: 'accessible-order',
+        ariaLabel: 'Contribution order',
+      },
+      global,
+    });
+
+    const trigger = wrapper.get('.app-select-trigger');
+    expect(trigger.attributes('role')).toBe('combobox');
+    expect(trigger.attributes('aria-label')).toBe('Contribution order');
+    await trigger.trigger('click');
+
+    expect(trigger.attributes('aria-controls')).toBe(
+      'accessible-order-options'
+    );
+    expect(trigger.attributes('aria-activedescendant')).toBe(
+      'accessible-order-option-0'
+    );
+    expect(wrapper.get('[role="listbox"]').attributes('id')).toBe(
+      'accessible-order-options'
+    );
+    expect(
+      wrapper
+        .findAll('[role="option"]')
+        .every((item) => item.attributes('tabindex') === '-1')
+    ).toBe(true);
   });
 
   it('shows a placeholder and does not open while disabled', async () => {

@@ -45,4 +45,29 @@ describe('AppHeader mobile navigation', () => {
     expect(wrapper.find('.mobile-menu-backdrop').exists()).toBe(false);
     expect(wrapper.get('#primary-navigation').classes()).not.toContain('open');
   });
+
+  it('closes with Escape and restores focus to the menu button', async () => {
+    const wrapper = mount(AppHeader, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          'font-awesome-icon': true,
+          RouterLink: { template: '<a><slot /></a>' },
+          InstanceSection: true,
+          ProjectSection: true,
+          NotificationBell: true,
+        },
+        mocks: { $t: (value) => value },
+      },
+    });
+    const button = wrapper.get('.mobile-menu-button');
+
+    await button.trigger('click');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('#primary-navigation').classes()).not.toContain('open');
+    expect(document.activeElement).toBe(button.element);
+    wrapper.unmount();
+  });
 });

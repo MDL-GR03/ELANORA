@@ -6,9 +6,9 @@
       :class="`tone-${resolvedTone}`"
       open
       aria-modal="true"
-      :aria-labelledby="title ? 'confirmation-title' : undefined"
+      :aria-labelledby="title ? titleId : undefined"
       :aria-label="title ? undefined : message"
-      aria-describedby="confirmation-message"
+      :aria-describedby="messageId"
       @keydown="handleKeydown"
     >
       <header class="confirm-header">
@@ -17,7 +17,7 @@
         </span>
         <div class="confirm-heading">
           <span class="confirm-eyebrow">Confirmation required</span>
-          <h2 v-if="title" id="confirmation-title">{{ title }}</h2>
+          <h2 v-if="title" :id="titleId">{{ title }}</h2>
         </div>
         <button
           type="button"
@@ -31,7 +31,7 @@
       </header>
 
       <div class="confirm-content">
-        <p id="confirmation-message">{{ message }}</p>
+        <p :id="messageId">{{ message }}</p>
       </div>
 
       <footer class="confirm-actions">
@@ -53,7 +53,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
   faCircleCheck,
@@ -79,6 +79,10 @@ const emit = defineEmits(['update:modelValue', 'confirm', 'cancel']);
 const visible = ref(props.modelValue);
 const dialogElement = ref(null);
 const cancelButton = ref(null);
+const generatedId = useId();
+const titleId = `confirmation-title-${generatedId}`;
+const messageId = `confirmation-message-${generatedId}`;
+let previouslyFocused = null;
 
 const resolvedTone = computed(() => {
   if (props.tone !== 'auto') return props.tone;
@@ -103,8 +107,16 @@ watch(
   async (value) => {
     visible.value = value;
     if (value) {
+      previouslyFocused =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
       await nextTick();
       cancelButton.value?.focus();
+    } else if (previouslyFocused?.isConnected) {
+      await nextTick();
+      previouslyFocused.focus();
+      previouslyFocused = null;
     }
   },
   { immediate: true }
@@ -140,6 +152,10 @@ function cancel() {
   emit('cancel');
   emit('update:modelValue', false);
 }
+
+onBeforeUnmount(() => {
+  if (previouslyFocused?.isConnected) previouslyFocused.focus();
+});
 
 defineExpose({ confirm, cancel });
 </script>

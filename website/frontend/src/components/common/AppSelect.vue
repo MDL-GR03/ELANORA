@@ -13,6 +13,7 @@
       role="combobox"
       :aria-expanded="isOpen"
       :aria-controls="`${resolvedId}-options`"
+      :aria-activedescendant="activeOptionId"
       :aria-label="ariaLabel"
       :aria-invalid="invalid || undefined"
       :aria-required="required || undefined"
@@ -34,10 +35,16 @@
       role="listbox"
       :aria-labelledby="resolvedId"
     >
-      <li v-for="(option, index) in options" :key="String(option.value)">
+      <li
+        v-for="(option, index) in options"
+        :key="String(option.value)"
+        role="presentation"
+      >
         <button
+          :id="optionId(index)"
           type="button"
           role="option"
+          tabindex="-1"
           :aria-selected="isSelected(option)"
           :disabled="option.disabled"
           :class="{
@@ -48,7 +55,9 @@
           @click="select(option)"
         >
           <span class="app-select-option-copy">
-            <span>{{ option.label }}</span>
+            <span class="app-select-option-label" :title="option.label">{{
+              option.label
+            }}</span>
             <small v-if="option.description">{{ option.description }}</small>
           </span>
           <font-awesome-icon
@@ -69,6 +78,7 @@ import {
   onMounted,
   ref,
   useId,
+  watch,
 } from 'vue';
 
 const props = defineProps({
@@ -107,6 +117,15 @@ const selectedLabel = computed(() =>
     ? props.options[selectedIndex.value]?.label
     : props.placeholder
 );
+const activeOptionId = computed(() =>
+  isOpen.value && activeIndex.value >= 0
+    ? optionId(activeIndex.value)
+    : undefined
+);
+
+function optionId(index) {
+  return `${resolvedId.value}-option-${index}`;
+}
 
 function isSelected(option) {
   return String(option.value) === String(props.modelValue ?? '');
@@ -129,6 +148,11 @@ function open() {
     activeIndex.value = nextEnabledIndex(activeIndex.value, 1);
   }
   isOpen.value = true;
+  void nextTick(() => {
+    document.getElementById(activeOptionId.value)?.scrollIntoView?.({
+      block: 'nearest',
+    });
+  });
 }
 
 function close() {
@@ -199,6 +223,13 @@ function closeFromOutside(event) {
   if (!root.value?.contains(event.target)) close();
 }
 
+watch(
+  () => [props.modelValue, props.options],
+  () => {
+    if (!isOpen.value) activeIndex.value = selectedIndex.value;
+  }
+);
+
 onMounted(() => document.addEventListener('pointerdown', closeFromOutside));
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', closeFromOutside);
@@ -228,6 +259,13 @@ onBeforeUnmount(() => {
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.app-select-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-select--small .app-select-trigger {
@@ -284,6 +322,11 @@ onBeforeUnmount(() => {
   box-shadow: 0 12px 30px rgb(15 23 42 / 16%);
   background: #fff;
   list-style: none;
+  overscroll-behavior: contain;
+}
+
+.app-select-options li + li {
+  border-top: 1px solid #edf1f6;
 }
 
 .app-select-options button {
@@ -323,6 +366,12 @@ onBeforeUnmount(() => {
 .app-select-option-copy {
   display: grid;
   gap: 0.15rem;
+  min-width: 0;
+}
+
+.app-select-option-label,
+.app-select-option-copy small {
+  overflow-wrap: anywhere;
 }
 
 .app-select-option-copy small {
@@ -336,8 +385,13 @@ onBeforeUnmount(() => {
 }
 
 @media (width <= 480px) {
+  .app-select-options {
+    max-width: calc(100vw - 1rem);
+    max-height: min(18rem, 55vh);
+  }
+
   .app-select-options button {
-    min-height: 2.9rem;
+    min-height: 2.75rem;
   }
 }
 

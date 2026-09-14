@@ -5,11 +5,16 @@
       type="button"
       class="mobile-menu-backdrop"
       aria-label="Close navigation"
-      @click="menuOpen = false"
+      tabindex="-1"
+      @click="closeMenu(true)"
     ></button>
     <div class="navbar-container">
       <div class="elanora-header-left">
-        <router-link to="/homePage" class="elanora-header-logo-link">
+        <router-link
+          to="/homePage"
+          class="elanora-header-logo-link"
+          aria-label="ELANORA home"
+        >
           <img
             src="@logos/ELANora-logo.png"
             alt=""
@@ -18,18 +23,20 @@
         </router-link>
         <InstanceSection />
         <button
+          ref="menuButton"
           class="mobile-menu-button"
           type="button"
           :aria-expanded="menuOpen"
           aria-controls="primary-navigation"
           aria-label="Toggle navigation"
-          @click="menuOpen = !menuOpen"
+          @click="toggleMenu"
         >
           <span></span><span></span><span></span>
         </button>
         <nav
           id="primary-navigation"
           class="elanora-header-nav"
+          aria-label="Primary navigation"
           :class="{ open: menuOpen }"
         >
           <router-link to="/projects" class="elanora-header-menu-link">
@@ -99,7 +106,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/user';
@@ -116,6 +123,7 @@ const appInfoStore = useAppInfoStore();
 const projectStore = useProjectStore();
 const route = useRoute();
 const menuOpen = ref(false);
+const menuButton = ref(null);
 const instanceName = computed(
   () => appInfoStore.instance?.instance_name || 'Institution'
 );
@@ -136,6 +144,28 @@ watch(
   () => {
     menuOpen.value = false;
   }
+);
+
+function closeMenu(restoreFocus = false) {
+  menuOpen.value = false;
+  if (restoreFocus) menuButton.value?.focus();
+}
+
+function toggleMenu() {
+  if (menuOpen.value) closeMenu();
+  else menuOpen.value = true;
+}
+
+function handleWindowKeydown(event) {
+  if (event.key === 'Escape' && menuOpen.value) {
+    event.preventDefault();
+    closeMenu(true);
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', handleWindowKeydown));
+onBeforeUnmount(() =>
+  window.removeEventListener('keydown', handleWindowKeydown)
 );
 </script>
 
