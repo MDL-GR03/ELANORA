@@ -35,15 +35,24 @@ def get_exception_logger(logger_name: str):
 
 
 def get_client_info(request: Request) -> dict:
-    """Extract client information from request for logging."""
+    """Extract the non-sensitive request context needed for diagnostics."""
     return {
-        "client_ip": request.client.host if request.client else "unknown",
-        "user_agent": request.headers.get("user-agent", "unknown"),
         "method": request.method,
         "path": request.url.path,
-        "query": str(request.query_params) if request.query_params else None,
         "correlation_id": getattr(request.state, "correlation_id", str(uuid.uuid4())),
     }
+
+
+def _public_validation_errors(exc: RequestValidationError) -> list[dict]:
+    """Return stable validation diagnostics without echoing submitted values."""
+    return [
+        {
+            "type": error.get("type", "validation_error"),
+            "loc": list(error.get("loc", ())),
+            "msg": "Invalid request value.",
+        }
+        for error in exc.errors()
+    ]
 
 
 async def validation_exception_handler(
@@ -54,26 +63,23 @@ async def validation_exception_handler(
         validation_logger = get_exception_logger("validation")
         client_info = get_client_info(request)
 
-        # Log with structured information
+        public_errors = _public_validation_errors(exc)
         validation_logger.error(
             "Validation error occurred",
             extra={
                 "event_type": "validation_error",
-                "client_ip": client_info["client_ip"],
-                "user_agent": client_info["user_agent"],
                 "method": client_info["method"],
                 "path": client_info["path"],
-                "query": client_info["query"],
                 "correlation_id": client_info["correlation_id"],
-                "validation_errors": exc.errors(),
-                "error_count": len(exc.errors()),
+                "validation_error_types": [item["type"] for item in public_errors],
+                "error_count": len(public_errors),
             },
         )
 
         return JSONResponse(
             status_code=HTTP_400_BAD_REQUEST,
             content={
-                "detail": exc.errors(),
+                "detail": public_errors,
                 "correlation_id": client_info["correlation_id"],
             },
         )
@@ -86,18 +92,13 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
         rate_limit_logger = get_exception_logger("rate_limit")
         client_info = get_client_info(request)
 
-        # Log with structured information
         rate_limit_logger.warning(
             "Rate limit exceeded",
             extra={
                 "event_type": "rate_limit_exceeded",
-                "client_ip": client_info["client_ip"],
-                "user_agent": client_info["user_agent"],
                 "method": client_info["method"],
                 "path": client_info["path"],
-                "query": client_info["query"],
                 "correlation_id": client_info["correlation_id"],
-                "rate_limit_detail": str(exc),
             },
         )
 
@@ -119,16 +120,11 @@ def add_general_exception_handler():
             "Unexpected error occurred",
             extra={
                 "event_type": "unexpected_error",
-                "client_ip": client_info["client_ip"],
-                "user_agent": client_info["user_agent"],
                 "method": client_info["method"],
                 "path": client_info["path"],
-                "query": client_info["query"],
                 "correlation_id": client_info["correlation_id"],
                 "exception_type": type(exc).__name__,
-                "exception_message": str(exc),
             },
-            exc_info=True,  # Include full traceback
         )
 
         return JSONResponse(

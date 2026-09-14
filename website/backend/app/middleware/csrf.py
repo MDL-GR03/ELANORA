@@ -58,9 +58,10 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         # Verify the CSRF token matches
         if not csrf_header or not csrf_cookie or csrf_header != csrf_cookie:
-            client_ip = request.client.host if request.client is not None else "unknown"
-            path = request.url.path
-            csrf_logger.warning(f"[CSRFError] IP: {client_ip} Path: {path}")
+            csrf_logger.warning(
+                "CSRF validation failed",
+                extra={"method": request.method, "path": request.url.path},
+            )
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
                 content={"detail": "CSRF token missing or invalid."},
