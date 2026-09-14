@@ -10,3 +10,5 @@ class TokenData(CustomBaseModel):
     """
 
     sub: str
+    session_id: str | None = None
+    token_id: str | None = None

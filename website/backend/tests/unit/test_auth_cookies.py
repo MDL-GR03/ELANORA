@@ -45,8 +45,17 @@ async def test_missing_refresh_token_clears_all_auth_cookies() -> None:
 @pytest.mark.asyncio
 async def test_logout_clears_stale_credentials_without_authenticated_user() -> None:
     response = Response()
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/v1/auth/logout",
+            "query_string": b"",
+            "headers": [],
+        }
+    )
 
-    result = await logout(response)
+    result = await logout(request, response, AsyncMock(spec=AsyncSession))
 
     headers = _cookie_headers(response)
     assert "Logged out" in result["message"]

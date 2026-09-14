@@ -1,6 +1,7 @@
 """User service layer - Business logic and password management."""
 
 import secrets
+import uuid
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -29,6 +30,7 @@ from app.schema.requests.user import (
 from app.service.address import AddressService
 from app.service.notification import NotificationService
 from app.service.outbox import enqueue_account_verification_email
+from app.service.refresh_session import rotate_refresh_session
 from app.utils.database import DatabaseUtils
 
 # Get logger for this module
@@ -161,6 +163,12 @@ class UserService:
         try:
             # Verify refresh token
             token_data = verify_refresh_token(refresh_token)
+            if token_data.session_id is None:
+                return {"success": False, "message": "Token refresh failed"}
+            try:
+                session_id = uuid.UUID(token_data.session_id)
+            except ValueError:
+                return {"success": False, "message": "Token refresh failed"}
 
             # Get user from database
             user = await get_user_by_id(db, int(token_data.sub))
@@ -173,10 +181,21 @@ class UserService:
                 }
 
             # Create new tokens
-            new_token_data = TokenData(sub=str(user.user_id))
+            new_token_data = TokenData(
+                sub=str(user.user_id),
+                session_id=str(session_id),
+                token_id=secrets.token_hex(16),
+            )
             new_access_token = create_access_token(new_token_data)
             new_refresh_token = create_refresh_token(new_token_data)
             csrf_token = secrets.token_hex(16)
+
+            if not await rotate_refresh_session(
+                db, session_id, refresh_token, new_refresh_token
+            ):
+                await db.rollback()
+                return {"success": False, "message": "Token refresh failed"}
+            await db.commit()
 
             logger.info("Tokens refreshed successfully")
             return {

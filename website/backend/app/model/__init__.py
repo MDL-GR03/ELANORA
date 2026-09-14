@@ -76,6 +76,7 @@ from .protocol import (
     ValidationRun,
     ValidatorRelease,
 )
+from .refresh_session import RefreshSession
 from .research_topic import ProjectBaselineTier, ResearchTopic, ResearchTopicTier
 from .review import ReviewCase, ReviewCaseView, ReviewComment, ReviewTask
 from .standard_component import StandardComponent
@@ -137,6 +138,7 @@ __all__ = [
     "ProtocolVersion",
     "ProtocolVersionArchive",
     "ProtocolVersionStatus",
+    "RefreshSession",
     "ResearchTopic",
     "ResearchTopicTier",
     "ReviewCase",

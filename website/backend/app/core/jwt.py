@@ -91,7 +91,11 @@ def verify_token(token: str, expected_token_type: str = ACCESS_TOKEN_TYPE) -> To
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Invalid token type. Expected {expected_token_type}.",
             )
-        return TokenData(sub=sub)
+        return TokenData(
+            sub=sub,
+            session_id=payload.get("session_id"),
+            token_id=payload.get("token_id"),
+        )
 
     except ExpiredSignatureError as err:
         raise HTTPException(

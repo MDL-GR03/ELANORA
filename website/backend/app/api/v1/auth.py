@@ -1,4 +1,5 @@
 import secrets
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
@@ -13,7 +14,7 @@ from app.core.config import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     REFRESH_TOKEN_PATH,
 )
-from app.core.jwt import create_access_token, create_refresh_token
+from app.core.jwt import create_access_token, create_refresh_token, verify_refresh_token
 from app.core.limiter import limiter
 from app.crud.project import get_project_by_id
 from app.dependency.database import get_db_dep
@@ -31,6 +32,10 @@ from app.service.invitation import InvitationService
 from app.service.outbox import (
     enqueue_account_verification_email,
     enqueue_password_reset_email,
+)
+from app.service.refresh_session import (
+    create_refresh_session,
+    revoke_refresh_session,
 )
 from app.service.user import UserService
 
@@ -75,12 +80,19 @@ async def login(
 
     # Get user and create tokens
     user = login_result["user"]
-    token_data = TokenData(sub=str(user.user_id))
+    session_id = uuid.uuid4()
+    token_data = TokenData(
+        sub=str(user.user_id),
+        session_id=str(session_id),
+        token_id=secrets.token_hex(16),
+    )
 
     # Create tokens
     access_token = create_access_token(data=token_data)
     refresh_token = create_refresh_token(data=token_data)
     csrf_token = secrets.token_hex(16)
+    await create_refresh_session(db, user.user_id, session_id, refresh_token)
+    await db.commit()
 
     # Set cookies
     response.set_cookie(
@@ -204,9 +216,19 @@ async def refresh_tokens(
 
 @router.post("/logout")
 async def logout(
+    request: Request,
     response: Response,
+    db: AsyncSession = get_db_dep,
 ) -> dict[str, Any]:
     """Clear browser credentials even if the access token has expired."""
+    refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
+    if refresh_token:
+        try:
+            token_data = verify_refresh_token(refresh_token)
+            if token_data.session_id:
+                await revoke_refresh_session(db, uuid.UUID(token_data.session_id))
+        except (HTTPException, ValueError):
+            pass
     _clear_auth_cookies(response)
     response.headers["Cache-Control"] = "no-store"
     return {"message": "Logged out successfully, cookies cleared."}
