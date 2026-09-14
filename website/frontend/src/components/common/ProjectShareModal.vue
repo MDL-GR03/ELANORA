@@ -13,7 +13,6 @@
       aria-labelledby="share-project-title"
       tabindex="-1"
       @click.stop
-      @keydown="handleDialogKeydown"
     >
       <div class="modal-header">
         <span class="share-modal-icon">
@@ -249,20 +248,14 @@
 </template>
 
 <script setup>
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { sendInvitation as sendInvitationAPI } from '@/api/service/invitationService';
 import { getAvailableProjectUsers } from '@/api/service/projectAssociationService';
 import AppSelect from '@/components/common/AppSelect.vue';
 import { reportClientError } from '@/utils/errorDiagnostics';
+import { useModalDialog } from '@/composables/useModalDialog';
 import '@/assets/css/ProjectShareModal.css';
 
 const props = defineProps({
@@ -309,7 +302,6 @@ const errorMessage = ref('');
 const loadingUsers = ref(false);
 const availableUsers = ref([]);
 const dialogElement = ref(null);
-let previouslyFocused = null;
 
 const projectName = computed(() => props.projectName);
 const languageOptions = [
@@ -358,19 +350,7 @@ const loadActiveUsers = async () => {
 // Watch for mode changes and modal visibility
 watch(
   () => props.show,
-  async (newShow) => {
-    if (newShow) {
-      previouslyFocused =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      await nextTick();
-      dialogElement.value?.focus();
-    } else if (previouslyFocused?.isConnected) {
-      await nextTick();
-      previouslyFocused.focus();
-      previouslyFocused = null;
-    }
+  (newShow) => {
     if (newShow && inviteMode.value === 'user') {
       loadActiveUsers();
     }
@@ -459,29 +439,6 @@ function handleTabKeydown(event) {
   void nextTick(() => document.getElementById(targetId)?.focus());
 }
 
-function handleDialogKeydown(event) {
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    closeModal();
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const controls = [
-    ...dialogElement.value.querySelectorAll(
-      'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), [href]'
-    ),
-  ];
-  const first = controls[0];
-  const last = controls.at(-1);
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last?.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first?.focus();
-  }
-}
-
 const closeModal = () => {
   // Reset form and states
   form.value = {
@@ -502,8 +459,12 @@ const closeModal = () => {
   emit('close');
 };
 
-onBeforeUnmount(() => {
-  if (previouslyFocused?.isConnected) previouslyFocused.focus();
+// The share modal moves focus to the dialog container itself so the whole
+// invitation form is announced before the first control is reached.
+useModalDialog(dialogElement, {
+  onClose: closeModal,
+  isOpen: () => props.show,
+  initialFocus: dialogElement,
 });
 
 const sendProjectInvitation = async () => {

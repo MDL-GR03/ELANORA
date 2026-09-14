@@ -1,12 +1,16 @@
 <template>
-  <div v-if="visible" class="prompt-backdrop" @mousedown.self="cancel">
+  <div
+    v-if="visible"
+    class="prompt-backdrop"
+    role="presentation"
+    @mousedown.self="cancel"
+  >
     <div
       ref="dialogElement"
       class="prompt-dialog"
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
-      @keydown="handleKeydown"
     >
       <header class="prompt-header">
         <span class="prompt-icon"
@@ -55,13 +59,14 @@
 </template>
 
 <script setup>
-import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
+import { ref, useId, watch } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
   faPenToSquare,
   faTriangleExclamation,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
+import { useModalDialog } from '@/composables/useModalDialog';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -81,26 +86,15 @@ const generatedId = useId();
 const titleId = `prompt-title-${generatedId}`;
 const inputId = `user-prompt-value-${generatedId}`;
 const warningId = `prompt-warning-${generatedId}`;
-let previouslyFocused = null;
 
 let wasVisible = false;
 watch(
   () => props.modelValue,
-  async (value) => {
+  (value) => {
     visible.value = value;
     if (value && !wasVisible) {
-      previouslyFocused =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
       inputValue.value = props.defaultValue ?? '';
       validate(inputValue.value);
-      await nextTick();
-      inputElement.value?.focus();
-    } else if (!value && previouslyFocused?.isConnected) {
-      await nextTick();
-      previouslyFocused.focus();
-      previouslyFocused = null;
     }
     wasVisible = value;
   },
@@ -127,36 +121,16 @@ function submit() {
   emit('update:modelValue', false);
 }
 
-function handleKeydown(event) {
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    cancel();
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const controls = [
-    ...dialogElement.value.querySelectorAll(
-      'button:not(:disabled), input:not(:disabled)'
-    ),
-  ];
-  const first = controls[0];
-  const last = controls.at(-1);
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last?.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first?.focus();
-  }
-}
-
-onBeforeUnmount(() => {
-  if (previouslyFocused?.isConnected) previouslyFocused.focus();
-});
 function cancel() {
   emit('cancel');
   emit('update:modelValue', false);
 }
+
+useModalDialog(dialogElement, {
+  onClose: cancel,
+  isOpen: () => props.modelValue,
+  initialFocus: inputElement,
+});
 
 defineExpose({ inputValue });
 </script>

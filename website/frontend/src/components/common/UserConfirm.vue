@@ -1,5 +1,10 @@
 <template>
-  <div v-if="visible" class="confirm-backdrop" @mousedown.self="cancel">
+  <div
+    v-if="visible"
+    class="confirm-backdrop"
+    role="presentation"
+    @mousedown.self="cancel"
+  >
     <dialog
       ref="dialogElement"
       class="confirm-dialog"
@@ -9,7 +14,6 @@
       :aria-labelledby="title ? titleId : undefined"
       :aria-label="title ? undefined : message"
       :aria-describedby="messageId"
-      @keydown="handleKeydown"
     >
       <header class="confirm-header">
         <span class="confirm-icon" aria-hidden="true">
@@ -53,7 +57,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
+import { computed, ref, useId, watch } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
   faCircleCheck,
@@ -61,6 +65,7 @@ import {
   faTriangleExclamation,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
+import { useModalDialog } from '@/composables/useModalDialog';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -82,7 +87,6 @@ const cancelButton = ref(null);
 const generatedId = useId();
 const titleId = `confirmation-title-${generatedId}`;
 const messageId = `confirmation-message-${generatedId}`;
-let previouslyFocused = null;
 
 const resolvedTone = computed(() => {
   if (props.tone !== 'auto') return props.tone;
@@ -104,45 +108,11 @@ const toneIcon = computed(
 
 watch(
   () => props.modelValue,
-  async (value) => {
+  (value) => {
     visible.value = value;
-    if (value) {
-      previouslyFocused =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      await nextTick();
-      cancelButton.value?.focus();
-    } else if (previouslyFocused?.isConnected) {
-      await nextTick();
-      previouslyFocused.focus();
-      previouslyFocused = null;
-    }
   },
   { immediate: true }
 );
-
-function handleKeydown(event) {
-  if (event.key === 'Escape') {
-    event.stopPropagation();
-    cancel();
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const controls = [
-    ...dialogElement.value.querySelectorAll('button:not(:disabled)'),
-  ];
-  if (!controls.length) return;
-  const first = controls[0];
-  const last = controls.at(-1);
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
-  }
-}
 
 function confirm() {
   emit('confirm');
@@ -153,8 +123,10 @@ function cancel() {
   emit('update:modelValue', false);
 }
 
-onBeforeUnmount(() => {
-  if (previouslyFocused?.isConnected) previouslyFocused.focus();
+useModalDialog(dialogElement, {
+  onClose: cancel,
+  isOpen: () => props.modelValue,
+  initialFocus: cancelButton,
 });
 
 defineExpose({ confirm, cancel });

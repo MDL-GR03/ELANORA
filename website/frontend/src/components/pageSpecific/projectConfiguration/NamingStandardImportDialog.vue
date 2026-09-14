@@ -7,7 +7,6 @@
       aria-modal="true"
       aria-labelledby="import-standards-title"
       tabindex="-1"
-      @keydown="handleKeydown"
     >
       <header class="import-modal-heading">
         <span class="import-modal-icon" aria-hidden="true">
@@ -227,8 +226,9 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useModalDialog } from '@/composables/useModalDialog';
 
 import AppSelect from '@/components/common/AppSelect.vue';
 
@@ -257,8 +257,6 @@ const emit = defineEmits([
 const { t } = useI18n();
 const dialogElement = ref(null);
 const closeButton = ref(null);
-const previouslyFocused =
-  document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
 const availableStandards = computed(() =>
   props.importStandards.filter(
@@ -278,36 +276,8 @@ function close() {
   emit('close');
 }
 
-function handleKeydown(event) {
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    close();
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const controls = [
-    ...dialogElement.value.querySelectorAll(
-      'button:not(:disabled), input:not(:disabled), [href]'
-    ),
-  ];
-  const first = controls[0];
-  const last = controls.at(-1);
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last?.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first?.focus();
-  }
-}
+useModalDialog(dialogElement, { onClose: close, initialFocus: closeButton });
 
-onMounted(async () => {
-  await nextTick();
-  closeButton.value?.focus();
-});
-onBeforeUnmount(() => {
-  if (previouslyFocused?.isConnected) previouslyFocused.focus();
-});
 function toggleSelectedStandard(standardId, event) {
   const selected = new Set(props.selectedStandardIds);
   if (event.target.checked) selected.add(standardId);

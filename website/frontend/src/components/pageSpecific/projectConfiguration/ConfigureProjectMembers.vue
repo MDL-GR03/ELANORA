@@ -124,7 +124,6 @@
         aria-labelledby="add-member-title"
         aria-describedby="add-member-description"
         tabindex="-1"
-        @keydown="handleDialogKeydown"
       >
         <div class="modal-header">
           <span class="modal-header-icon">
@@ -215,21 +214,14 @@
 </template>
 
 <script setup>
-import {
-  ref,
-  reactive,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  computed,
-  watch,
-} from 'vue';
+import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useUserConfirm } from '@/composables/useUserConfirm';
+import { useModalDialog } from '@/composables/useModalDialog';
 import AppSelect from '@/components/common/AppSelect.vue';
 import { reportClientError } from '@/utils/errorDiagnostics';
 import {
@@ -261,7 +253,6 @@ const formError = ref('');
 const showAddUserModal = ref(false);
 const addMemberButton = ref(null);
 const addMemberDialog = ref(null);
-let previouslyFocused = null;
 
 // Operation states
 const updatingUsers = ref(new Set());
@@ -501,39 +492,7 @@ const closeAddUserModal = () => {
 };
 
 const openAddUserModal = () => {
-  previouslyFocused =
-    document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : addMemberButton.value;
   showAddUserModal.value = true;
-};
-
-const handleDialogKeydown = (event) => {
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    closeAddUserModal();
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const focusable = Array.from(
-    addMemberDialog.value?.querySelectorAll(
-      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
-    ) || []
-  ).filter((element) => !element.hidden);
-  if (!focusable.length) {
-    event.preventDefault();
-    addMemberDialog.value?.focus();
-    return;
-  }
-  const first = focusable[0];
-  const last = focusable.at(-1);
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
-  }
 };
 
 const addUser = async () => {
@@ -604,20 +563,14 @@ onMounted(() => {
 });
 
 // When opening the Add Member modal, load available users
-watch(showAddUserModal, async (open) => {
-  if (open) {
-    loadActiveUsers();
-    await nextTick();
-    addMemberDialog.value?.focus();
-  } else if (previouslyFocused?.isConnected) {
-    await nextTick();
-    previouslyFocused.focus();
-    previouslyFocused = null;
-  }
+watch(showAddUserModal, (open) => {
+  if (open) loadActiveUsers();
 });
 
-onBeforeUnmount(() => {
-  if (previouslyFocused?.isConnected) previouslyFocused.focus();
+useModalDialog(addMemberDialog, {
+  onClose: closeAddUserModal,
+  isOpen: showAddUserModal,
+  initialFocus: addMemberDialog,
 });
 
 // Watch for project changes

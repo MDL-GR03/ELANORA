@@ -1,5 +1,9 @@
 <template>
-  <div class="project-create-modal-overlay" @click.self="close">
+  <div
+    class="project-create-modal-overlay"
+    role="presentation"
+    @click.self="close"
+  >
     <div
       ref="dialogElement"
       class="project-create-modal-content"
@@ -7,7 +11,6 @@
       aria-modal="true"
       :aria-labelledby="titleId"
       tabindex="-1"
-      @keydown="handleDialogKeydown"
     >
       <h2 :id="titleId" class="project-create-modal-title">
         {{ t('projectsPage.createProject') }}
@@ -96,18 +99,12 @@
 </template>
 
 <script setup>
-import {
-  ref,
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  useId,
-} from 'vue';
+import { ref, computed, onMounted, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UploadFolder from '@components/common/UploadFolder.vue';
 import gitService from '@api/service/gitService';
 import { useProjectStore } from '@stores/project';
+import { useModalDialog } from '@/composables/useModalDialog';
 
 const { t } = useI18n();
 const emit = defineEmits(['close', 'created']);
@@ -126,9 +123,6 @@ const nameErrorId = `project-create-name-error-${useId()}`;
 const descriptionId = `project-create-description-${useId()}`;
 const descriptionCountId = `project-create-description-count-${useId()}`;
 const descriptionErrorId = `project-create-description-error-${useId()}`;
-const previouslyFocused =
-  typeof document !== 'undefined' ? document.activeElement : null;
-
 const nameError = ref('');
 const descError = ref('');
 
@@ -209,42 +203,10 @@ function close() {
   emit('close');
 }
 
-function handleDialogKeydown(event) {
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    close();
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const focusable = Array.from(
-    dialogElement.value?.querySelectorAll(
-      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
-    ) || []
-  ).filter((element) => !element.hidden);
-  if (!focusable.length) {
-    event.preventDefault();
-    dialogElement.value?.focus();
-    return;
-  }
-  const first = focusable[0];
-  const last = focusable.at(-1);
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
-  }
-}
+useModalDialog(dialogElement, { onClose: close, initialFocus: nameInput });
 
-onMounted(async () => {
+onMounted(() => {
   projectStore.initBroadcastChannel();
-  await nextTick();
-  nameInput.value?.focus();
-});
-
-onBeforeUnmount(() => {
-  if (previouslyFocused?.isConnected) previouslyFocused.focus();
 });
 </script>
 

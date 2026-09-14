@@ -1,12 +1,16 @@
 <template>
-  <div v-if="visible" class="sync-backdrop" @mousedown.self="closeDialog">
+  <div
+    v-if="visible"
+    class="sync-backdrop"
+    role="presentation"
+    @mousedown.self="closeDialog"
+  >
     <dialog
       ref="dialogElement"
       class="sync-dialog"
       open
       aria-modal="true"
       aria-labelledby="sync-title"
-      @keydown="handleKeydown"
     >
       <header class="sync-header">
         <div class="sync-icon" aria-hidden="true">
@@ -229,11 +233,12 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import gitService from '@/api/service/gitService';
 import UserConfirm from '@/components/common/UserConfirm.vue';
 import { useEventMessageStore } from '@stores/eventMessage';
+import { useModalDialog } from '@/composables/useModalDialog';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -439,35 +444,17 @@ function handleConfirmed() {
   confirmAction = null;
   if (action) void action();
 }
-function handleKeydown(event) {
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    closeDialog();
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const controls = [
-    ...dialogElement.value.querySelectorAll(
-      'button:not(:disabled), [href], input:not(:disabled)'
-    ),
-  ];
-  const first = controls[0];
-  const last = controls.at(-1);
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last?.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first?.focus();
-  }
-}
+useModalDialog(dialogElement, {
+  onClose: closeDialog,
+  isOpen: () => props.visible,
+  initialFocus: closeButton,
+});
+
 watch(
   () => props.visible,
   async (visible) => {
     if (!visible) return;
     await checkSync();
-    await nextTick();
-    closeButton.value?.focus();
   },
   { immediate: true }
 );
