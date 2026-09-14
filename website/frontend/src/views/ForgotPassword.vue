@@ -83,6 +83,7 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { forgotPassword } from '@/api/service/authService';
 import { useEventMessageStore } from '@stores/eventMessage';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -145,7 +146,7 @@ const handleSubmit = async () => {
     eventMessageStore.addMessage(t('forgotPassword.code_sent'), 'success');
     router.push({ name: 'ResetPassword', query: { email: email.value } });
   } catch (error) {
-    console.error(error);
+    reportClientError('Password recovery request failed', error);
 
     // Handle specific error types based on HTTP status codes
     if (error?.response?.status === 429) {

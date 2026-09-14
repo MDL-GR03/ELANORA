@@ -1,4 +1,5 @@
 import { computed, onScopeDispose, ref, toValue } from 'vue';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 export function useAddressProfileEditor({
   profile,
@@ -146,7 +147,7 @@ export function useAddressProfileEditor({
         countries.value = result.data;
       }
     } catch (error) {
-      console.error('Error loading countries:', error);
+      reportClientError('Error loading countries', error);
     }
   };
 
@@ -174,7 +175,7 @@ export function useAddressProfileEditor({
 
       await handleCityValidationResult(result);
     } catch (error) {
-      console.error('Error validating city:', error);
+      reportClientError('Error validating city', error);
       addressValidation.value.city = {
         isValid: false,
         message: t('register.city_validation_error'),
@@ -280,7 +281,7 @@ export function useAddressProfileEditor({
         };
       }
     } catch (error) {
-      console.error('Error validating postal code:', error);
+      reportClientError('Error validating postal code', error);
       addressValidation.value.postalCode = {
         isValid: false,
         message: t('register.postal_code_validation_error'),
@@ -363,7 +364,7 @@ export function useAddressProfileEditor({
         };
       }
     } catch (error) {
-      console.error('Error validating street in city:', error);
+      reportClientError('Error validating street in city', error);
       addressValidation.value.streetInCity = {
         isValid: false,
         message: t('register.street_validation_error'),
@@ -410,7 +411,7 @@ export function useAddressProfileEditor({
         };
       }
     } catch (error) {
-      console.error('Error validating postal code in city:', error);
+      reportClientError('Error validating postal code in city', error);
       addressValidation.value.postalCodeInCity = {
         isValid: false,
         message: t('register.postal_code_city_validation_error'),
@@ -642,7 +643,7 @@ export function useAddressProfileEditor({
         editAddressMode.value = false;
       }
     } catch (error) {
-      console.error('Error updating address:', error);
+      reportClientError('Error updating address', error);
       let errorMessage = "Erreur lors de la mise à jour de l'adresse";
 
       if (error.response?.data?.detail) {

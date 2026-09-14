@@ -132,6 +132,7 @@ import {
   getSentInvitations,
 } from '@/api/service/invitationService';
 import gitService from '@/api/service/gitService';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const { t } = useI18n();
 const eventMessageStore = useEventMessageStore();
@@ -171,7 +172,7 @@ const loadProjects = async () => {
     const response = await gitService.listProjects();
     projects.value = response.projects || [];
   } catch (error) {
-    console.error('Failed to load projects:', error);
+    reportClientError('Failed to load projects', error);
     eventMessageStore.addMessage(
       t('appHeader.projectSection.loadError'),
       'error'
@@ -228,7 +229,7 @@ const handleSendInvitation = async () => {
       );
     }
   } catch (error) {
-    console.error('Failed to send invitation:', error);
+    reportClientError('Failed to send invitation', error);
     eventMessageStore.addMessage(
       error.response?.data?.detail || t('invitation.error'),
       'error'
@@ -250,7 +251,7 @@ const loadSentInvitations = async () => {
       (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
   } catch (error) {
-    console.error('Failed to load sent invitations:', error);
+    reportClientError('Failed to load sent invitations', error);
     sentInvitations.value = [];
   } finally {
     loadingInvitations.value = false;

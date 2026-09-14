@@ -142,6 +142,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { reportClientError } from '@/utils/errorDiagnostics';
 import {
   sendVerificationEmail,
   verifyEmail,
@@ -245,7 +246,7 @@ export default {
             response.data.message || t('emailVerification.errors.invalidCode');
         }
       } catch (error) {
-        console.error('Email verification error:', error);
+        reportClientError('Email verification error', error);
         validationMessage.value =
           error.response?.data?.detail ||
           t('emailVerification.errors.verificationFailed');
@@ -278,7 +279,7 @@ export default {
             response.data.message || t('emailVerification.errors.resendFailed');
         }
       } catch (error) {
-        console.error('Resend verification error:', error);
+        reportClientError('Resend verification error', error);
         validationMessage.value =
           error.response?.data?.detail ||
           t('emailVerification.errors.resendFailed');

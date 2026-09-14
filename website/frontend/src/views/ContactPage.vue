@@ -155,6 +155,7 @@ import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 import { contactService } from '@api/service/contactService.js';
 import AppSelect from '@/components/common/AppSelect.vue';
+import { reportClientError } from '@/utils/errorDiagnostics';
 import '@assets/css/contact-page.css';
 
 const { t } = useI18n();
@@ -248,7 +249,7 @@ watch([isAuthenticated, userEmail], ([isAuth, email]) => {
 
 // Handle error responses with specific error messages
 const handleContactError = (error) => {
-  console.error('Contact form submission error:', error);
+  reportClientError('Contact form submission error', error);
 
   // Handle different types of errors with specific messages
   if (error.response?.status) {

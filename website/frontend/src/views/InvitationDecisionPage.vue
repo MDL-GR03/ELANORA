@@ -126,6 +126,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { reportClientError } from '@/utils/errorDiagnostics';
 import {
   acceptInvitation as acceptInvitationAPI,
   rejectInvitation as rejectInvitationAPI,
@@ -163,7 +164,7 @@ const fetchInvitationDetails = async (invitationId) => {
       );
     }
   } catch (err) {
-    console.error('Error fetching invitation details:', err);
+    reportClientError('Error fetching invitation details', err);
     throw new Error(
       err.response?.data?.detail ||
         err.message ||
@@ -183,7 +184,7 @@ const loadInvitationDetails = async () => {
     const details = await fetchInvitationDetails(invitationId);
     invitationData.value = details;
   } catch (err) {
-    console.error('Error loading invitation:', err);
+    reportClientError('Error loading invitation', err);
     error.value = true;
     errorMessage.value = err.message || t('invitation.load_error');
   } finally {
@@ -205,7 +206,7 @@ const acceptInvitation = async () => {
       throw new Error(response.data.message || t('invitation.accept_error'));
     }
   } catch (err) {
-    console.error('Error accepting invitation:', err);
+    reportClientError('Error accepting invitation', err);
     error.value = true;
     errorMessage.value =
       err.response?.data?.detail || err.message || t('invitation.accept_error');
@@ -228,7 +229,7 @@ const rejectInvitation = async () => {
       throw new Error(response.data.message || t('invitation.reject_error'));
     }
   } catch (err) {
-    console.error('Error rejecting invitation:', err);
+    reportClientError('Error rejecting invitation', err);
     error.value = true;
     errorMessage.value =
       err.response?.data?.detail || err.message || t('invitation.reject_error');

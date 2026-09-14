@@ -684,6 +684,7 @@ import { useEventMessageStore } from '@stores/eventMessage';
 import AppSelect from '@/components/common/AppSelect.vue';
 import { validateInvitation } from '@/api/service/invitationService';
 import { registerWithInvitation } from '@/api/service/authService';
+import { reportClientError } from '@/utils/errorDiagnostics';
 import {
   getCountries,
   validateCity,
@@ -1233,7 +1234,7 @@ const validateCityField = async () => {
       };
     }
   } catch (error) {
-    console.error('Error validating city:', error);
+    reportClientError('Error validating city', error);
     addressValidation.value.city = {
       isValid: false,
       message: t('register.city_validation_error'),
@@ -1293,7 +1294,7 @@ const validatePostalCodeField = async () => {
       };
     }
   } catch (error) {
-    console.error('Error validating postal code:', error);
+    reportClientError('Error validating postal code', error);
     addressValidation.value.postalCode = {
       isValid: false,
       message: t('register.postal_code_validation_error'),
@@ -1383,7 +1384,7 @@ const validateStreetInCityField = async () => {
       };
     }
   } catch (error) {
-    console.error('Error validating street in city:', error);
+    reportClientError('Error validating street in city', error);
     addressValidation.value.streetInCity = {
       isValid: false,
       message: t('register.street_validation_error'),
@@ -1431,7 +1432,7 @@ const validatePostalCodeInCityField = async () => {
       };
     }
   } catch (error) {
-    console.error('Error validating postal code in city:', error);
+    reportClientError('Error validating postal code in city', error);
     addressValidation.value.postalCodeInCity = {
       isValid: false,
       message: t('register.postal_code_city_validation_error'),
@@ -1625,7 +1626,7 @@ const loadCountries = async () => {
       );
     }
   } catch (error) {
-    console.error('Error loading countries:', error);
+    reportClientError('Error loading countries', error);
     eventMessageStore.addMessage(
       t('register.error_loading_countries'),
       'error'
@@ -1735,7 +1736,7 @@ const handleRegister = async () => {
       router.push({ name: 'LoginPage' });
     }
   } catch (error) {
-    console.error('Registration error:', error);
+    reportClientError('Registration error', error);
     eventMessageStore.addMessage(
       error?.response?.data?.detail || t('register.error'),
       'error'
@@ -1766,7 +1767,7 @@ watch(
         usernameAvailable.value = res.available;
         usernameCheckMessage.value = res.message;
       } catch (e) {
-        console.error('Username check error:', e);
+        reportClientError('Username availability check error', e);
         usernameAvailable.value = null;
         usernameCheckMessage.value = t('register.username_check_error');
       } finally {
@@ -1792,7 +1793,7 @@ watch(
         emailAvailable.value = res.available;
         emailCheckMessage.value = res.message;
       } catch (e) {
-        console.error('Email check error:', e);
+        reportClientError('Email availability check error', e);
         emailAvailable.value = null;
         emailCheckMessage.value = t('register.email_check_error');
       } finally {

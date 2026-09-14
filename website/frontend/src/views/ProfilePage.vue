@@ -83,6 +83,7 @@ import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@/stores/eventMessage.js';
 import { fetchUserProfile } from '@/api/service/userService.js';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const ProfileOverview = defineAsyncComponent(
   () => import('@/components/pageSpecific/profile/ProfileOverview.vue')
@@ -185,7 +186,7 @@ async function loadUserProfile() {
     const response = await fetchUserProfile();
     userProfile.value = response.data;
   } catch (err) {
-    console.error('Error loading user profile:', err);
+    reportClientError('Error loading user profile', err);
     error.value = t('profile.errors.load_failed');
   } finally {
     loading.value = false;

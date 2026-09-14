@@ -121,6 +121,7 @@ import {
   cancelInvitation as cancelInvitationAPI,
 } from '@/api/service/invitationService';
 import ProjectShareModal from '@/components/common/ProjectShareModal.vue';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -169,7 +170,7 @@ const loadInvitations = async () => {
     const response = await getProjectInvitations(projectId.value);
     invitations.value = response.data.invitations || [];
   } catch (err) {
-    console.error('Error loading invitations:', err);
+    reportClientError('Error loading invitations', err);
     error.value =
       err.response?.data?.detail || t('projectSettings.invitations.load_error');
     invitations.value = [];
@@ -210,7 +211,7 @@ const resendInvitation = async (invitation) => {
     );
     await loadInvitations();
   } catch (err) {
-    console.error('Error resending invitation:', err);
+    reportClientError('Error resending invitation', err);
     eventMessageStore.addMessage(
       err.response?.data?.detail || 'projectSettings.invitations.resend_error',
       'error'
@@ -248,7 +249,7 @@ const cancelInvitation = async (invitation) => {
     );
     await loadInvitations(); // Refresh the list
   } catch (err) {
-    console.error('Error canceling invitation:', err);
+    reportClientError('Error canceling invitation', err);
     eventMessageStore.addMessage(
       err.response?.data?.detail || 'projectSettings.invitations.cancel_error',
       'error'

@@ -106,6 +106,7 @@
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { changePassword } from '@/api/service/userService.js';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const { t } = useI18n();
 const emit = defineEmits(['show-message']);
@@ -203,7 +204,7 @@ async function handlePasswordChange() {
     };
     passwordValidation.value.show = false;
   } catch (error) {
-    console.error('Password change error:', error);
+    reportClientError('Password change error', error);
     emit('show-message', {
       text:
         error?.response?.data?.detail ||

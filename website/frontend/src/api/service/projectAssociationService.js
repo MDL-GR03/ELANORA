@@ -2,6 +2,7 @@
  * Service for managing project-user associations
  */
 import axiosInstance from '@/api/apiClient';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 /**
  * Get all users associated with a project by project ID
@@ -15,7 +16,7 @@ export const getProjectUsers = async (projectId) => {
     );
     return response;
   } catch (error) {
-    console.error('Error fetching project users:', error);
+    reportClientError('Error fetching project users', error);
     throw error;
   }
 };
@@ -39,7 +40,7 @@ export const addUserToProject = async (projectId, userData) => {
     );
     return response;
   } catch (error) {
-    console.error('Error adding user to project:', error);
+    reportClientError('Error adding user to project', error);
     throw error;
   }
 };
@@ -63,7 +64,7 @@ export const updateUserPermission = async (
     );
     return response;
   } catch (error) {
-    console.error('Error updating user permission:', error);
+    reportClientError('Error updating user permission', error);
     throw error;
   }
 };
@@ -81,7 +82,7 @@ export const removeUserFromProject = async (projectId, userId) => {
     );
     return response;
   } catch (error) {
-    console.error('Error removing user from project:', error);
+    reportClientError('Error removing user from project', error);
     throw error;
   }
 };

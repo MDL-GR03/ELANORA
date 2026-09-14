@@ -91,6 +91,7 @@ import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { resetPassword } from '@/api/service/authService';
 import '@/assets/css/resetpassword.css';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -187,7 +188,7 @@ const handleSubmit = async () => {
     eventMessageStore.addMessage(t('resetPassword.success'), 'success');
     router.push({ name: 'LoginPage' });
   } catch (error) {
-    console.error('Reset password error:', error);
+    reportClientError('Reset password error', error);
     eventMessageStore.addMessage(
       error?.response?.data?.detail || t('resetPassword.error'),
       'error'

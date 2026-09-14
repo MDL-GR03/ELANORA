@@ -5,6 +5,7 @@ import {
   logout as authLogout,
 } from '@/api/service/authService';
 import { useProjectStore } from '@/stores/project';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 /* =========================
    Store Definition
@@ -30,7 +31,7 @@ export const useUserStore = defineStore('user', {
       try {
         return this.user;
       } catch (error) {
-        console.error('Error initializing user store:', error);
+        reportClientError('Error initializing user store', error);
         this.clearAuth();
         return null;
       }
@@ -55,7 +56,7 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         // Only log error if it's not a 401 (which is expected when not authenticated)
         if (error.response?.status !== 401) {
-          console.error('Error verifying authentication:', error);
+          reportClientError('Error verifying authentication', error);
         } else {
           console.log('User not authenticated (401 response expected)');
         }
@@ -87,13 +88,13 @@ export const useUserStore = defineStore('user', {
         } catch (userError) {
           // If user data fetch fails, we continue anyway
           // because authentication succeeded (cookies are set)
-          console.error('Error fetching user data after login:', userError);
+          reportClientError('Error fetching user data after login', userError);
           // Don't re-throw the error
         }
 
         return response.data;
       } catch (error) {
-        console.error('Login error:', error);
+        reportClientError('Login error', error);
         throw error;
       }
     },
@@ -110,7 +111,7 @@ export const useUserStore = defineStore('user', {
           await authLogout(csrfToken);
         }
       } catch (error) {
-        console.error('Logout error:', error);
+        reportClientError('Logout error', error);
       } finally {
         this.clearAuth();
         useProjectStore().resetForSession();

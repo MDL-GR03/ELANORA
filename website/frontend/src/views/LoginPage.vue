@@ -105,6 +105,7 @@ import { useRouter } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useAppInfoStore } from '@stores/appInfo';
 import { useUserStore } from '@stores/user';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -161,7 +162,7 @@ const handleLogin = async () => {
     eventMessageStore.addMessage(t('login.login_success'), 'success');
     await router.push({ name: 'HomePage' });
   } catch (error) {
-    console.error('Login error:', error);
+    reportClientError('Login error', error);
     const message =
       error.response?.data?.detail || t('login.login_connection_error');
     eventMessageStore.addMessage(message, 'error');

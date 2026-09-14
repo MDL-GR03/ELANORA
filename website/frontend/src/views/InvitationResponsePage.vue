@@ -41,6 +41,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { reportClientError } from '@/utils/errorDiagnostics';
 import {
   acceptInvitation,
   rejectInvitation,
@@ -89,7 +90,7 @@ const processInvitation = async () => {
       throw new Error(response.data.message || 'Unknown error');
     }
   } catch (err) {
-    console.error('Error processing invitation:', err);
+    reportClientError('Error processing invitation', err);
     error.value = true;
     errorMessage.value =
       err.response?.data?.detail ||

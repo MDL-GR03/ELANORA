@@ -1,5 +1,6 @@
 import axiosClient from '@/api/apiClient';
 import axios from 'axios';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 /**
  * Service for location-related API calls
@@ -31,7 +32,7 @@ export const getCountries = async () => {
       data: countries,
     };
   } catch (error) {
-    console.error('Error fetching countries:', error);
+    reportClientError('Error fetching countries', error);
 
     // Fallback to internal API if REST Countries fails
     try {
@@ -41,7 +42,7 @@ export const getCountries = async () => {
         data: fallbackResponse.data,
       };
     } catch (fallbackError) {
-      console.error('Fallback error fetching countries:', fallbackError);
+      reportClientError('Fallback error fetching countries', fallbackError);
       return {
         success: false,
         error: 'Unable to fetch countries from any source',
@@ -151,7 +152,7 @@ export const validateCity = async (cityName, countryCode) => {
       };
     }
   } catch (error) {
-    console.error('Error validating city:', error);
+    reportClientError('Error validating city', error);
     return {
       success: false,
       error: 'Unable to validate city',
@@ -366,7 +367,7 @@ export const validatePostalCodeInCity = async (
       };
     }
   } catch (error) {
-    console.error('Error validating postal code in city:', error);
+    reportClientError('Error validating postal code in city', error);
     return {
       success: false,
       error: 'Unable to validate postal code',
@@ -490,7 +491,7 @@ export const validateStreetInCity = async (
       };
     }
   } catch (error) {
-    console.error('Error validating street in city:', error);
+    reportClientError('Error validating street in city', error);
     return {
       success: false,
       error: 'Unable to validate street',
@@ -635,7 +636,7 @@ export const validateStreetNumberInStreet = async (
       };
     }
   } catch (error) {
-    console.error('Error validating street number:', error);
+    reportClientError('Error validating street number', error);
     return {
       success: false,
       error: 'Unable to validate street number',
