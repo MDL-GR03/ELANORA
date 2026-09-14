@@ -116,7 +116,9 @@ async def export_tier_subset(
             ),
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=422, detail="Invalid research-copy tier selection."
+        ) from exc
 
     download_name = filename.name
     return Response(

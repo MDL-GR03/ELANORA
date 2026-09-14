@@ -53,7 +53,9 @@ async def upload_instance_logo(
     try:
         await replace_logo(db, instance, administrator, content)
     except ValueError as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
+        raise HTTPException(
+            status_code=422, detail="Invalid institution logo"
+        ) from error
     return Response(status_code=204)
 
 

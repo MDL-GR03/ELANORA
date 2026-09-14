@@ -48,7 +48,7 @@ async def _pinned_protocol(
     except ProtocolConflictError as error:
         raise HTTPException(
             status_code=409,
-            detail=str(error),
+            detail="Project protocol configuration conflict",
         ) from error
 
 

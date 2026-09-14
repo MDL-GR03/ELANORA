@@ -38,6 +38,9 @@ from app.service.review import (
 
 router = APIRouter()
 project_lock_dep = Depends(project_write_lock)
+REVIEW_NOT_FOUND = "Review case or task not found"
+INVALID_REVIEW_OPERATION = "Invalid review operation"
+REVIEW_ACTION_FORBIDDEN = "Review action not permitted"
 
 
 @router.get("/projects/{project_id}/cases", response_model=list[ReviewCaseResponse])
@@ -71,7 +74,7 @@ async def post_review_case(
             db, access.project.project_id, access.user.user_id, request
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
 
 
 @router.post(
@@ -96,9 +99,9 @@ async def post_review_comment(
             request,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
 
 
 @router.patch(
@@ -123,9 +126,9 @@ async def patch_review_case(
             request,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
 
 
 @router.post(
@@ -176,9 +179,9 @@ async def post_review_resubmission(
             ),
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
 
 
 @router.post(
@@ -197,7 +200,7 @@ async def post_review_case_view(
             db, access.project.project_id, case_id, access.user.user_id
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
 
 
 @router.patch(
@@ -225,13 +228,13 @@ async def patch_review_task(
             in {ProjectPermission.ADMIN, ProjectPermission.OWNER},
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
     except PermissionError as exc:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+            status_code=status.HTTP_403_FORBIDDEN, detail=REVIEW_ACTION_FORBIDDEN
         ) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
 
 
 @router.post(
@@ -256,6 +259,6 @@ async def post_review_revision_request(
             request,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc

@@ -1,19 +1,26 @@
 """Tests for safe, stable HTTP exception responses and diagnostics."""
 
+import ast
 import json
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
 
+import app.api.v1.review as review_api
 import app.core.exception_handler as exception_handler_module
 import app.middleware.csrf as csrf_module
+from app.api.v1.protocol import _domain_http_error
 from app.core.exception_handler import (
     add_general_exception_handler,
     validation_exception_handler,
 )
 from app.middleware.csrf import CSRFMiddleware
+from app.schema.review import ReviewCaseCreate
 
 SENSITIVE_VALUE = "participant-secret@example.org?token=do-not-log"
 
@@ -102,3 +109,60 @@ async def test_csrf_failure_log_excludes_client_address(monkeypatch) -> None:
 
     assert response.status_code == 403
     assert SENSITIVE_VALUE not in _calls(logger)
+
+
+@pytest.mark.asyncio
+async def test_review_domain_failure_does_not_publish_exception_text(
+    monkeypatch,
+) -> None:
+    async def fail(*_args, **_kwargs):
+        raise ValueError(SENSITIVE_VALUE)
+
+    monkeypatch.setattr(review_api, "create_case", fail)
+    access = SimpleNamespace(
+        project=SimpleNamespace(project_id=7),
+        user=SimpleNamespace(user_id=11),
+    )
+
+    with pytest.raises(HTTPException) as raised:
+        await review_api.post_review_case(
+            7,
+            ReviewCaseCreate(upload_id=1, title="Review"),
+            Mock(),
+            access,
+        )
+
+    assert raised.value.status_code == 422
+    assert raised.value.detail == review_api.INVALID_REVIEW_OPERATION
+    assert SENSITIVE_VALUE not in str(raised.value.detail)
+
+
+def test_protocol_domain_failure_does_not_publish_exception_text() -> None:
+    public_error = _domain_http_error(RuntimeError(SENSITIVE_VALUE))
+
+    assert public_error.status_code == 409
+    assert public_error.detail == "Protocol state conflict"
+    assert SENSITIVE_VALUE not in str(public_error.detail)
+
+
+def test_api_boundary_never_serializes_caught_exception_text() -> None:
+    source_root = Path(__file__).parents[2] / "app"
+    violations: list[str] = []
+    caught_names = {"e", "err", "error", "exc", "exception"}
+
+    for directory in (source_root / "api", source_root / "dependency"):
+        for source_path in directory.rglob("*.py"):
+            tree = ast.parse(source_path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                if not isinstance(node.func, ast.Name) or node.func.id != "str":
+                    continue
+                if not node.args or not isinstance(node.args[0], ast.Name):
+                    continue
+                if node.args[0].id in caught_names:
+                    violations.append(
+                        f"{source_path.relative_to(source_root)}:{node.lineno}"
+                    )
+
+    assert violations == []

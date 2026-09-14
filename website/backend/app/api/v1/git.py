@@ -88,6 +88,9 @@ from app.service.tier_export import (
 project_lock_dep = Depends(project_write_lock)
 
 router = APIRouter()
+PROJECT_RESOURCE_NOT_FOUND = "Project resource not found"
+PROJECT_STATE_CONFLICT = "Project state conflict"
+INVALID_PROJECT_STATE = "Invalid project state"
 
 git_service = GitService()
 contribution_change_sets = ContributionChangeSetCoordinator(git_service)
@@ -434,7 +437,7 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
             status_code=422,
             detail={
                 "code": "protected_baseline_modified",
-                "message": str(e),
+                "message": "Protected baseline tiers were modified",
                 "filename": e.filename,
                 "tiers": e.tiers,
             },
@@ -444,7 +447,7 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
             status_code=409,
             detail={
                 "code": "tier_reintegration_conflict",
-                "message": str(e),
+                "message": "Submitted tiers conflict with the accepted file",
                 "filename": e.filename,
                 "tiers": e.tiers,
             },
@@ -452,7 +455,9 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
     except HTTPException:
         raise
     except (DuplicatePendingContributionError, ContributionAlreadyCurrentError) as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
+        raise HTTPException(
+            status_code=409, detail="Contribution state conflict"
+        ) from e
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail="Project or file not found") from e
     except ValueError as e:
@@ -655,7 +660,7 @@ async def synchronize_project(
             "operation_id": str(operation.operation_id),
         }
     except (EafValidationError, ValueError) as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+        raise HTTPException(status_code=422, detail=INVALID_PROJECT_STATE) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
@@ -674,7 +679,7 @@ async def list_synchronization_operations(
         operations = await sync_coordinator.list_for_project(project_name, db)
         return {"operations": [operation_payload(item) for item in operations]}
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from e
 
 
 @router.post(
@@ -694,9 +699,9 @@ async def recover_synchronization_operation(
         )
         return operation_payload(operation)
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
+        raise HTTPException(status_code=409, detail=PROJECT_STATE_CONFLICT) from e
 
 
 @router.post(
@@ -716,7 +721,7 @@ async def discard_local_changes(
             "operation_id": str(operation.operation_id),
         }
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
@@ -787,7 +792,7 @@ async def get_accepted_project_history(
         result = await git_service.get_accepted_project_history(project_name, db)
         return AcceptedProjectHistoryResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from exc
 
 
 @router.get(
@@ -805,7 +810,7 @@ async def get_current_project_revision_health(
         result = await git_service.get_current_revision_health(project_name, db)
         return ProjectRevisionHealthResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from exc
 
 
 @router.post(
@@ -831,9 +836,9 @@ async def recover_current_project_revision(
         )
         return ProjectRevisionRecoveryResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from exc
     except (ValueError, RuntimeError, EafValidationError) as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        raise HTTPException(status_code=409, detail=PROJECT_STATE_CONFLICT) from exc
 
 
 @router.post(
@@ -854,9 +859,9 @@ async def preview_project_version_restore(
         )
         return ProjectVersionPreviewResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from exc
     except (ValueError, EafValidationError) as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        raise HTTPException(status_code=409, detail=PROJECT_STATE_CONFLICT) from exc
 
 
 @router.post(
@@ -884,9 +889,9 @@ async def restore_project_version(
         )
         return ProjectVersionRestoreResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from exc
     except (ValueError, EafValidationError) as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        raise HTTPException(status_code=409, detail=PROJECT_STATE_CONFLICT) from exc
 
 
 @router.put("/projects/{project_id}/contribution-policy")
@@ -915,7 +920,7 @@ async def test_pending_upload(
     try:
         return git_service.test_pending_upload(project_name, branch_name)
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
@@ -938,9 +943,11 @@ async def review_pending_eaf(
         )
         return EafReviewResponse(**comparison_payload(comparison))
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from exc
     except (EafReviewUnavailableError, EafValidationError) as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=422, detail="EAF review is unavailable"
+        ) from exc
 
 
 @router.post(
@@ -965,9 +972,9 @@ async def merge_pending_upload(
         )
         return await contribution_change_sets.execute(db, change_set.change_set_id)
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
+        raise HTTPException(status_code=409, detail=PROJECT_STATE_CONFLICT) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
@@ -989,9 +996,9 @@ async def decline_pending_upload(
             project_name, upload_id, request.reason, db, access.user.user_id
         )
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
+        raise HTTPException(status_code=409, detail=PROJECT_STATE_CONFLICT) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
@@ -1017,9 +1024,9 @@ async def set_contribution_research_topic(
             db,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        raise HTTPException(status_code=409, detail=PROJECT_STATE_CONFLICT) from exc
 
 
 @router.delete(
@@ -1038,9 +1045,9 @@ async def dismiss_duplicate_upload(
             project_name, upload_id, db, access.user.user_id
         )
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e)) from e
+        raise HTTPException(status_code=404, detail=PROJECT_RESOURCE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e)) from e
+        raise HTTPException(status_code=409, detail=PROJECT_STATE_CONFLICT) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
@@ -1076,7 +1083,7 @@ async def rename_file(
             committed=False,
             commit_hash=None,
             renamed_at="",
-            message=str(e),
+            message="A file with the target name already exists",
             conflict_elan_id=e.conflict_elan_id,
             message_key=e.message_key,
         )

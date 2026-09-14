@@ -38,6 +38,7 @@ router = APIRouter()
 
 # Constants to avoid duplication
 USER_NOT_FOUND = "User not found"
+INVALID_MEMBERSHIP_OPERATION = "Invalid project membership operation"
 
 
 def _reject_reserved_or_escalated_permission(
@@ -190,7 +191,7 @@ async def add_user_to_project_admin(
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise HTTPException(status_code=400, detail=INVALID_MEMBERSHIP_OPERATION) from e
     except HTTPException:
         raise
     except Exception as e:
@@ -244,7 +245,10 @@ async def update_user_project_permission_admin(
             )
         except Exception as e:
             # Log the error but don't fail the permission update
-            logging.warning(f"Failed to send role change notification: {e!s}")
+            logging.warning(
+                "Failed to send role change notification; error_type=%s",
+                type(e).__name__,
+            )
 
         # Commit the changes
         await db.commit()
@@ -258,7 +262,7 @@ async def update_user_project_permission_admin(
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise HTTPException(status_code=400, detail=INVALID_MEMBERSHIP_OPERATION) from e
     except HTTPException:
         raise
     except Exception as e:
