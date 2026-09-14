@@ -330,5 +330,8 @@ by risk and test coverage rather than further fragmenting this page.
 empty/loading/error states and responsive queue controls now live in
 `ReviewQueueOverview`; active versus archived grouping, nested correction search,
 state filtering and bounded pagination now live in `useReviewCaseQueue`. Both
-boundaries have direct tests. The correction-request composer is the next slice,
-followed by reviewer task decisions and revision-transition orchestration.
+boundaries have direct tests. Correction-request draft state, large-file search
+and pagination, per-file change selection, validation, reset behavior and API
+payload construction now live in `useReviewCaseDraft`, with direct tests for the
+multi-change and legacy question workflows. Reviewer task decisions and
+revision-transition orchestration are the next slices.
