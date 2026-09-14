@@ -8,51 +8,14 @@
         :description="t('pendingUploads.pageDescription')"
       />
 
-      <nav
+      <ContributionWorkspaceTabs
         v-if="!workspaceMode"
-        class="contribution-tabs"
-        role="tablist"
-        :aria-label="t('contributionWorkspace.tabs.label')"
-      >
-        <button
-          id="contribution-queue-tab"
-          type="button"
-          role="tab"
-          :aria-selected="activeView === 'queue'"
-          aria-controls="contribution-queue-panel"
-          :class="{ active: activeView === 'queue' }"
-          @click="setActiveView('queue')"
-        >
-          {{ t('contributionWorkspace.tabs.incoming') }}
-          <span v-if="contributionThreads.length">{{
-            contributionThreads.length
-          }}</span>
-        </button>
-        <button
-          id="contribution-reviews-tab"
-          type="button"
-          role="tab"
-          :aria-selected="activeView === 'reviews'"
-          aria-controls="contribution-reviews-panel"
-          :class="{ active: activeView === 'reviews' }"
-          @click="setActiveView('reviews')"
-        >
-          {{ t('contributionWorkspace.tabs.corrections') }}
-          <span v-if="activeReviewCount">{{ activeReviewCount }}</span>
-        </button>
-        <button
-          v-if="canAdminister"
-          id="contribution-history-tab"
-          type="button"
-          role="tab"
-          :aria-selected="activeView === 'history'"
-          aria-controls="contribution-history-panel"
-          :class="{ active: activeView === 'history' }"
-          @click="setActiveView('history')"
-        >
-          {{ t('contributionWorkspace.tabs.history') }}
-        </button>
-      </nav>
+        :active-view="activeView"
+        :contribution-count="contributionThreads.length"
+        :active-review-count="activeReviewCount"
+        :can-administer="canAdminister"
+        @select="setActiveView"
+      />
 
       <section
         v-if="workspaceMode && selectedUpload"
@@ -151,96 +114,16 @@
         role="tabpanel"
         aria-labelledby="contribution-queue-tab"
       >
-        <div class="contributions-toolbar">
-          <div>
-            <h2>{{ t('pendingUploads.queueTitle') }}</h2>
-            <p>{{ t('pendingUploads.queueDescription') }}</p>
-          </div>
-        </div>
-        <!-- Summary Stats -->
-        <div class="uploads-summary">
-          <button
-            type="button"
-            class="summary-card"
-            :class="{ selected: queueFilter === 'all' }"
-            @click="queueFilter = 'all'"
-          >
-            <font-awesome-icon icon="fa-solid fa-inbox" />
-            <h3>{{ totalPending }}</h3>
-            <p>{{ t('contributionWorkspace.summary.all') }}</p>
-          </button>
-          <button
-            type="button"
-            class="summary-card ready"
-            :class="{ selected: queueFilter === 'ready' }"
-            @click="queueFilter = 'ready'"
-          >
-            <font-awesome-icon icon="fa-solid fa-circle-check" />
-            <h3>{{ readyCount }}</h3>
-            <p>{{ t('pendingUploads.summary.readyToMerge') }}</p>
-          </button>
-          <button
-            type="button"
-            class="summary-card corrections"
-            :class="{ selected: queueFilter === 'corrections' }"
-            @click="queueFilter = 'corrections'"
-          >
-            <font-awesome-icon icon="fa-solid fa-clock" />
-            <h3>{{ awaitingCorrectionsCount }}</h3>
-            <p>{{ t('contributionWorkspace.summary.corrections') }}</p>
-          </button>
-          <button
-            type="button"
-            class="summary-card conflicts"
-            :class="{ selected: queueFilter === 'resolution' }"
-            @click="queueFilter = 'resolution'"
-          >
-            <font-awesome-icon icon="fa-solid fa-triangle-exclamation" />
-            <h3>{{ conflictsCount }}</h3>
-            <p>{{ t('pendingUploads.summary.needResolution') }}</p>
-          </button>
-        </div>
-
-        <div class="queue-filters">
-          <div class="queue-filter-field queue-search-field">
-            <label for="incoming-work-search">{{
-              t('contributionWorkspace.search.label')
-            }}</label>
-            <div class="queue-search-row">
-              <div class="queue-search-control">
-                <font-awesome-icon icon="fa-solid fa-magnifying-glass" />
-                <input
-                  id="incoming-work-search"
-                  v-model.trim="queueQuery"
-                  type="search"
-                  :placeholder="t('contributionWorkspace.search.placeholder')"
-                  aria-describedby="incoming-work-search-help incoming-work-search-count"
-                />
-              </div>
-              <span id="incoming-work-search-count" aria-live="polite">
-                {{
-                  t('contributionWorkspace.search.results', {
-                    count: filteredContributionThreads.length,
-                  })
-                }}
-              </span>
-            </div>
-            <small id="incoming-work-search-help">
-              {{ t('contributionWorkspace.search.example') }}
-            </small>
-          </div>
-          <div class="queue-filter-field queue-order-field">
-            <label for="incoming-work-order">{{
-              t('contributionWorkspace.order.label')
-            }}</label>
-            <AppSelect
-              id="incoming-work-order"
-              v-model="queueSort"
-              :aria-label="t('contributionWorkspace.order.aria')"
-              :options="queueSortOptions"
-            />
-          </div>
-        </div>
+        <ContributionQueueControls
+          v-model:filter="queueFilter"
+          v-model:query="queueQuery"
+          v-model:sort="queueSort"
+          :total="totalPending"
+          :ready="readyCount"
+          :corrections="awaitingCorrectionsCount"
+          :conflicts="conflictsCount"
+          :result-count="filteredContributionThreads.length"
+        />
 
         <!-- Upload List -->
         <div class="uploads-list">
@@ -929,7 +812,8 @@ import UploadDetailsView from '@/components/common/UploadDetailsView.vue';
 import UploadResolutionView from '@/components/common/UploadResolutionView.vue';
 import ReviewCasePanel from '@/components/common/ReviewCasePanel.vue';
 import AcceptedProjectHistory from '@/components/common/AcceptedProjectHistory.vue';
-import AppSelect from '@/components/common/AppSelect.vue';
+import ContributionQueueControls from '@/components/pageSpecific/contributions/ContributionQueueControls.vue';
+import ContributionWorkspaceTabs from '@/components/pageSpecific/contributions/ContributionWorkspaceTabs.vue';
 import { useProjectStore } from '@/stores/project.js';
 import { useUserStore } from '@/stores/user.js';
 import { useI18n } from 'vue-i18n';
@@ -982,10 +866,6 @@ const actionBusy = computed(
 const queueFilter = ref('all');
 const queueQuery = ref('');
 const queueSort = ref('oldest');
-const queueSortOptions = computed(() => [
-  { value: 'oldest', label: t('contributionWorkspace.order.oldest') },
-  { value: 'newest', label: t('contributionWorkspace.order.newest') },
-]);
 const researchTopicOptions = computed(() =>
   researchTopics.value.map((topic) => ({
     value: topic.topic_id,

@@ -308,3 +308,9 @@ contributor notification, database rollback, Git rollback and backup refresh.
 `GitService` retains a compatibility delegate while callers migrate. The next
 item 6 slice is decomposing the contribution frontend by workflow and removing
 the remaining presentation and request orchestration from its page component.
+
+The contribution workspace tab navigation and queue summary, filtering, search,
+and ordering controls now live in focused Vue components with component-level
+permission, accessibility and interaction tests. The page continues to own the
+queue data and actions for now; extracting an individual contribution card and
+its research-context decision panel is the next frontend slice.
