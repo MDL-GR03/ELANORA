@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import vue from 'eslint-plugin-vue';
+import vueA11y from 'eslint-plugin-vuejs-accessibility';
 import vueParser from 'vue-eslint-parser';
 import globals from 'globals';
 import prettierConfig from 'eslint-config-prettier';
@@ -41,6 +42,9 @@ export default [
   },
   js.configs.recommended,
   ...vue.configs['flat/recommended'],
+  // Only the rule entries: the preset's first entry sets languageOptions for
+  // every file, which would redefine globals for plain Node scripts.
+  ...vueA11y.configs['flat/recommended'].filter((entry) => entry.rules),
   prettierConfig,
   {
     files: ['**/*.vue'],
@@ -57,6 +61,12 @@ export default [
       'vue/html-self-closing': 'off',
       'vue/singleline-html-element-content-newline': 'off',
       'vue/multiline-html-element-content-newline': 'off',
+      // WCAG accepts either an explicit for/id pairing or a nested control.
+      // The plugin's default demands both, which rejects correct markup.
+      'vuejs-accessibility/label-has-for': [
+        'error',
+        { required: { some: ['nesting', 'id'] } },
+      ],
     },
   },
   {

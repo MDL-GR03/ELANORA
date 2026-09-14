@@ -46,6 +46,48 @@ useful accessible name; too many landmarks make navigation noisier. At narrow
 widths, preserve content order and allow local overflow for intrinsically wide
 research data such as annotation tables.
 
+## Accessibility enforcement
+
+`eslint-plugin-vuejs-accessibility` runs as part of `npm run lint`, so template
+accessibility regressions fail the same gate as any other lint error. The
+target remains WCAG 2.2 AA, which matters here because the research community
+includes Deaf and disabled researchers who work keyboard-first.
+
+One rule is deliberately reconfigured. `label-has-for` defaults to demanding
+both a nested control and a `for`/`id` pairing; WCAG accepts either, so the
+project requires only one of them. Nothing else is relaxed.
+
+A handful of suppressions remain, each carrying its justification in the
+template above it. They share one shape: the flagged element is not a control,
+and the keyboard path exists elsewhere.
+
+- Modal scrims are `role="presentation"`; the keyboard path is Escape.
+- The upload drop zone keeps its browse buttons as the equivalent control,
+  because dropping a file has no keyboard equivalent by nature.
+- Listbox options react to hover, but the active option moves with the arrow
+  keys handled on the combobox trigger, so they are never focused themselves.
+- Live regions and popovers pause their own dismissal timers on pointer and on
+  focus alike.
+
+Adding a new suppression means writing down why the keyboard path is already
+covered. If that sentence cannot be written honestly, the markup is wrong.
+
+## Modal dialogs
+
+Every modal uses `useModalDialog`, which owns Escape, the Tab and Shift+Tab
+focus trap, moving focus into the dialog when it opens, and returning focus to
+whatever opened it. It supports dialogs kept mounted behind a visibility flag
+and dialogs created only while open.
+
+Do not hand-roll this behavior in a component. It was previously duplicated
+across eight dialogs, which had drifted apart, so a correction to one never
+reached the others. The listener is attached in script rather than through a
+template handler, which keeps the dialog container a plain labelled region for
+assistive technology.
+
+A dialog still owns its own `role="dialog"`, `aria-modal="true"` and an
+accessible name via `aria-labelledby`.
+
 ## Drag and drop
 
 Drag and drop is an enhancement, never the only way to perform an operation.

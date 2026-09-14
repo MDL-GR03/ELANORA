@@ -17,7 +17,7 @@
           placeholder="Title, file, contribution, or comment"
         />
       </label>
-      <label>
+      <label for="archive-outcome-filter">
         <span>Outcome</span>
         <AppSelect
           id="archive-outcome-filter"

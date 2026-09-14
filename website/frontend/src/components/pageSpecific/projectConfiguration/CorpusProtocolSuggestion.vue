@@ -81,7 +81,7 @@
           <span>Find a tier</span>
           <input v-model.trim="query" placeholder="Search tier names" />
         </label>
-        <label class="filter-control">
+        <label class="filter-control" for="protocol-tier-evidence-filter">
           <span>Show</span>
           <AppSelect
             id="protocol-tier-evidence-filter"

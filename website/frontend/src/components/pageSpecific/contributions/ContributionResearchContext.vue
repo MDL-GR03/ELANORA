@@ -73,9 +73,10 @@
       "
       class="research-topic-decision"
     >
-      <label>
+      <label for="contribution-existing-topic">
         <span>{{ t('contributionWorkspace.context.useExisting') }}</span>
         <AppSelect
+          id="contribution-existing-topic"
           :model-value="topicDecision"
           :placeholder="t('contributionWorkspace.context.chooseTopic')"
           :options="topicOptions"

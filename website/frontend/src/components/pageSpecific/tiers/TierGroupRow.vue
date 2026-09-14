@@ -13,7 +13,10 @@
       :group-label="group.elan_file_name"
       :group-id="group.tier_group_id"
     />
-    <label class="tier-group-move-control">
+    <label
+      class="tier-group-move-control"
+      :for="`tier-group-section-${group.tier_group_id}`"
+    >
       <span>{{ t('tiersPage.moveTo') }}</span>
       <AppSelect
         :id="`tier-group-section-${group.tier_group_id}`"

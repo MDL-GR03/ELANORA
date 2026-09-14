@@ -147,7 +147,7 @@
               @merge="mergeUpload(upload)"
               @resolve="resolveUpload(upload, $event)"
               @test="testMerge(upload)"
-              @decline="openDeclineModal(upload, $event)"
+              @decline="openDeclineModal(upload)"
             />
 
             <ContributionCardBody
@@ -212,7 +212,7 @@
         v-if="showDeclineModal"
         class="modal-overlay"
         role="presentation"
-        @click="closeDeclineModal"
+        @click.self="closeDeclineModal"
       >
         <form
           ref="declineDialog"
@@ -222,7 +222,6 @@
           aria-labelledby="decline-modal-title"
           tabindex="-1"
           @submit.prevent="declineUpload"
-          @keydown.esc="closeDeclineModal"
           @click.stop
         >
           <div class="modal-header">
@@ -290,7 +289,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted, watch, nextTick } from 'vue';
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
 import '@/assets/css/pending-uploads-page.css';
 import UploadDetailsView from '@/components/common/UploadDetailsView.vue';
 import UploadResolutionView from '@/components/common/UploadResolutionView.vue';
@@ -309,6 +308,7 @@ import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import { useContributionMutations } from '@/composables/useContributionMutations';
 import { useContributionQueueData } from '@/composables/useContributionQueueData';
 import { useUserConfirm } from '@/composables/useUserConfirm';
+import { useModalDialog } from '@/composables/useModalDialog';
 import { hasProjectPermission } from '@/utils/authorization';
 import {
   groupContributionThreads,
@@ -331,7 +331,6 @@ const showDeclineModal = ref(false);
 const selectedUpload = ref(null);
 const declineReason = ref('');
 const declineDialog = ref(null);
-let modalTrigger = null;
 
 const queueFilter = ref('all');
 const queueQuery = ref('');
@@ -603,20 +602,23 @@ function openLinkedReview(reviewCase) {
   });
 }
 
-function openDeclineModal(upload, event) {
-  modalTrigger = event?.currentTarget || null;
+function openDeclineModal(upload) {
   selectedUpload.value = upload;
   declineReason.value = '';
   showDeclineModal.value = true;
-  void nextTick(() => declineDialog.value?.focus());
 }
+
+useModalDialog(declineDialog, {
+  onClose: closeDeclineModal,
+  isOpen: showDeclineModal,
+  initialFocus: declineDialog,
+});
 
 function closeDeclineModal() {
   if (dismissing.value !== null) return;
   showDeclineModal.value = false;
   declineReason.value = '';
   selectedUpload.value = null;
-  void nextTick(() => modalTrigger?.focus());
 }
 
 async function declineUpload() {

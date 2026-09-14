@@ -524,6 +524,9 @@
   },
 
   "projectsPage": {
+    "pagination": {
+      "pageNumberLabel": "Numéro de page"
+    },
     "pageTitle": "Projets",
     "pageDescription": "Gérez vos projets de corpus linguistiques. Créez, ouvrez, synchronisez ou supprimez des projets.",
     "title": "Projets de {instanceName}",

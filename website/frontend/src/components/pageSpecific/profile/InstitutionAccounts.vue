@@ -80,6 +80,7 @@
     <div
       v-if="selectedAccount"
       class="dialog-backdrop"
+      role="presentation"
       @mousedown.self="closeDialog"
     >
       <form

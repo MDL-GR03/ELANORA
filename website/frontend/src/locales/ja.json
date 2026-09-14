@@ -488,6 +488,9 @@
   },
 
   "projectsPage": {
+    "pagination": {
+      "pageNumberLabel": "ページ番号"
+    },
     "pageTitle": "プロジェクト",
     "pageDescription": "言語研究プロジェクトを管理し、共同作業を行います",
     "title": "{instanceName}のプロジェクト",

@@ -91,18 +91,20 @@
             placeholder="Annotation ID, tier, or text"
           />
         </label>
-        <label>
+        <label for="conflict-tier-filter">
           <span>Tier</span>
           <AppSelect
+            id="conflict-tier-filter"
             v-model="selectedTier"
             size="small"
             :options="tierOptions"
             aria-label="Filter annotation changes by tier"
           />
         </label>
-        <label>
+        <label for="conflict-kind-filter">
           <span>Change</span>
           <AppSelect
+            id="conflict-kind-filter"
             v-model="selectedKind"
             size="small"
             :options="kindOptions"

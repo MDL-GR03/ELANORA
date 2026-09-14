@@ -8,35 +8,45 @@
           <p>{{ t('contributionDetails.overview.description') }}</p>
         </div>
       </header>
-      <div class="details-grid">
+      <dl class="details-grid">
         <div class="detail-item">
-          <label>{{ t('contributionDetails.overview.fileChanges') }}</label>
-          <span>{{ uploadTypeLabel }}</span>
+          <dt>{{ t('contributionDetails.overview.fileChanges') }}</dt>
+          <dd>
+            <span>{{ uploadTypeLabel }}</span>
+          </dd>
         </div>
         <div class="detail-item">
-          <label>{{ t('contributionDetails.overview.reviewStatus') }}</label>
-          <span
-            class="status-badge"
-            :class="getStatusClass(upload.merge_status)"
-          >
-            {{ formatStatus(upload.merge_status) }}
-          </span>
+          <dt>{{ t('contributionDetails.overview.reviewStatus') }}</dt>
+          <dd>
+            <span
+              class="status-badge"
+              :class="getStatusClass(upload.merge_status)"
+            >
+              {{ formatStatus(upload.merge_status) }}
+            </span>
+          </dd>
         </div>
         <div class="detail-item">
-          <label>{{ t('contributionDetails.overview.submitted') }}</label>
-          <span>{{ formatDate(upload.uploaded_at) }}</span>
+          <dt>{{ t('contributionDetails.overview.submitted') }}</dt>
+          <dd>
+            <span>{{ formatDate(upload.uploaded_at) }}</span>
+          </dd>
         </div>
         <div class="detail-item">
-          <label>{{ t('contributionDetails.overview.researcher') }}</label>
-          <span>{{
-            upload.uploaded_by || t('contributionDetails.unknownResearcher')
-          }}</span>
+          <dt>{{ t('contributionDetails.overview.researcher') }}</dt>
+          <dd>
+            <span>{{
+              upload.uploaded_by || t('contributionDetails.unknownResearcher')
+            }}</span>
+          </dd>
         </div>
         <div v-if="upload.tested_at" class="detail-item">
-          <label>{{ t('contributionDetails.overview.checked') }}</label>
-          <span>{{ formatDate(upload.tested_at) }}</span>
+          <dt>{{ t('contributionDetails.overview.checked') }}</dt>
+          <dd>
+            <span>{{ formatDate(upload.tested_at) }}</span>
+          </dd>
         </div>
-      </div>
+      </dl>
     </div>
 
     <div
@@ -54,7 +64,7 @@
           <p>{{ t('contributionDetails.context.description') }}</p>
         </div>
       </header>
-      <div class="details-grid">
+      <dl class="details-grid">
         <div
           class="detail-item"
           :class="{
@@ -62,54 +72,62 @@
               upload.research_context.scope_status === 'outside_scope',
           }"
         >
-          <label>{{ t('contributionDetails.context.topic') }}</label>
-          <span>{{ researchTopicLabel }}</span>
+          <dt>{{ t('contributionDetails.context.topic') }}</dt>
+          <dd>
+            <span>{{ researchTopicLabel }}</span>
+          </dd>
         </div>
         <div class="detail-item">
-          <label>{{ t('contributionDetails.context.scopeCheck') }}</label>
-          <span>{{ researchScopeLabel }}</span>
+          <dt>{{ t('contributionDetails.context.scopeCheck') }}</dt>
+          <dd>
+            <span>{{ researchScopeLabel }}</span>
+          </dd>
         </div>
         <div class="detail-item detail-item--wide">
-          <label>{{ t('contributionDetails.context.summary') }}</label>
-          <span>{{ upload.research_context.summary }}</span>
+          <dt>{{ t('contributionDetails.context.summary') }}</dt>
+          <dd>
+            <span>{{ upload.research_context.summary }}</span>
+          </dd>
         </div>
         <div class="detail-item detail-item--wide">
-          <label>{{ t('contributionDetails.context.changedTiers') }}</label>
-          <div v-if="changedTiers.length" class="changed-tier-chips">
-            <span
-              v-for="tier in changedTiers"
-              :key="tier"
-              :class="{
-                'is-baseline': isBaselineTier(tier),
-                'is-baseline-correction': isBaselineCorrectionTier(tier),
-                'is-outside-scope': isOutsideScopeTier(tier),
-              }"
-              :title="tierKindLabel(tier)"
-            >
-              {{ tier }}
-            </span>
-          </div>
-          <span v-else>{{
-            t('contributionDetails.context.noTierChanges')
-          }}</span>
-          <div v-if="changedTiers.length" class="changed-tier-legend">
-            <span
-              ><i class="topic" />
-              {{ t('contributionDetails.tiers.topic') }}</span
-            >
-            <span v-if="baselineChangedTiers.length"
-              ><i class="baseline" />
-              {{ t('contributionDetails.tiers.baseline') }}</span
-            >
-            <span v-if="declaredBaselineCorrectionTiers.length"
-              ><i class="correction" />
-              {{ t('contributionDetails.tiers.correction') }}</span
-            >
-            <span v-if="outsideScopeTiers.length"
-              ><i class="outside" />
-              {{ t('contributionDetails.tiers.outside') }}</span
-            >
-          </div>
+          <dt>{{ t('contributionDetails.context.changedTiers') }}</dt>
+          <dd>
+            <div v-if="changedTiers.length" class="changed-tier-chips">
+              <span
+                v-for="tier in changedTiers"
+                :key="tier"
+                :class="{
+                  'is-baseline': isBaselineTier(tier),
+                  'is-baseline-correction': isBaselineCorrectionTier(tier),
+                  'is-outside-scope': isOutsideScopeTier(tier),
+                }"
+                :title="tierKindLabel(tier)"
+              >
+                {{ tier }}
+              </span>
+            </div>
+            <span v-else>{{
+              t('contributionDetails.context.noTierChanges')
+            }}</span>
+            <div v-if="changedTiers.length" class="changed-tier-legend">
+              <span
+                ><i class="topic" />
+                {{ t('contributionDetails.tiers.topic') }}</span
+              >
+              <span v-if="baselineChangedTiers.length"
+                ><i class="baseline" />
+                {{ t('contributionDetails.tiers.baseline') }}</span
+              >
+              <span v-if="declaredBaselineCorrectionTiers.length"
+                ><i class="correction" />
+                {{ t('contributionDetails.tiers.correction') }}</span
+              >
+              <span v-if="outsideScopeTiers.length"
+                ><i class="outside" />
+                {{ t('contributionDetails.tiers.outside') }}</span
+              >
+            </div>
+          </dd>
         </div>
         <p
           v-if="upload.research_context.scope_status === 'outside_scope'"
@@ -118,7 +136,7 @@
           <font-awesome-icon icon="fa-solid fa-triangle-exclamation" />
           <span>{{ t('contributionDetails.context.outsideExplanation') }}</span>
         </p>
-      </div>
+      </dl>
     </div>
 
     <div class="details-section">
@@ -129,20 +147,26 @@
           <p>{{ t('contributionDetails.quality.description') }}</p>
         </div>
       </header>
-      <div class="details-grid">
+      <dl class="details-grid">
         <div class="detail-item">
-          <label>{{ t('contributionDetails.quality.structure') }}</label>
-          <span>{{ t('contributionDetails.passed') }}</span>
+          <dt>{{ t('contributionDetails.quality.structure') }}</dt>
+          <dd>
+            <span>{{ t('contributionDetails.passed') }}</span>
+          </dd>
         </div>
         <div class="detail-item">
-          <label>{{ t('contributionDetails.quality.naming') }}</label>
-          <span>{{ t('contributionDetails.passed') }}</span>
+          <dt>{{ t('contributionDetails.quality.naming') }}</dt>
+          <dd>
+            <span>{{ t('contributionDetails.passed') }}</span>
+          </dd>
         </div>
         <div class="detail-item">
-          <label>{{ t('contributionDetails.quality.protocol') }}</label>
-          <span>{{ protocolLabel }}</span>
+          <dt>{{ t('contributionDetails.quality.protocol') }}</dt>
+          <dd>
+            <span>{{ protocolLabel }}</span>
+          </dd>
         </div>
-      </div>
+      </dl>
     </div>
 
     <div class="details-section">
@@ -638,6 +662,7 @@ function formatDate(dateString) {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
   gap: 0.7rem;
+  margin: 0;
 }
 
 .detail-item--wide {
@@ -655,13 +680,18 @@ function formatDate(dateString) {
   background: #f8fafc;
 }
 
-.detail-item label {
+.detail-item dt {
   color: #64748b;
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.045em;
   text-transform: uppercase;
   flex-shrink: 0;
+}
+
+.detail-item dd {
+  min-width: 0;
+  margin: 0;
 }
 
 .detail-item span {

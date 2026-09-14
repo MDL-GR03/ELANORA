@@ -27,7 +27,6 @@
                   <input
                     v-model="editFileType.name"
                     class="configure-file-types-edit-highlight"
-                    autofocus
                     @keydown.enter="saveEdit(ft.id)"
                     @keydown.esc="cancelEdit"
                   />

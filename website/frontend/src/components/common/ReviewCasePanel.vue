@@ -314,6 +314,7 @@
             <label
               v-if="canManage && !isFinished(item.state)"
               class="reviewer-field"
+              :for="`review-lead-${item.case_id}`"
             >
               <span>Review lead</span>
               <AppSelect

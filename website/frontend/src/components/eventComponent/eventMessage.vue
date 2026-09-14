@@ -1,5 +1,7 @@
 <template>
   <transition name="slide-fade">
+    <!-- A live region, not a control. The pointer and focus handlers only pause the auto-dismiss timer so the message can be read. -->
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
     <div
       v-if="visible"
       :class="['event-message', typeClasses[type]]"
@@ -7,6 +9,8 @@
       aria-live="polite"
       @mouseenter="onMouseEnter"
       @mouseleave="onMouseLeave"
+      @focusin="onMouseEnter"
+      @focusout="onMouseLeave"
     >
       <div class="event-message-icon">
         <span aria-hidden="true">{{ typeIcons[type] }}</span>

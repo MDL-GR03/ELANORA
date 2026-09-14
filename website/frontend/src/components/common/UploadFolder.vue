@@ -6,6 +6,8 @@
       type="file"
       multiple
       accept=".eaf"
+      aria-hidden="true"
+      tabindex="-1"
       style="display: none"
       @change="handleFileInput"
     />
@@ -14,6 +16,8 @@
       type="file"
       multiple
       accept=".eaf"
+      aria-hidden="true"
+      tabindex="-1"
       webkitdirectory
       directory
       style="display: none"
@@ -21,6 +25,8 @@
     />
 
     <!-- Upload Zone -->
+    <!-- Dropping files has no keyboard equivalent by nature. The design system requires an equivalent control, which is the pair of browse buttons inside this zone; drag and drop is only an enhancement. -->
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
     <div
       class="upload-zone"
       :class="{

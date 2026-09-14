@@ -68,7 +68,7 @@
               <label
                 >Timezone<input v-model.trim="form.timezone" required
               /></label>
-              <label
+              <label for="setup-default-language"
                 >Language
                 <AppSelect
                   id="setup-default-language"

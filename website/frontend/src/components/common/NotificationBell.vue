@@ -51,6 +51,8 @@
 
     <!-- Dropdown Panel -->
     <transition name="dropdown-fade">
+      <!-- This is a labelled dialog panel: handlePanelKeydown implements its Escape and arrow-key navigation, and @click.stop only prevents the outside-click dismissal from firing. -->
+      <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
       <div
         v-if="showDropdown"
         :id="panelId"

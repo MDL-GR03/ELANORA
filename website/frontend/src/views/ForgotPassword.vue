@@ -9,6 +9,7 @@
           type="text"
           name="website"
           class="honeypot"
+          aria-hidden="true"
           tabindex="-1"
           autocomplete="off"
         />

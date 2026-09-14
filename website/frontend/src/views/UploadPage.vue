@@ -198,9 +198,14 @@
               </div>
             </div>
 
-            <label v-else class="contribution-context-field">
+            <label
+              v-else
+              class="contribution-context-field"
+              for="upload-research-topic"
+            >
               <span>{{ t('uploadPage.context.topic') }}</span>
               <AppSelect
+                id="upload-research-topic"
                 v-model="researchTopicChoice"
                 :disabled="researchTopicsLoading || uploading"
                 :placeholder="t('uploadPage.context.topicPlaceholder')"

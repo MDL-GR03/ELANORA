@@ -40,6 +40,8 @@
         :key="String(option.value)"
         role="presentation"
       >
+        <!-- Listbox options are never focused themselves; the active option is moved with the arrow keys handled on the combobox trigger, so @focus could never fire here. -->
+        <!-- eslint-disable-next-line vuejs-accessibility/mouse-events-have-key-events -->
         <button
           :id="optionId(index)"
           type="button"

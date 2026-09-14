@@ -37,7 +37,11 @@
                     project.project_id === currentProjectId,
                 },
               ]"
+              role="button"
+              tabindex="0"
               @click="selectProject(project)"
+              @keydown.enter.prevent="selectProject(project)"
+              @keydown.space.prevent="selectProject(project)"
             >
               <!-- Row 1: Name + Actions -->
               <div class="project-card-row project-card-row-header">
@@ -129,6 +133,7 @@
               min="1"
               :max="totalPages"
               class="project-page-pagination-input"
+              :aria-label="t('projectsPage.pagination.pageNumberLabel')"
               @change="goToPage(currentPage)"
             />
             <span>/ {{ totalPages }}</span>

@@ -535,6 +535,9 @@
   },
 
   "projectsPage": {
+    "pagination": {
+      "pageNumberLabel": "Page number"
+    },
     "pageTitle": "Projects",
     "pageDescription": "Manage and collaborate on your linguistic projects",
     "title": "{instanceName}'s projects",

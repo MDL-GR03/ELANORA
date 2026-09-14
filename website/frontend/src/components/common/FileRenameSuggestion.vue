@@ -1,4 +1,6 @@
 <template>
+  <!-- The pointer handlers only keep this popover open while the pointer travels into it; @focusin/@focusout below give keyboard users the same behavior, and the popover is opened from a focusable cell. -->
+  <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
   <div
     :class="[
       'file-rename-suggestion-popover',

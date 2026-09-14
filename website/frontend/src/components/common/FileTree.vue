@@ -3,11 +3,13 @@
     <div v-if="showFilters" class="filetree-filters">
       <input
         v-model="filterType"
+        aria-label="Filter files by extension"
         placeholder="Filter by extension (e.g., .eaf)"
       />
       <input
         v-model="filterDate"
         type="date"
+        aria-label="Filter files by modified date"
         placeholder="Filter by modified date"
       />
     </div>
@@ -113,6 +115,7 @@
             @mouseenter="onFilenameMouseEnter(file)"
             @mouseleave="onFilenameMouseLeave"
             @focus="openRenameSuggestion(file)"
+            @blur="onFilenameMouseLeave"
             @click="openRenameSuggestion(file)"
           >
             <div class="filename-content">
@@ -158,6 +161,8 @@
         "
         :placement="popoverPlacement"
         :style="popoverStyle"
+        @focusin="onPopoverMouseEnter"
+        @focusout="onPopoverMouseLeave"
         @mouseenter="onPopoverMouseEnter"
         @mouseleave="onPopoverMouseLeave"
         @accept="

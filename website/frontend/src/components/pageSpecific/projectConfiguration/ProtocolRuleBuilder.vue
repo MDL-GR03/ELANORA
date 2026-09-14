@@ -17,7 +17,7 @@
               <strong>{{ tier.name }}</strong>
               <small>Required</small>
             </div>
-            <label>
+            <label :for="`protocol-parent-${tier.name}`">
               Parent tier
               <AppSelect
                 :id="`protocol-parent-${tier.name}`"
@@ -68,7 +68,7 @@
             @keydown.enter.prevent="addTier"
           />
         </label>
-        <label>
+        <label for="new-protocol-tier-parent">
           Parent tier
           <AppSelect
             id="new-protocol-tier-parent"

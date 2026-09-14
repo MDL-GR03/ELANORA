@@ -256,7 +256,11 @@
               :key="notification.notification_id"
               class="notification-item"
               :class="{ unread: !notification.is_read }"
+              role="button"
+              tabindex="0"
               @click="handleNotificationClick(notification)"
+              @keydown.enter.prevent="handleNotificationClick(notification)"
+              @keydown.space.prevent="handleNotificationClick(notification)"
             >
               <div class="notification-content">
                 <div class="notification-header">
@@ -433,7 +437,7 @@
                 }}</span>
               </div>
               <div class="preference-control">
-                <div class="toggle-switch" @click="toggleEmailPreference">
+                <label class="toggle-switch" for="email-notifications-toggle">
                   <input
                     id="email-notifications-toggle"
                     v-model="preferences.email_enabled"
@@ -442,7 +446,7 @@
                     @change="updatePreferences"
                   />
                   <span class="toggle-slider"></span>
-                </div>
+                </label>
               </div>
             </div>
           </div>
@@ -578,11 +582,6 @@ const updatePreferences = async () => {
   } catch (error) {
     reportClientError('Error updating notification preferences', error);
   }
-};
-
-const toggleEmailPreference = () => {
-  preferences.value.email_enabled = !preferences.value.email_enabled;
-  updatePreferences();
 };
 
 const formatDate = (dateString) => {

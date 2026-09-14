@@ -1,8 +1,19 @@
 <template>
-  <div class="bulk-rename-dialog-overlay" @click="closeDialog">
-    <div class="bulk-rename-dialog" @click.stop>
+  <div
+    class="bulk-rename-dialog-overlay"
+    role="presentation"
+    @click.self="closeDialog"
+  >
+    <div
+      ref="dialogElement"
+      class="bulk-rename-dialog"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="titleId"
+      tabindex="-1"
+    >
       <div class="dialog-header">
-        <h2>{{ t('bulkRenameDialog.title') }}</h2>
+        <h2 :id="titleId">{{ t('bulkRenameDialog.title') }}</h2>
         <button class="close-btn" @click="closeDialog">
           <i class="fas fa-times"></i>
         </button>
@@ -100,14 +111,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { generateMediaBasedSuggestions } from '@/utils/filenameFromMediaFile';
 import { isElanFilenameCompliant } from '@/utils/elanFilenameCompliance';
 import gitService from '@/api/service/gitService';
 import { reportClientError } from '@/utils/errorDiagnostics';
+import { useModalDialog } from '@/composables/useModalDialog';
 
 const { t } = useI18n();
+const dialogElement = ref(null);
+const titleId = `bulk-rename-title-${useId()}`;
 
 const props = defineProps({
   files: {
@@ -227,6 +241,8 @@ async function generateSuggestions() {
 function closeDialog() {
   emit('close');
 }
+
+useModalDialog(dialogElement, { onClose: closeDialog });
 
 async function applyRenames() {
   if (!canApplyRenames.value) return;
