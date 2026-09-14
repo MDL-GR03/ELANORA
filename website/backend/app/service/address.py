@@ -17,6 +17,8 @@ class AddressService:
         cls,
         db: AsyncSession,
         address_data: AddressRequest,
+        *,
+        commit: bool = True,
     ) -> Address:
         """Create a new address. If city_name is provided, create or get the city, then use its id."""
         try:
@@ -66,7 +68,8 @@ class AddressService:
             await db.flush()  # Flush to get the address_id
             await db.refresh(address)
 
-            await db.commit()
+            if commit:
+                await db.commit()
             return address
         except Exception:
             await db.rollback()

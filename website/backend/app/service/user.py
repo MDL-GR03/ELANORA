@@ -2,7 +2,7 @@
 
 import secrets
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -206,6 +206,8 @@ class UserService:
         is_verified: bool = False,
         phone_number: str | None = None,
         address_data: AddressRequest | None = None,
+        *,
+        commit: bool = True,
     ) -> User:
         """Create a new user with bcrypt password hashing."""
         try:
@@ -224,7 +226,9 @@ class UserService:
             # Create address if provided
             address_id = None
             if address_data:
-                address = await AddressService.create_address(db, address_data)
+                address = await AddressService.create_address(
+                    db, address_data, commit=False
+                )
                 address_id = address.address_id
 
             # Create UserCreateData object
@@ -254,7 +258,8 @@ class UserService:
                 db, user.user_id, email_enabled=True
             )
 
-            await db.commit()
+            if commit:
+                await db.commit()
             logger.info("User account created successfully")
             return user
         except Exception:
@@ -325,8 +330,8 @@ class UserService:
             logger.info("Updating an account profile")
 
             # Prepare update fields
-            update_fields = {}
-            updated_field_names = []
+            update_fields: dict[str, Any] = {}
+            updated_field_names: list[str] = []
 
             field_mapping = {
                 "username": profile_data.username,
@@ -345,9 +350,7 @@ class UserService:
                     db, profile_data.username, user.user_id
                 )
                 if not username_available:
-                    logger.warning(
-                        f"Username {profile_data.username} already taken during profile update"
-                    )
+                    logger.warning("Username already taken during profile update")
                     return {
                         "success": False,
                         "message": "Username already taken",
@@ -360,9 +363,7 @@ class UserService:
                     updated_field_names.append(field_name)
 
             if not update_fields:
-                logger.warning(
-                    f"Profile update attempted with no fields to update: {user.username}"
-                )
+                logger.warning("Profile update attempted with no fields to update")
                 return {
                     "success": False,
                     "message": "No fields to update",
@@ -587,4 +588,4 @@ class UserService:
     @staticmethod
     def _hash_verification_code(code: str) -> str:
         """Hash verification code."""
-        return pwd_context.hash(code)
+        return cast("str", pwd_context.hash(code))

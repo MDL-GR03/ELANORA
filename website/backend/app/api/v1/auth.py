@@ -429,10 +429,24 @@ async def register(
         is_verified=is_verified,
         phone_number=request.phone_number,
         address_data=request.address,
+        commit=False,
     )
     # 3. Accept the invitation
-    await invitation_service.accept_invitation(
-        db, invitation_info.invitation_id, user.user_id
+    accepted = await invitation_service.accept_invitation(
+        db,
+        invitation_info.invitation_id,
+        user.user_id,
+        commit=False,
+    )
+    if not accepted:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Invitation could not be redeemed. No account was created.",
+        )
+    await db.commit()
+    await invitation_service.notify_project_admins_member_joined(
+        db, invitation_info.project_id, user
     )
 
     # 4. Return the registration response

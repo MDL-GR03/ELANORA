@@ -20,6 +20,7 @@ from app.model.user import User
 from app.schema.requests.invitation import InvitationSendRequest
 from app.service.invitation import InvitationService
 from app.service.outbox import EXISTING_USER_INVITATION_EMAIL
+from app.service.user import UserService
 
 
 def _institution() -> Instance:
@@ -45,6 +46,64 @@ def _user(username: str, email: str, institution: Instance) -> User:
         instance=institution,
         role=UserRole.PUBLIC,
     )
+
+
+@pytest.mark.asyncio
+async def test_new_user_and_invitation_can_roll_back_as_one_transaction(
+    session: AsyncSession,
+) -> None:
+    institution = _institution()
+    sender = _user("sender", "sender@institute.example", institution)
+    project = Project(
+        project_name="Atomic registration corpus",
+        project_path="atomic-registration-corpus",
+        instance=institution,
+    )
+    session.add_all([institution, sender, project])
+    await session.commit()
+    invitation, _ = await create_invitation(
+        session,
+        sender.user_id,
+        "new-researcher@external.example",
+        project.project_id,
+        ProjectPermission.WRITE,
+    )
+    invitation_id = invitation.invitation_id
+    project_id = project.project_id
+
+    user = await UserService.create_user(
+        session,
+        username="new-researcher",
+        email="new-researcher@external.example",
+        password="inert-integration-value",  # noqa: S106
+        first_name="New",
+        last_name="Researcher",
+        affiliation="External University",
+        department="Linguistics",
+        instance_id=institution.instance_id,
+        is_verified=True,
+        commit=False,
+    )
+    assert await InvitationService().accept_invitation(
+        session,
+        invitation_id,
+        user.user_id,
+        commit=False,
+    )
+    user_id = user.user_id
+
+    await session.rollback()
+
+    assert (
+        await session.scalar(
+            select(User).where(User.email == "new-researcher@external.example")
+        )
+        is None
+    )
+    persisted_invitation = await session.get(type(invitation), invitation_id)
+    assert persisted_invitation is not None
+    assert persisted_invitation.status == InvitationStatus.PENDING
+    assert not await user_in_project(session, user_id, project_id)
 
 
 @pytest.mark.asyncio

@@ -31,6 +31,7 @@ from app.crud.project import (
 from app.crud.user import get_user_by_id, get_user_by_username_or_email
 from app.model.enums import InvitationStatus
 from app.model.invitation import Invitation
+from app.model.user import User
 from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.requests.notification import NotificationCreateRequest
 from app.schema.responses.invitation import (
@@ -245,11 +246,13 @@ class InvitationService:
                 valid=False, message="Internal server error"
             )
 
-    async def accept_invitation(
+    async def accept_invitation(  # noqa: PLR0911 - explicit validation exits
         self,
         db: AsyncSession,
         invitation_id: int,
         user_id: int,
+        *,
+        commit: bool = True,
     ) -> bool:
         """Mark an invitation as accepted and add user to project."""
         try:
@@ -301,32 +304,14 @@ class InvitationService:
                     await db.rollback()
                     return False
 
+                if not commit:
+                    await db.flush()
+                    return True
+
                 await db.commit()
                 logger.info("User added to project via invitation")
 
-                # Notifications are best-effort and do not affect membership.
-                try:
-                    project = await get_project_by_id(db, project_id)
-                    if project:
-                        admin_user_ids = await get_project_admins_and_owners(
-                            db, project_id
-                        )
-                        for admin_user_id in admin_user_ids:
-                            if admin_user_id != user_id:
-                                await InvitationService._create_member_joined_notification(
-                                    db=db,
-                                    admin_user_id=admin_user_id,
-                                    project_name=project.project_name,
-                                    new_member_name=f"{user.first_name} {user.last_name}",
-                                    project_id=project_id,
-                                )
-                        await db.commit()
-                except Exception as notify_error:
-                    await db.rollback()
-                    logger.warning(
-                        "Failed to notify project administrators; error_type=%s",
-                        safe_exception_type(notify_error),
-                    )
+                await self.notify_project_admins_member_joined(db, project_id, user)
 
                 return True
             except Exception as project_error:
@@ -873,4 +858,30 @@ class InvitationService:
             logger.error(
                 "Failed to create member joined notification; error_type=%s",
                 safe_exception_type(e),
+            )
+
+    @staticmethod
+    async def notify_project_admins_member_joined(
+        db: AsyncSession, project_id: int, user: User
+    ) -> None:
+        """Best-effort notification after membership has committed."""
+        try:
+            project = await get_project_by_id(db, project_id)
+            if project:
+                admin_user_ids = await get_project_admins_and_owners(db, project_id)
+                for admin_user_id in admin_user_ids:
+                    if admin_user_id != user.user_id:
+                        await InvitationService._create_member_joined_notification(
+                            db=db,
+                            admin_user_id=admin_user_id,
+                            project_name=project.project_name,
+                            new_member_name=f"{user.first_name} {user.last_name}",
+                            project_id=project_id,
+                        )
+                await db.commit()
+        except Exception as notify_error:
+            await db.rollback()
+            logger.warning(
+                "Failed to notify project administrators; error_type=%s",
+                safe_exception_type(notify_error),
             )
