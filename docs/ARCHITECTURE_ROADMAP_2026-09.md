@@ -337,4 +337,9 @@ multi-change and legacy question workflows. Reviewer task selection, legacy
 reopened-task recovery, annotation-level revision targets, approval requests,
 busy/error state and outcome messaging now live in
 `useReviewerTaskDecisions`, with direct tests for partial and final decisions.
-Revision-transition orchestration is the next slice.
+Confirmed review-state transitions, structured follow-up revision requests,
+reviewer assignment and corrected-upload linking now live in
+`useReviewCaseTransitions`. Its direct tests cover cancellation, payload and
+feedback construction, cleanup, assignment normalization and API failures. The
+remaining `ReviewCasePanel` work can now be selected by presentation size rather
+than untested workflow risk.
