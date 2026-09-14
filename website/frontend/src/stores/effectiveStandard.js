@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import effectiveNamingStandardApi from '@/api/service/effectiveNamingStandard.js';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 export const useEffectiveStandardStore = defineStore('effectiveStandard', {
   state: () => ({
@@ -21,7 +22,7 @@ export const useEffectiveStandardStore = defineStore('effectiveStandard', {
           await effectiveNamingStandardApi.getEffectiveStandardsLocations();
         this.locations = data.locations || [];
       } catch (err) {
-        console.error('Error fetching locations:', err);
+        reportClientError('Error fetching locations', err);
         this.error = 'Failed to load locations.';
       } finally {
         this.isLoading = false;
@@ -58,7 +59,7 @@ export const useEffectiveStandardStore = defineStore('effectiveStandard', {
         this.effectiveStandards[locationId] = standardsMap;
         this.error = '';
       } catch (err) {
-        console.error('Error fetching effective standards:', err);
+        reportClientError('Error fetching effective standards', err);
         this.error = 'Failed to load effective standards.';
       } finally {
         // Always remove from ongoing requests

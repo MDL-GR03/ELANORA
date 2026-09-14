@@ -183,6 +183,7 @@ import {
   generateSuggestedFilename,
 } from '@/utils/filenameFromMediaFile';
 import { useEventMessageStore } from '@/stores/eventMessage';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const props = defineProps({
   files: { type: Array, required: true },
@@ -324,10 +325,8 @@ function handleRename(file, newName) {
   emit('rename', { file, newName });
 }
 
-function handleRenameConflict(conflictData) {
+function handleRenameConflict() {
   // Handle individual rename conflicts
-  console.log('Individual rename conflict detected:', conflictData);
-
   // Show conflict notification to user
   eventMessageStore.addMessage('rename.conflict', 'warning', 6000);
 
@@ -338,7 +337,7 @@ function handleRenameConflict(conflictData) {
 
 function handleRenameError(error) {
   // Handle individual rename errors
-  console.error('Individual rename error:', error);
+  reportClientError('Individual rename error', error);
 
   // Show error notification to user
   eventMessageStore.addMessage('rename.error', 'error', 5000);

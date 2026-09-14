@@ -231,6 +231,7 @@ import { useUserStore } from '@/stores/user';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import AppSelect from '@/components/common/AppSelect.vue';
+import { reportClientError } from '@/utils/errorDiagnostics';
 import {
   getProjectUsers,
   getAvailableProjectUsers,
@@ -332,7 +333,7 @@ const loadUsers = async () => {
       users.value = response.data.users || [];
     }
   } catch (err) {
-    console.error('Error loading users', { status: err.response?.status });
+    reportClientError('Error loading users', err);
     error.value =
       err.response?.data?.detail || t('projectSettings.members.load_error');
   } finally {
@@ -350,9 +351,7 @@ const loadActiveUsers = async () => {
       availableUsers.value = response.data.users;
     }
   } catch (err) {
-    console.error('Error loading available users', {
-      status: err.response?.status,
-    });
+    reportClientError('Error loading available users', err);
     eventMessageStore.addMessage('project.share.error_loading_users', 'error');
   } finally {
     loadingAvailableUsers.value = false;
@@ -439,9 +438,7 @@ const updateUserPermissionHandler = async (user, newPermission = null) => {
       );
     }
   } catch (err) {
-    console.error('Error updating user permission', {
-      status: err.response?.status,
-    });
+    reportClientError('Error updating user permission', err);
     // Revert the change
     user.permission = oldPermission;
     eventMessageStore.addMessage(
@@ -561,7 +558,7 @@ const addUser = async () => {
       await loadUsers(); // Refresh the list
     }
   } catch (err) {
-    console.error('Error adding user', { status: err.response?.status });
+    reportClientError('Error adding user', err);
     eventMessageStore.addMessage(
       err.response?.data?.detail || 'projectSettings.members.add_error',
       'error'
@@ -587,7 +584,7 @@ const removeUser = async (user) => {
       await loadUsers(); // Refresh the list
     }
   } catch (err) {
-    console.error('Error removing user', { status: err.response?.status });
+    reportClientError('Error removing user', err);
     eventMessageStore.addMessage(
       'projectSettings.members.remove_error',
       'error'

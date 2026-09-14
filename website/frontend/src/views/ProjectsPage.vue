@@ -321,7 +321,6 @@
         :project-id="selectedShareProject.project_id"
         :project-name="shareProjectName"
         @close="closeShareModal"
-        @success="onShareSuccess"
       />
 
       <!-- Sync Dialog (admin only) -->
@@ -376,6 +375,7 @@ import { useNamingStandardStore } from '@/stores/namingStandard';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { isFilenameCompliant } from '@/utils/filenameCompliance';
 import { getMediaStandardForProject } from '@/utils/filenameFromMediaFile';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const projectStore = useProjectStore();
 const userStore = useUserStore();
@@ -646,8 +646,8 @@ async function deleteProject(projectName) {
       projectStore.clearCurrentProject();
       projectFiles.value = null;
     }
-  } catch {
-    console.error('Failed to delete project:', projectName);
+  } catch (error) {
+    reportClientError('Failed to delete project', error);
   }
 }
 
@@ -703,11 +703,6 @@ function closeShareModal() {
   shareProjectName.value = '';
 }
 
-function onShareSuccess() {
-  // Optionally reload projects or show a success message
-  console.log('Project shared successfully');
-}
-
 watch(
   [() => projectStore.projects, currentProjectName],
   ([projectsVal, currentProjectVal]) => {
@@ -761,12 +756,6 @@ function handleBulkRename(eventData) {
   const renames = eventData.renames || eventData;
   const result = eventData.result;
 
-  // Debug logging
-  console.log('handleBulkRename called with result:', result);
-  console.log('Requested renames:', renames?.length || 0);
-  console.log('Backend successful renames:', result?.successful_renames || 0);
-  console.log('Backend conflicts:', result?.conflicts_count || 0);
-
   // Update files locally instead of refetching everything
   if (
     projectFiles.value &&
@@ -783,9 +772,6 @@ function handleBulkRename(eventData) {
               (f) => f.elan_id === rename.elan_id
             );
             if (!currentFile) {
-              console.warn(
-                `Could not find file with elan_id ${rename.elan_id} in current project files`
-              );
               return false;
             }
 
@@ -797,31 +783,17 @@ function handleBulkRename(eventData) {
               renameResult &&
               renameResult.success &&
               !renameResult.conflict_elan_id;
-            console.log(
-              `File ${currentFile.name} (elan_id: ${rename.elan_id}) -> ${rename.new_filename}: ${success ? 'SUCCESS' : 'FAILED/CONFLICT'}`
-            );
             return success;
           })
         : renames; // If no result data, assume all were successful
-
-    console.log('Successfully renamed files to update:', successfulRenames);
 
     successfulRenames.forEach((rename) => {
       const fileIndex = projectFiles.value.files.findIndex(
         (f) => f.elan_id === rename.elan_id
       );
-      console.log(
-        `Updating file with elan_id ${rename.elan_id}: found at index ${fileIndex}`
-      );
-
       if (fileIndex !== -1) {
-        const oldName = projectFiles.value.files[fileIndex].name;
         // Update the filename only - DO NOT update lastModified since content hasn't changed
         projectFiles.value.files[fileIndex].name = rename.new_filename;
-
-        console.log(
-          `Updated file name from "${oldName}" to "${rename.new_filename}"`
-        );
 
         // Update compliance status if standards are available
         if (projectStandard.value) {
@@ -830,19 +802,11 @@ function handleBulkRename(eventData) {
             rename.new_filename
           );
           projectFiles.value.files[fileIndex].isCompliant = isCompliant;
-          console.log(`Updated compliance status to: ${isCompliant}`);
         }
       } else {
-        console.error(
-          `Could not find file with elan_id ${rename.elan_id} in project files`
-        );
+        reportClientError('Could not find renamed file in project files');
       }
     });
-
-    // Log successful updates
-    console.log(
-      `Updated ${successfulRenames.length} files in the UI after bulk rename`
-    );
 
     // Show appropriate success message based on results
     if (result) {
@@ -929,10 +893,6 @@ function handleBulkRename(eventData) {
           });
         }
       }
-
-      console.log(
-        `Bulk rename summary: ${successful}/${totalRequested} successful, ${conflicts} conflicts`
-      );
     } else if (successfulRenames.length > 0) {
       // Fallback: All files renamed successfully (no result data)
       eventMessageStore.addMessage('rename.bulkSuccess', 'success', 4000);
@@ -943,17 +903,9 @@ function handleBulkRename(eventData) {
   bulkRenameDialogVisible.value = false;
 }
 
-function handleBulkRenameConflict(conflictData) {
-  // Handle bulk rename conflicts - log them for debugging
-  console.log('Bulk rename conflicts detected:', conflictData);
-  console.warn(
-    `${conflictData.conflictsCount} files had naming conflicts and were not renamed.`
-  );
-  console.log('Conflicting files:', conflictData.conflictFiles);
-
+function handleBulkRenameConflict() {
   // TODO: When merge tool is implemented, you can collect these conflicts
   // and present them to the user for resolution
-
   // Note: Don't show message here - let handleBulkRename show a single comprehensive message
   // Note: Don't close the dialog here - let handleBulkRename handle that after updating files
 }

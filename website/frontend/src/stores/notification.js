@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import notificationService from '@/api/service/notificationService';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 export const useNotificationStore = defineStore('notification', () => {
   // State
@@ -34,7 +35,7 @@ export const useNotificationStore = defineStore('notification', () => {
       notifications.value = data;
     } catch (err) {
       error.value = err.message || 'Failed to fetch notifications';
-      console.error('Error fetching notifications:', err);
+      reportClientError('Error fetching notifications', err);
     } finally {
       loading.value = false;
     }
@@ -58,7 +59,7 @@ export const useNotificationStore = defineStore('notification', () => {
       notifications.value = [...notifications.value, ...newNotifications];
     } catch (err) {
       error.value = err.message || 'Failed to fetch unread notifications';
-      console.error('Error fetching unread notifications:', err);
+      reportClientError('Error fetching unread notifications', err);
     } finally {
       loading.value = false;
     }
@@ -70,7 +71,7 @@ export const useNotificationStore = defineStore('notification', () => {
       stats.value = data;
     } catch (err) {
       error.value = err.message || 'Failed to fetch notification stats';
-      console.error('Error fetching notification stats:', err);
+      reportClientError('Error fetching notification stats', err);
     }
   };
 
@@ -88,7 +89,7 @@ export const useNotificationStore = defineStore('notification', () => {
       await fetchNotificationStats();
     } catch (err) {
       error.value = err.message || 'Failed to mark notification as read';
-      console.error('Error marking notification as read:', err);
+      reportClientError('Error marking notification as read', err);
     }
   };
 
@@ -103,7 +104,7 @@ export const useNotificationStore = defineStore('notification', () => {
       await fetchNotificationStats();
     } catch (err) {
       error.value = err.message || 'Failed to mark all notifications as read';
-      console.error('Error marking all notifications as read:', err);
+      reportClientError('Error marking all notifications as read', err);
     }
   };
 
@@ -117,7 +118,7 @@ export const useNotificationStore = defineStore('notification', () => {
       await fetchNotificationStats();
     } catch (err) {
       error.value = err.message || 'Failed to delete notification';
-      console.error('Error deleting notification:', err);
+      reportClientError('Error deleting notification', err);
     }
   };
 
@@ -127,21 +128,19 @@ export const useNotificationStore = defineStore('notification', () => {
       preferences.value = data;
     } catch (err) {
       error.value = err.message || 'Failed to fetch notification preferences';
-      console.error('Error fetching notification preferences:', err);
+      reportClientError('Error fetching notification preferences', err);
     }
   };
 
   const updateNotificationPreferences = async (newPreferences) => {
     try {
-      console.log('Store: Updating preferences with:', newPreferences);
       const data =
         await notificationService.updateNotificationPreferences(newPreferences);
-      console.log('Store: Received updated preferences:', data);
       preferences.value = data;
       error.value = null; // Clear any previous errors
     } catch (err) {
       error.value = err.message || 'Failed to update notification preferences';
-      console.error('Error updating notification preferences:', err);
+      reportClientError('Error updating notification preferences', err);
       throw err; // Re-throw to allow component to handle if needed
     }
   };

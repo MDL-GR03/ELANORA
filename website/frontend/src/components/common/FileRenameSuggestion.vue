@@ -56,6 +56,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { isElanFilenameCompliant } from '@/utils/elanFilenameCompliance';
 import gitService from '@/api/service/gitService.js';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const { t } = useI18n();
 const props = defineProps({
@@ -81,14 +82,7 @@ const isValidRename = computed(() => {
   if (!trimmedValue || trimmedValue === props.currentFilename) return false;
   if (!props.standard) return false;
 
-  console.log(
-    'FileRenameSuggestion - Checking compliance for:',
-    trimmedValue,
-    'with standard:',
-    props.standard
-  );
   const result = isElanFilenameCompliant(props.standard, trimmedValue);
-  console.log('FileRenameSuggestion - Compliance result:', result);
   return result;
 });
 
@@ -126,14 +120,6 @@ async function confirmRename() {
       emit('accept', renameValue.value.trim());
       emit('close');
     } else if (result.conflict_elan_id) {
-      // Handle conflict case - log the conflicting files for future merge tool
-      console.log('Rename conflict detected:', {
-        currentElanId: props.elanId,
-        conflictElanId: result.conflict_elan_id,
-        targetFilename: renameValue.value.trim(),
-        currentFilename: props.currentFilename,
-      });
-
       // Emit conflict event with conflict information
       emit('conflict', {
         currentElanId: props.elanId,
@@ -149,7 +135,7 @@ async function confirmRename() {
       emit('error', new Error(result.message || 'Failed to rename file'));
     }
   } catch (error) {
-    console.error('Error renaming file:', error);
+    reportClientError('Error renaming file', error);
     emit('error', error);
   } finally {
     isRenaming.value = false;

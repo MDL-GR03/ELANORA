@@ -3,6 +3,7 @@ import { useEventMessageStore } from '@stores/eventMessage.js';
 import { useUserStore } from '@stores/user.js';
 import { useProjectStore } from '@stores/project.js';
 import setupService from '@/api/service/setupService';
+import { reportClientError } from '@/utils/errorDiagnostics';
 import {
   hasProjectCapability,
   hasProjectPermission,
@@ -241,7 +242,7 @@ router.beforeEach(async (to, from, next) => {
       });
     }
   } catch (error) {
-    console.error('Unable to determine installation status:', error);
+    reportClientError('Unable to determine installation status', error);
   }
 
   // Always wait for authentication to be initialized before allowing navigation to public auth pages
@@ -295,7 +296,9 @@ router.beforeEach(async (to, from, next) => {
               }
             }
           })
-          .catch((error) => console.error('Failed to fetch projects:', error));
+          .catch((error) =>
+            reportClientError('Failed to fetch projects', error)
+          );
       }
     }
   }

@@ -1,4 +1,5 @@
 import { extractComponentsFromFilename } from '@/utils/filenameCompliance';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 /**
  * Extract naming components from media filenames using a naming standard
@@ -99,15 +100,6 @@ function generateDefaultValue(targetComponent) {
 function mapMediaToTargetComponents(extractedComponents, targetStandard) {
   const mappedComponents = {};
 
-  console.log(
-    'mapMediaToTargetComponents: Input components',
-    extractedComponents
-  );
-  console.log(
-    'mapMediaToTargetComponents: Target standard components',
-    targetStandard.components.map((c) => c.name)
-  );
-
   // Process each component required by the target standard
   for (const targetComponent of targetStandard.components) {
     const componentName = targetComponent.name;
@@ -119,14 +111,9 @@ function mapMediaToTargetComponents(extractedComponents, targetStandard) {
 
     if (value) {
       mappedComponents[componentName] = value;
-      console.log(`mapMediaToTargetComponents: ${componentName} = ${value}`);
     }
   }
 
-  console.log(
-    'mapMediaToTargetComponents: Final mapped components',
-    mappedComponents
-  );
   return mappedComponents;
 }
 
@@ -286,7 +273,7 @@ export async function getMediaStandardForProject(
 
     return mediaStandard || null;
   } catch (error) {
-    console.error('Error fetching media standard:', error);
+    reportClientError('Error fetching media standard', error);
     return null;
   }
 }

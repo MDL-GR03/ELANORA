@@ -459,6 +459,7 @@ import { useI18n } from 'vue-i18n';
 import { useNotificationStore } from '@/stores/notification';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -575,7 +576,7 @@ const updatePreferences = async () => {
     };
     await notificationStore.updateNotificationPreferences(preferencesData);
   } catch (error) {
-    console.error('Error updating notification preferences:', error);
+    reportClientError('Error updating notification preferences', error);
   }
 };
 

@@ -276,6 +276,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import gitService from '@/api/service/gitService';
 import ConflictMergeView from '@/components/common/ConflictMergeView.vue';
 import ReviewCasePanel from '@/components/common/ReviewCasePanel.vue';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const props = defineProps({
   projectId: {
@@ -412,7 +413,7 @@ async function applyResolution() {
     emit('resolved', result);
   } catch (e) {
     error.value = e?.response?.data?.detail || 'Failed to resolve upload';
-    console.error('Resolution error:', e);
+    reportClientError('Resolution error', e);
   } finally {
     resolving.value = false;
     resolutionProgress.value = 0;

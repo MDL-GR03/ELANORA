@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import namingStandardService from '@api/service/projectNamingStandard.js';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 export const useNamingStandardStore = defineStore('namingStandard', {
   state: () => ({
@@ -19,7 +20,7 @@ export const useNamingStandardStore = defineStore('namingStandard', {
           await namingStandardService.getStandardsByProject(projectId);
         this.standards = [...response.data];
       } catch (err) {
-        console.error('Error fetching naming standards:', err);
+        reportClientError('Error fetching naming standards', err);
       } finally {
         this.isLoading = false;
       }
@@ -58,7 +59,7 @@ export const useNamingStandardStore = defineStore('namingStandard', {
           }
         }
       } catch (err) {
-        console.error('Error fetching standards and component names:', err);
+        reportClientError('Error fetching standards and component names', err);
       } finally {
         this.isLoading = false;
       }

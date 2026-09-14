@@ -262,6 +262,7 @@ import { useEventMessageStore } from '@stores/eventMessage';
 import { sendInvitation as sendInvitationAPI } from '@/api/service/invitationService';
 import { getAvailableProjectUsers } from '@/api/service/projectAssociationService';
 import AppSelect from '@/components/common/AppSelect.vue';
+import { reportClientError } from '@/utils/errorDiagnostics';
 import '@/assets/css/ProjectShareModal.css';
 
 const props = defineProps({
@@ -346,8 +347,8 @@ const loadActiveUsers = async () => {
     if (response.data && response.data.users) {
       availableUsers.value = response.data.users;
     }
-  } catch {
-    console.error('Error loading users');
+  } catch (error) {
+    reportClientError('Error loading users', error);
     eventMessageStore.addMessage('project.share.error_loading_users', 'error');
   } finally {
     loadingUsers.value = false;
@@ -391,7 +392,7 @@ onMounted(() => {
 
 // Helper function to handle invitation errors
 const handleInvitationError = (error) => {
-  console.error('Error sending invitation');
+  reportClientError('Error sending invitation', error);
 
   // Check if it's a server response with a specific message
   if (error.response?.data?.message) {

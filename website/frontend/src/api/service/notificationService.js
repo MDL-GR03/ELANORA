@@ -1,4 +1,5 @@
 import apiClient from '../apiClient';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const notificationService = {
   /**
@@ -95,13 +96,7 @@ const notificationService = {
       );
       return response.data;
     } catch (error) {
-      console.error('Service: Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
-      });
+      reportClientError('Error updating notification preferences', error);
       throw error;
     }
   },

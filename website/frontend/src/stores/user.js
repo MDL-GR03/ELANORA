@@ -57,8 +57,6 @@ export const useUserStore = defineStore('user', {
         // Only log error if it's not a 401 (which is expected when not authenticated)
         if (error.response?.status !== 401) {
           reportClientError('Error verifying authentication', error);
-        } else {
-          console.log('User not authenticated (401 response expected)');
         }
         this.clearAuth();
         this.authState.initialized = true;

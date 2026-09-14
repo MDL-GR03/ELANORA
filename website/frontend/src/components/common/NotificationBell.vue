@@ -357,6 +357,7 @@ import { useI18n } from 'vue-i18n';
 import { useNotificationStore } from '@/stores/notification';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const router = useRouter();
 const notificationStore = useNotificationStore();
@@ -398,8 +399,8 @@ const toggleDropdown = async () => {
   try {
     await notificationStore.fetchUnreadNotifications({ limit: 10 });
     await notificationStore.fetchNotificationStats();
-  } catch {
-    console.error('Failed to fetch notifications for dropdown');
+  } catch (error) {
+    reportClientError('Failed to fetch notifications for dropdown', error);
   }
 };
 
@@ -418,24 +419,24 @@ const handlePanelKeydown = (event) => {
 const markAsRead = async (notificationId) => {
   try {
     await notificationStore.markNotificationAsRead(notificationId);
-  } catch {
-    console.error('Failed to mark notification as read');
+  } catch (error) {
+    reportClientError('Failed to mark notification as read', error);
   }
 };
 
 const markAllAsRead = async () => {
   try {
     await notificationStore.markAllNotificationsAsRead();
-  } catch {
-    console.error('Failed to mark all notifications as read');
+  } catch (error) {
+    reportClientError('Failed to mark all notifications as read', error);
   }
 };
 
 const deleteNotification = async (notificationId) => {
   try {
     await notificationStore.deleteNotification(notificationId);
-  } catch {
-    console.error('Failed to delete notification');
+  } catch (error) {
+    reportClientError('Failed to delete notification', error);
   }
 };
 
@@ -451,8 +452,8 @@ const handleNotificationClick = async (notification) => {
       closeDropdown();
       router.push(notification.action_url);
     }
-  } catch {
-    console.error('Failed to handle notification click');
+  } catch (error) {
+    reportClientError('Failed to handle notification click', error);
   }
 };
 
@@ -483,8 +484,8 @@ onMounted(async () => {
     }, 60000);
 
     // Store interval ID for cleanup
-  } catch {
-    console.error('Failed to initialize notification bell');
+  } catch (error) {
+    reportClientError('Failed to initialize notification bell', error);
   }
 });
 

@@ -105,6 +105,7 @@ import { useI18n } from 'vue-i18n';
 import { generateMediaBasedSuggestions } from '@/utils/filenameFromMediaFile';
 import { isElanFilenameCompliant } from '@/utils/elanFilenameCompliance';
 import gitService from '@/api/service/gitService';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 const { t } = useI18n();
 
@@ -217,7 +218,7 @@ async function generateSuggestions() {
       return file;
     });
   } catch (error) {
-    console.error('Error generating suggestions:', error);
+    reportClientError('Error generating suggestions', error);
   } finally {
     loadingSuggestions.value = false;
   }
@@ -249,8 +250,6 @@ async function applyRenames() {
       if (result.conflicts_count > 0) {
         // Collect conflict files for future merge tool
         const conflictFiles = result.results.filter((r) => r.conflict_elan_id);
-        console.log('Bulk rename conflicts detected:', conflictFiles);
-
         // Emit conflict event with conflict information
         emit('conflict', {
           conflictFiles: conflictFiles,
@@ -268,7 +267,7 @@ async function applyRenames() {
     }
     closeDialog();
   } catch (error) {
-    console.error('Error applying renames:', error);
+    reportClientError('Error applying renames', error);
     // Could emit an error event or show a notification here
   } finally {
     isRenaming.value = false;

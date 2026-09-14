@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import fileTypeService from '@/api/service/fileTypeService.js';
 import projectLocationFileTypeService from '@/api/service/projectLocationFileTypeService.js';
+import { reportClientError } from '@/utils/errorDiagnostics';
 
 export const useFileTypeStore = defineStore('fileType', {
   state: () => ({
@@ -24,7 +25,7 @@ export const useFileTypeStore = defineStore('fileType', {
         const response = await fileTypeService.getProjectFileTypes(projectId);
         this.fileTypes = [...response.data];
       } catch (err) {
-        console.error('Error fetching file types:', err);
+        reportClientError('Error fetching file types', err);
       } finally {
         this.isLoading = false;
       }
@@ -53,7 +54,7 @@ export const useFileTypeStore = defineStore('fileType', {
           (ft) => ft.project_file_type_id
         );
       } catch (err) {
-        console.error('Error fetching file types for location:', err);
+        reportClientError('Error fetching file types for location', err);
       } finally {
         // Always remove from ongoing requests
         this.ongoingRequests.delete(requestKey);
