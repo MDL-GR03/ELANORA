@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy import (
@@ -28,6 +29,11 @@ class PendingUpload(Base):
     """PendingUpload model representing detected uploads in projects."""
 
     __tablename__ = "PENDING_UPLOAD"
+    __table_args__ = (
+        UniqueConstraint(
+            "upload_id", "project_id", name="uq_pending_upload_identity_project"
+        ),
+    )
 
     upload_id: Mapped[int] = mapped_column(
         Integer, primary_key=True, autoincrement=True
@@ -62,7 +68,7 @@ class PendingUpload(Base):
         nullable=True,
         index=True,
     )
-    git_details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    git_details: Mapped[dict[str, object] | None] = mapped_column(JSON, nullable=True)
     project_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("PROJECT.project_id", ondelete="CASCADE"), nullable=False
     )

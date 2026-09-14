@@ -8,6 +8,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Integer,
     LargeBinary,
     String,
@@ -34,6 +35,12 @@ class ProjectRevision(Base):
             "source_type IN ('contribution', 'restoration', 'migration')",
             name="ck_project_revision_source_type",
         ),
+        ForeignKeyConstraint(
+            ["contribution_id", "project_id"],
+            ["PENDING_UPLOAD.upload_id", "PENDING_UPLOAD.project_id"],
+            name="fk_project_revision_contribution_project",
+            ondelete="RESTRICT",
+        ),
         CheckConstraint(
             "manifest_sha256 IS NULL OR length(manifest_sha256) = 64",
             name="ck_project_revision_manifest_sha256",
@@ -56,7 +63,6 @@ class ProjectRevision(Base):
     source_type: Mapped[str] = mapped_column(String(20), nullable=False)
     contribution_id: Mapped[int | None] = mapped_column(
         Integer,
-        ForeignKey("PENDING_UPLOAD.upload_id", ondelete="SET NULL"),
         nullable=True,
     )
     actor_user_id: Mapped[int | None] = mapped_column(

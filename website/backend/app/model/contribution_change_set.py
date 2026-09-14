@@ -7,6 +7,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -33,6 +34,12 @@ class ContributionChangeSet(Base):
         ),
         Index("ix_contribution_change_set_state", "state", "created_at"),
         Index("uq_contribution_change_set_upload_id", "upload_id", unique=True),
+        ForeignKeyConstraint(
+            ["upload_id", "project_id"],
+            ["PENDING_UPLOAD.upload_id", "PENDING_UPLOAD.project_id"],
+            name="fk_contribution_change_set_upload_project",
+            ondelete="RESTRICT",
+        ),
     )
 
     change_set_id: Mapped[uuid.UUID] = mapped_column(
@@ -43,7 +50,6 @@ class ContributionChangeSet(Base):
     )
     upload_id: Mapped[int] = mapped_column(
         Integer,
-        ForeignKey("PENDING_UPLOAD.upload_id", ondelete="RESTRICT"),
         nullable=False,
     )
     requested_by: Mapped[int | None] = mapped_column(

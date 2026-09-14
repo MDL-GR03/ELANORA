@@ -4,7 +4,15 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Uuid
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    String,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -18,6 +26,14 @@ class ProjectIntegrityStatus(Base):
     """Latest integrity scan state and incident lifecycle for one project."""
 
     __tablename__ = "PROJECT_INTEGRITY_STATUS"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["revision_id", "project_id"],
+            ["PROJECT_REVISION.revision_id", "PROJECT_REVISION.project_id"],
+            name="fk_project_integrity_revision_project",
+            ondelete="RESTRICT",
+        ),
+    )
 
     project_id: Mapped[int] = mapped_column(
         Integer,
@@ -26,7 +42,6 @@ class ProjectIntegrityStatus(Base):
     )
     revision_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True),
-        ForeignKey("PROJECT_REVISION.revision_id", ondelete="RESTRICT"),
         nullable=True,
     )
     status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
@@ -44,4 +59,6 @@ class ProjectIntegrityStatus(Base):
     )
 
     project: Mapped["Project"] = relationship("Project")
-    revision: Mapped["ProjectRevision | None"] = relationship("ProjectRevision")
+    revision: Mapped["ProjectRevision | None"] = relationship(
+        "ProjectRevision", overlaps="project"
+    )

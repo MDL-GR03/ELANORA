@@ -8,6 +8,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -41,6 +42,18 @@ class ReviewCase(Base):
             "end_ms IS NULL OR end_ms >= start_ms", name="ck_review_case_interval"
         ),
         Index("ix_review_case_project_state", "project_id", "state"),
+        ForeignKeyConstraint(
+            ["upload_id", "project_id"],
+            ["PENDING_UPLOAD.upload_id", "PENDING_UPLOAD.project_id"],
+            name="fk_review_case_upload_project",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["resubmitted_upload_id", "project_id"],
+            ["PENDING_UPLOAD.upload_id", "PENDING_UPLOAD.project_id"],
+            name="fk_review_case_resubmission_project",
+            ondelete="RESTRICT",
+        ),
     )
 
     case_id: Mapped[uuid.UUID] = mapped_column(
@@ -51,13 +64,11 @@ class ReviewCase(Base):
     )
     upload_id: Mapped[int | None] = mapped_column(
         Integer,
-        ForeignKey("PENDING_UPLOAD.upload_id", ondelete="RESTRICT"),
         nullable=True,
         index=True,
     )
     resubmitted_upload_id: Mapped[int | None] = mapped_column(
         Integer,
-        ForeignKey("PENDING_UPLOAD.upload_id", ondelete="RESTRICT"),
         nullable=True,
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False)
