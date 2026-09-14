@@ -171,7 +171,7 @@ class ContactService:
                     fm = FastMail(email_service.conf)
                     await fm.send_message(message_schema)
 
-                    logger.info(f"Contact message sent to administrator: {admin_email}")
+                    logger.info("Contact message sent to an institution administrator")
 
                 except Exception as e:
                     logger.error(

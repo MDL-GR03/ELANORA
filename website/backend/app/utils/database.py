@@ -32,9 +32,7 @@ class DatabaseUtils:
         id_value: Any,
         options: list | None = None,
     ) -> ModelType | None:
-        logger.info(
-            f"get_by_id: model={model.__name__} id_field={id_field} id_value={id_value}"
-        )
+        logger.info("get_by_id: model=%s id_field=%s", model.__name__, id_field)
         query = select(model).filter(getattr(model, id_field) == id_value)
         if options:
             for opt in options:
@@ -62,7 +60,7 @@ class DatabaseUtils:
     async def exists(
         db: AsyncSession, model: type[ModelType], field: str, value: Any
     ) -> bool:
-        logger.info(f"exists: model={model.__name__} field={field} value={value}")
+        logger.info("exists: model=%s field=%s", model.__name__, field)
         result = await db.execute(
             select(getattr(model, field)).filter(getattr(model, field) == value)
         )
@@ -72,7 +70,7 @@ class DatabaseUtils:
 
     @staticmethod
     async def create(db: AsyncSession, instance: ModelType) -> ModelType:
-        logger.info(f"create: instance={instance}")
+        logger.info("create: model=%s", type(instance).__name__)
         db.add(instance)
         return instance
 
@@ -80,7 +78,11 @@ class DatabaseUtils:
     async def delete_by_filter(
         db: AsyncSession, model: type[ModelType], auto_commit: bool = False, **filters
     ) -> int:
-        logger.info(f"delete_by_filter: model={model.__name__} filters={filters}")
+        logger.info(
+            "delete_by_filter: model=%s filter_fields=%s",
+            model.__name__,
+            sorted(filters),
+        )
         query = select(model)
         for field, value in filters.items():
             query = query.filter(getattr(model, field) == value)
@@ -219,7 +221,7 @@ class DatabaseUtils:
         """Bulk delete records matching the given where_clause.
         Returns the number of deleted rows.
         """
-        logger.info(f"bulk_delete: model={model.__name__} where_clause={where_clause}")
+        logger.info("bulk_delete: model=%s", model.__name__)
         result = await db.execute(delete(model).where(where_clause))
         logger.info(f"bulk_delete: model={model.__name__} deleted={result.rowcount}")
         return result.rowcount if result.rowcount is not None else 0
@@ -305,21 +307,19 @@ class DatabaseUtils:
         orphan_ids = all_main_ids - referenced_ids
         non_orphan_ids = all_main_ids & referenced_ids
 
-        # Log orphans
         logger.info(
-            f"get_fully_orphaned: {main_model.__name__} orphans (not in {assoc_model.__name__}.{assoc_ref_field}): {sorted(orphan_ids)}"
+            "get_fully_orphaned: model=%s orphan_count=%s referenced_count=%s",
+            main_model.__name__,
+            len(orphan_ids),
+            len(non_orphan_ids),
         )
 
-        # Log non-orphans and where they are referenced
+        # Execute the reference lookup to preserve the historical query behavior,
+        # but never serialize identifiers or association rows into logs.
         if non_orphan_ids:
-            pk_fields = [key.name for key in assoc_model.__table__.primary_key.columns]
             for oid in sorted(non_orphan_ids):
                 refs = await db.execute(select(assoc_model).where(assoc_ref_col == oid))
-                ref_rows = refs.scalars().all()
-                logger.info(
-                    f"{main_model.__name__} id={oid} is still referenced in {assoc_model.__name__} rows: "
-                    f"{[{k: getattr(r, k, None) for k in pk_fields} for r in ref_rows]}"
-                )
+                refs.scalars().all()
 
         # Return orphan objects
         if orphan_ids:
@@ -347,7 +347,9 @@ class DatabaseUtils:
         )
         count = len(orphans)
         logger.info(
-            f"delete_fully_orphaned: Deleting {count} orphaned {main_model.__name__} records: {[getattr(o, main_id_field) for o in orphans]}"
+            "delete_fully_orphaned: model=%s count=%s",
+            main_model.__name__,
+            count,
         )
         for orphan in orphans:
             await db.delete(orphan)
@@ -432,5 +434,5 @@ class DatabaseUtils:
                 return [dict(row) for row in result.all()]
             return result.all()
         except Exception as e:
-            logger.error(f"Error executing join query: {e}")
+            logger.error("Database join query failed; error_type=%s", type(e).__name__)
             raise

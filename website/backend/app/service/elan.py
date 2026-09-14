@@ -53,7 +53,7 @@ class ElanService:
         self.file_processor = ElanFileProcessor()
 
     def parse_elan_file(self, file_path: str) -> PersistedEafFile:
-        logger.info(f"Starting to parse ELAN file: {file_path}")
+        logger.info("Starting to parse an ELAN file")
         t0 = time.perf_counter()
 
         file_path_obj = ElanFileProcessor.validate_elan_file(file_path)
@@ -66,7 +66,7 @@ class ElanService:
 
     def get_files_in_directory(self, directory_path: str) -> list[Path]:
         """Get all ELAN files in a flat directory using utility."""
-        logger.info(f"Scanning directory for ELAN files: {directory_path}")
+        logger.info("Scanning a project directory for ELAN files")
         files = ElanFileProcessor.find_files_in_directory(directory_path, "*.eaf")
         logger.info(f"Found {len(files)} ELAN files in directory")
         return files
@@ -142,7 +142,7 @@ class ElanService:
         commit_changes: bool = True,
     ) -> int:
         """Store parsed ELAN file data in the database and sync associations."""
-        logger.info(f"Storing ELAN file data: {file_info['filename']}")
+        logger.info("Storing parsed ELAN file data")
 
         try:
             # Store all ELAN file data and associations using CRUD
@@ -168,7 +168,7 @@ class ElanService:
                 await self.db.commit()
             else:
                 await self.db.flush()
-            logger.info(f"Successfully stored: {file_info['filename']} (ID: {elan_id})")
+            logger.info("Successfully stored parsed ELAN file data")
             return elan_id
 
         except Exception as e:
@@ -188,7 +188,7 @@ class ElanService:
         commit_changes: bool = True,
     ) -> int:
         """Store parsed ELAN file data in the database and sync associations."""
-        logger.info(f"Storing ELAN file data: {file_info['filename']}")
+        logger.info("Storing parsed ELAN file data")
         try:
             existing_file = await get_elan_file_by_filename_and_project(
                 self.db, file_info["filename"], project_id
@@ -196,7 +196,7 @@ class ElanService:
             if existing_file:
                 logger.info(f"Updating existing ELAN file: {existing_file.elan_id}")
             else:
-                logger.info(f"No existing ELAN file found for {file_info['filename']}")
+                logger.info("No existing ELAN file record was found")
             # Store all ELAN file data and associations using CRUD
             elan_id = await store_elan_file_data_in_db(
                 self.db, file_info, user_id, project_id
@@ -221,7 +221,7 @@ class ElanService:
                 await self.db.commit()
             else:
                 await self.db.flush()
-            logger.info(f"Successfully stored: {file_info['filename']} (ID: {elan_id})")
+            logger.info("Successfully stored parsed ELAN file data")
             return elan_id
 
         except Exception as e:
@@ -241,7 +241,7 @@ class ElanService:
         commit_changes: bool = True,
     ) -> dict:
         """Process and store a single ELAN file for the given project."""
-        logger.info("Processing single ELAN file: %s", file_path)
+        logger.info("Processing one ELAN file")
 
         # Resolve project name to ID
         project = await get_project_by_name(self.db, project_name)
@@ -273,7 +273,7 @@ class ElanService:
                     "elan_id": existing_file.elan_id,
                 }
 
-        logger.debug("Processing new file: %s for project: %s", filename, project_name)
+        logger.debug("Processing a new ELAN file for a project")
         file_info = self.parse_elan_file(file_path)
         elan_id = await self.store_elan_file_data(
             file_info,
@@ -281,7 +281,7 @@ class ElanService:
             project.project_id,
             commit_changes=commit_changes,
         )
-        logger.info("Successfully processed file: %s with ID: %d", filename, elan_id)
+        logger.info("Successfully processed one ELAN file")
         return {"status": "processed", "filename": filename, "elan_id": elan_id}
 
     async def process_single_file_and_update(
@@ -293,7 +293,7 @@ class ElanService:
         commit_changes: bool = True,
     ) -> dict:
         """Process and update a single ELAN file for the given project."""
-        logger.info("Processing single ELAN file for update: %s", file_path)
+        logger.info("Processing one ELAN file update")
 
         # Resolve project name to ID
         project = await get_project_by_name(self.db, project_name)
@@ -301,7 +301,7 @@ class ElanService:
             raise ValueError(f"Project '{project_name}' not found")
 
         filename = Path(file_path).name
-        logger.debug("Updating file: %s for project: %s", filename, project_name)
+        logger.debug("Updating an ELAN file for a project")
 
         file_info = self.parse_elan_file(file_path)
         elan_id = await self.update_elan_file_data(
@@ -310,17 +310,17 @@ class ElanService:
             project.project_id,
             commit_changes=commit_changes,
         )
-        logger.info("Successfully updated file: %s with ID: %d", filename, elan_id)
+        logger.info("Successfully updated one ELAN file")
         return {"status": "updated", "filename": filename, "elan_id": elan_id}
 
     async def process_directory(
         self, directory_path: str, user_id: int, project_name: str
     ) -> dict[str, dict]:
         """Process all ELAN files in a flat directory for the given project."""
-        logger.info("Starting directory processing: %s", directory_path)
+        logger.info("Starting ELAN project directory processing")
         eaf_files = self.get_files_in_directory(directory_path)
 
-        logger.info("Found %d ELAN files in %s", len(eaf_files), directory_path)
+        logger.info("Found %d ELAN files in the project directory", len(eaf_files))
 
         results = {}
         processed_count = 0
@@ -337,10 +337,10 @@ class ElanService:
 
                 if result["status"] == "processed":
                     processed_count += 1
-                    logger.debug("Successfully processed: %s", result["filename"])
+                    logger.debug("Successfully processed an ELAN file")
                 elif result["status"] == "skipped":
                     skipped_count += 1
-                    logger.debug("Skipped existing file: %s", result["filename"])
+                    logger.debug("Skipped an existing ELAN file")
 
             except Exception as e:
                 logger.error("Failed to process %s: %s", eaf_file.name, e)
@@ -364,7 +364,10 @@ class ElanService:
                 for result in results.values()
                 if result["status"] == "skipped"
             ]
-            logger.info("Skipped files (already in database): %s", skipped_files)
+            logger.info(
+                "Skipped %d files already represented in the database",
+                len(skipped_files),
+            )
 
         return results
 
@@ -385,7 +388,7 @@ class ElanService:
 
     async def get_file_structure(self, filename: str, project_id: int) -> dict | None:
         """Get complete structure for a specific file."""
-        logger.debug(f"Retrieving file structure for: {filename}")
+        logger.debug("Retrieving an ELAN file structure")
 
         # Get file using CRUD
         elan_file_obj = await get_elan_file_by_filename_and_project(
@@ -393,7 +396,7 @@ class ElanService:
         )
 
         if not elan_file_obj:
-            logger.warning(f"File not found in database: {filename}")
+            logger.warning("Requested ELAN file was not found in the database")
             return None
 
         # Get all tiers with annotations

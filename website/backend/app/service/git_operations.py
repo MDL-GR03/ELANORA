@@ -652,7 +652,7 @@ class GitCommandRunner:
         email = f"{safe_name}@elanora.local"
         self.run(["config", "user.name", instance_name], check=True)
         self.run(["config", "user.email", email], check=True)
-        logger.info(f"Configured Git user: {instance_name} <{email}>")
+        logger.info("Configured the project Git publication identity")
         self._update_backup()
 
     def get_branches(self) -> list[str]:

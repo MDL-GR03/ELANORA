@@ -39,9 +39,8 @@ async def bulk_get_or_create_annotation_values(
         for tier_data in tiers_data
         for ann in tier_data["annotations"]
     }
-    logger.info(f"Extracted unique values: {all_ann_values}")
     value_map = {}
-    logger.info(f"Start. Total unique values: {len(all_ann_values)}")
+    logger.info("Processing %s unique annotation values", len(all_ann_values))
     if all_ann_values:
         # Fetch existing values using DatabaseUtils
         filters = {"annotation_value": list(all_ann_values)}

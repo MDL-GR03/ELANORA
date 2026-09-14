@@ -63,9 +63,7 @@ async def create_file_content(
     file_content = await DatabaseUtils.create(db, file_content)
     await db.flush()
 
-    logger.info(
-        f"Created new file content: {filename} (hash: {content_hash[:8]}..., ID: {file_content.content_id})"
-    )
+    logger.info("Created one file-content record")
     return file_content
 
 
@@ -84,12 +82,10 @@ async def get_or_create_file_content(
     # Convert relative path to absolute if needed for file operations
     if not Path(file_path).is_absolute():
         absolute_path = make_path_absolute_from_projects(file_path)
-        logger.debug(
-            f"Converted relative path to absolute: {file_path} -> {absolute_path}"
-        )
+        logger.debug("Resolved a relative content path")
     else:
         absolute_path = file_path
-        logger.debug(f"Using provided absolute path: {absolute_path}")
+        logger.debug("Using a caller-provided absolute content path")
 
     # Calculate hash using absolute path
     content_hash = calculate_file_hash(absolute_path)
@@ -98,9 +94,7 @@ async def get_or_create_file_content(
     existing_content = await get_file_content_by_hash(db, content_hash)
 
     if existing_content:
-        logger.info(
-            f"File content already exists, reusing: {filename} (hash: {content_hash[:8]}..., ID: {existing_content.content_id})"
-        )
+        logger.info("Reusing an existing file-content record")
         return existing_content
 
     # Create new content record
@@ -114,10 +108,10 @@ async def delete_file_content(db: AsyncSession, content_id: int) -> bool:
             db, FileContent, "content_id", content_id
         )
         if result:
-            logger.info(f"Deleted file content with ID: {content_id}")
+            logger.info("Deleted one file-content record")
         return result
     except Exception as e:
-        logger.error(f"Failed to delete file content {content_id}: {e}")
+        logger.error("Failed to delete file content; error_type=%s", type(e).__name__)
         return False
 
 

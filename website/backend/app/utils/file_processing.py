@@ -17,7 +17,7 @@ def get_elanora_projects_base_path() -> str:
     """Get the base path for elanora_projects directory."""
     try:
         configured_path = ELAN_PROJECTS_BASE_PATH
-        logger.debug(f"Using configured base path: {configured_path}")
+        logger.debug("Using the configured ELAN project storage root")
 
         # If it's a relative path, make it relative to the repo root
         if not Path(configured_path).is_absolute():
@@ -26,7 +26,7 @@ def get_elanora_projects_base_path() -> str:
             # file_processing.py -> utils -> app -> backend -> website -> repo_root
             repo_root = current_dir.parent.parent.parent.parent.parent
             base_path = str(repo_root / configured_path)
-            logger.debug(f"Converted relative path to absolute: {base_path}")
+            logger.debug("Resolved the relative ELAN project storage root")
             return base_path
         else:
             # It's already an absolute path
@@ -38,7 +38,7 @@ def get_elanora_projects_base_path() -> str:
         # Navigate up: file_processing.py -> utils -> app -> backend -> website -> repo_root
         repo_root = current_dir.parent.parent.parent.parent.parent
         base_path = str(repo_root / "elanora_projects")
-        logger.debug(f"Calculated base path: {base_path}")
+        logger.debug("Calculated the fallback ELAN project storage root")
         return base_path
 
 
@@ -48,22 +48,18 @@ def make_path_relative_to_projects(absolute_path: str) -> str:
     abs_path = Path(absolute_path).resolve()
     base = Path(base_path).resolve()
 
-    logger.debug(f"Converting path: {absolute_path}")
-    logger.debug(f"Base path: {base}")
-    logger.debug(f"Absolute path: {abs_path}")
+    logger.debug("Converting an ELAN project path to its storage-relative form")
 
     try:
         relative_path = abs_path.relative_to(base)
         result = str(relative_path).replace(
             "\\", "/"
         )  # Use forward slashes for consistency
-        logger.info(f"Path conversion: {absolute_path} -> {result}")
+        logger.debug("Converted an ELAN project path to storage-relative form")
         return result
-    except ValueError as e:
+    except ValueError:
         # Path is not under elanora_projects, return as-is but log warning
-        logger.warning(
-            f"Path {absolute_path} is not under elanora_projects directory: {e}"
-        )
+        logger.warning("Path is outside the configured ELAN project storage root")
         return absolute_path
 
 
@@ -80,14 +76,14 @@ class ElanFileProcessor:
     def validate_elan_file(file_path: str) -> Path:
         """Validate and return Path object for ELAN file."""
         file_path_obj = Path(file_path)
-        logger.info(f"Validating ELAN file: {file_path}")
+        logger.info("Validating an ELAN file")
         if not file_path_obj.exists():
-            logger.error(f"ELAN file not found: {file_path}")
+            logger.error("ELAN file validation failed: file not found")
             raise FileNotFoundError(f"ELAN file not found: {file_path}")
         if file_path_obj.suffix.lower() != ".eaf":
-            logger.error(f"Not an ELAN file: {file_path}")
+            logger.error("ELAN file validation failed: unsupported extension")
             raise ValueError(f"Not an ELAN file: {file_path}")
-        logger.debug(f"ELAN file validated: {file_path_obj}")
+        logger.debug("ELAN file path validation passed")
         return file_path_obj
 
     @staticmethod
@@ -100,7 +96,7 @@ class ElanFileProcessor:
         absolute_path = str(file_path_obj.absolute())
         relative_path = make_path_relative_to_projects(absolute_path)
 
-        logger.info(f"File info conversion: {absolute_path} -> {relative_path}")
+        logger.debug("Converted ELAN file metadata to storage-relative form")
 
         info = {
             "filename": file_path_obj.name,
@@ -108,7 +104,7 @@ class ElanFileProcessor:
             "file_size": file_path_obj.stat().st_size,
             "last_modified": last_modified,
         }
-        logger.info(f"Extracted file info: {info}")
+        logger.info("Extracted ELAN file metadata")
         return info
 
     @staticmethod
@@ -130,7 +126,7 @@ class ElanFileProcessor:
             logger.warning("safe_get_text: element is None or empty")
             return None
         text = element.text.strip()
-        logger.debug(f"safe_get_text: '{text}'")
+        logger.debug("Extracted text from an XML element")
         return text
 
     @staticmethod
@@ -146,11 +142,9 @@ class ElanFileProcessor:
     ) -> list[Path]:
         """Find all ELAN files in flat directory (no recursion)."""
         directory = Path(directory_path)
-        logger.info(
-            f"Searching for ELAN files in directory: {directory_path} with pattern: {pattern}"
-        )
+        logger.info("Searching a project directory for ELAN files")
         if not directory.exists():
-            logger.error(f"Directory not found: {directory_path}")
+            logger.error("ELAN directory scan failed: directory not found")
             raise FileNotFoundError(f"Directory not found: {directory_path}")
         files = list(directory.glob(pattern))
         logger.info(f"Found {len(files)} ELAN files in directory")
@@ -181,7 +175,7 @@ class XmlAttributeExtractor:
             "tier_name": tier_element.get("TIER_ID", None),
             "parent_tier_name": tier_element.get("PARENT_REF", None),
         }
-        logger.debug(f"Extracted tier attributes: {attrs}")
+        logger.debug("Extracted tier relationship attributes")
         return attrs
 
     @staticmethod
@@ -192,7 +186,7 @@ class XmlAttributeExtractor:
             "time_slot_ref1": annotation.get("TIME_SLOT_REF1", None),
             "time_slot_ref2": annotation.get("TIME_SLOT_REF2", None),
         }
-        logger.debug(f"Extracted annotation attributes: {attrs}")
+        logger.debug("Extracted annotation timing references")
         return attrs
 
     @staticmethod
@@ -216,7 +210,7 @@ class XmlAttributeExtractor:
             "start_time": Decimal(start_time) / 1000,
             "end_time": Decimal(end_time) / 1000,
         }
-        logger.debug(f"Extracted alignable annotation: {attrs}")
+        logger.debug("Extracted alignable annotation")
         return attrs
 
     @staticmethod
@@ -234,7 +228,7 @@ class XmlAttributeExtractor:
             "start_time": Decimal(0),
             "end_time": Decimal(0),
         }
-        logger.debug(f"Extracted ref annotation: {attrs}")
+        logger.debug("Extracted reference annotation")
         return attrs
 
 

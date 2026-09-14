@@ -16,7 +16,7 @@ class ValidationUtils:
         """Check if the value is a valid string of minimum length."""
         result = isinstance(value, str) and len(value.strip()) >= min_length
         logger.debug(
-            f"is_valid_string: value='{value}' min_length={min_length} result={result}"
+            "Validated string shape; min_length=%s result=%s", min_length, result
         )
         return result
 
@@ -44,9 +44,7 @@ class ValidationUtils:
         sanitized = filename
         for char in invalid_chars:
             sanitized = sanitized.replace(char, "_")
-        logger.info(
-            f"sanitize_filename: original='{filename}' sanitized='{sanitized.strip()}'"
-        )
+        logger.info("Sanitized a filename")
         return sanitized.strip()
 
     @staticmethod
@@ -70,9 +68,7 @@ class ValidationUtils:
             True if compliant, False otherwise.
 
         """
-        logger.debug(
-            f"is_filename_compliant called with standard: {standard}, filename: {filename}"
-        )
+        logger.debug("Checking filename compliance against a naming standard")
         if (
             not standard
             or not standard.get("pattern")
