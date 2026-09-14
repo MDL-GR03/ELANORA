@@ -312,7 +312,8 @@ the remaining presentation and request orchestration from its page component.
 The contribution workspace tab navigation; queue summary, filtering, search and
 ordering controls; contribution card header and permission-aware actions; and
 research-context decision panel now live in focused Vue components with
-component-level permission, accessibility and interaction tests. The page still
-owns queue data, mutations, contribution history and technical recap rendering.
-Extracting the remaining card body and moving request orchestration into a
-composable are the next frontend slices.
+component-level permission, accessibility and interaction tests. Collision
+warnings, version history, duplicate and supersession evidence, quality checks,
+file counts, semantic recaps and conflicted filenames now live in a tested card
+body component as well. The page still owns queue data and mutations. Moving
+request orchestration into a composable is the next frontend slice.
