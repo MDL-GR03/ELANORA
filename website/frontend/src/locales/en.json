@@ -938,6 +938,33 @@
   },
 
   "profile": {
+    "accounts": {
+      "menu": "Accounts",
+      "title": "Institution accounts",
+      "description": "Suspend or restore access without deleting research history",
+      "search": "Find an account",
+      "search_placeholder": "Name, username, or email",
+      "loading": "Loading institution accounts…",
+      "empty": "No matching accounts found.",
+      "load_error": "Institution accounts could not be loaded.",
+      "roles": { "admin": "Administrator", "public": "Researcher" },
+      "active": "Active",
+      "suspended": "Suspended",
+      "you": "Your account",
+      "suspend": "Suspend access",
+      "restore": "Restore access",
+      "confirmation": "Account access",
+      "suspend_title": "Suspend @{name}?",
+      "restore_title": "Restore @{name}?",
+      "suspend_effect": "The account will be signed out on every device and cannot sign in until restored. Contributions and audit history remain intact.",
+      "restore_effect": "The account will be allowed to sign in again. Existing revoked sessions stay revoked, so fresh credentials are required.",
+      "reason": "Reason recorded in the audit log",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save_error": "The account status could not be changed.",
+      "suspended_message": "Account access suspended.",
+      "restored_message": "Account access restored."
+    },
     "title": "Profile",
     "menu": {
       "overview": "Overview",

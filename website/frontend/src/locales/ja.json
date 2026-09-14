@@ -863,6 +863,33 @@
   },
 
   "profile": {
+    "accounts": {
+      "menu": "アカウント",
+      "title": "機関アカウント",
+      "description": "研究履歴を削除せずにアクセスを停止または復元します",
+      "search": "アカウントを検索",
+      "search_placeholder": "氏名、ユーザー名、メール",
+      "loading": "機関アカウントを読み込み中…",
+      "empty": "一致するアカウントはありません。",
+      "load_error": "機関アカウントを読み込めませんでした。",
+      "roles": { "admin": "管理者", "public": "研究者" },
+      "active": "有効",
+      "suspended": "停止中",
+      "you": "自分のアカウント",
+      "suspend": "アクセスを停止",
+      "restore": "アクセスを復元",
+      "confirmation": "アカウントアクセス",
+      "suspend_title": "@{name} を停止しますか？",
+      "restore_title": "@{name} を復元しますか？",
+      "suspend_effect": "すべての端末からサインアウトされ、復元されるまでログインできません。投稿と監査履歴は保持されます。",
+      "restore_effect": "再びログインできるようになります。以前のセッションは無効のままなので、新たなログインが必要です。",
+      "reason": "監査ログに記録する理由",
+      "cancel": "キャンセル",
+      "saving": "保存中…",
+      "save_error": "アカウント状態を変更できませんでした。",
+      "suspended_message": "アカウントアクセスを停止しました。",
+      "restored_message": "アカウントアクセスを復元しました。"
+    },
     "title": "プロフィール",
     "menu": {
       "overview": "概要",

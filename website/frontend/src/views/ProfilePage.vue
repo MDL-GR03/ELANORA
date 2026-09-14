@@ -71,6 +71,10 @@
             v-else-if="currentSection === 'institution'"
             @show-message="handleMessage"
           />
+          <InstitutionAccounts
+            v-else-if="currentSection === 'accounts'"
+            @show-message="handleMessage"
+          />
         </div>
       </main>
     </div>
@@ -100,6 +104,9 @@ const ProfileNotifications = defineAsyncComponent(
 const InstanceBranding = defineAsyncComponent(
   () => import('@/components/pageSpecific/profile/InstanceBranding.vue')
 );
+const InstitutionAccounts = defineAsyncComponent(
+  () => import('@/components/pageSpecific/profile/InstitutionAccounts.vue')
+);
 
 const { t } = useI18n();
 const route = useRoute();
@@ -117,9 +124,14 @@ const error = ref('');
 onMounted(() => {
   if (
     route.query.tab &&
-    ['overview', 'settings', 'security', 'notifications'].includes(
-      route.query.tab
-    )
+    [
+      'overview',
+      'settings',
+      'security',
+      'notifications',
+      'institution',
+      'accounts',
+    ].includes(route.query.tab)
   ) {
     currentSection.value = route.query.tab;
   }
@@ -165,6 +177,13 @@ const menuItems = computed(() => [
           description:
             'Manage the workspace name, research identity, colors, and logo.',
           icon: '🏛️',
+        },
+        {
+          id: 'accounts',
+          label: t('profile.accounts.menu'),
+          title: t('profile.accounts.title'),
+          description: t('profile.accounts.description'),
+          icon: '👥',
         },
       ]
     : []),

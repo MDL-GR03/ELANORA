@@ -17,6 +17,7 @@ discoverability, but FastAPI dependencies remain the security boundary.
 | Review exceptional server filesystem changes | no | no | no | yes |
 | Create, rename, or delete projects | no | no | no | yes |
 | Configure institution branding and installation | no | no | no | yes |
+| Suspend or restore institution accounts | no | no | no | yes |
 
 The independent `manage_protocols` capability grants access only to the
 Protocols configuration section and its versioning/validation actions. It does
@@ -26,6 +27,15 @@ not imply write or project-admin permission.
 must never be accepted from an API request or persisted as a delegated project
 permission. A project administrator may delegate `read` or `write`, but cannot
 promote another member to project admin or alter another project administrator.
+
+Account suspension is reached from **Profile -> Accounts**. Suspending an
+account revokes every active browser session immediately and refuses further
+logins and token refreshes, while preserving the account's contributions,
+reviews, and audit history. Every suspension and restoration records an
+`account.suspended` or `account.reactivated` audit event with the
+administrator's reason. Two rules protect the installation from becoming
+unadministered: an administrator cannot change their own status, and the last
+active administrator cannot be suspended.
 
 The project-member administration UI is available from **Projects**, using the
 settings action on a project card, then **Collaborators -> Members**. It shows

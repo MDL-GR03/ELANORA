@@ -928,6 +928,33 @@
   },
 
   "profile": {
+    "accounts": {
+      "menu": "Comptes",
+      "title": "Comptes de l’institution",
+      "description": "Suspendre ou rétablir l’accès sans supprimer l’historique de recherche",
+      "search": "Rechercher un compte",
+      "search_placeholder": "Nom, identifiant ou courriel",
+      "loading": "Chargement des comptes…",
+      "empty": "Aucun compte correspondant.",
+      "load_error": "Impossible de charger les comptes de l’institution.",
+      "roles": { "admin": "Administrateur", "public": "Chercheur" },
+      "active": "Actif",
+      "suspended": "Suspendu",
+      "you": "Votre compte",
+      "suspend": "Suspendre l’accès",
+      "restore": "Rétablir l’accès",
+      "confirmation": "Accès au compte",
+      "suspend_title": "Suspendre @{name} ?",
+      "restore_title": "Rétablir @{name} ?",
+      "suspend_effect": "Le compte sera déconnecté de tous les appareils et ne pourra plus se connecter avant son rétablissement. Les contributions et l’historique d’audit sont conservés.",
+      "restore_effect": "Le compte pourra de nouveau se connecter. Les sessions révoquées restent invalides et de nouveaux identifiants seront nécessaires.",
+      "reason": "Motif enregistré dans le journal d’audit",
+      "cancel": "Annuler",
+      "saving": "Enregistrement…",
+      "save_error": "Impossible de modifier l’état du compte.",
+      "suspended_message": "Accès au compte suspendu.",
+      "restored_message": "Accès au compte rétabli."
+    },
     "title": "Profil",
     "menu": {
       "overview": "Aperçu",

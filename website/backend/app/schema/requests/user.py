@@ -1,4 +1,4 @@
-from pydantic import EmailStr, field_validator
+from pydantic import EmailStr, Field, field_validator
 
 from app.schema.common.base import CustomBaseModel
 
@@ -117,3 +117,10 @@ class ChangePasswordRequest(CustomBaseModel):
 
     current_password: str
     new_password: str
+
+
+class AccountStatusRequest(CustomBaseModel):
+    """Administrator request to suspend or restore an institution account."""
+
+    is_active: bool
+    reason: str = Field(min_length=3, max_length=500)

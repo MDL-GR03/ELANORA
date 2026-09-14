@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model.enums import UserRole
@@ -117,3 +118,13 @@ async def get_all_active_users(db: AsyncSession, instance_id: int) -> list[User]
     """Get active users belonging to one institution installation."""
     filters = {"is_active": True, "instance_id": instance_id}
     return await DatabaseUtils.get_by_filter(db, User, filters)
+
+
+async def get_all_users(db: AsyncSession, instance_id: int) -> list[User]:
+    """Get every account in an institution, including suspended accounts."""
+    result = await db.execute(
+        select(User)
+        .where(User.instance_id == instance_id)
+        .order_by(User.is_active.desc(), User.last_name, User.first_name, User.user_id)
+    )
+    return list(result.scalars())

@@ -2,13 +2,14 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.crud.user import get_all_active_users
+from app.crud.user import get_all_active_users, get_all_users
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.address import Address
 from app.model.city import City
 from app.model.user import User
 from app.schema.requests.user import (
+    AccountStatusRequest,
     AddressRequest,
     ChangePasswordRequest,
     ProfileUpdateRequest,
@@ -22,10 +23,23 @@ from app.schema.responses.user import (
     UserResponse,
 )
 from app.service.address import AddressService
-from app.service.user import UserService
+from app.service.user import (
+    AccountNotFoundError,
+    LastAdministratorError,
+    RedundantAccountStatusError,
+    SelfAccountStatusError,
+    UserService,
+)
 from app.utils.database import DatabaseUtils
 
 router = APIRouter()
+
+# Account lifecycle refusals are published as fixed, reviewable messages so
+# no internal exception text can reach an institution administrator.
+ACCOUNT_NOT_FOUND = "Account not found in this institution"
+SELF_STATUS_CHANGE_REFUSED = "Administrators cannot change their own account status"
+LAST_ADMINISTRATOR_REFUSED = "The institution must retain an active administrator"
+REDUNDANT_ACCOUNT_STATUS = "The account already has the requested status"
 
 
 @router.get("/me", response_model=UserResponse)
@@ -231,6 +245,53 @@ async def get_active_users(
             for u in users
         ]
     )
+
+
+@router.get("/admin/accounts", response_model=UserListResponse)
+async def get_institution_accounts(
+    user: User = get_admin_dep,
+    db: AsyncSession = get_db_dep,
+) -> UserListResponse:
+    """List active and suspended accounts in the administrator's institution."""
+    users = await get_all_users(db, user.instance_id)
+    return UserListResponse(
+        users=[UserResponse.model_validate(account) for account in users]
+    )
+
+
+@router.patch("/admin/accounts/{user_id}/status", response_model=UserResponse)
+async def set_institution_account_status(
+    user_id: int,
+    request: AccountStatusRequest,
+    user: User = get_admin_dep,
+    db: AsyncSession = get_db_dep,
+) -> UserResponse:
+    """Suspend or restore an account without deleting its research history."""
+    try:
+        updated = await UserService.set_account_active(
+            db,
+            actor=user,
+            target_user_id=user_id,
+            is_active=request.is_active,
+            reason=request.reason,
+        )
+    except AccountNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=ACCOUNT_NOT_FOUND
+        ) from error
+    except SelfAccountStatusError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=SELF_STATUS_CHANGE_REFUSED
+        ) from error
+    except LastAdministratorError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=LAST_ADMINISTRATOR_REFUSED
+        ) from error
+    except RedundantAccountStatusError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=REDUNDANT_ACCOUNT_STATUS
+        ) from error
+    return UserResponse.model_validate(updated)
 
 
 @router.put("/me/password")

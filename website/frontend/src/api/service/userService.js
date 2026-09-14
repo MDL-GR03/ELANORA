@@ -24,6 +24,19 @@ export async function fetchActiveUsers() {
   return await axiosInstance.get('/user/active');
 }
 
+/** Fetch every institution account for administrator lifecycle management. */
+export async function fetchInstitutionAccounts() {
+  return await axiosInstance.get('/user/admin/accounts');
+}
+
+/** Suspend or restore an institution account. */
+export async function setInstitutionAccountStatus(userId, isActive, reason) {
+  return await axiosInstance.patch(`/user/admin/accounts/${userId}/status`, {
+    is_active: isActive,
+    reason,
+  });
+}
+
 /**
  * Check if a username is available for registration.
  * @param {string} username

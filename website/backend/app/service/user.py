@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Any, cast
 
 from passlib.context import CryptContext
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -20,6 +21,8 @@ from app.crud.user import (
     update_user_password,
     update_user_profile,
 )
+from app.model.audit_event import AuditEvent
+from app.model.enums import UserRole
 from app.model.user import User
 from app.schema.common.token import TokenData
 from app.schema.common.user import UserCreateData
@@ -43,8 +46,97 @@ logger = get_logger()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+class AccountNotFoundError(LookupError):
+    """The requested account does not exist inside this installation."""
+
+
+class AccountStatusConflictError(ValueError):
+    """The requested account status change is not permitted."""
+
+
+class SelfAccountStatusError(AccountStatusConflictError):
+    """An administrator attempted to change their own account status."""
+
+
+class LastAdministratorError(AccountStatusConflictError):
+    """Suspending the account would leave the institution unadministered."""
+
+
+class RedundantAccountStatusError(AccountStatusConflictError):
+    """The account already has the requested status."""
+
+
 class UserService:
     """Service for user-related business logic."""
+
+    @classmethod
+    async def set_account_active(
+        cls,
+        db: AsyncSession,
+        *,
+        actor: User,
+        target_user_id: int,
+        is_active: bool,
+        reason: str,
+    ) -> User:
+        """Suspend or restore an institution account with safety invariants."""
+        target = await db.scalar(
+            select(User)
+            .where(
+                User.user_id == target_user_id,
+                User.instance_id == actor.instance_id,
+            )
+            .with_for_update()
+        )
+        if target is None:
+            raise AccountNotFoundError("Account not found")
+        if target.user_id == actor.user_id:
+            raise SelfAccountStatusError(
+                "Administrators cannot change their own account status"
+            )
+        if target.is_active == is_active:
+            state = "active" if is_active else "suspended"
+            raise RedundantAccountStatusError(f"Account is already {state}")
+
+        if not is_active and target.role == UserRole.ADMIN:
+            active_admin_ids = list(
+                (
+                    await db.execute(
+                        select(User.user_id)
+                        .where(
+                            User.instance_id == actor.instance_id,
+                            User.role == UserRole.ADMIN,
+                            User.is_active.is_(True),
+                        )
+                        .with_for_update()
+                    )
+                ).scalars()
+            )
+            if len(active_admin_ids) <= 1:
+                raise LastAdministratorError(
+                    "The institution must retain an active administrator"
+                )
+
+        target.is_active = is_active
+        target.updated_at = datetime.now(UTC)
+        revoked_sessions = 0
+        if not is_active:
+            revoked_sessions = await revoke_all_refresh_sessions(db, target.user_id)
+        db.add(
+            AuditEvent(
+                actor_user_id=actor.user_id,
+                action="account.reactivated" if is_active else "account.suspended",
+                resource_type="user",
+                resource_id=str(target.user_id),
+                details={
+                    "reason": reason.strip(),
+                    "revoked_sessions": revoked_sessions,
+                },
+            )
+        )
+        await db.commit()
+        await db.refresh(target)
+        return target
 
     @staticmethod
     def hash_password(password: str) -> str:
@@ -126,6 +218,15 @@ class UserService:
 
         if not user:
             return {"success": False, "message": "Invalid credentials"}
+
+        # A suspended account keeps its data but must never obtain new
+        # credentials, even when the presented password is still correct.
+        if not user.is_active:
+            logger.warning("Login refused: account is suspended")
+            return {
+                "success": False,
+                "message": "This account is suspended. Contact your institution administrator.",
+            }
 
         # Check if email is verified
         if not user.is_verified_account:
