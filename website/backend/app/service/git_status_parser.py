@@ -34,7 +34,7 @@ class GitRename:
 class GitStatusParser:
     """Parses Git status output into structured data."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the parser with status mappings."""
         self.status_map = {
             "A": "added",
@@ -120,7 +120,7 @@ class GitFileStatusAnalyzer:
         """Analyze project files and return status list and processed files."""
         entries = self.parser.parse_status_output(status_output)
         files_status = []
-        processed_files = set()
+        processed_files: set[str] = set()
 
         # Process git status entries
         for entry in entries:

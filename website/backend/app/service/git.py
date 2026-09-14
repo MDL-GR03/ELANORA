@@ -268,6 +268,8 @@ class GitService:
         try:
             for file in files:
                 filename = file.filename
+                if not filename:
+                    raise ValueError("Uploaded file is missing a filename")
                 if ValidationUtils.is_filename_compliant(standard, filename):
                     compliant_files.append(filename)
                     logger.debug(
@@ -434,7 +436,9 @@ class GitService:
                 ),
             )
         )
-        permissions = dict(permission_rows.all())
+        permissions: dict[int, ProjectPermission] = {}
+        for project_id, permission in permission_rows.tuples():
+            permissions[project_id] = permission
         capability_rows = await db.execute(
             select(
                 ProjectCapabilityGrant.project_id,
@@ -482,7 +486,7 @@ class GitService:
 
     async def _sync_elan_files_with_db(
         self, project_path: Path, db: AsyncSession, user_id: int, project_name: str
-    ):
+    ) -> None:
         """Parse all .eaf files in the project and update the database."""
         elan_service = ElanService(db)
         elan_files = list((project_path / "elan_files").glob("*.eaf"))
@@ -636,7 +640,10 @@ class GitService:
         for upload in pending_uploads:
             branch_name = upload.branch_name
             git_details = upload.git_details or {}
-            upload_data = git_details.get("upload_data", git_details)
+            raw_upload_data = git_details.get("upload_data", git_details)
+            upload_data = (
+                dict(raw_upload_data) if isinstance(raw_upload_data, dict) else {}
+            )
             (
                 semantic_summary,
                 semantic_targets,
@@ -680,6 +687,8 @@ class GitService:
 
             # Test merge in real-time to check status
             try:
+                if not branch_name:
+                    raise ValueError("Pending contribution has no branch")
                 readiness = runner.preview_merge(branch_name)
                 status = readiness.status
                 conflicts = readiness.conflicted_files
@@ -982,7 +991,7 @@ class GitService:
         db: AsyncSession,
         user_id: int,
         operation_id: str | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Idempotently synchronize the project's elan_files with the database."""
         project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
@@ -1162,7 +1171,7 @@ class GitService:
                 )
             validate_eaf(candidate.read_bytes())
 
-    async def delete_project(self, project_name: str, db: AsyncSession):
+    async def delete_project(self, project_name: str, db: AsyncSession) -> None:
         """Delete a project by its ID."""
         logger.info("Starting project deletion")
         # Remove all DB artifacts (project, files, annotations, etc.)
@@ -1191,7 +1200,7 @@ class GitService:
         new_project_name: str,
         new_project_description: str | None,
         db: AsyncSession,
-    ) -> dict:
+    ) -> dict[str, str | None]:
         """Edit an existing project both in the filesystem and in the database.
 
         Args:
@@ -1254,7 +1263,7 @@ class GitService:
             "new_project_description": new_project_description,
         }
 
-    def synchronize_project_check(self, project_name: str) -> dict:
+    def synchronize_project_check(self, project_name: str) -> dict[str, Any]:
         """Check for changes in a Git-managed project and analyze file status.
 
         Analyzes the Git status to detect file changes in the elan_files directory
@@ -1475,7 +1484,7 @@ class GitService:
             raise RuntimeError("Failed to rename file") from e
 
     async def rename_files(
-        self, project_name: str, renames: list[dict], db: AsyncSession
+        self, project_name: str, renames: list[dict[str, Any]], db: AsyncSession
     ) -> BulkRenameResponse:
         """Rename multiple files in the project using elan_ids."""
         project_path = safe_project_path(self.base_path, project_name)
@@ -1483,8 +1492,8 @@ class GitService:
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
 
-        successful_renames = []
-        failed_renames = []
+        successful_renames: list[RenameResult] = []
+        failed_renames: list[RenameResult] = []
 
         try:
             runner = GitCommandRunner(project_path)
@@ -1547,7 +1556,7 @@ class GitService:
 
     async def _process_single_bulk_rename(
         self,
-        rename_info: dict,
+        rename_info: dict[str, Any],
         project_path: Path,
         db: AsyncSession,
         runner: GitCommandRunner,
@@ -1557,7 +1566,7 @@ class GitService:
             elan_id = rename_info.get("elan_id")
             new_filename = rename_info.get("new_filename")
 
-            if not elan_id or not new_filename:
+            if not isinstance(elan_id, int) or not isinstance(new_filename, str):
                 raise ValueError("Missing elan_id or new_filename")
 
             # Get current filename
@@ -1619,11 +1628,9 @@ class GitService:
             # Try to get old filename for error reporting
             old_filename = ""
             try:
-                if rename_info.get("elan_id"):
-                    old_filename = (
-                        await get_elan_file_name_by_id(db, rename_info.get("elan_id"))
-                        or ""
-                    )
+                elan_id = rename_info.get("elan_id")
+                if isinstance(elan_id, int):
+                    old_filename = await get_elan_file_name_by_id(db, elan_id) or ""
             except Exception:
                 logger.warning(
                     f"Could not get filename for elan_id {rename_info.get('elan_id')}"
@@ -1631,7 +1638,11 @@ class GitService:
 
             return RenameResult(
                 old_filename=old_filename,
-                new_filename=rename_info.get("new_filename", ""),
+                new_filename=(
+                    rename_info["new_filename"]
+                    if isinstance(rename_info.get("new_filename"), str)
+                    else ""
+                ),
                 success=False,
                 error="The requested filename conflicts with an existing file",
                 conflict_elan_id=e.conflict_elan_id,
@@ -1644,11 +1655,9 @@ class GitService:
             # Try to get old filename for error reporting
             old_filename = ""
             try:
-                if rename_info.get("elan_id"):
-                    old_filename = (
-                        await get_elan_file_name_by_id(db, rename_info.get("elan_id"))
-                        or ""
-                    )
+                elan_id = rename_info.get("elan_id")
+                if isinstance(elan_id, int):
+                    old_filename = await get_elan_file_name_by_id(db, elan_id) or ""
             except Exception:
                 logger.warning(
                     f"Could not get filename for elan_id {rename_info.get('elan_id')}"
@@ -1656,13 +1665,20 @@ class GitService:
 
             return RenameResult(
                 old_filename=old_filename,
-                new_filename=rename_info.get("new_filename", ""),
+                new_filename=(
+                    rename_info["new_filename"]
+                    if isinstance(rename_info.get("new_filename"), str)
+                    else ""
+                ),
                 success=False,
                 error=safe_failure_summary(e, operation="File rename failed"),
             )
 
     async def _finalize_bulk_rename(
-        self, successful_renames: list, runner: GitCommandRunner, db: AsyncSession
+        self,
+        successful_renames: list[RenameResult],
+        runner: GitCommandRunner,
+        db: AsyncSession,
     ) -> str | None:
         """Finalize the bulk rename operation by committing or rolling back."""
         commit_hash = None
