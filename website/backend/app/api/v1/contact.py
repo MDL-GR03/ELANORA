@@ -3,12 +3,15 @@
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.core.limiter import limiter
 from app.dependency.database import get_db_dep
 from app.schema.requests.contact import ContactRequest
 from app.service.contact import ContactService
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 
 @router.post("/send")
@@ -35,11 +38,6 @@ async def send_contact_message(
 
     """
     try:
-        # Log the received data for debugging
-        print(
-            f"Received contact form: email={body.email}, request_type={body.request_type}, message_length={len(body.message)}"
-        )
-
         # Detect language from Accept-Language header
         accept_language = request.headers.get("accept-language", "en")
         language = "fr" if accept_language.startswith("fr") else "en"
@@ -57,7 +55,7 @@ async def send_contact_message(
         return {"message": "Contact message sent successfully"}
 
     except Exception as e:
-        print(f"Error in contact endpoint: {e}")
+        logger.error("Contact endpoint failed; error_type=%s", safe_exception_type(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send contact message",

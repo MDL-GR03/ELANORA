@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.dependency.database import get_db_dep
 from app.dependency.elan_validation import validate_and_record_elan_files
 from app.dependency.project_access import (
@@ -332,7 +333,9 @@ async def create_project(
     except ValueError as e:
         raise HTTPException(status_code=400, detail="Invalid project operation") from e
     except Exception as e:
-        logger.exception("Unable to create project %r", project_data.project_name)
+        logger.error(
+            "Unable to create a project; error_type=%s", safe_exception_type(e)
+        )
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
@@ -592,8 +595,9 @@ async def synchronize_project_check(
     try:
         return git_service.synchronize_project_check(project_name)
     except Exception as e:
-        logger.exception(
-            "Failed to inspect server-side changes for project %r", project_name
+        logger.error(
+            "Failed to inspect server-side project changes; error_type=%s",
+            safe_exception_type(e),
         )
         raise HTTPException(status_code=500, detail="Internal server error") from e
 

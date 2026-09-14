@@ -8,7 +8,7 @@ export ELANORA_DEV_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-dispatch-change-sets dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-recovery test-e2e legacy-validate legacy-status legacy-down backend-check frontend-check check
+.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-dispatch-change-sets dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-recovery test-e2e legacy-validate legacy-status legacy-down security-check backend-check frontend-check check
 
 help:
 	@echo "ELANORA development commands"
@@ -33,6 +33,7 @@ help:
 	@echo "  make test-integration  Run database tests against PostgreSQL"
 	@echo "  make test-recovery     Prove an encrypted snapshot restores into an empty environment"
 	@echo "  make test-e2e        Run browser workflow tests with Playwright"
+	@echo "  make security-check  Reject recognizable credentials in tracked files"
 	@echo "  make legacy-validate  Import the MySQL-era dataset into isolated PostgreSQL"
 	@echo "  make legacy-status    Show the isolated migration services"
 	@echo "  make legacy-down      Stop migration services; keep validation data"
@@ -141,6 +142,9 @@ legacy-status:
 legacy-down:
 	$(LEGACY_COMPOSE) down
 
+security-check:
+	python3 website/backend/scripts/check_tracked_secrets.py
+
 backend-check:
 	cd website/backend && poetry run ruff format --check .
 	cd website/backend && poetry run ruff check .
@@ -157,4 +161,4 @@ frontend-check:
 	cd website/frontend && npm run test
 	cd website/frontend && npm run build
 
-check: backend-check frontend-check
+check: security-check backend-check frontend-check

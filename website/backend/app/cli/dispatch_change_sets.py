@@ -4,6 +4,7 @@ import argparse
 import asyncio
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.db.database import close_database, get_session_maker, init_database
 from app.dependency.project_lock import acquire_project_write_lock
 from app.model.contribution_change_set import ContributionChangeSet
@@ -47,10 +48,10 @@ async def dispatch_batch(
                 result = await coordinator.execute(db, change_set_id)
                 if result.get("change_set_state") == "completed":
                     completed += 1
-        except Exception:
-            logger.exception(
-                "Contribution change-set publication failed",
-                extra={"change_set_id": str(change_set_id)},
+        except Exception as error:
+            logger.error(
+                "Contribution change-set publication failed; error_type=%s",
+                safe_exception_type(error),
             )
             break
     return completed

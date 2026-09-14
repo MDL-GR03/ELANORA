@@ -9,6 +9,7 @@ from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud.pending_upload import get_pending_uploads, save_pending_upload
 from app.crud.project import get_project_by_name
 from app.service.git_operations import (
@@ -81,8 +82,11 @@ class ContributionIntakeService:
             runner.checkout(runner.canonical_branch())
             runner.delete_branch_localy(branch_name)
             runner.delete_branch_localy(f"{branch_name}_pending_approval")
-        except Exception:
-            logger.exception("Unable to clean up failed contribution %s", branch_name)
+        except Exception as error:
+            logger.error(
+                "Unable to clean up a failed contribution; error_type=%s",
+                safe_exception_type(error),
+            )
 
     async def record_pending_submission(
         self,
@@ -148,7 +152,7 @@ class ContributionIntakeService:
             return upload_info
         except Exception as exc:
             runner.run(["branch", "-D", approval_branch], check=False)
-            raise RuntimeError(f"Failed to save upload for approval: {exc}") from exc
+            raise RuntimeError("Failed to save upload for approval") from exc
 
     @staticmethod
     async def _reject_duplicate_tree(

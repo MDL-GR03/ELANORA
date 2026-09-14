@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud import file_type as file_type_crud
 from app.crud.association import (
     add_project_file_type,
@@ -147,8 +148,11 @@ class FileTypeService:
                         db, target_project_id, ft.name, ft.file_type_id
                     )
                     imported.append(new_pft)
-                except Exception:
-                    logger.exception("Failed to import project file type %s", ft.name)
+                except Exception as error:
+                    logger.error(
+                        "Failed to import a project file type; error_type=%s",
+                        safe_exception_type(error),
+                    )
                     continue
         return imported
 

@@ -30,6 +30,7 @@ from app.api.v1.tier import router as tier_router
 from app.api.v1.user import router as user_router
 from app.core.centralized_logging import get_logger
 from app.core.config import ENVIRONMENT, FRONTEND_HOST, TRUSTED_HOSTS
+from app.core.error_diagnostics import safe_exception_type
 from app.core.exception_handler import (
     add_general_exception_handler,
     rate_limit_exception_handler,
@@ -53,8 +54,8 @@ API_V1_PREFIX = "/api/v1"
 async def lifespan(app: FastAPI):
     """Initialize and dispose shared infrastructure with the ASGI process."""
     init_database()
-    backup_root = create_hidden_folder_in_root()
-    logger.info(f"Backup folder created at: {backup_root}")
+    create_hidden_folder_in_root()
+    logger.info("Recovery cache directory is ready")
     if get_settings().integrity_scan_on_startup:
         try:
             async with get_session_maker()() as db:
@@ -65,8 +66,11 @@ async def lifespan(app: FastAPI):
                 len(results),
                 unhealthy,
             )
-        except Exception:
-            logger.exception("Startup project integrity scan failed")
+        except Exception as error:
+            logger.error(
+                "Startup project integrity scan failed; error_type=%s",
+                safe_exception_type(error),
+            )
 
     yield
     await close_database()

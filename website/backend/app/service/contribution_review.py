@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud.pending_upload import get_pending_uploads
 from app.crud.project import get_project_by_name
 from app.model.audit_event import AuditEvent
@@ -182,9 +183,11 @@ class ContributionReviewService:
         await db.commit()
         try:
             runner.delete_branch_localy(upload.branch_name)
-        except Exception:
-            logger.exception(
-                "Could not remove dismissed duplicate branch %s", upload.branch_name
+        except Exception as error:
+            logger.error(
+                "Could not remove a dismissed duplicate contribution branch; "
+                "error_type=%s",
+                safe_exception_type(error),
             )
         return {
             "status": "dismissed",
@@ -273,8 +276,11 @@ class ContributionReviewService:
             GitCommandRunner(
                 safe_project_path(self.base_path, project_name)
             ).delete_branch_localy(upload.branch_name)
-        except Exception:
-            logger.exception("Could not remove declined branch %s", upload.branch_name)
+        except Exception as error:
+            logger.error(
+                "Could not remove a declined contribution branch; error_type=%s",
+                safe_exception_type(error),
+            )
         return {"status": "dismissed", "upload_id": upload.upload_id}
 
     async def require_acceptance_eligibility(

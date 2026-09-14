@@ -13,6 +13,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Reject tracked credential material
+        run: python website/backend/scripts/check_tracked_secrets.py
+
   backend:
     runs-on: ubuntu-latest
     services:
