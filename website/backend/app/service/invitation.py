@@ -50,7 +50,7 @@ logger = get_logger()
 class InvitationService:
     """Service for managing invitations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.email_service = EmailService()
 
     async def send_invitation(
@@ -441,18 +441,11 @@ class InvitationService:
             project = await get_project_by_id(db, invitation.project_id)
             project_name = project.project_name if project else None
 
-        # Ensure project_permission is always lowercase to match the Pydantic enum
-        project_permission = invitation.project_permission
-        if isinstance(project_permission, str):
-            project_permission = project_permission.lower()
-        else:
-            project_permission = project_permission.value.lower()
-
         return InvitationResponse(
             invitation_id=invitation.invitation_id,
             receiver_email=invitation.receiver_email,
             project_id=invitation.project_id,
-            project_permission=project_permission,
+            project_permission=invitation.project_permission,
             status=invitation.status,
             created_at=invitation.created_at,
             expires_at=invitation.expires_at,

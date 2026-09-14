@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,7 +11,7 @@ async def get_instance_count(db: AsyncSession) -> int:
     return await DatabaseUtils.count(db, Instance, None)
 
 
-async def create_instance(db: AsyncSession, data: dict):
+async def create_instance(db: AsyncSession, data: dict[str, Any]) -> Instance:
     instance = Instance(**data)
     return await DatabaseUtils.create(db, instance)
 
@@ -24,7 +26,9 @@ async def get_first_instance(db: AsyncSession) -> Instance | None:
     return await get_installation_profile(db)
 
 
-async def update_instance(db: AsyncSession, instance_id: int, data: dict):
+async def update_instance(
+    db: AsyncSession, instance_id: int, data: dict[str, Any]
+) -> Instance | None:
     await DatabaseUtils.update_by_filter(
         db, Instance, {"instance_id": instance_id}, data
     )

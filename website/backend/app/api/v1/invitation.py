@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependency.database import get_db_dep
 from app.dependency.project_access import authorize_project
 from app.dependency.user import get_user_dep
-from app.model.enums import ProjectPermission
-from app.model.user import User, UserRole
+from app.model.enums import ProjectPermission, UserRole
+from app.model.user import User
 from app.schema.requests.invitation import InvitationSendRequest
 from app.schema.responses.invitation import (
     InvitationListResponse,

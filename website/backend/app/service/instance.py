@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.instance import (
@@ -9,14 +11,15 @@ from app.crud.instance import (
 from app.crud.instance import (
     update_instance as crud_update_instance,
 )
+from app.model.instance import Instance
 
 
-async def get_instance_info(db: AsyncSession):
+async def get_instance_info(db: AsyncSession) -> Instance | None:
     """Return this deployment's single institution profile."""
     return await get_installation_profile(db)
 
 
-async def create_instance(db: AsyncSession, data: dict):
+async def create_instance(db: AsyncSession, data: dict[str, Any]) -> Instance:
     try:
         instance = await crud_create_instance(db, data)
         await db.commit()
@@ -26,7 +29,9 @@ async def create_instance(db: AsyncSession, data: dict):
         raise
 
 
-async def update_instance(db: AsyncSession, instance_id: int, data: dict):
+async def update_instance(
+    db: AsyncSession, instance_id: int, data: dict[str, Any]
+) -> Instance | None:
     try:
         instance = await crud_update_instance(db, instance_id, data)
         await db.commit()

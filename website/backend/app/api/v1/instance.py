@@ -21,7 +21,12 @@ async def get_instance_info(
     db: AsyncSession = get_db_dep,
 ) -> InstanceResponse | None:
     """Return the public profile for this single-institution installation."""
-    return await instance_service.get_instance_info(db)
+    instance = await instance_service.get_instance_info(db)
+    return (
+        InstanceResponse.model_validate(instance, from_attributes=True)
+        if instance is not None
+        else None
+    )
 
 
 @router.patch("/branding", response_model=InstanceResponse)
@@ -36,6 +41,8 @@ async def update_instance_branding(
         administrator.instance_id,
         body.model_dump(exclude_none=True),
     )
+    if instance is None:
+        raise HTTPException(status_code=404, detail="Institution not found")
     return InstanceResponse.model_validate(instance, from_attributes=True)
 
 
