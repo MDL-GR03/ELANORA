@@ -1,7 +1,9 @@
 <template>
-  <div class="relative notification-bell">
+  <div ref="root" class="relative notification-bell">
     <!-- Notification Bell Button -->
     <button
+      ref="trigger"
+      type="button"
       class="relative p-3 text-gray-600 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full transition-all duration-200 ease-in-out transform hover:scale-105"
       :class="{
         'text-blue-600 bg-blue-50': hasUnreadNotifications,
@@ -12,6 +14,10 @@
           ? t('notificationBell.unread_notifications', { count: unreadCount })
           : t('notificationBell.title')
       "
+      :aria-label="triggerLabel"
+      aria-haspopup="dialog"
+      :aria-expanded="showDropdown"
+      :aria-controls="panelId"
       @click="toggleDropdown"
     >
       <!-- Bell Icon -->
@@ -36,6 +42,7 @@
         <span
           v-if="unreadCount > 0"
           class="absolute -top-1 -right-1 bg-gradient-to-br from-red-500 to-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-lg border-2 border-white transform animate-bounce"
+          aria-hidden="true"
         >
           {{ unreadCount > 99 ? '99+' : unreadCount }}
         </span>
@@ -46,7 +53,12 @@
     <transition name="dropdown-fade">
       <div
         v-if="showDropdown"
-        class="notification-dropdown absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
+        :id="panelId"
+        class="notification-dropdown absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50"
+        role="dialog"
+        :aria-labelledby="headingId"
+        :aria-describedby="statusId"
+        @keydown="handlePanelKeydown"
         @click.stop
       >
         <!-- Dropdown Header -->
@@ -70,36 +82,47 @@
                   />
                 </svg>
               </div>
-              <h3 class="text-lg font-semibold text-gray-900">
+              <h3 :id="headingId" class="text-lg font-semibold text-gray-900">
                 {{ t('notificationBell.title') }}
               </h3>
             </div>
-            <button
-              v-if="unreadCount > 0"
-              class="mark-all-read px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors duration-200"
-              :disabled="loading"
-              @click="markAllAsRead"
-            >
-              <span class="flex items-center space-x-1">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span>{{ t('notificationBell.mark_all_read') }}</span>
-              </span>
-            </button>
+            <div class="notification-header-actions">
+              <button
+                v-if="unreadCount > 0"
+                class="mark-all-read px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors duration-200"
+                :disabled="loading"
+                @click="markAllAsRead"
+              >
+                <span class="flex items-center space-x-1">
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  <span>{{ t('notificationBell.mark_all_read') }}</span>
+                </span>
+              </button>
+              <button
+                ref="closeButton"
+                type="button"
+                class="notification-close"
+                :aria-label="t('notificationBell.close')"
+                @click="closeDropdown(true)"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
           </div>
           <div class="flex items-center justify-between mt-2">
-            <p class="text-sm text-gray-600">
+            <p :id="statusId" class="text-sm text-gray-600" aria-live="polite">
               <span
                 class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
               >
@@ -110,8 +133,8 @@
         </div>
 
         <!-- Notifications List -->
-        <div class="max-h-96 overflow-y-auto">
-          <div v-if="loading" class="p-8 text-center">
+        <div class="notification-list max-h-96 overflow-y-auto">
+          <div v-if="loading" class="p-8 text-center" role="status">
             <div
               class="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4"
             >
@@ -151,16 +174,15 @@
           </div>
 
           <div v-else class="divide-y divide-gray-100">
-            <div
+            <article
               v-for="notification in notifications"
               :key="notification.notification_id"
-              class="px-4 py-4 hover:bg-gray-50 cursor-pointer transition-all duration-200 group"
+              class="px-4 py-4 hover:bg-gray-50 transition-all duration-200 group"
               :class="{
                 'bg-gradient-to-r from-blue-50 to-transparent border-l-4 border-blue-400':
                   !notification.is_read,
                 'hover:transform hover:scale-[1.01]': true,
               }"
-              @click="handleNotificationClick(notification)"
             >
               <div class="flex items-start space-x-3">
                 <!-- Notification Icon -->
@@ -192,11 +214,14 @@
                 <!-- Notification Content -->
                 <div class="flex-1 min-w-0">
                   <div class="flex items-start justify-between">
-                    <h4
-                      class="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200"
-                      :class="{ 'text-blue-800': !notification.is_read }"
-                    >
-                      {{ notification.title }}
+                    <h4 class="text-sm font-semibold text-gray-900">
+                      <button
+                        type="button"
+                        class="notification-open-button group-hover:text-blue-700"
+                        @click="handleNotificationClick(notification)"
+                      >
+                        {{ notification.title }}
+                      </button>
                     </h4>
                     <!-- Unread indicator -->
                     <div v-if="!notification.is_read" class="ml-2 mt-1">
@@ -231,13 +256,12 @@
                     </p>
 
                     <!-- Action Buttons -->
-                    <div
-                      class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    >
+                    <div class="notification-item-actions">
                       <button
                         v-if="!notification.is_read"
                         class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition-all duration-200"
                         :title="t('notificationBell.mark_as_read')"
+                        :aria-label="t('notificationBell.mark_as_read')"
                         @click.stop="markAsRead(notification.notification_id)"
                       >
                         <svg
@@ -257,6 +281,7 @@
                       <button
                         class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full transition-all duration-200"
                         :title="t('notificationBell.delete')"
+                        :aria-label="t('notificationBell.delete')"
                         @click.stop="
                           deleteNotification(notification.notification_id)
                         "
@@ -279,7 +304,7 @@
                   </div>
                 </div>
               </div>
-            </div>
+            </article>
           </div>
         </div>
 
@@ -319,13 +344,14 @@
     <div
       v-if="showDropdown"
       class="fixed inset-0 z-40"
-      @click="closeDropdown"
+      aria-hidden="true"
+      @click="closeDropdown(true)"
     ></div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, useId } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useNotificationStore } from '@/stores/notification';
@@ -338,6 +364,13 @@ const { t } = useI18n();
 
 // Local state
 const showDropdown = ref(false);
+const root = ref(null);
+const trigger = ref(null);
+const closeButton = ref(null);
+const generatedId = useId();
+const panelId = `notifications-panel-${generatedId}`;
+const headingId = `notifications-heading-${generatedId}`;
+const statusId = `notifications-status-${generatedId}`;
 
 // Computed properties
 const notifications = computed(() => notificationStore.unreadNotifications);
@@ -346,47 +379,63 @@ const hasUnreadNotifications = computed(
   () => notificationStore.hasUnreadNotifications
 );
 const loading = computed(() => notificationStore.loading);
+const triggerLabel = computed(() =>
+  unreadCount.value > 0
+    ? t('notificationBell.unread_notifications', { count: unreadCount.value })
+    : t('notificationBell.title')
+);
 
 // Methods
 const toggleDropdown = async () => {
-  showDropdown.value = !showDropdown.value;
-
   if (showDropdown.value) {
-    try {
-      // Fetch latest notifications when opening dropdown
-      await notificationStore.fetchUnreadNotifications({ limit: 10 });
-      await notificationStore.fetchNotificationStats();
-    } catch (error) {
-      console.error('Failed to fetch notifications for dropdown:', error);
-    }
+    closeDropdown(true);
+    return;
+  }
+  showDropdown.value = true;
+  await nextTick();
+  closeButton.value?.focus();
+
+  try {
+    await notificationStore.fetchUnreadNotifications({ limit: 10 });
+    await notificationStore.fetchNotificationStats();
+  } catch {
+    console.error('Failed to fetch notifications for dropdown');
   }
 };
 
-const closeDropdown = () => {
+const closeDropdown = (restoreFocus = false) => {
   showDropdown.value = false;
+  if (restoreFocus) void nextTick(() => trigger.value?.focus());
+};
+
+const handlePanelKeydown = (event) => {
+  if (event.key !== 'Escape') return;
+  event.preventDefault();
+  event.stopPropagation();
+  closeDropdown(true);
 };
 
 const markAsRead = async (notificationId) => {
   try {
     await notificationStore.markNotificationAsRead(notificationId);
-  } catch (error) {
-    console.error('Failed to mark notification as read:', error);
+  } catch {
+    console.error('Failed to mark notification as read');
   }
 };
 
 const markAllAsRead = async () => {
   try {
     await notificationStore.markAllNotificationsAsRead();
-  } catch (error) {
-    console.error('Failed to mark all notifications as read:', error);
+  } catch {
+    console.error('Failed to mark all notifications as read');
   }
 };
 
 const deleteNotification = async (notificationId) => {
   try {
     await notificationStore.deleteNotification(notificationId);
-  } catch (error) {
-    console.error('Failed to delete notification:', error);
+  } catch {
+    console.error('Failed to delete notification');
   }
 };
 
@@ -402,8 +451,8 @@ const handleNotificationClick = async (notification) => {
       closeDropdown();
       router.push(notification.action_url);
     }
-  } catch (error) {
-    console.error('Failed to handle notification click:', error);
+  } catch {
+    console.error('Failed to handle notification click');
   }
 };
 
@@ -428,14 +477,14 @@ onMounted(async () => {
       if (document.visibilityState !== 'visible') return;
       try {
         await notificationStore.fetchNotificationStats();
-      } catch (error) {
-        console.warn('Failed to fetch notification stats in interval:', error);
+      } catch {
+        console.warn('Failed to fetch notification stats in interval');
       }
     }, 60000);
 
     // Store interval ID for cleanup
-  } catch (error) {
-    console.error('Failed to initialize notification bell:', error);
+  } catch {
+    console.error('Failed to initialize notification bell');
   }
 });
 
@@ -447,8 +496,8 @@ onUnmounted(() => {
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
-  if (showDropdown.value && !event.target.closest('.notification-bell')) {
-    closeDropdown();
+  if (showDropdown.value && !root.value?.contains(event.target)) {
+    closeDropdown(true);
   }
 };
 
@@ -465,6 +514,63 @@ onUnmounted(() => {
 .notification-dropdown {
   max-width: calc(100vw - 2rem);
   overflow: visible;
+}
+
+.notification-header-actions,
+.notification-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.notification-close {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  flex: none;
+  place-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #475569;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.notification-close:hover,
+.notification-close:focus-visible {
+  border-color: #93b4f5;
+  background: #eff6ff;
+  color: #1d4ed8;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+}
+
+.notification-open-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notification-open-button:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.notification-item-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+article:hover .notification-item-actions,
+article:focus-within .notification-item-actions {
+  opacity: 1;
 }
 
 .notification-dropdown::before {
@@ -497,6 +603,14 @@ onUnmounted(() => {
     transform: translateX(-50%);
   }
 
+  .notification-list {
+    max-height: calc(100dvh - 19rem);
+  }
+
+  .notification-item-actions {
+    opacity: 1;
+  }
+
   .notification-dropdown::before {
     right: auto;
     left: 50%;
@@ -511,6 +625,17 @@ onUnmounted(() => {
   .mark-all-read {
     padding-inline: 0.65rem;
     font-size: 0.78rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-bell *,
+  .notification-bell *::before,
+  .notification-bell *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

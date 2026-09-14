@@ -23,4 +23,19 @@ describe('HelpTooltip', () => {
     );
     expect(tooltip.text()).toContain('Files containing the tier agree');
   });
+
+  it('supports touch-style toggling and Escape dismissal', async () => {
+    const wrapper = mount(HelpTooltip, {
+      props: {
+        label: 'Explain consistency',
+        text: 'Files containing the tier agree on its relationship.',
+      },
+    });
+    const trigger = wrapper.get('button');
+
+    await trigger.trigger('click');
+    expect(wrapper.classes()).toContain('open');
+    await trigger.trigger('keydown', { key: 'Escape' });
+    expect(wrapper.classes()).not.toContain('open');
+  });
 });

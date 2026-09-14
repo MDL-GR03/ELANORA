@@ -1,11 +1,12 @@
 <template>
-  <span class="help-tooltip">
+  <span ref="root" class="help-tooltip" :class="{ open: isOpen }">
     <button
       type="button"
       class="help-trigger"
       :aria-label="label"
       :aria-describedby="tooltipId"
-      @click.prevent.stop
+      @click.prevent.stop="isOpen = !isOpen"
+      @keydown.esc.prevent.stop="isOpen = false"
     >
       ?
     </button>
@@ -17,7 +18,7 @@
 </template>
 
 <script setup>
-import { useId } from 'vue';
+import { onBeforeUnmount, onMounted, ref, useId } from 'vue';
 
 defineProps({
   label: {
@@ -35,6 +36,17 @@ defineProps({
 });
 
 const tooltipId = `help-${useId()}`;
+const root = ref(null);
+const isOpen = ref(false);
+
+function closeFromOutside(event) {
+  if (!root.value?.contains(event.target)) isOpen.value = false;
+}
+
+onMounted(() => document.addEventListener('pointerdown', closeFromOutside));
+onBeforeUnmount(() =>
+  document.removeEventListener('pointerdown', closeFromOutside)
+);
 </script>
 
 <style scoped>
@@ -113,12 +125,13 @@ const tooltipId = `help-${useId()}`;
   color: #bfdbfe;
 }
 
-.help-trigger:hover + .help-content,
-.help-trigger:focus + .help-content,
-.help-trigger:focus-visible + .help-content {
+.help-tooltip:hover .help-content,
+.help-tooltip:focus-within .help-content,
+.help-tooltip.open .help-content {
   transform: translate(-50%, 0);
   visibility: visible;
   opacity: 1;
+  pointer-events: auto;
 }
 
 @media (width <= 640px) {
@@ -132,9 +145,9 @@ const tooltipId = `help-${useId()}`;
     transform: translateY(0.2rem);
   }
 
-  .help-trigger:hover + .help-content,
-  .help-trigger:focus + .help-content,
-  .help-trigger:focus-visible + .help-content {
+  .help-tooltip:hover .help-content,
+  .help-tooltip:focus-within .help-content,
+  .help-tooltip.open .help-content {
     transform: translateY(0);
   }
 

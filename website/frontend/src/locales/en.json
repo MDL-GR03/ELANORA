@@ -1055,6 +1055,7 @@
     "unread_badge_singular": "1 unread",
     "mark_as_read": "Mark as read",
     "delete": "Delete",
+    "close": "Close notifications",
     "view_all_notifications": "View all notifications"
   },
 

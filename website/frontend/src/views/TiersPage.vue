@@ -8,23 +8,32 @@
     <section class="tiers-workspace" :aria-busy="loading || operationPending">
       <nav
         class="tiers-mode-tabs"
+        role="tablist"
         :aria-label="t('researchScopes.workspaceLabel')"
       >
         <button
+          id="research-copy-tab"
           type="button"
           role="tab"
           :aria-selected="activeMode === 'export'"
+          aria-controls="research-copy-panel"
+          :tabindex="activeMode === 'export' ? 0 : -1"
           :class="{ 'is-active': activeMode === 'export' }"
           @click="activeMode = 'export'"
+          @keydown="onModeTabKeydown"
         >
           {{ t('researchScopes.tabs.prepare') }}
         </button>
         <button
+          id="research-topics-tab"
           type="button"
           role="tab"
           :aria-selected="activeMode === 'topics'"
+          aria-controls="research-topics-panel"
+          :tabindex="activeMode === 'topics' ? 0 : -1"
           :class="{ 'is-active': activeMode === 'topics' }"
           @click="activeMode = 'topics'"
+          @keydown="onModeTabKeydown"
         >
           {{ t('researchScopes.tabs.topics') }}
           <span v-if="topics.length" class="tiers-tab-count">{{
@@ -43,7 +52,13 @@
         {{ error }}
       </div>
 
-      <div v-else-if="activeMode === 'export'" class="tier-export-workspace">
+      <div
+        v-else-if="activeMode === 'export'"
+        id="research-copy-panel"
+        class="tier-export-workspace"
+        role="tabpanel"
+        aria-labelledby="research-copy-tab"
+      >
         <div v-if="topicLoadError" class="tiers-operation-error" role="alert">
           {{ topicLoadError }}
         </div>
@@ -336,7 +351,13 @@
         </div>
       </div>
 
-      <div v-else class="topics-workspace">
+      <div
+        v-else
+        id="research-topics-panel"
+        class="topics-workspace"
+        role="tabpanel"
+        aria-labelledby="research-topics-tab"
+      >
         <div v-if="topicLoadError" class="tiers-operation-error" role="alert">
           {{ topicLoadError }}
         </div>
@@ -800,6 +821,17 @@ const topicForm = reactive({
 const expandedTopicId = ref(null);
 const coverageSearch = ref('');
 const coverageLimit = ref(10);
+
+function onModeTabKeydown(event) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  const targetMode =
+    event.key === 'ArrowLeft' || event.key === 'Home' ? 'export' : 'topics';
+  activeMode.value = targetMode;
+  const targetId =
+    targetMode === 'export' ? 'research-copy-tab' : 'research-topics-tab';
+  document.getElementById(targetId)?.focus();
+}
 const selectedGroup = computed(() =>
   tierGroups.value.find((g) => g.tier_group_id === selectedGroupId.value)
 );

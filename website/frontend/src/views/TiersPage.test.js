@@ -111,4 +111,28 @@ describe('TiersPage project synchronization', () => {
       .trigger('click');
     expect(wrapper.get('.baseline-tier-chips').text()).toContain('Role1');
   });
+
+  it('exposes linked tabs and supports keyboard navigation', async () => {
+    fetchSectionsAndGroups.mockResolvedValue({ sections: [], tier_groups: [] });
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    useProjectStore().setCurrentProject({
+      project_id: 1,
+      project_name: 'Keyboard corpus',
+    });
+    const wrapper = mountPage(pinia);
+    await flushPromises();
+
+    const prepare = wrapper.get('#research-copy-tab');
+    const topics = wrapper.get('#research-topics-tab');
+    expect(wrapper.get('[role="tablist"]').exists()).toBe(true);
+    expect(prepare.attributes('aria-controls')).toBe('research-copy-panel');
+    await prepare.trigger('keydown', { key: 'ArrowRight' });
+    await wrapper.vm.$nextTick();
+
+    expect(topics.attributes('aria-selected')).toBe('true');
+    expect(wrapper.get('#research-topics-panel').attributes('role')).toBe(
+      'tabpanel'
+    );
+  });
 });

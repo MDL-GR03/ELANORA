@@ -980,6 +980,7 @@
     "unread_badge_singular": "1件未読",
     "mark_as_read": "既読にする",
     "delete": "削除",
+    "close": "通知を閉じる",
     "view_all_notifications": "すべての通知を表示"
   },
   "contact": {
