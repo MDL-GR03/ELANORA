@@ -70,6 +70,16 @@
       "failed": "Retrying",
       "explanation": "Publication requests are recorded before Git and database updates begin. Interrupted work can be retried without losing the administrator's decision."
     },
+    "email": {
+      "context": "Account and invitation email",
+      "title": "Email delivery",
+      "healthy": "Operating normally",
+      "attention": "Needs attention",
+      "pending": "Awaiting delivery",
+      "permanentlyFailed": "Given up on",
+      "oldestPending": "Oldest waiting",
+      "explanation": "Invitation, verification and password-reset messages are recorded before sending, so a mail outage delays them rather than losing them. A message that exhausts every retry is given up on: its recipient details are discarded immediately and the remaining record is removed after {days} days. Anything counted here never arrived, so reissue it from the relevant screen."
+    },
     "recovery": {
       "context": "Disaster recovery",
       "title": "Backup evidence",

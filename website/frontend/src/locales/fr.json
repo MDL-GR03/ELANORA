@@ -70,6 +70,16 @@
       "failed": "Nouvelle tentative",
       "explanation": "Les demandes de publication sont enregistrées avant les mises à jour Git et de la base de données. Une opération interrompue peut être relancée sans perdre la décision de l'administrateur."
     },
+    "email": {
+      "context": "Courriels de compte et d'invitation",
+      "title": "Distribution des courriels",
+      "healthy": "Fonctionnement normal",
+      "attention": "Nécessite une attention",
+      "pending": "En attente d'envoi",
+      "permanentlyFailed": "Abandonnés",
+      "oldestPending": "Plus ancien en attente",
+      "explanation": "Les messages d'invitation, de vérification et de réinitialisation sont enregistrés avant l'envoi : une panne de messagerie les retarde sans les perdre. Un message ayant épuisé toutes ses tentatives est abandonné : les coordonnées du destinataire sont immédiatement supprimées et l'enregistrement restant est effacé après {days} jours. Tout message compté ici n'est jamais arrivé ; réémettez-le depuis l'écran concerné."
+    },
     "recovery": {
       "context": "Reprise après sinistre",
       "title": "Preuves de sauvegarde",

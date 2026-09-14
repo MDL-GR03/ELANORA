@@ -69,3 +69,7 @@ async def test_operations_status_counts_unhealthy_and_unscanned_projects(
     assert result.publication_queue.running == 0
     assert result.publication_queue.review_needed == 0
     assert result.publication_queue.failed == 0
+    assert result.email_delivery.pending == 0
+    assert result.email_delivery.permanently_failed == 0
+    assert result.email_delivery.oldest_pending_at is None
+    assert result.email_delivery.retention_days > 0

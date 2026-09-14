@@ -164,6 +164,51 @@
       <section class="operations-card wide">
         <div class="card-heading">
           <span class="card-icon"
+            ><font-awesome-icon icon="fa-solid fa-envelope"
+          /></span>
+          <div>
+            <p class="eyebrow">{{ t('operations.email.context') }}</p>
+            <h2>{{ t('operations.email.title') }}</h2>
+          </div>
+          <span
+            :class="[
+              'status-pill',
+              emailNeedsAttention ? 'warning' : 'healthy',
+            ]"
+          >
+            {{
+              emailNeedsAttention
+                ? t('operations.email.attention')
+                : t('operations.email.healthy')
+            }}
+          </span>
+        </div>
+        <div class="metrics">
+          <div>
+            <strong>{{ status.email_delivery.pending }}</strong
+            ><span>{{ t('operations.email.pending') }}</span>
+          </div>
+          <div>
+            <strong>{{ status.email_delivery.permanently_failed }}</strong
+            ><span>{{ t('operations.email.permanentlyFailed') }}</span>
+          </div>
+          <div>
+            <strong>{{ oldestPendingEmail }}</strong
+            ><span>{{ t('operations.email.oldestPending') }}</span>
+          </div>
+        </div>
+        <p class="guidance">
+          {{
+            t('operations.email.explanation', {
+              days: status.email_delivery.retention_days,
+            })
+          }}
+        </p>
+      </section>
+
+      <section class="operations-card wide">
+        <div class="card-heading">
+          <span class="card-icon"
             ><font-awesome-icon icon="fa-solid fa-clock-rotate-left"
           /></span>
           <div>
@@ -242,6 +287,15 @@ const publicationNeedsAttention = computed(
     Boolean(status.value?.publication_queue.review_needed) ||
     Boolean(status.value?.publication_queue.failed)
 );
+// A message that was given up on never reached the person it was addressed to,
+// so an administrator has to notice it and reissue the invitation or code.
+const emailNeedsAttention = computed(() =>
+  Boolean(status.value?.email_delivery?.permanently_failed)
+);
+const oldestPendingEmail = computed(() => {
+  const queuedAt = status.value?.email_delivery?.oldest_pending_at;
+  return queuedAt ? formatDate(queuedAt) : '—';
+});
 
 function formatDate(value) {
   return new Intl.DateTimeFormat(locale.value, {

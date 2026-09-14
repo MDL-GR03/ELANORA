@@ -1,10 +1,10 @@
 """Durable event enqueueing and dispatch for external side effects."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -14,12 +14,19 @@ from app.core.settings import get_settings
 from app.model.audit_event import OutboxEvent
 from app.service.email import EmailService
 
+if TYPE_CHECKING:
+    from sqlalchemy.engine import CursorResult
+
 logger = get_logger()
 
 EXISTING_USER_INVITATION_EMAIL = "invitation.existing_user_email.requested"
 ACCOUNT_VERIFICATION_EMAIL = "account.verification_email.requested"
 PASSWORD_RESET_EMAIL = "account.password_reset_email.requested"  # noqa: S105
 MAX_DELIVERY_ATTEMPTS = 10
+
+# A record that has exhausted its attempts is kept so an administrator can
+# see that the message never arrived, but only for long enough to act on it.
+FAILED_EVENT_RETENTION_DAYS = 30
 SUPPORTED_EVENT_TYPES = (
     EXISTING_USER_INVITATION_EMAIL,
     ACCOUNT_VERIFICATION_EMAIL,
@@ -33,6 +40,7 @@ class DispatchResult(StrEnum):
     EMPTY = "empty"
     PUBLISHED = "published"
     FAILED = "failed"
+    EXHAUSTED = "exhausted"
 
 
 class InvitationEmailSender(Protocol):
@@ -194,16 +202,27 @@ class OutboxDispatcher:
             if not delivered:
                 raise RuntimeError("email provider did not confirm delivery")
         except Exception as error:
+            exhausted = event.attempts >= MAX_DELIVERY_ATTEMPTS
+            if exhausted:
+                # The record will never be retried, so the recipient address and
+                # any personal message must not be retained with it. What is kept
+                # is enough to tell an administrator that a message of this kind,
+                # for this subject, never arrived.
+                event.payload = {}
             await db.commit()
-            logger.warning(
-                "Outbox delivery failed",
-                extra={
-                    "event_id": str(event.event_id),
-                    "event_type": event.event_type,
-                    "attempts": event.attempts,
-                    "error_type": safe_exception_type(error),
-                },
-            )
+            details = {
+                "event_id": str(event.event_id),
+                "event_type": event.event_type,
+                "attempts": event.attempts,
+                "error_type": safe_exception_type(error),
+            }
+            if exhausted:
+                logger.error(
+                    "Outbox delivery permanently failed; payload discarded",
+                    extra=details,
+                )
+                return DispatchResult.EXHAUSTED
+            logger.warning("Outbox delivery failed", extra=details)
             return DispatchResult.FAILED
 
         event.published_at = datetime.now(UTC)
@@ -256,6 +275,69 @@ class OutboxDispatcher:
                 break
             if result == DispatchResult.FAILED:
                 break  # Avoid hammering the same oldest event in a tight loop.
+            if result == DispatchResult.EXHAUSTED:
+                continue  # It will not be selected again, so move to the next.
             if result == DispatchResult.PUBLISHED:
                 published += 1
         return published
+
+
+async def count_pending_events(db: AsyncSession) -> int:
+    """Events still eligible for delivery."""
+    return int(
+        await db.scalar(
+            select(func.count(OutboxEvent.event_id)).where(
+                OutboxEvent.published_at.is_(None),
+                OutboxEvent.attempts < MAX_DELIVERY_ATTEMPTS,
+            )
+        )
+        or 0
+    )
+
+
+async def count_permanently_failed_events(db: AsyncSession) -> int:
+    """Events that exhausted every delivery attempt and were given up on."""
+    return int(
+        await db.scalar(
+            select(func.count(OutboxEvent.event_id)).where(
+                OutboxEvent.published_at.is_(None),
+                OutboxEvent.attempts >= MAX_DELIVERY_ATTEMPTS,
+            )
+        )
+        or 0
+    )
+
+
+async def oldest_pending_event_at(db: AsyncSession) -> datetime | None:
+    """When the oldest deliverable event was queued, for backlog alerting."""
+    return await db.scalar(
+        select(func.min(OutboxEvent.occurred_at)).where(
+            OutboxEvent.published_at.is_(None),
+            OutboxEvent.attempts < MAX_DELIVERY_ATTEMPTS,
+        )
+    )
+
+
+async def purge_failed_events(
+    db: AsyncSession,
+    *,
+    retention_days: int = FAILED_EVENT_RETENTION_DAYS,
+    now: datetime | None = None,
+) -> int:
+    """Delete permanently failed records once the retention window has passed.
+
+    Their payloads were already discarded when delivery was given up on; this
+    removes the remaining metadata so the table does not grow without bound.
+    """
+    if retention_days < 0:
+        raise ValueError("retention_days cannot be negative")
+    cutoff = (now or datetime.now(UTC)) - timedelta(days=retention_days)
+    result = await db.execute(
+        delete(OutboxEvent).where(
+            OutboxEvent.published_at.is_(None),
+            OutboxEvent.attempts >= MAX_DELIVERY_ATTEMPTS,
+            OutboxEvent.occurred_at < cutoff,
+        )
+    )
+    await db.commit()
+    return int(cast("CursorResult[Any]", result).rowcount or 0)

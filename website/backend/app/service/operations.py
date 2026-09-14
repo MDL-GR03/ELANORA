@@ -12,12 +12,19 @@ from app.model.contribution_change_set import ContributionChangeSet
 from app.model.project import Project
 from app.model.project_integrity import ProjectIntegrityStatus
 from app.schema.responses.operations import (
+    EmailDeliveryStatusResponse,
     IntegrityStatusResponse,
     OperationsStatusResponse,
     PublicationQueueStatusResponse,
     RecoveryStatusResponse,
     StorageCheckResponse,
     StorageStatusResponse,
+)
+from app.service.outbox import (
+    FAILED_EVENT_RETENTION_DAYS,
+    count_pending_events,
+    count_permanently_failed_events,
+    oldest_pending_event_at,
 )
 from app.storage.assets import AssetStorage, get_asset_storage
 
@@ -99,6 +106,12 @@ async def operations_status(db: AsyncSession) -> OperationsStatusResponse:
             running=int(publication_counts[1] or 0),
             review_needed=int(publication_counts[2] or 0),
             failed=int(publication_counts[3] or 0),
+        ),
+        email_delivery=EmailDeliveryStatusResponse(
+            pending=await count_pending_events(db),
+            permanently_failed=await count_permanently_failed_events(db),
+            oldest_pending_at=await oldest_pending_event_at(db),
+            retention_days=FAILED_EVENT_RETENTION_DAYS,
         ),
     )
 

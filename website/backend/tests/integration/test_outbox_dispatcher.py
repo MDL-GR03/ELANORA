@@ -2,6 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,13 +10,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.model.audit_event import OutboxEvent
 from app.service.outbox import (
     ACCOUNT_VERIFICATION_EMAIL,
+    FAILED_EVENT_RETENTION_DAYS,
     MAX_DELIVERY_ATTEMPTS,
     PASSWORD_RESET_EMAIL,
     DispatchResult,
     OutboxDispatcher,
+    count_pending_events,
+    count_permanently_failed_events,
     enqueue_account_verification_email,
     enqueue_existing_user_invitation_email,
     enqueue_password_reset_email,
+    oldest_pending_event_at,
+    purge_failed_events,
 )
 
 
@@ -196,3 +202,130 @@ async def test_secret_account_email_is_encrypted_and_dispatched(
             "language": "fr",
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_the_last_failed_attempt_discards_the_recipient_details(
+    session: AsyncSession,
+) -> None:
+    """A record that will never be retried must not keep personal data."""
+    event = await _enqueue(session)
+    event.attempts = MAX_DELIVERY_ATTEMPTS - 1
+    await session.commit()
+    sender = FakeEmailSender(should_succeed=False)
+
+    result = await OutboxDispatcher(sender).dispatch_one(session)
+    await session.refresh(event)
+
+    assert result == DispatchResult.EXHAUSTED
+    assert event.attempts == MAX_DELIVERY_ATTEMPTS
+    assert event.published_at is None
+    assert event.payload == {}
+    # The fact of the failure survives so an administrator can act on it.
+    assert event.event_type
+    assert event.aggregate_id
+
+
+@pytest.mark.asyncio
+async def test_an_earlier_failure_keeps_the_payload_for_the_next_attempt(
+    session: AsyncSession,
+) -> None:
+    event = await _enqueue(session)
+    sender = FakeEmailSender(should_succeed=False)
+
+    result = await OutboxDispatcher(sender).dispatch_one(session)
+    await session.refresh(event)
+
+    assert result == DispatchResult.FAILED
+    assert event.attempts == 1
+    assert event.payload != {}
+
+
+@pytest.mark.asyncio
+async def test_failed_records_are_purged_only_after_the_retention_window(
+    session: AsyncSession,
+) -> None:
+    recent = await _enqueue(session)
+    stale = await _enqueue(session)
+    for event in (recent, stale):
+        event.attempts = MAX_DELIVERY_ATTEMPTS
+        event.payload = {}
+    stale.occurred_at = datetime.now(UTC) - timedelta(
+        days=FAILED_EVENT_RETENTION_DAYS + 1
+    )
+    await session.commit()
+
+    removed = await purge_failed_events(session)
+
+    assert removed == 1
+    remaining = await count_permanently_failed_events(session)
+    assert remaining == 1
+    assert await session.get(OutboxEvent, recent.event_id) is not None
+    assert await session.get(OutboxEvent, stale.event_id) is None
+
+
+@pytest.mark.asyncio
+async def test_purging_never_removes_deliverable_or_published_records(
+    session: AsyncSession,
+) -> None:
+    pending = await _enqueue(session)
+    published = await _enqueue(session)
+    published.published_at = datetime.now(UTC)
+    published.payload = {}
+    long_ago = datetime.now(UTC) - timedelta(days=FAILED_EVENT_RETENTION_DAYS * 10)
+    pending.occurred_at = long_ago
+    published.occurred_at = long_ago
+    await session.commit()
+
+    removed = await purge_failed_events(session)
+
+    assert removed == 0
+    assert await session.get(OutboxEvent, pending.event_id) is not None
+    assert await session.get(OutboxEvent, published.event_id) is not None
+
+
+@pytest.mark.asyncio
+async def test_a_negative_retention_window_is_refused(session: AsyncSession) -> None:
+    with pytest.raises(ValueError, match="cannot be negative"):
+        await purge_failed_events(session, retention_days=-1)
+
+
+@pytest.mark.asyncio
+async def test_delivery_counts_separate_pending_from_given_up(
+    session: AsyncSession,
+) -> None:
+    pending = await _enqueue(session)
+    given_up = await _enqueue(session)
+    given_up.attempts = MAX_DELIVERY_ATTEMPTS
+    given_up.payload = {}
+    queued_at = datetime.now(UTC) - timedelta(hours=3)
+    pending.occurred_at = queued_at
+    await session.commit()
+
+    assert await count_pending_events(session) == 1
+    assert await count_permanently_failed_events(session) == 1
+
+    oldest = await oldest_pending_event_at(session)
+    assert oldest is not None
+    assert abs((oldest - queued_at).total_seconds()) < 1
+
+
+@pytest.mark.asyncio
+async def test_an_exhausted_record_does_not_stop_the_batch(
+    session: AsyncSession,
+) -> None:
+    """Giving up on one message must not strand the ones behind it."""
+    doomed = await _enqueue(session)
+    doomed.attempts = MAX_DELIVERY_ATTEMPTS - 1
+    doomed.occurred_at = datetime.now(UTC) - timedelta(hours=1)
+    await session.commit()
+    await _enqueue(session)
+
+    sender = FakeEmailSender(should_succeed=False)
+    await OutboxDispatcher(sender).dispatch_pending(session, limit=5)
+    await session.refresh(doomed)
+
+    assert doomed.attempts == MAX_DELIVERY_ATTEMPTS
+    assert doomed.payload == {}
+    # The dispatcher reached the queued message behind it in the same batch.
+    assert len(sender.calls) == 2

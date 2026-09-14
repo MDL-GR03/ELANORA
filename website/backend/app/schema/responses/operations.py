@@ -34,11 +34,19 @@ class PublicationQueueStatusResponse(BaseModel):
     failed: int
 
 
+class EmailDeliveryStatusResponse(BaseModel):
+    pending: int
+    permanently_failed: int
+    oldest_pending_at: datetime | None
+    retention_days: int
+
+
 class OperationsStatusResponse(BaseModel):
     storage: StorageStatusResponse
     integrity: IntegrityStatusResponse
     recovery: RecoveryStatusResponse
     publication_queue: PublicationQueueStatusResponse
+    email_delivery: EmailDeliveryStatusResponse
 
 
 class StorageCheckResponse(BaseModel):
