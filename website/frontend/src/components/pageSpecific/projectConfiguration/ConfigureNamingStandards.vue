@@ -687,6 +687,14 @@ import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { useI18n } from 'vue-i18n';
+import {
+  acceptedValuesPlaceholder,
+  extractPatternComponents,
+  KNOWN_NAMING_SEPARATORS,
+  normalizeNumericAcceptedValues,
+  splitPatternBlocks,
+  splitTypeGroups,
+} from '@/utils/namingStandardPattern';
 
 const namingStandardStore = useNamingStandardStore();
 const route = useRoute();
@@ -749,37 +757,6 @@ function handleUserPromptCancel() {
   if (userPromptResolve) userPromptResolve(null);
 }
 
-function validateAcceptedValues(comp, input, length) {
-  let inputParts = (input ?? '')
-    .split(/[,;]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  let normalizedParts = [];
-  for (let part of inputParts) {
-    if (/^\d+-\d+$/.test(part)) {
-      let [start, end] = part.split('-').map(Number);
-      if (isNaN(start) || isNaN(end) || start > end) {
-        return { error: `Invalid range "${part}".` };
-      }
-      let startStr = start.toString().padStart(length, '0');
-      let endStr = end.toString().padStart(length, '0');
-      if (startStr.length > length || endStr.length > length) {
-        return { error: `Values in range "${part}" exceed ${length} digits.` };
-      }
-      normalizedParts.push(`${startStr}-${endStr}`);
-    } else if (/^\d+$/.test(part)) {
-      let numStr = Number(part).toString().padStart(length, '0');
-      if (numStr.length > length) {
-        return { error: `Value "${part}" exceeds ${length} digits.` };
-      }
-      normalizedParts.push(numStr);
-    } else {
-      return { error: `Invalid value "${part}".` };
-    }
-  }
-  return { values: normalizedParts, error: null };
-}
-
 function onAcceptedValuesInput(comp) {
   regexExtractionError.value = '';
   if (typeof comp.accepted_values_str === 'string') {
@@ -794,7 +771,7 @@ function onAcceptedValuesInput(comp) {
     }
     let input = comp.accepted_values_str;
     if (isDigitRegex) {
-      const { values, error } = validateAcceptedValues(comp, input, length);
+      const { values, error } = normalizeNumericAcceptedValues(input, length);
       if (error) {
         regexExtractionError.value = error;
         return;
@@ -869,26 +846,8 @@ const exampleFilename = ref('');
 const regexExtractionError = ref('');
 const commaPattern = ref('');
 const exampleCommaPattern = t('configureNamingStandards.exampleCommaPattern');
-const knownSeparators = ['_', '-', '.', ' '];
+const knownSeparators = KNOWN_NAMING_SEPARATORS;
 const errorMessageRef = ref(null);
-
-function extractComponentsFromPattern(pattern) {
-  // Match all {component_name} in the pattern
-  const matches = pattern.matchAll(/\{([^}]+)\}/g);
-  const components = [];
-  let order = 1;
-  for (const match of matches) {
-    components.push({
-      name: match[1],
-      regex: '',
-      description: '',
-      order: order++,
-      accepted_values: [],
-      accepted_values_str: '',
-    });
-  }
-  return components;
-}
 
 function onCommaPatternInput() {
   const fileType = getFileTypeNameRaw(newStandard.value.project_file_type_id);
@@ -987,7 +946,7 @@ async function extractRegexFromExample() {
     return;
   }
 
-  const comps = extractComponentsFromPattern(pattern);
+  const comps = extractPatternComponents(pattern);
 
   for (let blockIdx = 0; blockIdx < patternBlocks.length; blockIdx++) {
     const patBlock = patternBlocks[blockIdx];
@@ -1180,13 +1139,13 @@ async function extractRegexFromExample() {
         '',
         (input) => {
           if (!input) return false;
-          const { error } = validateAcceptedValues(comp, input, val.length);
+          const { error } = normalizeNumericAcceptedValues(input, val.length);
           return error || false;
         },
         'text'
       );
       if (accepted && accepted.trim()) {
-        const { values } = validateAcceptedValues(comp, accepted, val.length);
+        const { values } = normalizeNumericAcceptedValues(accepted, val.length);
         comp.accepted_values = values;
         comp.accepted_values_str = values.join(', ');
       } else {
@@ -1610,30 +1569,7 @@ const shouldShowAcceptedValuesWarning = computed(
 );
 
 function getAcceptedValuesPlaceholder(comp) {
-  if (!comp.regex) {
-    return 'Accepted Values';
-  }
-
-  // Unicode-aware letter class
-  const letterMatch = comp.regex.match(/\\p\{L\}\{(\d+)\}/u);
-  if (letterMatch) {
-    const len = parseInt(letterMatch[1]);
-    if (len === 1) return 'e.g. A, É, Z';
-    if (len === 2) return 'e.g. AB, ÉZ, ZA';
-    if (len === 3) return 'e.g. ABC, ÉZA, CAB';
-    return `e.g. ${'ABCDEFGH'.slice(0, len)}, ${'ÉÉÉ'.repeat(len).slice(0, len)}`;
-  }
-
-  // Unicode-aware digit class
-  const digitMatch = comp.regex.match(/\\p\{N\}\{(\d+)\}/u);
-  if (digitMatch) {
-    const len = parseInt(digitMatch[1]);
-    if (len === 1) return 'e.g. 1, 2, 3';
-    if (len === 2) return 'e.g. 01, 12, 99';
-    return `e.g. ${'0'.repeat(len - 1)}1, ${'9'.repeat(len)}`;
-  }
-
-  return 'Accepted Values';
+  return acceptedValuesPlaceholder(comp.regex);
 }
 
 // Import modal
@@ -1765,51 +1701,6 @@ const existingStandardKeys = computed(
       standards.value.map((std) => `${std.name}::${std.project_file_type_id}`)
     )
 );
-
-function splitTypeGroups(str) {
-  if (!str) return [];
-  const groups = [];
-  let current = '';
-  let lastType = null;
-
-  function charType(c) {
-    if (/[A-Z]/.test(c)) return 'U';
-    if (/[a-z]/.test(c)) return 'L';
-    if (/\d/.test(c)) return 'D';
-    return 'O';
-  }
-
-  for (const c of str) {
-    const type = charType(c);
-    if (lastType === null || type === lastType) {
-      current += c;
-    } else {
-      groups.push(current);
-      current = c;
-    }
-    lastType = type;
-  }
-  if (current) groups.push(current);
-  return groups;
-}
-
-function splitPatternBlocks(pattern, sep) {
-  const blocks = [];
-  let current = '';
-  let depth = 0;
-  for (const c of pattern) {
-    if (c === '{') depth++;
-    if (c === '}') depth--;
-    if (c === sep && depth === 0) {
-      blocks.push(current);
-      current = '';
-    } else {
-      current += c;
-    }
-  }
-  if (current) blocks.push(current);
-  return blocks;
-}
 </script>
 
 <style scoped>

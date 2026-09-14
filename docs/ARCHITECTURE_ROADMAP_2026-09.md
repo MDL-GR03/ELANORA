@@ -343,3 +343,11 @@ reviewer assignment and corrected-upload linking now live in
 feedback construction, cleanup, assignment normalization and API failures. The
 remaining `ReviewCasePanel` work can now be selected by presentation size rather
 than untested workflow risk.
+
+The next size-and-risk assessment selected `ConfigureNamingStandards`, the
+largest remaining frontend component and one without a direct test boundary.
+Numeric accepted-value normalization, pattern-component extraction,
+separator-aware block parsing, example character grouping and regex-specific
+field guidance now live in `namingStandardPattern` with direct edge-case tests.
+The next naming-standard slices should isolate example-to-regex inference and
+then the import workflow before decomposing the form presentation.
