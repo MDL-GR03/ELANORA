@@ -51,3 +51,39 @@ def test_durable_workflow_failures_never_copy_caught_exception_text() -> None:
                 violations.append(f"{relative_path}:{node.lineno}")
 
     assert violations == []
+
+
+def test_invitation_logs_exclude_personal_data_and_tracebacks() -> None:
+    source_root = Path(__file__).parents[2] / "app"
+    source_path = source_root / "service/invitation.py"
+    tree = ast.parse(source_path.read_text(encoding="utf-8"))
+    forbidden_extra_keys = {
+        "admin_user_id",
+        "email",
+        "error",
+        "invitation_code",
+        "invitation_id",
+        "new_member_name",
+        "notification_id",
+        "project_id",
+        "receiver_email",
+        "sender_id",
+        "user_id",
+    }
+    violations: list[str] = []
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if not isinstance(node.func.value, ast.Name) or node.func.value.id != "logger":
+            continue
+        for keyword in node.keywords:
+            if keyword.arg == "exc_info":
+                violations.append(f"traceback:{node.lineno}")
+            if keyword.arg != "extra" or not isinstance(keyword.value, ast.Dict):
+                continue
+            for key in keyword.value.keys:
+                if isinstance(key, ast.Constant) and key.value in forbidden_extra_keys:
+                    violations.append(f"{key.value}:{node.lineno}")
+
+    assert violations == []

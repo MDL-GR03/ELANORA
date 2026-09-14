@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud.invitation import (
     create_invitation,
     get_invitation_by_code,
@@ -145,16 +146,7 @@ class InvitationService:
                 )
 
             if email_sent:
-                logger.info(
-                    "Invitation sent successfully",
-                    extra={
-                        "sender_id": sender_id,
-                        "receiver_email": request.receiver_email,
-                        "invitation_id": invitation.invitation_id,
-                        "project_id": project.project_id,
-                        "user_exists": existing_user is not None,
-                    },
-                )
+                logger.info("Invitation sent successfully")
                 return InvitationSendResponse(
                     success=True,
                     message="Invitation sent successfully",
@@ -171,13 +163,7 @@ class InvitationService:
         except Exception as e:
             await db.rollback()
             logger.error(
-                "Failed to send invitation",
-                extra={
-                    "sender_id": sender_id,
-                    "receiver_email": request.receiver_email,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to send invitation; error_type=%s", safe_exception_type(e)
             )
             return InvitationSendResponse(
                 success=False, message="Internal server error"
@@ -252,12 +238,8 @@ class InvitationService:
 
         except Exception as e:
             logger.error(
-                "Failed to validate invitation",
-                extra={
-                    "invitation_code": invitation_code,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to validate invitation; error_type=%s",
+                safe_exception_type(e),
             )
             return InvitationValidationResponse(
                 valid=False, message="Internal server error"
@@ -274,10 +256,7 @@ class InvitationService:
             # Get invitation details first
             invitation = await get_invitation_by_id(db, invitation_id, for_update=True)
             if not invitation:
-                logger.warning(
-                    "Invitation not found",
-                    extra={"invitation_id": invitation_id},
-                )
+                logger.warning("Invitation not found")
                 return False
 
             project_id = invitation.project_id
@@ -286,13 +265,7 @@ class InvitationService:
                 invitation.status != InvitationStatus.PENDING
                 or invitation.expires_at <= datetime.now()
             ):
-                logger.info(
-                    "Invitation cannot be accepted",
-                    extra={
-                        "invitation_id": invitation_id,
-                        "status": invitation.status,
-                    },
-                )
+                logger.info("Invitation cannot be accepted in its current state")
                 return False
 
             user = await get_user_by_id(db, user_id)
@@ -301,22 +274,12 @@ class InvitationService:
                 or user.email.strip().casefold()
                 != invitation.receiver_email.strip().casefold()
             ):
-                logger.warning(
-                    "Invitation recipient mismatch",
-                    extra={"invitation_id": invitation_id, "user_id": user_id},
-                )
+                logger.warning("Invitation recipient mismatch")
                 return False
 
             existing_membership = await user_in_project(db, user_id, project_id)
             if existing_membership:
-                logger.info(
-                    "User is already a member of the project",
-                    extra={
-                        "invitation_id": invitation_id,
-                        "user_id": user_id,
-                        "project_id": project_id,
-                    },
-                )
+                logger.info("Invitation recipient is already a project member")
                 return False
 
             try:
@@ -339,15 +302,7 @@ class InvitationService:
                     return False
 
                 await db.commit()
-                logger.info(
-                    "User added to project via invitation",
-                    extra={
-                        "invitation_id": invitation_id,
-                        "user_id": user_id,
-                        "project_id": project_id,
-                        "permission": invitation.project_permission,
-                    },
-                )
+                logger.info("User added to project via invitation")
 
                 # Notifications are best-effort and do not affect membership.
                 try:
@@ -369,38 +324,22 @@ class InvitationService:
                 except Exception as notify_error:
                     await db.rollback()
                     logger.warning(
-                        "Failed to notify admins about new member",
-                        extra={
-                            "invitation_id": invitation_id,
-                            "project_id": project_id,
-                            "error": str(notify_error),
-                        },
+                        "Failed to notify project administrators; error_type=%s",
+                        safe_exception_type(notify_error),
                     )
 
                 return True
             except Exception as project_error:
                 await db.rollback()
                 logger.error(
-                    "Failed to accept invitation atomically",
-                    extra={
-                        "invitation_id": invitation_id,
-                        "user_id": user_id,
-                        "project_id": project_id,
-                        "error": str(project_error),
-                    },
-                    exc_info=True,
+                    "Failed to accept invitation atomically; error_type=%s",
+                    safe_exception_type(project_error),
                 )
                 return False
 
         except Exception as e:
             logger.error(
-                "Failed to accept invitation",
-                extra={
-                    "invitation_id": invitation_id,
-                    "user_id": user_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to accept invitation; error_type=%s", safe_exception_type(e)
             )
             return False
 
@@ -424,12 +363,8 @@ class InvitationService:
 
         except Exception as e:
             logger.error(
-                "Failed to get user invitations",
-                extra={
-                    "email": email,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to get user invitations; error_type=%s",
+                safe_exception_type(e),
             )
             return InvitationListResponse(invitations=[], total=0)
 
@@ -453,12 +388,8 @@ class InvitationService:
 
         except Exception as e:
             logger.error(
-                "Failed to get sent invitations",
-                extra={
-                    "sender_id": sender_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to get sent invitations; error_type=%s",
+                safe_exception_type(e),
             )
             return InvitationListResponse(invitations=[], total=0)
 
@@ -472,10 +403,7 @@ class InvitationService:
             # Check if project exists
             project = await get_project_by_id(db, project_id)
             if not project:
-                logger.warning(
-                    "Project not found",
-                    extra={"project_id": project_id},
-                )
+                logger.warning("Invitation project not found")
                 return InvitationListResponse(invitations=[], total=0)
 
             # Get invitations for this project
@@ -492,12 +420,8 @@ class InvitationService:
 
         except Exception as e:
             logger.error(
-                "Failed to get project invitations",
-                extra={
-                    "project_id": project_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to get project invitations; error_type=%s",
+                safe_exception_type(e),
             )
             return InvitationListResponse(invitations=[], total=0)
 
@@ -587,27 +511,15 @@ class InvitationService:
             )
 
             if success:
-                logger.info(
-                    "Invitation accepted by existing user",
-                    extra={
-                        "invitation_id": invitation_id,
-                        "user_id": user_id,
-                        "email": invitation.receiver_email,
-                    },
-                )
+                logger.info("Invitation accepted by existing user")
                 return {"success": True, "message": "Invitation accepted successfully"}
             else:
                 return {"success": False, "message": "Failed to accept invitation"}
 
         except Exception as e:
             logger.error(
-                "Failed to accept invitation by user",
-                extra={
-                    "invitation_id": invitation_id,
-                    "user_id": user_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to accept invitation by user; error_type=%s",
+                safe_exception_type(e),
             )
             return {"success": False, "message": "Internal server error"}
 
@@ -645,27 +557,15 @@ class InvitationService:
             )
 
             if success:
-                logger.info(
-                    "Invitation rejected by existing user",
-                    extra={
-                        "invitation_id": invitation_id,
-                        "user_id": user_id,
-                        "email": invitation.receiver_email,
-                    },
-                )
+                logger.info("Invitation rejected by existing user")
                 return {"success": True, "message": "Invitation rejected successfully"}
             else:
                 return {"success": False, "message": "Failed to reject invitation"}
 
         except Exception as e:
             logger.error(
-                "Failed to reject invitation by user",
-                extra={
-                    "invitation_id": invitation_id,
-                    "user_id": user_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to reject invitation by user; error_type=%s",
+                safe_exception_type(e),
             )
             return {"success": False, "message": "Internal server error"}
 
@@ -712,8 +612,6 @@ class InvitationService:
 
             # Send appropriate email based on user existence
             email_sent = False
-            new_invitation = None
-
             if existing_user:
                 # Send existing user invitation email with accept/reject buttons
                 email_sent = (
@@ -728,7 +626,7 @@ class InvitationService:
                 )
             else:
                 # For new users, create a new invitation with new code
-                new_invitation, raw_code = await create_invitation(
+                _, raw_code = await create_invitation(
                     db=db,
                     sender_id=sender_id,
                     receiver_email=invitation.receiver_email,
@@ -756,27 +654,10 @@ class InvitationService:
 
             # Handle result for both existing and new users
             if email_sent:
-                log_extra = {
-                    "sender_id": sender_id,
-                    "receiver_email": invitation.receiver_email,
-                }
-
                 if existing_user:
-                    log_extra.update(
-                        {
-                            "invitation_id": invitation_id,
-                            "user_exists": True,
-                        }
-                    )
-                    logger.info("Invitation resent successfully", extra=log_extra)
+                    logger.info("Invitation resent successfully")
                 else:
-                    log_extra.update(
-                        {
-                            "old_invitation_id": invitation_id,
-                            "new_invitation_id": new_invitation.invitation_id,
-                        }
-                    )
-                    logger.info("Invitation resent with new code", extra=log_extra)
+                    logger.info("Invitation resent with a new code")
 
                 return {"success": True, "message": "Invitation resent successfully"}
 
@@ -784,13 +665,8 @@ class InvitationService:
 
         except Exception as e:
             logger.error(
-                "Failed to resend invitation",
-                extra={
-                    "invitation_id": invitation_id,
-                    "sender_id": sender_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to resend invitation; error_type=%s",
+                safe_exception_type(e),
             )
             return {"success": False, "message": "Internal server error"}
 
@@ -829,27 +705,15 @@ class InvitationService:
             )
 
             if success:
-                logger.info(
-                    "Invitation cancelled successfully",
-                    extra={
-                        "invitation_id": invitation_id,
-                        "sender_id": sender_id,
-                        "receiver_email": invitation.receiver_email,
-                    },
-                )
+                logger.info("Invitation cancelled successfully")
                 return {"success": True, "message": "Invitation cancelled successfully"}
             else:
                 return {"success": False, "message": "Failed to cancel invitation"}
 
         except Exception as e:
             logger.error(
-                "Failed to cancel invitation",
-                extra={
-                    "invitation_id": invitation_id,
-                    "sender_id": sender_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to cancel invitation; error_type=%s",
+                safe_exception_type(e),
             )
             return {"success": False, "message": "Internal server error"}
 
@@ -877,7 +741,7 @@ class InvitationService:
                     f"{sender_name} invited you to join the project '{project_name}'"
                 )
 
-            notification = await create_notification(
+            await create_notification(
                 db=db,
                 notification_data=NotificationCreateRequest(
                     user_id=user_id,
@@ -890,23 +754,11 @@ class InvitationService:
             # Don't commit here - let the main transaction handle it
             await db.flush()  # Just flush to get the notification_id
 
-            logger.info(
-                "Invitation notification created",
-                extra={
-                    "user_id": user_id,
-                    "invitation_id": invitation_id,
-                    "notification_id": notification.notification_id,
-                },
-            )
+            logger.info("Invitation notification created")
         except Exception as e:
             logger.error(
-                "Failed to create invitation notification",
-                extra={
-                    "user_id": user_id,
-                    "invitation_id": invitation_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to create invitation notification; error_type=%s",
+                safe_exception_type(e),
             )
 
     async def _queue_invitation_email_if_enabled(
@@ -928,8 +780,7 @@ class InvitationService:
             # If preferences don't exist or email is disabled, don't send email
             if not preferences or not preferences.email_enabled:
                 logger.info(
-                    "Email notification skipped - user has email notifications disabled",
-                    extra={"user_id": user_id, "email": email},
+                    "Invitation email skipped because notifications are disabled"
                 )
                 return True  # Return True because the operation succeeded (just no email sent)
 
@@ -942,22 +793,13 @@ class InvitationService:
                 custom_message=custom_message,
                 language=language,
             )
-            logger.info(
-                "Invitation email queued",
-                extra={"user_id": user_id, "invitation_id": invitation_id},
-            )
+            logger.info("Invitation email queued")
             return True
 
         except Exception as e:
             logger.error(
-                "Error checking email preferences or sending email",
-                extra={
-                    "user_id": user_id,
-                    "email": email,
-                    "invitation_id": invitation_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to evaluate or queue invitation email; error_type=%s",
+                safe_exception_type(e),
             )
             return False
 
@@ -1010,13 +852,8 @@ class InvitationService:
 
         except Exception as e:
             logger.error(
-                "Failed to get invitation details for user",
-                extra={
-                    "invitation_id": invitation_id,
-                    "user_id": user_id,
-                    "error": str(e),
-                },
-                exc_info=True,
+                "Failed to get invitation details; error_type=%s",
+                safe_exception_type(e),
             )
             return {"success": False, "message": "Internal server error"}
 
@@ -1038,20 +875,9 @@ class InvitationService:
                 project_id=project_id,
             )
 
-            logger.info(
-                "Created member joined notification",
-                extra={
-                    "admin_user_id": admin_user_id,
-                    "project_id": project_id,
-                    "new_member_name": new_member_name,
-                },
-            )
+            logger.info("Created member joined notification")
         except Exception as e:
             logger.error(
-                "Failed to create member joined notification",
-                extra={
-                    "admin_user_id": admin_user_id,
-                    "project_id": project_id,
-                    "error": str(e),
-                },
+                "Failed to create member joined notification; error_type=%s",
+                safe_exception_type(e),
             )
