@@ -11,22 +11,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_MAX_FILE_SIZE_MB, ELAN_PROJECTS_BASE_PATH
 from app.core.effective_naming_standard_locations import get_location_id_by_name
-from app.core.error_diagnostics import safe_exception_type, safe_failure_summary
-from app.core.exceptions import RenameConflictError
+from app.core.error_diagnostics import safe_exception_type
 from app.crud import elan_file_media as elan_media_crud
 from app.crud.effective_naming_standard import get_effective_standards_for_project
 from app.crud.elan_file import (
-    get_elan_file_by_filename_and_project,
-    get_elan_file_name_by_id,
     get_elan_files_by_project,
-    update_elan_file_name,
 )
 from app.crud.pending_upload import get_pending_uploads
 from app.crud.project import (
     delete_project_db,
     get_project_by_id,
     get_project_by_name,
-    get_project_id_by_name,
     list_projects_by_instance,
     list_projects_by_user,
     restore_project_db,
@@ -44,7 +39,6 @@ from app.schema.responses.git import (
     FileRenameResponse,
     ProjectInfo,
     ProjectSyncCheckResponse,
-    RenameResult,
 )
 from app.service.contribution_inspection import ContributionInspectionService
 from app.service.contribution_intake import (
@@ -57,6 +51,7 @@ from app.service.contribution_publication import ContributionPublicationService
 from app.service.contribution_review import ContributionReviewService
 from app.service.database_rename_handler import DatabaseRenameHandler
 from app.service.elan import ElanService
+from app.service.file_rename import FileRenameService
 from app.service.git_operations import (
     FileUploadProcessor,
     GitBranchManager,
@@ -112,6 +107,7 @@ class GitService:
         self.contribution_publication = ContributionPublicationService(
             self.base_path, self.contribution_review
         )
+        self.file_rename = FileRenameService(self.base_path)
 
     def check_git_availability(self) -> dict[str, Any]:
         """Check if Git is available on the system."""
@@ -1389,311 +1385,15 @@ class GitService:
         self, project_name: str, elan_id: int, new_filename: str, db: AsyncSession
     ) -> FileRenameResponse:
         """Rename a single file in the project using elan_id."""
-        project_path = safe_project_path(self.base_path, project_name)
-
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-
-        # Get current filename from database
-        old_filename = await get_elan_file_name_by_id(db, elan_id)
-        if not old_filename:
-            raise FileNotFoundError(f"ELAN file with ID {elan_id} not found")
-
-        old_file_path = project_path / "elan_files" / old_filename
-        new_file_path = project_path / "elan_files" / new_filename
-
-        if not old_file_path.exists():
-            raise FileNotFoundError(
-                f"File '{old_filename}' not found in project filesystem"
-            )
-
-        # Check for conflict: if target filename already exists, get its elan_id
-        if new_file_path.exists():
-            conflict_elan_id = None
-            # Get project_id to find the conflicting file
-            project_id = await get_project_id_by_name(db, project_name)
-            if project_id:
-                conflicting_file = await get_elan_file_by_filename_and_project(
-                    db, new_filename, project_id
-                )
-                if conflicting_file:
-                    conflict_elan_id = conflicting_file.elan_id
-
-            # Raise custom conflict exception with conflict info
-            logger.warning(
-                f"Rename conflict detected: {new_filename} already exists (conflict_elan_id={conflict_elan_id})"
-            )
-            raise RenameConflictError(
-                f"File '{new_filename}' already exists in project",
-                conflict_elan_id=conflict_elan_id,
-                message_key="rename_file_conflict",
-            )
-
-        try:
-            # 1. Update database first
-            await update_elan_file_name(db, elan_id, new_filename)
-            logger.info("Updated an ELAN filename in the database")
-
-            # 2. Rename the file on filesystem
-            old_file_path.rename(new_file_path)
-            logger.info("Renamed an ELAN file on the filesystem")
-
-            # 3. Update git (add the rename operation)
-            runner = GitCommandRunner(project_path)
-            runner.add_all()  # Add all changes including the rename
-            commit_hash = runner.commit(
-                f"Rename file: {old_filename} -> {new_filename}"
-            )
-            logger.info("Committed an ELAN file rename")
-
-            # 4. Commit database transaction
-            await db.commit()
-            logger.info("Completed an ELAN file rename")
-
-            return FileRenameResponse(
-                project_name=project_name,
-                old_filename=old_filename,
-                new_filename=new_filename,
-                success=True,
-                committed=True,
-                commit_hash=commit_hash,
-                renamed_at=datetime.now().isoformat(),
-                message=f"Successfully renamed {old_filename} to {new_filename}",
-            )
-
-        except Exception as e:
-            logger.error(
-                "ELAN file rename failed; error_type=%s", safe_exception_type(e)
-            )
-
-            # Rollback database
-            await db.rollback()
-            logger.info("Rolled back database transaction")
-
-            # Try to rollback filesystem change if possible
-            if new_file_path.exists() and not old_file_path.exists():
-                try:
-                    new_file_path.rename(old_file_path)
-                    logger.info("Rolled back an ELAN filesystem rename")
-                except Exception as rollback_error:
-                    logger.warning(
-                        "Could not roll back an ELAN file rename; error_type=%s",
-                        safe_exception_type(rollback_error),
-                    )
-
-            raise RuntimeError("Failed to rename file") from e
+        return await self.file_rename.rename_one(
+            db, project_name, elan_id, new_filename
+        )
 
     async def rename_files(
         self, project_name: str, renames: list[dict[str, Any]], db: AsyncSession
     ) -> BulkRenameResponse:
         """Rename multiple files in the project using elan_ids."""
-        project_path = safe_project_path(self.base_path, project_name)
-
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-
-        successful_renames: list[RenameResult] = []
-        failed_renames: list[RenameResult] = []
-
-        try:
-            runner = GitCommandRunner(project_path)
-
-            # Process each rename individually
-            for rename_info in renames:
-                result = await self._process_single_bulk_rename(
-                    rename_info, project_path, db, runner
-                )
-
-                if result.success:
-                    successful_renames.append(result)
-                else:
-                    failed_renames.append(result)
-
-            # Commit all changes if any were successful
-            commit_hash = await self._finalize_bulk_rename(
-                successful_renames, runner, db
-            )
-
-            # Count conflicts
-            conflicts_count = sum(
-                1 for result in failed_renames if result.conflict_elan_id is not None
-            )
-
-            # Determine message key based on results
-            message_key = None
-            if conflicts_count > 0:
-                message_key = (
-                    "bulk_rename_conflicts"
-                    if conflicts_count == len(failed_renames)
-                    else "bulk_rename_mixed_errors"
-                )
-            elif len(failed_renames) > 0:
-                message_key = "bulk_rename_errors"
-            else:
-                message_key = "bulk_rename_success"
-
-            return BulkRenameResponse(
-                project_name=project_name,
-                total_files=len(renames),
-                successful_renames=len(successful_renames),
-                failed_renames=len(failed_renames),
-                results=successful_renames + failed_renames,
-                committed=len(successful_renames) > 0,
-                commit_hash=commit_hash,
-                renamed_at=datetime.now().isoformat(),
-                message=f"Renamed {len(successful_renames)}/{len(renames)} files successfully",
-                conflicts_count=conflicts_count,
-                message_key=message_key,
-            )
-
-        except Exception as e:
-            logger.error(
-                "Bulk ELAN file rename failed; error_type=%s",
-                safe_exception_type(e),
-            )
-            await db.rollback()
-            raise RuntimeError("Bulk rename failed") from e
-
-    async def _process_single_bulk_rename(
-        self,
-        rename_info: dict[str, Any],
-        project_path: Path,
-        db: AsyncSession,
-        runner: GitCommandRunner,
-    ) -> RenameResult:
-        """Process a single rename operation within a bulk rename."""
-        try:
-            elan_id = rename_info.get("elan_id")
-            new_filename = rename_info.get("new_filename")
-
-            if not isinstance(elan_id, int) or not isinstance(new_filename, str):
-                raise ValueError("Missing elan_id or new_filename")
-
-            # Get current filename
-            old_filename = await get_elan_file_name_by_id(db, elan_id)
-            if not old_filename:
-                raise FileNotFoundError(f"ELAN file with ID {elan_id} not found")
-
-            old_file_path = project_path / "elan_files" / old_filename
-            new_file_path = project_path / "elan_files" / new_filename
-
-            # Validate file existence and new name availability
-            if not old_file_path.exists():
-                raise FileNotFoundError(
-                    f"File '{old_filename}' not found in filesystem"
-                )
-
-            # Check for conflict: if target filename already exists, get its elan_id
-            if new_file_path.exists():
-                conflict_elan_id = None
-                # Get project_id to find the conflicting file
-                project_name = project_path.name
-                project_id = await get_project_id_by_name(db, project_name)
-                if project_id:
-                    conflicting_file = await get_elan_file_by_filename_and_project(
-                        db, new_filename, project_id
-                    )
-                    if conflicting_file:
-                        conflict_elan_id = conflicting_file.elan_id
-
-                # Raise custom conflict exception with conflict info
-                raise RenameConflictError(
-                    f"File '{new_filename}' already exists in project",
-                    conflict_elan_id=conflict_elan_id,
-                    message_key="rename_file_conflict",
-                )
-
-            # Update database
-            await update_elan_file_name(db, elan_id, new_filename)
-
-            # Rename file
-            old_file_path.rename(new_file_path)
-
-            # Stage for git
-            runner.add_all()
-
-            return RenameResult(
-                old_filename=old_filename,
-                new_filename=new_filename,
-                success=True,
-                error=None,
-            )
-
-        except RenameConflictError as e:
-            logger.warning(
-                "Rename conflict detected; error_type=%s",
-                safe_exception_type(e),
-            )
-
-            # Try to get old filename for error reporting
-            old_filename = ""
-            try:
-                elan_id = rename_info.get("elan_id")
-                if isinstance(elan_id, int):
-                    old_filename = await get_elan_file_name_by_id(db, elan_id) or ""
-            except Exception:
-                logger.warning(
-                    f"Could not get filename for elan_id {rename_info.get('elan_id')}"
-                )
-
-            return RenameResult(
-                old_filename=old_filename,
-                new_filename=(
-                    rename_info["new_filename"]
-                    if isinstance(rename_info.get("new_filename"), str)
-                    else ""
-                ),
-                success=False,
-                error="The requested filename conflicts with an existing file",
-                conflict_elan_id=e.conflict_elan_id,
-                message_key=e.message_key,
-            )
-
-        except Exception as e:
-            logger.error("File rename failed; error_type=%s", safe_exception_type(e))
-
-            # Try to get old filename for error reporting
-            old_filename = ""
-            try:
-                elan_id = rename_info.get("elan_id")
-                if isinstance(elan_id, int):
-                    old_filename = await get_elan_file_name_by_id(db, elan_id) or ""
-            except Exception:
-                logger.warning(
-                    f"Could not get filename for elan_id {rename_info.get('elan_id')}"
-                )
-
-            return RenameResult(
-                old_filename=old_filename,
-                new_filename=(
-                    rename_info["new_filename"]
-                    if isinstance(rename_info.get("new_filename"), str)
-                    else ""
-                ),
-                success=False,
-                error=safe_failure_summary(e, operation="File rename failed"),
-            )
-
-    async def _finalize_bulk_rename(
-        self,
-        successful_renames: list[RenameResult],
-        runner: GitCommandRunner,
-        db: AsyncSession,
-    ) -> str | None:
-        """Finalize the bulk rename operation by committing or rolling back."""
-        commit_hash = None
-        if successful_renames:
-            commit_message = f"Bulk rename: {len(successful_renames)} files"
-            commit_hash = runner.commit(commit_message)
-            await db.commit()
-            logger.info(
-                f"Successfully completed bulk rename of {len(successful_renames)} files"
-            )
-        else:
-            await db.rollback()
-            logger.warning("No files were successfully renamed")
-
-        return commit_hash
+        return await self.file_rename.rename_many(db, project_name, renames)
 
     def command_runner(self, project_name: str) -> GitCommandRunner:
         """Return a path-safe runner for coordination services."""
