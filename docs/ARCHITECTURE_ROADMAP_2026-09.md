@@ -333,5 +333,8 @@ state filtering and bounded pagination now live in `useReviewCaseQueue`. Both
 boundaries have direct tests. Correction-request draft state, large-file search
 and pagination, per-file change selection, validation, reset behavior and API
 payload construction now live in `useReviewCaseDraft`, with direct tests for the
-multi-change and legacy question workflows. Reviewer task decisions and
-revision-transition orchestration are the next slices.
+multi-change and legacy question workflows. Reviewer task selection, legacy
+reopened-task recovery, annotation-level revision targets, approval requests,
+busy/error state and outcome messaging now live in
+`useReviewerTaskDecisions`, with direct tests for partial and final decisions.
+Revision-transition orchestration is the next slice.

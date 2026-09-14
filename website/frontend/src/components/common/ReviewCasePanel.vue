@@ -871,6 +871,7 @@ import ReviewQueueOverview from '@/components/pageSpecific/contributions/ReviewQ
 import { getProjectUsers } from '@/api/service/projectAssociationService';
 import { useReviewCaseQueue } from '@/composables/useReviewCaseQueue';
 import { useReviewCaseDraft } from '@/composables/useReviewCaseDraft';
+import { useReviewerTaskDecisions } from '@/composables/useReviewerTaskDecisions';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { useEventMessageStore } from '@/stores/eventMessage.js';
 
@@ -912,13 +913,9 @@ const error = ref('');
 const activeDiff = ref('');
 const taskQuery = ref('');
 const taskStatus = ref('');
-const updatingTask = ref({ id: '', status: '' });
 const showComposer = ref(false);
 const showClosedCases = ref(false);
 const visibleTaskLimit = ref(20);
-const revisionFeedbackCaseId = ref('');
-const revisionTaskSelections = reactive({});
-const revisionTargets = reactive({});
 const members = ref([]);
 const membersLoading = ref(false);
 const taskStatusOptions = [
@@ -977,10 +974,29 @@ const formatTaskStatus = (status, item = null) => {
     }[status] || status
   );
 };
-const unresolvedTaskCount = (item) =>
-  item.tasks.filter((task) => task.status !== 'accepted').length;
-const approveTaskLabel = (item) =>
-  unresolvedTaskCount(item) === 1 ? 'Approve correction' : 'Approve edit';
+const {
+  approveTask,
+  approveTaskLabel,
+  clearRevisionDraft,
+  isTaskSelectedForRevision,
+  removeRevisionTarget,
+  revisionFeedbackCaseId,
+  revisionTargets,
+  revisionTargetSummary,
+  selectedAnnotationIds,
+  selectedRevisionTaskIds,
+  selectRevisionTarget,
+  taskBusyLabel,
+  toggleTaskForRevision,
+  unresolvedTaskCount,
+} = useReviewerTaskDecisions({
+  projectId: () => props.projectId,
+  reviewService,
+  busy,
+  error,
+  replaceCase,
+  notify: (message, type) => eventMessages.addMessage(message, type),
+});
 async function openReviewArchive() {
   showClosedCases.value = true;
   await nextTick();
@@ -1134,102 +1150,6 @@ async function addComment(item) {
     busy.value = false;
   }
 }
-async function approveTask(item, task) {
-  if (isTaskSelectedForRevision(item, task)) {
-    toggleTaskForRevision(item, task);
-  }
-  const completesReview = unresolvedTaskCount(item) === 1;
-  updatingTask.value = { id: task.task_id, status: 'accepted' };
-  busy.value = true;
-  error.value = '';
-  try {
-    const updated = await reviewService.updateTask(
-      props.projectId,
-      item.case_id,
-      task.task_id,
-      'accepted'
-    );
-    if (completesReview) {
-      replaceCase(updated);
-      eventMessages.addMessage(
-        updated.resubmitted_upload_status === 'no_changes'
-          ? 'Correction approved. No project content changed.'
-          : 'Correction approved and review completed.',
-        'success'
-      );
-    } else {
-      replaceCase(updated);
-      eventMessages.addMessage('Requested edit approved.', 'success');
-    }
-  } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail ||
-      'The requested edit could not be approved.';
-    eventMessages.addMessage(error.value, 'error');
-  } finally {
-    busy.value = false;
-    updatingTask.value = { id: '', status: '' };
-  }
-}
-function selectedRevisionTaskIds(item) {
-  if (revisionTaskSelections[item.case_id]) {
-    return revisionTaskSelections[item.case_id];
-  }
-  // Recover reviews left in the former non-atomic intermediate state.
-  return item.state === 'resubmitted'
-    ? item.tasks
-        .filter((task) => task.status === 'reopened')
-        .map((task) => task.task_id)
-    : [];
-}
-function isTaskSelectedForRevision(item, task) {
-  return selectedRevisionTaskIds(item).includes(task.task_id);
-}
-function toggleTaskForRevision(item, task) {
-  const selected = [...selectedRevisionTaskIds(item)];
-  const index = selected.indexOf(task.task_id);
-  if (index === -1) selected.push(task.task_id);
-  else selected.splice(index, 1);
-  revisionTaskSelections[item.case_id] = selected;
-  revisionFeedbackCaseId.value = selected.length ? item.case_id : '';
-  if (!selected.length) delete revisionTargets[item.case_id];
-}
-function selectRevisionTarget(item, task, target) {
-  const targets = [...(revisionTargets[item.case_id] || [])];
-  const key = `${task.task_id}:${target.annotation_id}`;
-  const index = targets.findIndex(
-    (entry) => `${entry.task_id}:${entry.annotation_id}` === key
-  );
-  if (index === -1)
-    targets.push({ ...target, task_id: task.task_id, comment: '' });
-  else targets.splice(index, 1);
-  revisionTargets[item.case_id] = targets;
-  revisionTaskSelections[item.case_id] = [
-    ...new Set(targets.map((entry) => entry.task_id)),
-  ];
-  revisionFeedbackCaseId.value = targets.length ? item.case_id : '';
-}
-function removeRevisionTarget(item, target) {
-  selectRevisionTarget(item, { task_id: target.task_id }, target);
-}
-function selectedAnnotationIds(item, task) {
-  return (revisionTargets[item.case_id] || [])
-    .filter((target) => target.task_id === task.task_id)
-    .map((target) => target.annotation_id);
-}
-function revisionTargetSummary(target) {
-  const time =
-    target.start_ms != null || target.end_ms != null
-      ? ` · ${target.start_ms ?? 'start'}–${target.end_ms ?? 'end'} ms`
-      : '';
-  return `Target: ${target.annotation_id} · Tier: ${target.tier_id || 'unknown'}${time}`;
-}
-function taskBusyLabel(task, status, label) {
-  return updatingTask.value.id === task.task_id &&
-    updatingTask.value.status === status
-    ? 'Saving…'
-    : label;
-}
 async function transition(item, state) {
   const confirmation = {
     changes_requested: {
@@ -1324,9 +1244,7 @@ async function requestAnotherRevision(item) {
       )
     );
     replies[item.case_id] = '';
-    revisionFeedbackCaseId.value = '';
-    revisionTaskSelections[item.case_id] = [];
-    delete revisionTargets[item.case_id];
+    clearRevisionDraft(item.case_id);
     eventMessages.addMessage('Another revision was requested.', 'success');
   } catch (requestError) {
     error.value =
