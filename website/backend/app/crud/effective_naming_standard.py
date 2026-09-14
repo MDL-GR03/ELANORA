@@ -10,7 +10,7 @@ async def set_effective_standard(
     project_file_type_id: int,
     naming_standard_id: int,
     location_id: int,
-):
+) -> EffectiveNamingStandard:
     filters = {
         "project_id": project_id,
         "project_file_type_id": project_file_type_id,
@@ -39,7 +39,7 @@ async def set_effective_standard(
 
 async def remove_effective_standard(
     db: AsyncSession, project_id: int, project_file_type_id: int, location_id: int
-):
+) -> None:
     await DatabaseUtils.delete_by_filter(
         db,
         EffectiveNamingStandard,
@@ -52,7 +52,7 @@ async def remove_effective_standard(
 
 async def get_effective_standards_for_project(
     db: AsyncSession, project_id: int, location_id: int
-):
+) -> list[EffectiveNamingStandard]:
     return await DatabaseUtils.get_all_by_filter(
         db,
         EffectiveNamingStandard,

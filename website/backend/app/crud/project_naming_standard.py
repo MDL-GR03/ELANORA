@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.standard_component import get_components_by_standard
@@ -35,7 +37,7 @@ async def create_standard(
     project_file_type_id: int,
     pattern: str,
     description: str | None,
-):
+) -> ProjectNamingStandard:
     standard = ProjectNamingStandard(
         project_id=project_id,
         name=name,
@@ -86,7 +88,9 @@ async def get_standards_by_ids(
         raise e
 
 
-async def get_standard_with_components_full(db, standard_id: int):
+async def get_standard_with_components_full(
+    db: AsyncSession, standard_id: int
+) -> dict[str, Any] | None:
     # Get the standard
     standard = await DatabaseUtils.get_by_id(
         db, ProjectNamingStandard, "id", standard_id

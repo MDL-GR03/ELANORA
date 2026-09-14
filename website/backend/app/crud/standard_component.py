@@ -8,7 +8,7 @@ from app.utils.database import DatabaseUtils
 
 async def link_standard_to_component(
     db: AsyncSession, naming_standard_id: int, component_template_id: int, order: int
-):
+) -> StandardComponent:
     filters = {
         "naming_standard_id": naming_standard_id,
         "component_template_id": component_template_id,
@@ -27,7 +27,7 @@ async def link_standard_to_component(
 
 async def unlink_standard_from_component(
     db: AsyncSession, naming_standard_id: int, component_template_id: int
-):
+) -> int:
     return await DatabaseUtils.delete_by_filter(
         db,
         StandardComponent,
@@ -36,7 +36,9 @@ async def unlink_standard_from_component(
     )
 
 
-async def get_components_by_standard(db: AsyncSession, naming_standard_id: int):
+async def get_components_by_standard(
+    db: AsyncSession, naming_standard_id: int
+) -> list[StandardComponent]:
     return await DatabaseUtils.get_by_filter(
         db,
         StandardComponent,
@@ -50,7 +52,9 @@ async def get_components_by_standard(db: AsyncSession, naming_standard_id: int):
     )
 
 
-async def get_by_standard(db: AsyncSession, standard_id: int):
+async def get_by_standard(
+    db: AsyncSession, standard_id: int
+) -> list[StandardComponent]:
     return await DatabaseUtils.get_by_filter(
         db, StandardComponent, {"naming_standard_id": standard_id}
     )

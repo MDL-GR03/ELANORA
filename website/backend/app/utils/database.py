@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from sqlalchemy.engine import CursorResult
 
 ModelType = TypeVar("ModelType", bound=DeclarativeBase)
+RelatedModelType = TypeVar("RelatedModelType", bound=DeclarativeBase)
 
 logger = get_logger()
 
@@ -419,7 +420,7 @@ class DatabaseUtils:
     async def get_all_with_related_exists(
         db: AsyncSession,
         model: type[ModelType],
-        related_model: type[ModelType],
+        related_model: type[RelatedModelType],
         related_field: str,
         model_field: str,
     ) -> list[ModelType]:

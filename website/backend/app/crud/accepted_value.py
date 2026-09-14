@@ -21,7 +21,7 @@ async def get_or_create_accepted_value(db: AsyncSession, value: str) -> Accepted
     return obj
 
 
-async def delete_orphaned_accepted_values(db: AsyncSession):
+async def delete_orphaned_accepted_values(db: AsyncSession) -> int:
     try:
         logger.info("Starting orphaned AcceptedValue cleanup...")
         # Count before

@@ -1,3 +1,5 @@
+from typing import cast
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,13 +29,17 @@ async def get_or_create_component_template(
     return template
 
 
-async def get_component_templates_by_file_type(db: AsyncSession, file_type_id: int):
+async def get_component_templates_by_file_type(
+    db: AsyncSession, file_type_id: int
+) -> list[ComponentTemplate]:
     return await DatabaseUtils.get_by_filter(
         db, ComponentTemplate, {"file_type_id": file_type_id}
     )
 
 
-async def get_unique_component_names_by_project(db: AsyncSession, project_id: int):
+async def get_unique_component_names_by_project(
+    db: AsyncSession, project_id: int
+) -> list[str]:
     file_type_ids_stmt = select(ProjectFileType.file_type_id).where(
         ProjectFileType.project_id == project_id
     )
@@ -41,16 +47,19 @@ async def get_unique_component_names_by_project(db: AsyncSession, project_id: in
     file_type_ids = [row[0] for row in file_type_ids_result.all()]
     if not file_type_ids:
         return []
-    return await DatabaseUtils.get_distinct_column_values(
-        db,
-        ComponentTemplate,
-        ComponentTemplate.name,
-        in_filter=(ComponentTemplate.file_type_id, file_type_ids),
-        order_by=ComponentTemplate.name,
+    return cast(
+        "list[str]",
+        await DatabaseUtils.get_distinct_column_values(
+            db,
+            ComponentTemplate,
+            ComponentTemplate.name,
+            in_filter=(ComponentTemplate.file_type_id, file_type_ids),
+            order_by=ComponentTemplate.name,
+        ),
     )
 
 
-async def delete_orphaned_component_templates(db: AsyncSession):
+async def delete_orphaned_component_templates(db: AsyncSession) -> int:
     try:
         # Delete ComponentTemplates not referenced by any StandardComponent
         result = await DatabaseUtils.delete_fully_orphaned(
@@ -63,5 +72,5 @@ async def delete_orphaned_component_templates(db: AsyncSession):
         raise
 
 
-async def get_by_id(db: AsyncSession, template_id: int):
+async def get_by_id(db: AsyncSession, template_id: int) -> ComponentTemplate | None:
     return await DatabaseUtils.get_by_id(db, ComponentTemplate, "id", template_id)

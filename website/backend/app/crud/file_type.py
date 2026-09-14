@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model.file_type import FileType
@@ -13,7 +15,9 @@ async def get_file_type_by_name(db: AsyncSession, name: str) -> FileType | None:
     return await DatabaseUtils.get_one_by_filter(db, FileType, {"name": name})
 
 
-async def get_file_type_by_extension(db: AsyncSession, extension: str):
+async def get_file_type_by_extension(
+    db: AsyncSession, extension: str
+) -> FileType | None:
     return await DatabaseUtils.get_one_by_filter(db, FileType, {"extension": extension})
 
 
@@ -25,7 +29,7 @@ async def create_file_type(db: AsyncSession, extension: str) -> FileType:
 
 
 async def update_file_type(
-    db: AsyncSession, file_type_id: int, update_fields: dict
+    db: AsyncSession, file_type_id: int, update_fields: dict[str, Any]
 ) -> int:
     return await DatabaseUtils.update_by_filter(
         db, FileType, {"id": file_type_id}, update_fields

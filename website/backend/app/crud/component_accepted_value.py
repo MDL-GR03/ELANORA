@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 
 async def link_component_to_accepted_value(
     db: AsyncSession, component_template_id: int, accepted_value_id: int
-):
+) -> ComponentAcceptedValue:
     filters = {
         "component_template_id": component_template_id,
         "accepted_value_id": accepted_value_id,
@@ -31,7 +31,7 @@ async def link_component_to_accepted_value(
 
 async def unlink_component_from_accepted_value(
     db: AsyncSession, component_template_id: int, accepted_value_id: int
-):
+) -> int:
     return await DatabaseUtils.delete_by_filter(
         db,
         ComponentAcceptedValue,
@@ -40,7 +40,7 @@ async def unlink_component_from_accepted_value(
     )
 
 
-async def delete_for_orphaned_templates(db: AsyncSession):
+async def delete_for_orphaned_templates(db: AsyncSession) -> int:
     try:
         logger.info(
             "Starting orphaned ComponentAcceptedValue cleanup for orphaned templates..."
@@ -56,6 +56,7 @@ async def delete_for_orphaned_templates(db: AsyncSession):
         )
         orphaned_template_ids = [row[0] for row in orphaned_templates_result]
         logger.info(f"Orphaned template IDs: {orphaned_template_ids}")
+        deleted = 0
         if orphaned_template_ids:
             deleted = await DatabaseUtils.bulk_delete(
                 db,
@@ -70,6 +71,7 @@ async def delete_for_orphaned_templates(db: AsyncSession):
             logger.info(
                 "No orphaned templates found for ComponentAcceptedValue cleanup."
             )
+        return deleted
     except Exception as e:
         await db.rollback()
         logger.error(
