@@ -1067,241 +1067,7 @@
         </div>
       </div>
 
-      <!-- Account Information Card -->
-      <div class="profile-card account-info-card">
-        <div class="profile-card-header">
-          <div class="card-title-section">
-            <div class="card-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 15C15.866 15 19 11.866 19 8C19 4.13401 15.866 1 12 1C8.13401 1 5 4.13401 5 8C5 11.866 8.13401 15 12 15Z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <path
-                  d="M8.21 13.89L7 23L12 20L17 23L15.79 13.88"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </div>
-            <h3>{{ t('profile.overview.account_info.title') }}</h3>
-          </div>
-        </div>
-        <div class="profile-card-content">
-          <div class="profile-field-group">
-            <div class="profile-field">
-              <span class="profile-field-label">{{
-                t('profile.overview.account_info.member_since')
-              }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <rect
-                        x="3"
-                        y="4"
-                        width="18"
-                        height="18"
-                        rx="2"
-                        ry="2"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                      <line
-                        x1="16"
-                        y1="2"
-                        x2="16"
-                        y2="6"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                      <line
-                        x1="8"
-                        y1="2"
-                        x2="8"
-                        y2="6"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                      <line
-                        x1="3"
-                        y1="10"
-                        x2="21"
-                        y2="10"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                    </svg>
-                  </div>
-                  <span class="field-text">{{
-                    formatDate(userProfile.created_at)
-                  }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="profile-field">
-              <span class="profile-field-label">{{
-                t('profile.overview.account_info.last_updated')
-              }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M23 4V10H17"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                      <path
-                        d="M20.49 15C19.9828 16.8393 18.9228 18.4804 17.4612 19.7006C15.9996 20.9207 14.2019 21.6641 12.2856 21.8281C10.3694 21.9922 8.44444 21.5705 6.77579 20.6123C5.10714 19.6541 3.76781 18.1969 2.915 16.4281C2.06219 14.6593 1.73427 12.6519 1.97979 10.6794C2.22532 8.70689 3.03423 6.8607 4.31198 5.35635C5.58973 3.852 7.27707 2.76321 9.16584 2.22672C11.0546 1.69023 13.0607 1.72429 14.93 2.32"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                      <polyline
-                        points="23,4 12,15 9,12"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </div>
-                  <span class="field-text">{{
-                    formatDate(userProfile.updated_at)
-                  }}</span>
-                </div>
-              </div>
-            </div>
-            <div v-if="userProfile.last_login" class="profile-field">
-              <span class="profile-field-label">{{
-                t('profile.overview.account_info.last_login')
-              }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                      <polyline
-                        points="10,17 15,12 10,7"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                      <line
-                        x1="15"
-                        y1="12"
-                        x2="3"
-                        y2="12"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </div>
-                  <span class="field-text">{{
-                    formatDate(userProfile.last_login)
-                  }}</span>
-                </div>
-              </div>
-            </div>
-            <div class="profile-field">
-              <span class="profile-field-label">{{
-                t('profile.overview.account_info.account_status')
-              }}</span>
-              <div class="profile-field-value">
-                <div class="field-content">
-                  <div class="field-icon">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      />
-                      <path
-                        v-if="userProfile.is_active"
-                        d="M9 12L11 14L15 10"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                      <g v-else>
-                        <line
-                          x1="15"
-                          y1="9"
-                          x2="9"
-                          y2="15"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                        <line
-                          x1="9"
-                          y1="9"
-                          x2="15"
-                          y2="15"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </g>
-                    </svg>
-                  </div>
-                  <span
-                    class="status-badge modern-status-badge"
-                    :class="userProfile.is_active ? 'active' : 'inactive'"
-                  >
-                    {{
-                      userProfile.is_active
-                        ? t('profile.overview.account_info.active')
-                        : t('profile.overview.account_info.inactive')
-                    }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProfileAccountCard :user-profile="userProfile" />\n
     </div>
 
     <!-- Empty State -->
@@ -1316,6 +1082,8 @@
 import { ref, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import AppSelect from '@/components/common/AppSelect.vue';
+import ProfileAccountCard from '@/components/pageSpecific/profile/ProfileAccountCard.vue';
+import { useProfessionalProfileEditor } from '@/composables/useProfessionalProfileEditor';
 import {
   updateUserProfile,
   updateUserAddress,
@@ -1354,22 +1122,26 @@ const props = defineProps({
 
 const emit = defineEmits(['profile-updated', 'show-message']);
 
+const {
+  editProfessionalMode,
+  editedProfessional,
+  savingProfessional,
+  professionalValidation,
+  validateProfessionalField,
+  startEditProfessional,
+  cancelEditProfessional,
+  saveProfessional,
+} = useProfessionalProfileEditor({
+  profile: computed(() => props.userProfile),
+  updateProfile: updateUserProfile,
+  emit,
+  translate: t,
+});
+
 // Username editing
 const editUsernameMode = ref(false);
 const editedUsername = ref('');
 const saving = ref(false);
-
-// Professional info editing
-const editProfessionalMode = ref(false);
-const editedProfessional = ref({
-  affiliation: '',
-  department: '',
-});
-const savingProfessional = ref(false);
-const professionalValidation = ref({
-  affiliation: { isValid: null, message: '' },
-  department: { isValid: null, message: '' },
-});
 
 // Address editing
 const editAddressMode = ref(false);
@@ -1518,59 +1290,6 @@ const loadCountries = async () => {
     console.error('Error loading countries:', error);
   }
 };
-
-// Professional validation functions
-function validateProfessionalField(fieldName) {
-  switch (fieldName) {
-    case 'affiliation':
-      if (!editedProfessional.value.affiliation) {
-        professionalValidation.value.affiliation = {
-          isValid: false,
-          message: t('register.affiliation_required'),
-        };
-      } else if (editedProfessional.value.affiliation.length < 2) {
-        professionalValidation.value.affiliation = {
-          isValid: false,
-          message: 'Affiliation must be at least 2 characters',
-        };
-      } else if (editedProfessional.value.affiliation.length > 100) {
-        professionalValidation.value.affiliation = {
-          isValid: false,
-          message: 'Affiliation must be less than 100 characters',
-        };
-      } else {
-        professionalValidation.value.affiliation = {
-          isValid: true,
-          message: '',
-        };
-      }
-      break;
-
-    case 'department':
-      if (!editedProfessional.value.department) {
-        professionalValidation.value.department = {
-          isValid: false,
-          message: t('register.department_required'),
-        };
-      } else if (editedProfessional.value.department.length < 2) {
-        professionalValidation.value.department = {
-          isValid: false,
-          message: 'Department must be at least 2 characters',
-        };
-      } else if (editedProfessional.value.department.length > 100) {
-        professionalValidation.value.department = {
-          isValid: false,
-          message: 'Department must be less than 100 characters',
-        };
-      } else {
-        professionalValidation.value.department = {
-          isValid: true,
-          message: '',
-        };
-      }
-      break;
-  }
-}
 
 // Address validation functions (matching RegisterPage.vue)
 async function validateCityField() {
@@ -1982,104 +1701,6 @@ async function saveUsername() {
   }
 }
 
-// Professional info editing functions
-async function startEditProfessional() {
-  editProfessionalMode.value = true;
-  editedProfessional.value = {
-    affiliation: props.userProfile?.affiliation || '',
-    department: props.userProfile?.department || '',
-  };
-  professionalValidation.value = {
-    affiliation: { isValid: null, message: '' },
-    department: { isValid: null, message: '' },
-  };
-}
-
-function cancelEditProfessional() {
-  editProfessionalMode.value = false;
-  editedProfessional.value = {
-    affiliation: props.userProfile?.affiliation || '',
-    department: props.userProfile?.department || '',
-  };
-  professionalValidation.value = {
-    affiliation: { isValid: null, message: '' },
-    department: { isValid: null, message: '' },
-  };
-}
-
-async function saveProfessional() {
-  if (savingProfessional.value) return;
-
-  // Validate fields
-  validateProfessionalField('affiliation');
-  validateProfessionalField('department');
-
-  const hasErrors =
-    professionalValidation.value.affiliation.isValid === false ||
-    professionalValidation.value.department.isValid === false;
-
-  if (hasErrors) {
-    emit('show-message', {
-      text: 'Veuillez corriger les erreurs avant de sauvegarder',
-      type: 'error',
-    });
-    return;
-  }
-
-  // Check if values have actually changed
-  const profileData = {};
-  let hasChanges = false;
-
-  if (editedProfessional.value.affiliation !== props.userProfile?.affiliation) {
-    profileData.affiliation = editedProfessional.value.affiliation;
-    hasChanges = true;
-  }
-
-  if (editedProfessional.value.department !== props.userProfile?.department) {
-    profileData.department = editedProfessional.value.department;
-    hasChanges = true;
-  }
-
-  if (!hasChanges) {
-    emit('show-message', {
-      text: 'Aucune modification détectée',
-      type: 'info',
-    });
-    editProfessionalMode.value = false;
-    return;
-  }
-
-  try {
-    savingProfessional.value = true;
-
-    const response = await updateUserProfile(profileData);
-
-    if (response.data) {
-      emit('show-message', {
-        text: 'Informations professionnelles mises à jour avec succès',
-        type: 'success',
-      });
-      emit('profile-updated');
-      editProfessionalMode.value = false;
-    }
-  } catch (error) {
-    console.error('Error updating professional info:', error);
-    let errorMessage =
-      'Erreur lors de la mise à jour des informations professionnelles';
-
-    if (error.response?.data?.detail) {
-      errorMessage = error.response.data.detail;
-    } else if (error.response?.status === 400) {
-      errorMessage =
-        'Données invalides. Veuillez vérifier les informations saisies.';
-    }
-
-    emit('show-message', { text: errorMessage, type: 'error' });
-  } finally {
-    savingProfessional.value = false;
-  }
-}
-
 // Address editing functions
 async function startEditAddress() {
   editAddressMode.value = true;
@@ -2224,16 +1845,6 @@ async function saveAddress() {
   }
 }
 
-function formatDate(dateString) {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('fr-FR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 function editProfessionalInfo() {
   startEditProfessional();
 }
@@ -2243,6 +1854,6 @@ function editAddress() {
 }
 </script>
 
-<style scoped>
+<style>
 @import url('../../../assets/css/profile-overview.css');
 </style>
