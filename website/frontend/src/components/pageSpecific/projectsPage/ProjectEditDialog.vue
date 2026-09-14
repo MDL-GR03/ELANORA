@@ -1,34 +1,65 @@
 <template>
-  <div class="project-edit-modal-overlay">
-    <div class="project-edit-modal-content">
+  <div class="project-edit-modal-overlay" @click.self="close">
+    <div
+      ref="dialogElement"
+      class="project-edit-modal-content"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="titleId"
+      tabindex="-1"
+      @keydown="handleDialogKeydown"
+    >
       <template v-if="props.project && props.project.project_name">
-        <h2 class="project-edit-modal-title">Edit Project</h2>
+        <h2 :id="titleId" class="project-edit-modal-title">
+          {{ t('projectsPage.editDialog.title') }}
+        </h2>
         <form @submit.prevent="handleEdit">
+          <label class="project-edit-label" :for="nameId">
+            {{ t('projectsPage.editDialog.projectNameLabel') }}
+          </label>
           <input
+            :id="nameId"
+            ref="nameInput"
             v-model="name"
             class="project-edit-input"
             type="text"
-            placeholder="Project name"
+            :placeholder="t('projectsPage.editDialog.projectNamePlaceholder')"
             maxlength="100"
             required
+            :aria-invalid="Boolean(nameError)"
+            :aria-describedby="nameError ? nameErrorId : undefined"
             @input="validateName"
           />
           <div class="project-edit-error" style="min-height: 20px">
-            <span v-if="nameError">{{ nameError }}</span>
+            <span v-if="nameError" :id="nameErrorId" role="alert">{{
+              nameError
+            }}</span>
           </div>
+          <label class="project-edit-label" :for="descriptionId">
+            {{ t('projectsPage.editDialog.projectDescriptionLabel') }}
+          </label>
           <textarea
+            :id="descriptionId"
             v-model="description"
             class="project-edit-textarea"
-            placeholder="Description (optional)"
+            :placeholder="
+              t('projectsPage.editDialog.projectDescriptionPlaceholder')
+            "
             maxlength="5000"
             rows="5"
+            :aria-invalid="Boolean(descError)"
+            :aria-describedby="
+              descError ? descriptionErrorId : descriptionCountId
+            "
             @input="validateDescription"
           ></textarea>
-          <div class="project-edit-desc-info">
+          <div :id="descriptionCountId" class="project-edit-desc-info">
             <span>{{ description.length }}/5000</span>
           </div>
           <div class="project-edit-error" style="min-height: 20px">
-            <span v-if="descError">{{ descError }}</span>
+            <span v-if="descError" :id="descriptionErrorId" role="alert">{{
+              descError
+            }}</span>
           </div>
           <div class="project-edit-actions">
             <button
@@ -36,30 +67,43 @@
               class="project-page-create-btn"
               :disabled="editing || !canEdit"
             >
-              {{ editing ? 'Saving...' : 'Save' }}
+              {{
+                editing
+                  ? t('projectsPage.editDialog.saving')
+                  : t('projectsPage.editDialog.save')
+              }}
             </button>
             <button
               type="button"
               class="project-page-create-btn"
-              @click="emit('close')"
+              @click="close"
             >
-              Cancel
+              {{ t('common.cancel') }}
             </button>
           </div>
           <div class="project-edit-error" style="min-height: 20px">
-            <span v-if="error">{{ error }}</span>
+            <span v-if="error" role="alert">{{ error }}</span>
           </div>
         </form>
       </template>
       <template v-else>
-        <div>Loading...</div>
+        <div role="status">{{ t('common.loading') }}</div>
       </template>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import {
+  ref,
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  useId,
+  watch,
+} from 'vue';
+import { useI18n } from 'vue-i18n';
 import gitService from '@api/service/gitService';
 import { useProjectStore } from '@stores/project';
 
@@ -72,6 +116,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'edited']);
 const projectStore = useProjectStore();
+const { t } = useI18n();
 
 const name = ref('');
 const description = ref('');
@@ -79,6 +124,16 @@ const editing = ref(false);
 const error = ref('');
 const nameError = ref('');
 const descError = ref('');
+const dialogElement = ref(null);
+const nameInput = ref(null);
+const titleId = `project-edit-title-${useId()}`;
+const nameId = `project-edit-name-${useId()}`;
+const nameErrorId = `project-edit-name-error-${useId()}`;
+const descriptionId = `project-edit-description-${useId()}`;
+const descriptionCountId = `project-edit-description-count-${useId()}`;
+const descriptionErrorId = `project-edit-description-error-${useId()}`;
+const previouslyFocused =
+  typeof document !== 'undefined' ? document.activeElement : null;
 
 watch(
   () => props.project,
@@ -98,11 +153,11 @@ const allProjectNames = computed(() =>
 function validateName() {
   const trimmed = name.value.trim();
   if (!trimmed) {
-    nameError.value = 'Project name is required.';
+    nameError.value = t('projectsPage.editDialog.errors.nameRequired');
   } else if (trimmed.length > 100) {
-    nameError.value = 'Project name must be at most 100 characters.';
+    nameError.value = t('projectsPage.editDialog.errors.nameTooLong');
   } else if (allProjectNames.value.includes(trimmed.toLowerCase())) {
-    nameError.value = 'A project with this name already exists.';
+    nameError.value = t('projectsPage.editDialog.errors.nameExists');
   } else {
     nameError.value = '';
   }
@@ -113,7 +168,7 @@ function validateDescription() {
     description.value = '';
   }
   if (description.value.length > 5000) {
-    descError.value = 'Description must be at most 5000 characters.';
+    descError.value = t('projectsPage.editDialog.errors.descTooLong');
   } else {
     descError.value = '';
   }
@@ -129,7 +184,7 @@ async function handleEdit() {
   validateName();
   validateDescription();
   if (!canEdit.value) {
-    error.value = 'Please fix the errors above.';
+    error.value = t('projectsPage.editDialog.errors.fixAbove');
     return;
   }
   editing.value = true;
@@ -142,14 +197,54 @@ async function handleEdit() {
     error.value = '';
     emit('edited');
   } catch (e) {
-    error.value = e?.response?.data?.detail || 'Failed to edit project.';
+    error.value =
+      e?.response?.data?.detail ||
+      t('projectsPage.editDialog.errors.editFailed');
   } finally {
     editing.value = false;
   }
 }
 
-onMounted(() => {
+function close() {
+  emit('close');
+}
+
+function handleDialogKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    close();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = Array.from(
+    dialogElement.value?.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    ) || []
+  ).filter((element) => !element.hidden);
+  if (!focusable.length) {
+    event.preventDefault();
+    dialogElement.value?.focus();
+    return;
+  }
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+onMounted(async () => {
   projectStore.initBroadcastChannel();
+  await nextTick();
+  nameInput.value?.focus();
+});
+
+onBeforeUnmount(() => {
+  if (previouslyFocused?.isConnected) previouslyFocused.focus();
 });
 </script>
 
@@ -178,6 +273,14 @@ onMounted(() => {
   font-size: 1.3rem;
   font-weight: 600;
   text-align: center;
+}
+
+.project-edit-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #26354d;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .project-edit-input {

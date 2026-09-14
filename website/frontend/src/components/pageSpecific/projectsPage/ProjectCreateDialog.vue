@@ -1,26 +1,45 @@
 <template>
-  <div class="project-create-modal-overlay">
-    <div class="project-create-modal-content">
-      <h2 class="project-create-modal-title">
+  <div class="project-create-modal-overlay" @click.self="close">
+    <div
+      ref="dialogElement"
+      class="project-create-modal-content"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="titleId"
+      tabindex="-1"
+      @keydown="handleDialogKeydown"
+    >
+      <h2 :id="titleId" class="project-create-modal-title">
         {{ t('projectsPage.createProject') }}
       </h2>
       <form @submit.prevent="handleCreate">
-        <!-- Project Name -->
+        <label class="project-create-label" :for="nameId">
+          {{ t('projectsPage.createDialog.projectNameLabel') }}
+        </label>
         <input
+          :id="nameId"
+          ref="nameInput"
           v-model="name"
           class="project-create-input"
           type="text"
           :placeholder="t('projectsPage.createDialog.projectNamePlaceholder')"
           maxlength="100"
           required
+          :aria-invalid="Boolean(nameError)"
+          :aria-describedby="nameError ? nameErrorId : undefined"
           @input="validateName"
         />
         <div class="project-create-error" style="min-height: 20px">
-          <span v-if="nameError">{{ nameError }}</span>
+          <span v-if="nameError" :id="nameErrorId" role="alert">{{
+            nameError
+          }}</span>
         </div>
 
-        <!-- Description -->
+        <label class="project-create-label" :for="descriptionId">
+          {{ t('projectsPage.createDialog.projectDescriptionLabel') }}
+        </label>
         <textarea
+          :id="descriptionId"
           v-model="description"
           class="project-create-textarea"
           :placeholder="
@@ -28,13 +47,19 @@
           "
           maxlength="5000"
           rows="5"
+          :aria-invalid="Boolean(descError)"
+          :aria-describedby="
+            descError ? descriptionErrorId : descriptionCountId
+          "
           @input="validateDescription"
         ></textarea>
-        <div class="project-create-desc-info">
+        <div :id="descriptionCountId" class="project-create-desc-info">
           <span>{{ description.length }}/5000</span>
         </div>
         <div class="project-create-error" style="min-height: 20px">
-          <span v-if="descError">{{ descError }}</span>
+          <span v-if="descError" :id="descriptionErrorId" role="alert">{{
+            descError
+          }}</span>
         </div>
 
         <!-- Upload Component -->
@@ -46,7 +71,7 @@
         />
 
         <div class="project-create-error" style="min-height: 20px">
-          <span v-if="error">{{ error }}</span>
+          <span v-if="error" role="alert">{{ error }}</span>
         </div>
 
         <div class="project-create-actions">
@@ -61,11 +86,7 @@
                 : t('projectsPage.createDialog.create')
             }}
           </button>
-          <button
-            type="button"
-            class="project-page-create-btn"
-            @click="emit('close')"
-          >
+          <button type="button" class="project-page-create-btn" @click="close">
             {{ t('common.cancel') }}
           </button>
         </div>
@@ -75,7 +96,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import {
+  ref,
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  useId,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import UploadFolder from '@components/common/UploadFolder.vue';
 import gitService from '@api/service/gitService';
@@ -90,6 +118,16 @@ const description = ref('');
 const selectedFiles = ref([]);
 const creating = ref(false);
 const error = ref('');
+const dialogElement = ref(null);
+const nameInput = ref(null);
+const titleId = `project-create-title-${useId()}`;
+const nameId = `project-create-name-${useId()}`;
+const nameErrorId = `project-create-name-error-${useId()}`;
+const descriptionId = `project-create-description-${useId()}`;
+const descriptionCountId = `project-create-description-count-${useId()}`;
+const descriptionErrorId = `project-create-description-error-${useId()}`;
+const previouslyFocused =
+  typeof document !== 'undefined' ? document.activeElement : null;
 
 const nameError = ref('');
 const descError = ref('');
@@ -167,8 +205,46 @@ async function handleCreate() {
   }
 }
 
-onMounted(() => {
+function close() {
+  emit('close');
+}
+
+function handleDialogKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    close();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = Array.from(
+    dialogElement.value?.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    ) || []
+  ).filter((element) => !element.hidden);
+  if (!focusable.length) {
+    event.preventDefault();
+    dialogElement.value?.focus();
+    return;
+  }
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+onMounted(async () => {
   projectStore.initBroadcastChannel();
+  await nextTick();
+  nameInput.value?.focus();
+});
+
+onBeforeUnmount(() => {
+  if (previouslyFocused?.isConnected) previouslyFocused.focus();
 });
 </script>
 
@@ -216,6 +292,13 @@ onMounted(() => {
   font-size: 1.3rem;
   font-weight: 600;
   text-align: center;
+}
+
+.project-create-label {
+  margin-bottom: 6px;
+  color: #26354d;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .project-create-input {

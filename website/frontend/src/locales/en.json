@@ -626,7 +626,9 @@
     },
     "createDialog": {
       "title": "Create a new project",
+      "projectNameLabel": "Project name",
       "projectNamePlaceholder": "Project name",
+      "projectDescriptionLabel": "Description",
       "projectDescriptionPlaceholder": "Description (optional)",
       "dropFolder": "Drop ELAN files here or click to browse",
       "onlyEafFiles": "Drag folders to include all .eaf files, or browse for individual files",
@@ -641,6 +643,23 @@
         "fixAbove": "Please fix the errors above.",
         "folderDropNotSupported": "Your browser does not support folder drag & drop. Please use the \"Browse\" button.",
         "createFailed": "Failed to create project."
+      }
+    },
+    "editDialog": {
+      "title": "Edit project",
+      "projectNameLabel": "Project name",
+      "projectNamePlaceholder": "Project name",
+      "projectDescriptionLabel": "Description",
+      "projectDescriptionPlaceholder": "Description (optional)",
+      "save": "Save",
+      "saving": "Saving...",
+      "errors": {
+        "nameRequired": "Project name is required.",
+        "nameTooLong": "Project name must be at most 100 characters.",
+        "nameExists": "A project with this name already exists.",
+        "descTooLong": "Description must be at most 5000 characters.",
+        "fixAbove": "Please fix the errors above.",
+        "editFailed": "Failed to edit project."
       }
     },
     "infoBanner": {

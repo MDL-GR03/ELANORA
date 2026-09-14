@@ -615,7 +615,9 @@
     },
     "createDialog": {
       "title": "Créer un nouveau projet",
+      "projectNameLabel": "Nom du projet",
       "projectNamePlaceholder": "Nom du projet",
+      "projectDescriptionLabel": "Description",
       "projectDescriptionPlaceholder": "Description (optionnelle)",
       "dropFolder": "Déposez des fichiers ELAN ici ou cliquez pour parcourir",
       "onlyEafFiles": "Glissez des dossiers pour inclure tous les fichiers .eaf, ou parcourez pour des fichiers individuels",
@@ -630,6 +632,23 @@
         "fixAbove": "Veuillez corriger les erreurs ci-dessus.",
         "folderDropNotSupported": "Votre navigateur ne supporte pas le glisser-déposer de dossier. Utilisez le bouton \"Parcourir\".",
         "createFailed": "Échec de la création du projet."
+      }
+    },
+    "editDialog": {
+      "title": "Modifier le projet",
+      "projectNameLabel": "Nom du projet",
+      "projectNamePlaceholder": "Nom du projet",
+      "projectDescriptionLabel": "Description",
+      "projectDescriptionPlaceholder": "Description (optionnelle)",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "errors": {
+        "nameRequired": "Le nom du projet est requis.",
+        "nameTooLong": "Le nom du projet doit comporter au maximum 100 caractères.",
+        "nameExists": "Un projet avec ce nom existe déjà.",
+        "descTooLong": "La description doit comporter au maximum 5000 caractères.",
+        "fixAbove": "Veuillez corriger les erreurs ci-dessus.",
+        "editFailed": "Échec de la modification du projet."
       }
     },
     "infoBanner": {

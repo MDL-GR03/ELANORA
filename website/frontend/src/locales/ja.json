@@ -578,7 +578,9 @@
     },
     "createDialog": {
       "title": "新しいプロジェクトを作成",
+      "projectNameLabel": "プロジェクト名",
       "projectNamePlaceholder": "プロジェクト名",
+      "projectDescriptionLabel": "説明",
       "projectDescriptionPlaceholder": "説明（オプション）",
       "dropFolder": "ここにフォルダーをドロップするか、クリックして参照",
       "onlyEafFiles": ".eafファイルのみが含まれます",
@@ -593,6 +595,23 @@
         "fixAbove": "上記のエラーを修正してください。",
         "folderDropNotSupported": "お使いのブラウザはフォルダーのドラッグ＆ドロップをサポートしていません。「参照」ボタンを使用してください。",
         "createFailed": "プロジェクトの作成に失敗しました。"
+      }
+    },
+    "editDialog": {
+      "title": "プロジェクトを編集",
+      "projectNameLabel": "プロジェクト名",
+      "projectNamePlaceholder": "プロジェクト名",
+      "projectDescriptionLabel": "説明",
+      "projectDescriptionPlaceholder": "説明（オプション）",
+      "save": "保存",
+      "saving": "保存中...",
+      "errors": {
+        "nameRequired": "プロジェクト名は必須です。",
+        "nameTooLong": "プロジェクト名は100文字以内にする必要があります。",
+        "nameExists": "この名前のプロジェクトは既に存在します。",
+        "descTooLong": "説明は5000文字以内にする必要があります。",
+        "fixAbove": "上記のエラーを修正してください。",
+        "editFailed": "プロジェクトの編集に失敗しました。"
       }
     }
   },
