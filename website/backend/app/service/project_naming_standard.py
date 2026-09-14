@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud import (
     accepted_value,
     component_accepted_value,
@@ -21,6 +22,13 @@ from app.schema.responses.project_naming_standard import (
 )
 
 logger = get_logger(__name__)
+
+
+def _is_duplicate_standard_error(error: IntegrityError) -> bool:
+    diagnostic = getattr(error.orig, "diag", None)
+    return (
+        getattr(diagnostic, "constraint_name", None) == "uq_project_filetype_standard"
+    )
 
 
 class ProjectNamingStandardService:
@@ -43,7 +51,10 @@ class ProjectNamingStandardService:
             ]
         except Exception as e:
             await db.rollback()
-            logger.error(f"Error in get_standards_for_project: {e}", exc_info=True)
+            logger.error(
+                "Failed to get project naming standards; error_type=%s",
+                safe_exception_type(e),
+            )
             raise
 
     @staticmethod
@@ -52,7 +63,10 @@ class ProjectNamingStandardService:
             return await get_standard_with_components_full(db, standard_id)
         except Exception as e:
             await db.rollback()
-            logger.error(f"Error in get_standard_with_components: {e}", exc_info=True)
+            logger.error(
+                "Failed to get a naming standard; error_type=%s",
+                safe_exception_type(e),
+            )
             raise
 
     @staticmethod
@@ -108,17 +122,21 @@ class ProjectNamingStandardService:
             )
         except IntegrityError as e:
             await db.rollback()
-            msg = str(e.orig)
-            logger.error(f"IntegrityError while creating standard: {msg}")
-            if "uq_project_filetype_standard" in msg:
+            logger.error(
+                "Naming standard creation violated data integrity; error_type=%s",
+                safe_exception_type(e),
+            )
+            if _is_duplicate_standard_error(e):
                 raise HTTPException(
                     status_code=409,
                     detail="configureNamingStandards.eventMessages.addFailedDuplicate",
                 ) from e
+            raise
         except Exception as e:
             await db.rollback()
             logger.error(
-                f"Unexpected error while creating standard: {e}", exc_info=True
+                "Unexpected naming standard creation failure; error_type=%s",
+                safe_exception_type(e),
             )
             raise
 
@@ -148,7 +166,10 @@ class ProjectNamingStandardService:
             return True
         except Exception as e:
             await db.rollback()
-            logger.error(f"Error during delete_standard: {e}", exc_info=True)
+            logger.error(
+                "Failed to delete a naming standard; error_type=%s",
+                safe_exception_type(e),
+            )
             raise
 
     @staticmethod
@@ -164,7 +185,8 @@ class ProjectNamingStandardService:
             logger.info("Bulk delete and cleanup committed successfully.")
         except Exception as e:
             logger.error(
-                f"Error during delete_all_standards_by_project: {e}", exc_info=True
+                "Failed to delete project naming standards; error_type=%s",
+                safe_exception_type(e),
             )
             raise
 
@@ -177,7 +199,8 @@ class ProjectNamingStandardService:
         except Exception as e:
             await db.rollback()
             logger.error(
-                f"Error in get_unique_component_names_by_project: {e}", exc_info=True
+                "Failed to get unique component names; error_type=%s",
+                safe_exception_type(e),
             )
             raise
 
@@ -207,7 +230,8 @@ class ProjectNamingStandardService:
         except Exception as e:
             await db.rollback()
             logger.error(
-                f"Error in get_project_naming_standards_full: {e}", exc_info=True
+                "Failed to get complete project naming standards; error_type=%s",
+                safe_exception_type(e),
             )
             raise
 
@@ -221,7 +245,10 @@ class ProjectNamingStandardService:
             ]
         except Exception as e:
             await db.rollback()
-            logger.error(f"Error in get_projects_with_standards: {e}", exc_info=True)
+            logger.error(
+                "Failed to get projects with naming standards; error_type=%s",
+                safe_exception_type(e),
+            )
             raise
 
     @staticmethod
@@ -284,16 +311,15 @@ class ProjectNamingStandardService:
                     imported_standards.append(NamingStandardResponse(**new_standard))
                 except IntegrityError as e:
                     await db.rollback()
-                    msg = str(e.orig)
-                    if "uq_project_filetype_standard" in msg:
+                    if _is_duplicate_standard_error(e):
                         raise HTTPException(
                             status_code=409,
                             detail="configureNamingStandards.eventMessages.importFailedDuplicate",
                         ) from e
                     else:
                         logger.error(
-                            f"Unexpected error while importing standards: {e}",
-                            exc_info=True,
+                            "Unexpected naming standard import failure; error_type=%s",
+                            safe_exception_type(e),
                         )
                         raise
 
@@ -303,5 +329,8 @@ class ProjectNamingStandardService:
             )
         except Exception as e:
             await db.rollback()
-            logger.error(f"Error in import_selected_standards: {e}", exc_info=True)
+            logger.error(
+                "Failed to import naming standards; error_type=%s",
+                safe_exception_type(e),
+            )
             raise

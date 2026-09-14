@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.model.association import (
     ElanFileToMedia,
     ElanFileToTier,
@@ -348,6 +349,9 @@ async def remove_user_from_project(
         await db.commit()
         return result > 0
     except Exception as e:
-        logger.error(f"Failed to remove user {user_id} from project {project_id}: {e}")
+        logger.error(
+            "Failed to remove a project member; error_type=%s",
+            safe_exception_type(e),
+        )
         await db.rollback()
         return False

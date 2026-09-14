@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.model.enums import InvitationStatus, ProjectPermission
 from app.model.invitation import Invitation
 from app.utils.database import DatabaseUtils
@@ -26,7 +27,10 @@ async def delete_project_invitations(db: AsyncSession, project_id: int):
         )
         logger.info(f"Deleted {count} invitations for project_id={project_id}")
     except Exception as e:
-        logger.error(f"Failed to delete invitations for project_id={project_id}: {e}")
+        logger.error(
+            "Failed to delete project invitations; error_type=%s",
+            safe_exception_type(e),
+        )
 
 
 async def create_invitation(

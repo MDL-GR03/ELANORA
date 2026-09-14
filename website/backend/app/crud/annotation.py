@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.model.annotation import Annotation
 from app.model.annotation_value import AnnotationValue
 from app.utils.database import DatabaseUtils
@@ -161,4 +162,7 @@ async def delete_annotations_by_file(db: AsyncSession, elan_id: int) -> int:
         await db.flush()
         return count
     except Exception as e:
-        logger.exception("Failed to delete annotations by file", exc_info=e)
+        logger.error(
+            "Failed to delete annotations by file; error_type=%s",
+            safe_exception_type(e),
+        )

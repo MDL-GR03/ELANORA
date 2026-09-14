@@ -3,6 +3,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud import notification as notification_crud
 from app.crud.notification import get_notification_preference_by_user_id
 from app.schema.requests.notification import (
@@ -324,6 +325,9 @@ class NotificationService:
                     language=language,
                 )
         except Exception as e:
-            logger.warning(f"Failed to send role change email to user {user_id}: {e!s}")
+            logger.warning(
+                "Failed to send a role-change email; error_type=%s",
+                safe_exception_type(e),
+            )
 
         return notification, email_sent

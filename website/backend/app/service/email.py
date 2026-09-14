@@ -8,6 +8,10 @@ from passlib.context import CryptContext
 from pydantic import SecretStr
 
 from app.core import config
+from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
+
+logger = get_logger(__name__)
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -93,7 +97,10 @@ class EmailService:
                 contact_url=contact_url,
             )
         except Exception as e:
-            print(f"[EmailService] Failed to load or format template: {e}")
+            logger.warning(
+                "Failed to prepare a password-reset email template; error_type=%s",
+                safe_exception_type(e),
+            )
             # Fallback template in case of error
             if language.lower() == "en":
                 email_body = f"""
@@ -130,8 +137,9 @@ class EmailService:
             await fm.send_message(message)
             return True
         except Exception as e:
-            print(
-                f"[EmailService] Failed to send password reset verification email: {e}"
+            logger.error(
+                "Failed to send a password-reset email; error_type=%s",
+                safe_exception_type(e),
             )
             raise e
 
@@ -203,7 +211,10 @@ class EmailService:
                 contact_url=contact_url,
             )
         except Exception as e:
-            print(f"[EmailService] Failed to load or format invitation template: {e}")
+            logger.warning(
+                "Failed to prepare an invitation email template; error_type=%s",
+                safe_exception_type(e),
+            )
             # Fallback to simple template
             if language.lower() == "fr":
                 fallback_subject = "ELANORA - Invitation à rejoindre la plateforme"
@@ -255,8 +266,11 @@ class EmailService:
             await fm.send_message(message)
             return True
         except Exception as e:
-            print(f"[EmailService] Failed to send invitation email: {e}")
-            raise e
+            logger.error(
+                "Failed to send an invitation email; error_type=%s",
+                safe_exception_type(e),
+            )
+            raise
 
     async def send_email_verification_code(
         self, email: str, username: str, code: str, language: str = "en"
@@ -294,7 +308,10 @@ class EmailService:
                 contact_url=contact_url,
             )
         except Exception as e:
-            print(f"[EmailService] Failed to load or format template: {e}")
+            logger.warning(
+                "Failed to prepare an email-verification template; error_type=%s",
+                safe_exception_type(e),
+            )
             # Fallback template in case of error
             if language.lower() == "en":
                 email_body = f"""
@@ -335,8 +352,11 @@ class EmailService:
             await fm.send_message(message)
             return True
         except Exception as e:
-            print(f"[EmailService] Failed to send email verification code: {e}")
-            raise e
+            logger.error(
+                "Failed to send an email-verification code; error_type=%s",
+                safe_exception_type(e),
+            )
+            raise
 
     async def send_existing_user_invitation_email(
         self,
@@ -407,8 +427,9 @@ class EmailService:
                 contact_url=contact_url,
             )
         except Exception as e:
-            print(
-                f"[EmailService] Failed to load or format existing user invitation template: {e}"
+            logger.warning(
+                "Failed to prepare an existing-user invitation template; error_type=%s",
+                safe_exception_type(e),
             )
             # Fallback to simple template
             if language.lower() == "fr":
@@ -456,8 +477,11 @@ class EmailService:
             await fm.send_message(message)
             return True
         except Exception as e:
-            print(f"[EmailService] Failed to send existing user invitation email: {e}")
-            raise e
+            logger.error(
+                "Failed to send an existing-user invitation email; error_type=%s",
+                safe_exception_type(e),
+            )
+            raise
 
     async def send_role_change_email(
         self,
@@ -509,7 +533,10 @@ class EmailService:
                 year=current_year,
             )
         except Exception as e:
-            print(f"[EmailService] Failed to load or format role change template: {e}")
+            logger.warning(
+                "Failed to prepare a role-change email template; error_type=%s",
+                safe_exception_type(e),
+            )
             # Fallback template in case of error
             if language.lower() == "fr":
                 email_body = f"""
@@ -549,5 +576,8 @@ class EmailService:
             await fm.send_message(message)
             return True
         except Exception as e:
-            print(f"[EmailService] Failed to send role change email: {e}")
+            logger.error(
+                "Failed to send a role-change email; error_type=%s",
+                safe_exception_type(e),
+            )
             return False

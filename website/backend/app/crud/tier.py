@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.model.annotation import Annotation
 from app.model.association import ElanFileToTier
 from app.model.tier import Tier
@@ -34,7 +35,10 @@ async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int):
             await DatabaseUtils.bulk_delete(db, Tier, Tier.elan_id == elan_id)
         logger.info(f"Bulk deleted tiers and annotations for elan_id={elan_id}")
     except Exception as e:
-        logger.error(f"Failed to bulk delete tiers for elan_id={elan_id}: {e}")
+        logger.error(
+            "Failed to bulk delete ELAN tiers; error_type=%s",
+            safe_exception_type(e),
+        )
 
 
 async def get_tier_by_id(db: AsyncSession, tier_id: int) -> Tier | None:

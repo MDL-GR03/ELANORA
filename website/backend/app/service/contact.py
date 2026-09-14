@@ -8,6 +8,7 @@ from fastapi_mail import FastMail, MessageSchema, MessageType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud.user import get_admin_emails
 from app.schema.requests.contact import RequestType
 from app.service.email import EmailService
@@ -175,9 +176,13 @@ class ContactService:
 
                 except Exception as e:
                     logger.error(
-                        f"Failed to send contact message to {admin_email}: {e!s}"
+                        "Failed to send a contact message; error_type=%s",
+                        safe_exception_type(e),
                     )
 
         except Exception as e:
-            logger.error(f"Failed to send contact messages: {e!s}")
+            logger.error(
+                "Failed to send contact messages; error_type=%s",
+                safe_exception_type(e),
+            )
             raise

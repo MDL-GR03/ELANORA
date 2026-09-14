@@ -5,6 +5,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud.annotation import (
     delete_unused_annotation_values,
 )
@@ -273,7 +274,10 @@ async def delete_elan_file_full(db: AsyncSession, elan_id: int) -> bool:
         return True
 
     except Exception as e:
-        logger.error(f"Failed to fully delete ELAN file elan_id={elan_id}: {e}")
+        logger.error(
+            "Failed to fully delete an ELAN file; error_type=%s",
+            safe_exception_type(e),
+        )
         return False
 
 

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_BACKUPS_BASE_PATH
+from app.core.error_diagnostics import safe_exception_type
 from app.storage.paths import safe_project_path
 
 
@@ -102,7 +103,10 @@ def remove_project_backup(project_name: str):
             shutil.rmtree(project_backup_path)
             logger.info(f"Deleted backup for project: {project_name}")
         except Exception as e:
-            logger.error(f"Failed to delete backup for project '{project_name}': {e}")
+            logger.error(
+                "Failed to delete a project backup; error_type=%s",
+                safe_exception_type(e),
+            )
             raise
     else:
         logger.warning(f"No backup found for project: {project_name}")
@@ -202,5 +206,8 @@ def rename_project_backup_folder(old_project_name: str, new_project_name: str):
             f"Renamed backup folder from '{old_backup_path}' to '{new_backup_path}'"
         )
     except Exception as e:
-        logger.error(f"Failed to rename backup folder: {e}")
+        logger.error(
+            "Failed to rename a backup directory; error_type=%s",
+            safe_exception_type(e),
+        )
         raise

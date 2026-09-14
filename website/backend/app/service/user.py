@@ -8,6 +8,7 @@ from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.core.jwt import create_access_token, create_refresh_token, verify_refresh_token
 from app.crud.user import (
     check_user_exists_by_email,
@@ -187,8 +188,8 @@ class UserService:
             }
 
         except Exception as e:
-            logger.error(f"Token refresh failed: {e!s}")
-            return {"success": False, "message": f"Token refresh failed: {e!s}"}
+            logger.error("Token refresh failed; error_type=%s", safe_exception_type(e))
+            return {"success": False, "message": "Token refresh failed"}
 
     @classmethod
     async def create_user(

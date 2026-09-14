@@ -2,6 +2,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.model.accepted_value import AcceptedValue
 from app.model.component_accepted_value import ComponentAcceptedValue
 from app.utils.database import DatabaseUtils
@@ -42,6 +43,7 @@ async def delete_orphaned_accepted_values(db: AsyncSession):
     except Exception as e:
         await db.rollback()
         logger.error(
-            f"Error during delete_orphaned_accepted_values: {e}", exc_info=True
+            "Failed to delete orphaned accepted values; error_type=%s",
+            safe_exception_type(e),
         )
         raise

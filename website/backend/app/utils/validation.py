@@ -4,6 +4,7 @@ from typing import Any
 import regex as re
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 
 logger = get_logger()
 
@@ -152,7 +153,10 @@ class ValidationUtils:
             logger.debug(f"Final pattern: {pattern}")
             return pattern
         except re.error as e:
-            logger.error(f"Error during pattern replacement for '{name}': {e}")
+            logger.error(
+                "Naming pattern replacement failed; error_type=%s",
+                safe_exception_type(e),
+            )
             return None
 
     @staticmethod
@@ -164,7 +168,10 @@ class ValidationUtils:
             logger.debug("Regex compiled successfully")
             return compiled
         except re.error as e:
-            logger.error(f"Invalid regex pattern: {pattern}, error: {e}")
+            logger.error(
+                "Naming standard contains an invalid pattern; error_type=%s",
+                safe_exception_type(e),
+            )
             return None
 
     @staticmethod
