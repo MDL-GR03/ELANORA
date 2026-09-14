@@ -317,6 +317,11 @@ warnings, version history, duplicate and supersession evidence, quality checks,
 file counts, semantic recaps and conflicted filenames now live in a tested card
 body component as well. Project-scoped contribution loading, stale-project race
 protection, proposed-topic initialization, review counts, research-topic loading
-and read-side error state now live in `useContributionQueueData`. The page still
-owns administrator mutations, confirmations and navigation. Moving those
-mutation workflows into a dedicated composable is the next frontend slice.
+and read-side error state now live in `useContributionQueueData`. Topic
+classification, compatibility testing, merge confirmation and publication,
+duplicate dismissal, terminal decline, busy states and API-error presentation
+now live in `useContributionMutations`, with services and confirmation UI
+injected for direct testing. The page retains route/workspace navigation and the
+decline dialog itself. The contribution page decomposition is now sufficiently
+split by use case; the next item 6 target is the next oversized component chosen
+by risk and test coverage rather than further fragmenting this page.

@@ -291,7 +291,6 @@
 
 <script setup>
 import { ref, onMounted, computed, onUnmounted, watch, nextTick } from 'vue';
-import gitService from '@/api/service/gitService';
 import '@/assets/css/pending-uploads-page.css';
 import UploadDetailsView from '@/components/common/UploadDetailsView.vue';
 import UploadResolutionView from '@/components/common/UploadResolutionView.vue';
@@ -307,6 +306,7 @@ import { useUserStore } from '@/stores/user.js';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
+import { useContributionMutations } from '@/composables/useContributionMutations';
 import { useContributionQueueData } from '@/composables/useContributionQueueData';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { hasProjectPermission } from '@/utils/authorization';
@@ -324,7 +324,6 @@ const confirmAction = useUserConfirm();
 const userStore = useUserStore();
 const eventMessages = useEventMessageStore();
 const topicDecisions = ref({});
-const topicDecisionBusy = ref(false);
 const expandedTopicDecision = ref(null);
 
 // Modal state
@@ -334,16 +333,6 @@ const declineReason = ref('');
 const declineDialog = ref(null);
 let modalTrigger = null;
 
-// Action state
-const merging = ref(null); // upload_id being merged
-const testing = ref(null); // upload_id being tested
-const dismissing = ref(null);
-const actionBusy = computed(
-  () =>
-    merging.value !== null ||
-    testing.value !== null ||
-    dismissing.value !== null
-);
 const queueFilter = ref('all');
 const queueQuery = ref('');
 const queueSort = ref('oldest');
@@ -376,6 +365,29 @@ const {
   currentProject,
   currentProjectName,
   translate: t,
+});
+const {
+  merging,
+  testing,
+  dismissing,
+  topicDecisionBusy,
+  actionBusy,
+  assignResearchTopic: performTopicAssignment,
+  createResearchTopic: performTopicCreation,
+  testMerge,
+  mergeUpload,
+  dismissDuplicate,
+  declineUpload: performDecline,
+} = useContributionMutations({
+  currentProjectName,
+  pendingUploads,
+  error,
+  fetchPendingUploads,
+  fetchReviewCount,
+  loadResearchTopics,
+  translate: t,
+  confirmAction,
+  eventMessages,
 });
 const researchTopicOptions = computed(() =>
   researchTopics.value.map((topic) => ({
@@ -564,56 +576,15 @@ onUnmounted(() => {
 });
 
 async function assignResearchTopic(upload) {
-  const topicId = Number(topicDecisions.value[upload.upload_id]);
-  if (!topicId) return;
-  topicDecisionBusy.value = true;
-  error.value = '';
-  try {
-    await gitService.setContributionResearchTopic(
-      currentProjectName.value,
-      upload.upload_id,
-      { topic_id: topicId, new_topic_name: null }
-    );
-    await fetchPendingUploads(false);
-    eventMessages.addMessage('Research topic assigned.', 'success');
-  } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail ||
-      'The research topic could not be assigned.';
-    eventMessages.addMessage(error.value, 'error');
-  } finally {
-    topicDecisionBusy.value = false;
-  }
+  await performTopicAssignment(upload, topicDecisions.value[upload.upload_id]);
 }
 
 async function createResearchTopicFromContribution(upload) {
-  const topicName = (topicSuggestionNames.value[upload.upload_id] || '').trim();
-  if (!topicName) return;
-  topicDecisionBusy.value = true;
-  error.value = '';
-  try {
-    const context = await gitService.setContributionResearchTopic(
-      currentProjectName.value,
-      upload.upload_id,
-      { topic_id: null, new_topic_name: topicName }
-    );
-    await Promise.all([fetchPendingUploads(false), loadResearchTopics()]);
-    eventMessages.addMessage(
-      context.declared_topic_name === topicName
-        ? 'Research topic created and assigned.'
-        : `Matched and assigned the existing topic “${context.declared_topic_name}”.`,
-      'success'
-    );
-  } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail ||
-      'The research topic could not be created.';
-    eventMessages.addMessage(error.value, 'error');
-  } finally {
-    topicDecisionBusy.value = false;
-  }
+  await performTopicCreation(
+    upload,
+    topicSuggestionNames.value[upload.upload_id]
+  );
 }
-
 async function onReviewCountChange(count) {
   activeReviewCount.value = count;
   await Promise.all([fetchReviewCount(), fetchPendingUploads(false)]);
@@ -630,120 +601,6 @@ function openLinkedReview(reviewCase) {
         : {}),
     },
   });
-}
-
-async function testMerge(upload) {
-  try {
-    testing.value = upload.upload_id;
-    error.value = '';
-
-    const response = await gitService.adminTestMerge(
-      currentProjectName.value,
-      upload.branch_name
-    );
-
-    // Update the upload status in the list
-    const index = pendingUploads.value.findIndex(
-      (u) => u.upload_id === upload.upload_id
-    );
-    if (index !== -1) {
-      pendingUploads.value[index] = {
-        ...pendingUploads.value[index],
-        merge_status: response.status,
-        conflicted_files: response.conflicted_files || [],
-        conflicts_count: response.conflicts_count || 0,
-        can_auto_merge: response.can_auto_merge,
-        tested_at: response.tested_at,
-      };
-    }
-    eventMessages.addMessage('Compatibility check completed.', 'success');
-  } catch (e) {
-    error.value =
-      e?.response?.data?.detail || t('pendingUploads.errors.testMergeFailed');
-    eventMessages.addMessage(error.value, 'error');
-  } finally {
-    testing.value = null;
-  }
-}
-
-async function mergeUpload(upload) {
-  if (upload.merge_status !== 'ready_to_merge') {
-    error.value = t('pendingUploads.errors.notReadyToMerge');
-    return;
-  }
-
-  const confirmed = await confirmAction({
-    title: t('pendingUploads.mergeConfirmation.title'),
-    message: t('pendingUploads.mergeConfirmation.message', {
-      branch: `contribution #${upload.upload_id}`,
-    }),
-    confirmText: t('pendingUploads.actions.mergeNow'),
-    cancelText: t('common.cancel'),
-  });
-  if (!confirmed) return;
-
-  try {
-    merging.value = upload.upload_id;
-    error.value = '';
-
-    await gitService.adminCompleteMerge(
-      currentProjectName.value,
-      upload.branch_name,
-      'auto' // Auto-merge since it's ready
-    );
-
-    // Remove the merged upload from the list
-    const index = pendingUploads.value.findIndex(
-      (u) => u.upload_id === upload.upload_id
-    );
-    if (index !== -1) {
-      pendingUploads.value.splice(index, 1);
-    }
-
-    // Refresh all uploads to update status of remaining ones
-    await fetchPendingUploads(false);
-    eventMessages.addMessage(
-      'Contribution merged into the project.',
-      'success'
-    );
-  } catch (e) {
-    error.value =
-      e?.response?.data?.detail || t('pendingUploads.errors.mergeFailed');
-    eventMessages.addMessage(error.value, 'error');
-  } finally {
-    merging.value = null;
-  }
-}
-
-async function dismissDuplicate(upload) {
-  const confirmed = await confirmAction({
-    title: `Dismiss contribution #${upload.upload_id}?`,
-    message: `It contains exactly the same project content as contribution #${upload.duplicate_of_upload_id}. Its redundant Git branch will be removed, while the dismissal remains in the audit history.`,
-    confirmText: 'Dismiss duplicate',
-    cancelText: t('common.cancel'),
-  });
-  if (!confirmed) return;
-
-  dismissing.value = upload.upload_id;
-  error.value = '';
-  try {
-    await gitService.dismissDuplicateUpload(
-      currentProjectName.value,
-      upload.upload_id
-    );
-    pendingUploads.value = pendingUploads.value.filter(
-      (item) => item.upload_id !== upload.upload_id
-    );
-    await fetchPendingUploads(false);
-    eventMessages.addMessage('Duplicate contribution dismissed.', 'success');
-  } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail ||
-      'The duplicate contribution could not be dismissed.';
-    eventMessages.addMessage(error.value, 'error');
-  } finally {
-    dismissing.value = null;
-  }
 }
 
 function openDeclineModal(upload, event) {
@@ -765,31 +622,10 @@ function closeDeclineModal() {
 async function declineUpload() {
   const upload = selectedUpload.value;
   const reason = declineReason.value.trim();
-  if (!upload || reason.length < 3) return;
-
-  dismissing.value = upload.upload_id;
-  error.value = '';
-  try {
-    await gitService.declinePendingUpload(
-      currentProjectName.value,
-      upload.upload_id,
-      reason
-    );
-    pendingUploads.value = pendingUploads.value.filter(
-      (item) => item.upload_id !== upload.upload_id
-    );
+  if (await performDecline(upload, reason)) {
     showDeclineModal.value = false;
     selectedUpload.value = null;
     declineReason.value = '';
-    await Promise.all([fetchPendingUploads(false), fetchReviewCount()]);
-    eventMessages.addMessage('Contribution declined and archived.', 'success');
-  } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail ||
-      'The contribution could not be declined.';
-    eventMessages.addMessage(error.value, 'error');
-  } finally {
-    dismissing.value = null;
   }
 }
 
