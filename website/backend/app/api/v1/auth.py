@@ -362,7 +362,7 @@ async def reset_password(
 async def register(
     request: RegisterWithInvitationRequest,
     db: AsyncSession = get_db_dep,
-):
+) -> RegistrationResponse:
     """Register a new user using an invitation code.
 
     This endpoint allows a user to register using an invitation code.

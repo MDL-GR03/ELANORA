@@ -60,9 +60,7 @@ class NotificationService:
         db: AsyncSession, notification_data: NotificationCreateRequest
     ) -> NotificationResponse:
         """Create a new notification."""
-        logger.info(
-            f"Creating notification for user {notification_data.user_id}: {notification_data.title}"
-        )
+        logger.info("Creating notification for user_id=%s", notification_data.user_id)
 
         notification = await notification_crud.create_notification(
             db, notification_data
@@ -158,6 +156,9 @@ class NotificationService:
         preference = await notification_crud.get_or_create_notification_preference(
             db, user_id
         )
+        # The CRUD operation creates the default row when it does not exist.
+        # Persist that default instead of losing it when the request session closes.
+        await db.commit()
         return NotificationPreferenceResponse.model_validate(preference)
 
     @staticmethod

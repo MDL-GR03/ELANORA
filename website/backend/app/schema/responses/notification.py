@@ -49,3 +49,10 @@ class NotificationStatsResponse(BaseModel):
     total_notifications: int = Field(..., description="Total number of notifications")
     unread_notifications: int = Field(..., description="Number of unread notifications")
     read_notifications: int = Field(..., description="Number of read notifications")
+
+
+class MarkAllNotificationsReadResponse(BaseModel):
+    """Result of marking every notification belonging to a user as read."""
+
+    message: str
+    count: int

@@ -12,6 +12,7 @@ from app.schema.requests.notification import (
     NotificationUpdateRequest,
 )
 from app.schema.responses.notification import (
+    MarkAllNotificationsReadResponse,
     NotificationPreferenceResponse,
     NotificationResponse,
     NotificationStatsResponse,
@@ -32,7 +33,7 @@ async def get_notifications(
     ),
     db: AsyncSession = get_db_dep,
     current_user: User = get_user_dep,
-):
+) -> list[NotificationResponse]:
     """Get notifications for the current user."""
     if unread_only:
         return await NotificationService.get_user_unread_notifications(
@@ -47,7 +48,7 @@ async def get_notifications(
 async def get_notification_stats(
     db: AsyncSession = get_db_dep,
     current_user: User = get_user_dep,
-):
+) -> NotificationStatsResponse:
     """Get notification statistics for the current user."""
     return await NotificationService.get_notification_stats(db, current_user.user_id)
 
@@ -59,7 +60,7 @@ async def create_notification(
     notification_data: NotificationCreateRequest,
     db: AsyncSession = get_db_dep,
     current_user: User = get_admin_dep,
-):
+) -> NotificationResponse:
     """Create a notification as an institution administrator."""
     return await NotificationService.create_notification(db, notification_data)
 
@@ -71,7 +72,7 @@ async def create_notification(
 async def get_notification_preferences(
     db: AsyncSession = get_db_dep,
     current_user: User = get_user_dep,
-):
+) -> NotificationPreferenceResponse:
     """Get notification preferences for the current user."""
     return await NotificationService.get_notification_preference(
         db, current_user.user_id
@@ -83,7 +84,7 @@ async def update_notification_preferences(
     preference_data: NotificationPreferenceUpdateRequest,
     db: AsyncSession = get_db_dep,
     current_user: User = get_user_dep,
-):
+) -> NotificationPreferenceResponse:
     """Update notification preferences for the current user."""
     return await NotificationService.update_notification_preference(
         db, current_user.user_id, preference_data
@@ -96,7 +97,7 @@ async def update_notification(
     notification_update: NotificationUpdateRequest,
     db: AsyncSession = get_db_dep,
     current_user: User = get_user_dep,
-):
+) -> NotificationResponse:
     """Update a notification (typically to mark as read)."""
     if notification_update.is_read:
         result = await NotificationService.mark_notification_read(
@@ -121,7 +122,7 @@ async def delete_notification(
     notification_id: int,
     db: AsyncSession = get_db_dep,
     current_user: User = get_user_dep,
-):
+) -> None:
     """Delete a notification."""
     success = await NotificationService.delete_notification(
         db, notification_id, current_user.user_id
@@ -133,13 +134,16 @@ async def delete_notification(
         )
 
 
-@router.post("/mark-all-read")
+@router.post("/mark-all-read", response_model=MarkAllNotificationsReadResponse)
 async def mark_all_notifications_read(
     db: AsyncSession = get_db_dep,
     current_user: User = get_user_dep,
-):
+) -> MarkAllNotificationsReadResponse:
     """Mark all notifications as read for the current user."""
     count = await NotificationService.mark_all_notifications_read(
         db, current_user.user_id
     )
-    return {"message": f"Marked {count} notifications as read"}
+    return MarkAllNotificationsReadResponse(
+        message=f"Marked {count} notifications as read",
+        count=count,
+    )
