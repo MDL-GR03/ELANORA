@@ -10,10 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_MAX_FILE_SIZE_MB, ELAN_PROJECTS_BASE_PATH
-from app.core.effective_naming_standard_locations import get_location_id_by_name
 from app.core.error_diagnostics import safe_exception_type
 from app.crud import elan_file_media as elan_media_crud
-from app.crud.effective_naming_standard import get_effective_standards_for_project
 from app.crud.elan_file import (
     get_elan_files_by_project,
 )
@@ -26,7 +24,6 @@ from app.crud.project import (
     list_projects_by_user,
     restore_project_db,
 )
-from app.crud.project_naming_standard import get_standard_with_components_full
 from app.elan.validation import validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
 from app.model.enums import ProjectPermission
@@ -63,6 +60,7 @@ from app.service.git_status_parser import GitFileStatusAnalyzer, GitStatusParser
 from app.service.project_history import ProjectHistoryService, ProjectRestoreCommand
 from app.service.project_integrity import ProjectIntegrityService
 from app.service.project_lifecycle import ProjectLifecycleService
+from app.service.upload_naming_compliance import enforce_upload_naming_standard
 from app.storage.paths import safe_project_path
 from app.utils.project_backup import (
     remove_project_backup,
@@ -70,7 +68,6 @@ from app.utils.project_backup import (
     restore_project_backup,
 )
 from app.utils.project_setup_utils import update_project_githooks
-from app.utils.validation import ValidationUtils
 
 logger = get_logger()
 EXPECTED_LOG_FIELDS = 4
@@ -184,7 +181,7 @@ class GitService:
             instance_id,
         )
 
-    async def add_elan_files(  # noqa: PLR0912
+    async def add_elan_files(
         self,
         project_id: int,
         files: list[UploadFile],
@@ -210,87 +207,10 @@ class GitService:
             f"Starting add_elan_files for project ID: {project_id}, user: {user_name}, files: {[f.filename for f in files]}"
         )
 
-        # Get location ID for upload page
-        location_id = get_location_id_by_name("uploadPage")
-        if location_id is None:
-            logger.warning(
-                "Location ID for 'uploadPage' not found; defaulting to no compliance check"
-            )
-        else:
-            logger.debug("Using a configured location for filename validation")
+        await enforce_upload_naming_standard(
+            db, project_id, [file.filename for file in files]
+        )
 
-        standard = None
-        if location_id is not None:
-            # Fetch effective standards using CRUD
-            effective_standards = await get_effective_standards_for_project(
-                db, project_id, location_id
-            )
-            logger.info(
-                f"Fetched {len(effective_standards)} effective standards for project_id={project_id}, location_id={location_id}"
-            )
-            if effective_standards:
-                # Use the first effective standard (adjust if multiple need handling)
-                effective_standard = effective_standards[0]
-                logger.debug(
-                    f"Using effective standard: id={effective_standard.id}, naming_standard_id={effective_standard.naming_standard_id}"
-                )
-                # Fetch the full naming standard with components
-                full_standard = await get_standard_with_components_full(
-                    db, effective_standard.naming_standard_id
-                )
-                if full_standard:
-                    # Extract the dict format expected by ValidationUtils
-                    standard = {
-                        "pattern": full_standard["pattern"],
-                        "components": full_standard["components"],
-                    }
-                    logger.info(
-                        f"Fetched full naming standard: pattern='{full_standard['pattern']}', components_count={len(full_standard['components'])}"
-                    )
-                else:
-                    logger.warning(
-                        f"No full naming standard found for naming_standard_id={effective_standard.naming_standard_id}"
-                    )
-            else:
-                logger.info(
-                    "No effective standards found; proceeding without compliance check"
-                )
-        else:
-            logger.info("No location ID; skipping standard fetching")
-
-        # Check filename compliance for each file
-        compliant_files = []
-        non_compliant_files = []
-        try:
-            for file in files:
-                filename = file.filename
-                if not filename:
-                    raise ValueError("Uploaded file is missing a filename")
-                if ValidationUtils.is_filename_compliant(standard, filename):
-                    compliant_files.append(filename)
-                    logger.debug(
-                        "An uploaded filename complies with the naming standard"
-                    )
-                else:
-                    non_compliant_files.append(filename)
-                    logger.warning(
-                        "An uploaded filename does not comply with the naming standard"
-                    )
-            if non_compliant_files:
-                logger.error("Filename compliance check failed")
-                raise ValueError(
-                    f"Filename '{non_compliant_files[0]}' does not comply with the project's naming standard."
-                )  # Raise for first failure
-            else:
-                logger.info("All %s uploaded filenames are compliant", len(files))
-        except Exception as e:
-            logger.error(
-                "Filename compliance evaluation failed; error_type=%s",
-                safe_exception_type(e),
-            )
-            raise ValueError(
-                "Filename compliance check failed due to a data issue"
-            ) from e
         # Proceed with the rest of the method
         self.contribution_intake.validate_request(project_path, files)
         logger.info("Upload request validated successfully")

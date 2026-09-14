@@ -88,6 +88,7 @@ from app.service.tier_export import (
     reintegrate_tier_subset,
     research_extract_metadata,
 )
+from app.service.upload_naming_compliance import FilenameNotCompliantError
 
 project_lock_dep = Depends(project_write_lock)
 
@@ -464,6 +465,19 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
                 "message": "Submitted tiers conflict with the accepted file",
                 "filename": e.filename,
                 "tiers": e.tiers,
+            },
+        ) from e
+    except FilenameNotCompliantError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "filename_not_compliant",
+                "message": (
+                    "This project requires uploaded filenames to follow its "
+                    "naming standard. Rename the file and upload it again."
+                ),
+                "filename": e.filename,
+                "pattern": e.pattern,
             },
         ) from e
     except HTTPException:
