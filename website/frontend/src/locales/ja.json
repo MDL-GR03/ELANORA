@@ -690,10 +690,13 @@
       "user_removed": "ユーザーの削除が完了しました",
       "remove_error": "ユーザーの削除エラー",
       "add_modal": {
+        "eyebrow": "プロジェクトへのアクセス",
         "title": "新しいメンバーを追加",
+        "description": "研究者を選択し、このプロジェクトで許可する操作を設定します。アクセス権は後から変更できます。",
         "user_id": "ユーザーID",
         "user_id_placeholder": "ユーザーIDを入力",
-        "permission": "権限"
+        "permission": "権限",
+        "user_required": "メンバーを追加する前に研究者を選択してください。"
       },
       "remove_modal": {
         "title": "メンバーを削除",

@@ -765,10 +765,13 @@
       "user_removed": "User removed successfully",
       "remove_error": "Error removing user",
       "add_modal": {
+        "eyebrow": "Project access",
         "title": "Add New Member",
+        "description": "Select a researcher and choose what they may do in this project. Access can be changed later.",
         "user_id": "User ID",
         "user_id_placeholder": "Enter user ID",
-        "permission": "Permission"
+        "permission": "Permission",
+        "user_required": "Select a researcher before adding this member."
       },
       "remove_modal": {
         "title": "Remove Member",

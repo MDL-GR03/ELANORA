@@ -4,8 +4,10 @@
       <h3>{{ t('projectSettings.members.title') }}</h3>
       <button
         v-if="canAddUsers"
+        ref="addMemberButton"
+        type="button"
         class="btn-add-member"
-        @click="showAddUserModal = true"
+        @click="openAddUserModal"
       >
         <span class="add-icon">+</span>
         {{ t('projectSettings.members.add_member') }}
@@ -112,22 +114,26 @@
       v-if="showAddUserModal"
       class="modal-overlay"
       role="presentation"
-      @click="closeAddUserModal"
+      @click.self="closeAddUserModal"
     >
       <div
+        ref="addMemberDialog"
         class="modal-content"
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-member-title"
-        @click.stop
-        @keydown.esc="closeAddUserModal"
+        aria-describedby="add-member-description"
+        tabindex="-1"
+        @keydown="handleDialogKeydown"
       >
         <div class="modal-header">
           <span class="modal-header-icon">
             <font-awesome-icon icon="fa-solid fa-circle-user" />
           </span>
           <div>
-            <span class="modal-eyebrow">Project access</span>
+            <span class="modal-eyebrow">
+              {{ t('projectSettings.members.add_modal.eyebrow') }}
+            </span>
             <h4 id="add-member-title">
               {{ t('projectSettings.members.add_modal.title') }}
             </h4>
@@ -143,9 +149,8 @@
         </div>
 
         <form class="add-member-form" @submit.prevent="addUser">
-          <p class="modal-description">
-            Select a researcher and choose what they may do in this project.
-            Access can be changed later.
+          <p id="add-member-description" class="modal-description">
+            {{ t('projectSettings.members.add_modal.description') }}
           </p>
           <div class="form-group">
             <label for="userId"
@@ -163,6 +168,7 @@
                   : t('project.share.choose_user')
               "
               :options="availableUserOptions"
+              :aria-describedby="formError ? 'add-member-error' : undefined"
             />
           </div>
 
@@ -178,11 +184,24 @@
             />
           </div>
 
+          <p
+            v-if="formError"
+            id="add-member-error"
+            class="add-member-error"
+            role="alert"
+          >
+            {{ formError }}
+          </p>
+
           <div class="form-actions">
             <button type="button" class="btn-cancel" @click="closeAddUserModal">
               {{ t('common.cancel') }}
             </button>
-            <button type="submit" class="btn-submit" :disabled="addingUser">
+            <button
+              type="submit"
+              class="btn-submit"
+              :disabled="addingUser || !newUser.user_id"
+            >
               <span v-if="addingUser" class="loading-text"
                 >{{ t('common.adding') }}...</span
               >
@@ -196,7 +215,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue';
+import {
+  ref,
+  reactive,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  computed,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '@/stores/project';
@@ -227,9 +254,13 @@ const projectId = computed(() => Number(route.params.projectId));
 const users = ref([]);
 const loading = ref(false);
 const error = ref('');
+const formError = ref('');
 
 // Modal states
 const showAddUserModal = ref(false);
+const addMemberButton = ref(null);
+const addMemberDialog = ref(null);
+let previouslyFocused = null;
 
 // Operation states
 const updatingUsers = ref(new Set());
@@ -301,7 +332,7 @@ const loadUsers = async () => {
       users.value = response.data.users || [];
     }
   } catch (err) {
-    console.error('Error loading users:', err);
+    console.error('Error loading users', { status: err.response?.status });
     error.value =
       err.response?.data?.detail || t('projectSettings.members.load_error');
   } finally {
@@ -319,7 +350,9 @@ const loadActiveUsers = async () => {
       availableUsers.value = response.data.users;
     }
   } catch (err) {
-    console.error('Error loading available users:', err);
+    console.error('Error loading available users', {
+      status: err.response?.status,
+    });
     eventMessageStore.addMessage('project.share.error_loading_users', 'error');
   } finally {
     loadingAvailableUsers.value = false;
@@ -406,7 +439,9 @@ const updateUserPermissionHandler = async (user, newPermission = null) => {
       );
     }
   } catch (err) {
-    console.error('Error updating user permission:', err);
+    console.error('Error updating user permission', {
+      status: err.response?.status,
+    });
     // Revert the change
     user.permission = oldPermission;
     eventMessageStore.addMessage(
@@ -465,10 +500,52 @@ const closeAddUserModal = () => {
   showAddUserModal.value = false;
   newUser.user_id = '';
   newUser.permission = 'read';
+  formError.value = '';
+};
+
+const openAddUserModal = () => {
+  previouslyFocused =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : addMemberButton.value;
+  showAddUserModal.value = true;
+};
+
+const handleDialogKeydown = (event) => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeAddUserModal();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = Array.from(
+    addMemberDialog.value?.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    ) || []
+  ).filter((element) => !element.hidden);
+  if (!focusable.length) {
+    event.preventDefault();
+    addMemberDialog.value?.focus();
+    return;
+  }
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 };
 
 const addUser = async () => {
+  if (!newUser.user_id) {
+    formError.value = t('projectSettings.members.add_modal.user_required');
+    return;
+  }
   addingUser.value = true;
+  formError.value = '';
 
   try {
     const response = await addUserToProject(projectId.value, {
@@ -484,7 +561,7 @@ const addUser = async () => {
       await loadUsers(); // Refresh the list
     }
   } catch (err) {
-    console.error('Error adding user:', err);
+    console.error('Error adding user', { status: err.response?.status });
     eventMessageStore.addMessage(
       err.response?.data?.detail || 'projectSettings.members.add_error',
       'error'
@@ -510,7 +587,7 @@ const removeUser = async (user) => {
       await loadUsers(); // Refresh the list
     }
   } catch (err) {
-    console.error('Error removing user:', err);
+    console.error('Error removing user', { status: err.response?.status });
     eventMessageStore.addMessage(
       'projectSettings.members.remove_error',
       'error'
@@ -530,10 +607,20 @@ onMounted(() => {
 });
 
 // When opening the Add Member modal, load available users
-watch(showAddUserModal, (open) => {
+watch(showAddUserModal, async (open) => {
   if (open) {
     loadActiveUsers();
+    await nextTick();
+    addMemberDialog.value?.focus();
+  } else if (previouslyFocused?.isConnected) {
+    await nextTick();
+    previouslyFocused.focus();
+    previouslyFocused = null;
   }
+});
+
+onBeforeUnmount(() => {
+  if (previouslyFocused?.isConnected) previouslyFocused.focus();
 });
 
 // Watch for project changes
@@ -1028,6 +1115,16 @@ defineExpose({
   color: #647595;
   font-size: 0.9rem;
   line-height: 1.55;
+}
+
+.add-member-error {
+  margin: -0.25rem 0 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.875rem;
 }
 
 .form-group {

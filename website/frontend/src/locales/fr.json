@@ -754,10 +754,13 @@
       "user_removed": "Utilisateur supprimé avec succès",
       "remove_error": "Erreur lors de la suppression de l'utilisateur",
       "add_modal": {
+        "eyebrow": "Accès au projet",
         "title": "Ajouter un nouveau membre",
+        "description": "Sélectionnez un chercheur et choisissez ce qu'il peut faire dans ce projet. Son accès pourra être modifié ultérieurement.",
         "user_id": "ID de l'utilisateur",
         "user_id_placeholder": "Entrez l'ID de l'utilisateur",
-        "permission": "Permission"
+        "permission": "Permission",
+        "user_required": "Sélectionnez un chercheur avant d'ajouter ce membre."
       },
       "remove_modal": {
         "title": "Supprimer le membre",
