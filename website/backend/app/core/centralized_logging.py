@@ -7,7 +7,7 @@ without having to manually create loggers in each file.
 import logging
 import sys
 from pathlib import Path
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from app.core.logging import get_stream_logger
 
@@ -28,7 +28,7 @@ except ImportError:
     ROOT_LOG_LEVEL = "WARNING"
 
 
-def setup_application_logging():
+def setup_application_logging() -> None:
     """Set up application-wide logging configuration.
 
     This should be called once at application startup to:
@@ -54,7 +54,7 @@ def setup_application_logging():
 class CentralizedLogger:
     """Centralized logging manager that automatically creates loggers based on module names."""
 
-    _instance: Optional["CentralizedLogger"] = None
+    _instance: ClassVar["CentralizedLogger | None"] = None
     _loggers: ClassVar[dict[str, logging.Logger]] = {}
 
     def __new__(cls) -> "CentralizedLogger":
@@ -63,7 +63,7 @@ class CentralizedLogger:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the centralized logger."""
         if not hasattr(self, "_initialized"):
             self._initialized = True
@@ -126,9 +126,8 @@ class CentralizedLogger:
             if "app" in parts:
                 app_index = parts.index("app")
                 # Take everything after 'app' directory
-                module_parts = parts[app_index + 1 :]
+                module_parts = list(parts[app_index + 1 :])
                 # Remove file extension and join with dots
-                module_parts = list(module_parts)
                 if module_parts:
                     module_parts[-1] = Path(module_parts[-1]).stem
                     # If we have parts after app, use them

@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
+from typing import cast
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
@@ -204,7 +205,7 @@ def _verify_archive(
                 raise ValueError(f"Recovery checksum mismatch: {member.name}")
             if extraction_root is not None:
                 os.chmod(extraction_root.joinpath(*safe_path.parts), 0o600)
-    return manifest
+    return cast("dict[str, object]", manifest)
 
 
 def verify_bundle(source: Path, passphrase: str) -> dict[str, object]:

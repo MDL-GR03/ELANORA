@@ -73,7 +73,7 @@ def verify_token(token: str, expected_token_type: str = ACCESS_TOKEN_TYPE) -> To
             raise ValueError("JWT_SECRET_KEY is not set in the environment variables.")
 
         payload = jwt.decode(
-            token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM], options={"leeway": 10}
+            token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM], leeway=10
         )
         sub = payload.get("sub")
         token_type = payload.get("token_type")

@@ -4,6 +4,7 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+from starlette.types import ASGIApp
 
 from app.core.centralized_logging import get_logger
 
@@ -13,7 +14,7 @@ csrf_logger = get_logger()
 class CSRFMiddleware(BaseHTTPMiddleware):
     """Middleware to enforce CSRF protection by validating tokens in headers and cookies."""
 
-    def __init__(self, app: Callable, exclude_paths: list[str] | None = None):
+    def __init__(self, app: ASGIApp, exclude_paths: list[str] | None = None):
         """Initialize CSRFMiddleware with optional list of excluded paths."""
         super().__init__(app)
         self.exclude_paths = exclude_paths or [

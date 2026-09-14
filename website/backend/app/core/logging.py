@@ -16,7 +16,7 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 def get_stream_logger(logger_name: str, level: str | None = None) -> logging.Logger:
     """Return an idempotently configured stderr logger."""
-    configured_level = (level or os.getenv("LOG_LEVEL", "INFO")).upper()
+    configured_level = (level or os.getenv("LOG_LEVEL") or "INFO").upper()
     numeric_level = getattr(logging, configured_level, logging.INFO)
     logger = logging.getLogger(logger_name)
 
@@ -24,7 +24,7 @@ def get_stream_logger(logger_name: str, level: str | None = None) -> logging.Log
         logger.setLevel(numeric_level)
         return logger
 
-    console_level = os.getenv("CONSOLE_LOG_LEVEL", configured_level).upper()
+    console_level = (os.getenv("CONSOLE_LOG_LEVEL") or configured_level).upper()
     console_numeric_level = getattr(logging, console_level, numeric_level)
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT))

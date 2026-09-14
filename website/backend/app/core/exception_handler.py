@@ -1,4 +1,7 @@
+import logging
 import uuid
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from fastapi import Request
 from fastapi.exceptions import RequestValidationError
@@ -23,7 +26,7 @@ except ImportError:
     HAS_CONFIG = False
 
 
-def get_exception_logger(logger_name: str):
+def get_exception_logger(logger_name: str) -> logging.Logger:
     """Get a logger for exception handling with consistent configuration."""
     # Use config if available, fallback to environment variables
     level = EXCEPTION_LOG_LEVEL if HAS_CONFIG else "WARNING"
@@ -34,7 +37,7 @@ def get_exception_logger(logger_name: str):
     )
 
 
-def get_client_info(request: Request) -> dict:
+def get_client_info(request: Request) -> dict[str, str]:
     """Extract the non-sensitive request context needed for diagnostics."""
     return {
         "method": request.method,
@@ -43,7 +46,9 @@ def get_client_info(request: Request) -> dict:
     }
 
 
-def _public_validation_errors(exc: RequestValidationError) -> list[dict]:
+def _public_validation_errors(
+    exc: RequestValidationError,
+) -> list[dict[str, Any]]:
     """Return stable validation diagnostics without echoing submitted values."""
     return [
         {
@@ -106,7 +111,9 @@ async def rate_limit_exception_handler(request: Request, exc: Exception) -> Resp
     raise exc
 
 
-def add_general_exception_handler():
+def add_general_exception_handler() -> Callable[
+    [Request, Exception], Awaitable[JSONResponse]
+]:
     """Create a general exception handler for unexpected errors."""
     general_logger = get_exception_logger("general")
 
