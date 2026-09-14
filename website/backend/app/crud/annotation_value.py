@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.elan.persistence import PersistedTier
 from app.model.annotation_value import AnnotationValue
 from app.utils.database import DatabaseUtils
 
@@ -31,7 +32,7 @@ async def get_annotation_value_by_id(db: AsyncSession, value_id: int) -> str | N
 
 
 async def bulk_get_or_create_annotation_values(
-    db: AsyncSession, tiers_data: list[dict]
+    db: AsyncSession, tiers_data: list[PersistedTier]
 ) -> dict[str, int]:
     """Bulk get or create annotation values, returning a mapping from value to ID."""
     all_ann_values = {

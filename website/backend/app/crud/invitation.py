@@ -2,6 +2,7 @@
 
 import secrets
 from datetime import datetime, timedelta
+from typing import cast
 
 from passlib.context import CryptContext
 from sqlalchemy import select
@@ -19,18 +20,20 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 logger = get_logger()
 
 
-async def delete_project_invitations(db: AsyncSession, project_id: int):
+async def delete_project_invitations(db: AsyncSession, project_id: int) -> int:
     logger.info(f"Deleting invitations for project_id={project_id}")
     try:
         count = await DatabaseUtils.bulk_delete(
             db, Invitation, Invitation.project_id == project_id
         )
         logger.info(f"Deleted {count} invitations for project_id={project_id}")
+        return count
     except Exception as e:
         logger.error(
             "Failed to delete project invitations; error_type=%s",
             safe_exception_type(e),
         )
+        raise
 
 
 async def create_invitation(
@@ -191,7 +194,7 @@ async def verify_invitation_code(
     if not invitation:
         return False
 
-    return pwd_context.verify(raw_code, invitation.hashed_code)
+    return cast("bool", pwd_context.verify(raw_code, invitation.hashed_code))
 
 
 async def get_invitation_by_code(db: AsyncSession, raw_code: str) -> Invitation | None:

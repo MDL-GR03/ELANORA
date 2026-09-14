@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
+from app.elan.persistence import PersistedTier
 from app.model.annotation import Annotation
 from app.model.annotation_value import AnnotationValue
 from app.utils.database import DatabaseUtils
@@ -44,7 +45,9 @@ async def get_annotations_by_tier(db: AsyncSession, tier_id: int) -> list[Annota
     return await DatabaseUtils.get_by_filter(db, Annotation, filters, order_by=order_by)
 
 
-async def get_annotations_with_value_by_tier(db: AsyncSession, tier_id: int):
+async def get_annotations_with_value_by_tier(
+    db: AsyncSession, tier_id: int
+) -> list[Annotation]:
     """Get all annotations with their values for a specific tier.
 
     Args:
@@ -61,8 +64,7 @@ async def get_annotations_with_value_by_tier(db: AsyncSession, tier_id: int):
         .filter(Annotation.tier_id == tier_id)
         .order_by(Annotation.start_time)
     )
-    annotations = result.scalars().all()
-    return annotations
+    return list(result.scalars().all())
 
 
 async def get_annotations_by_time_range(
@@ -126,7 +128,10 @@ async def delete_annotations_by_tier(db: AsyncSession, tier_id: int) -> int:
 
 
 async def bulk_create_annotations(
-    db: AsyncSession, tiers_data: list[dict], elan_id: int, value_map: dict[str, int]
+    db: AsyncSession,
+    tiers_data: list[PersistedTier],
+    elan_id: int,
+    value_map: dict[str, int],
 ) -> None:
     """Bulk create annotations for multiple tiers."""
     all_annotations = []
@@ -166,3 +171,4 @@ async def delete_annotations_by_file(db: AsyncSession, elan_id: int) -> int:
             "Failed to delete annotations by file; error_type=%s",
             safe_exception_type(e),
         )
+        raise

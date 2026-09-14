@@ -13,7 +13,7 @@ from app.utils.database import DatabaseUtils
 logger = get_logger()
 
 
-async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int):
+async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int) -> None:
     logger.info(f"Bulk deleting tiers and annotations for elan_id={elan_id}")
     try:
         tier_ids = list(
@@ -39,6 +39,7 @@ async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int):
             "Failed to bulk delete ELAN tiers; error_type=%s",
             safe_exception_type(e),
         )
+        raise
 
 
 async def get_tier_by_id(db: AsyncSession, tier_id: int) -> Tier | None:
@@ -146,7 +147,7 @@ async def get_tier_statistics(db: AsyncSession) -> list[tuple[str, int]]:
     return [tuple(row) for row in result]
 
 
-async def get_tiers_by_ids(db, tier_ids: list[int]) -> list[Tier]:
+async def get_tiers_by_ids(db: AsyncSession, tier_ids: list[int]) -> list[Tier]:
     """Get all tiers for a list of tier_ids."""
     if not tier_ids:
         return []

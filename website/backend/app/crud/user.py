@@ -1,8 +1,11 @@
 """User CRUD operations - Pure database access layer."""
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.model.user import User, UserRole
+from app.model.enums import UserRole
+from app.model.user import User
 from app.schema.common.user import UserCreateData
 from app.utils.database import DatabaseUtils
 
@@ -30,7 +33,7 @@ async def get_user_by_username_or_email(
 async def create_user_in_db(
     db: AsyncSession,
     user_data: UserCreateData,
-    **additional_fields,
+    **additional_fields: Any,
 ) -> User:
     """Create a new user in the database."""
     user = User(
@@ -68,7 +71,9 @@ async def update_user_password(
         return False
 
 
-async def update_user_profile(db: AsyncSession, user: User, **update_fields) -> bool:
+async def update_user_profile(
+    db: AsyncSession, user: User, **update_fields: Any
+) -> bool:
     """Update user profile fields in database."""
     filters = {"user_id": user.user_id}
     try:
