@@ -48,3 +48,16 @@ async def test_delete_by_id_reports_missing_instance(monkeypatch) -> None:
 
     assert deleted is False
     session.delete.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_join_rows_use_sqlalchemy_mapping_for_dictionary_output() -> None:
+    row = SimpleNamespace(_mapping={"project_id": 7, "username": "researcher"})
+    result = SimpleNamespace(all=lambda: [row])
+    session = SimpleNamespace(execute=AsyncMock(return_value=result))
+
+    records = await DatabaseUtils.get_with_join(
+        session, SimpleNamespace(), as_dict=True
+    )
+
+    assert records == [{"project_id": 7, "username": "researcher"}]

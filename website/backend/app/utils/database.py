@@ -1,7 +1,7 @@
 """Database utility functions for common operations."""
 
-from collections.abc import Sequence
-from typing import Any, TypeVar
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from sqlalchemy import delete, exists, func, insert, select, update
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.centralized_logging import get_logger
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import CursorResult
 
 ModelType = TypeVar("ModelType", bound=DeclarativeBase)
 
@@ -30,7 +33,7 @@ class DatabaseUtils:
         model: type[ModelType],
         id_field: str,
         id_value: Any,
-        options: list | None = None,
+        options: Sequence[Any] | None = None,
     ) -> ModelType | None:
         logger.info("get_by_id: model=%s id_field=%s", model.__name__, id_field)
         query = select(model).filter(getattr(model, id_field) == id_value)
@@ -44,7 +47,9 @@ class DatabaseUtils:
 
     @staticmethod
     async def get_all(
-        db: AsyncSession, model: type[ModelType], options: list | None = None
+        db: AsyncSession,
+        model: type[ModelType],
+        options: Sequence[Any] | None = None,
     ) -> list[ModelType]:
         logger.info(f"get_all: model={model.__name__}")
         query = select(model)
@@ -90,7 +95,10 @@ class DatabaseUtils:
 
     @staticmethod
     async def delete_by_filter(
-        db: AsyncSession, model: type[ModelType], auto_commit: bool = False, **filters
+        db: AsyncSession,
+        model: type[ModelType],
+        auto_commit: bool = False,
+        **filters: Any,
     ) -> int:
         logger.info(
             "delete_by_filter: model=%s filter_fields=%s",
@@ -112,7 +120,7 @@ class DatabaseUtils:
     async def bulk_insert(
         db: AsyncSession,
         model: type[ModelType],
-        values: list[dict],
+        values: list[dict[str, Any]],
         ignore_duplicates: bool = False,
     ) -> None:
         """Bulk insert records, optionally ignoring unique-key duplicates."""
@@ -123,6 +131,7 @@ class DatabaseUtils:
         dialect_name = db.bind.dialect.name if db.bind is not None else ""
         for offset in range(0, len(values), rows_per_batch):
             batch = values[offset : offset + rows_per_batch]
+            stmt: Any
             if ignore_duplicates and dialect_name == "postgresql":
                 stmt = postgresql_insert(model).values(batch).on_conflict_do_nothing()
             elif ignore_duplicates and dialect_name == "sqlite":
@@ -133,7 +142,10 @@ class DatabaseUtils:
 
     @staticmethod
     async def update_by_filter(
-        db: AsyncSession, model: type[ModelType], filters: dict, update_fields: dict
+        db: AsyncSession,
+        model: type[ModelType],
+        filters: Mapping[str, Any],
+        update_fields: Mapping[str, Any],
     ) -> int:
         """Update records matching filters with update_fields. Returns number of updated rows."""
         query = update(model)
@@ -141,15 +153,15 @@ class DatabaseUtils:
             query = query.where(getattr(model, field) == value)
         query = query.values(**update_fields)
         result = await db.execute(query)
-        return result.rowcount
+        return int(cast("CursorResult[Any]", result).rowcount or 0)
 
     @staticmethod
     async def get_by_filter(
         db: AsyncSession,
         model: type[ModelType],
-        filters: dict,
-        order_by: list | None = None,
-        options: list | None = None,
+        filters: Mapping[str, Any],
+        order_by: Sequence[Any] | None = None,
+        options: Sequence[Any] | None = None,
     ) -> list[ModelType]:
         """Get records matching filters, optionally ordered."""
         query = select(model)
@@ -170,9 +182,9 @@ class DatabaseUtils:
     async def get_one_by_filter(
         db: AsyncSession,
         model: type[ModelType],
-        filters: dict,
-        order_by: list | None = None,
-        options: list | None = None,
+        filters: Mapping[str, Any],
+        order_by: Sequence[Any] | None = None,
+        options: Sequence[Any] | None = None,
     ) -> ModelType | None:
         """Get a single record matching filters, optionally ordered."""
         query = select(model)
@@ -195,8 +207,8 @@ class DatabaseUtils:
         model: type[ModelType],
         page: int,
         page_size: int,
-        filters: dict | None,
-        options: list | None = None,
+        filters: Mapping[str, Any] | None,
+        options: Sequence[Any] | None = None,
     ) -> list[ModelType]:
         """Paginate records with optional filters."""
         query = select(model)
@@ -215,7 +227,9 @@ class DatabaseUtils:
 
     @staticmethod
     async def count(
-        db: AsyncSession, model: type[ModelType], filters: dict | None
+        db: AsyncSession,
+        model: type[ModelType],
+        filters: Mapping[str, Any] | None,
     ) -> int:
         """Count records matching optional filters."""
         query = select(func.count()).select_from(model)
@@ -230,21 +244,22 @@ class DatabaseUtils:
 
     @staticmethod
     async def bulk_delete(
-        db: AsyncSession, model: type[ModelType], where_clause
+        db: AsyncSession, model: type[ModelType], where_clause: Any
     ) -> int:
         """Bulk delete records matching the given where_clause.
         Returns the number of deleted rows.
         """
         logger.info("bulk_delete: model=%s", model.__name__)
         result = await db.execute(delete(model).where(where_clause))
-        logger.info(f"bulk_delete: model={model.__name__} deleted={result.rowcount}")
-        return result.rowcount if result.rowcount is not None else 0
+        rowcount = int(cast("CursorResult[Any]", result).rowcount or 0)
+        logger.info("bulk_delete: model=%s deleted=%s", model.__name__, rowcount)
+        return rowcount
 
     @staticmethod
     async def bulk_update(
         db: AsyncSession,
         model: type[ModelType],
-        data: list[dict],
+        data: list[dict[str, Any]],
         pk_field: str,
     ) -> int:
         """Bulk update records for the given model.
@@ -262,7 +277,7 @@ class DatabaseUtils:
                 .where(getattr(model, pk_field) == pk_value)
                 .values(**update_data)
             )
-            total += result.rowcount if result.rowcount else 0
+            total += int(cast("CursorResult[Any]", result).rowcount or 0)
         logger.info(f"bulk_update: model={model.__name__} updated={total}")
         return total
 
@@ -297,12 +312,12 @@ class DatabaseUtils:
 
     @staticmethod
     async def get_fully_orphaned(
-        db,
-        main_model,
-        assoc_model,
+        db: AsyncSession,
+        main_model: type[ModelType],
+        assoc_model: type[DeclarativeBase],
         main_id_field: str,
         assoc_ref_field: str,
-    ):
+    ) -> list[ModelType]:
         """Return all main_model records whose main_id_field is NOT referenced in assoc_model.assoc_ref_field.
         Logs orphans and non-orphans with references.
         """
@@ -346,9 +361,9 @@ class DatabaseUtils:
 
     @staticmethod
     async def delete_fully_orphaned(
-        db,
-        main_model,
-        assoc_model,
+        db: AsyncSession,
+        main_model: type[ModelType],
+        assoc_model: type[DeclarativeBase],
         main_id_field: str,
         assoc_ref_field: str,
     ) -> int:
@@ -372,11 +387,11 @@ class DatabaseUtils:
     @staticmethod
     async def get_distinct_column_values(
         db: AsyncSession,
-        model,
-        column,
-        filters: dict[str, Any] | None = None,
-        in_filter: tuple | None = None,
-        order_by=None,
+        model: type[DeclarativeBase],
+        column: Any,
+        filters: Mapping[str, Any] | None = None,
+        in_filter: tuple[Any, Sequence[Any]] | None = None,
+        order_by: Any = None,
     ) -> Sequence[Any]:
         """Utility to get distinct values for a column, with optional filters and IN clause.
         - model: SQLAlchemy model class
@@ -420,15 +435,19 @@ class DatabaseUtils:
         return list(result.scalars().all())
 
     @staticmethod
-    async def get_all_by_filter(db: AsyncSession, model, filters: dict):
+    async def get_all_by_filter(
+        db: AsyncSession,
+        model: type[ModelType],
+        filters: Mapping[str, Any],
+    ) -> list[ModelType]:
         stmt = select(model).filter_by(**filters)
         result = await db.execute(stmt)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     @staticmethod
     async def get_with_join(
         db: AsyncSession,
-        stmt: select,  # Pre-built SQLAlchemy select statement with joins
+        stmt: Any,  # Pre-built SQLAlchemy select statement with joins
         as_dict: bool = False,  # Optional: return as dict if needed
     ) -> list[Any]:
         """Execute a select statement with joins and return results.
@@ -445,8 +464,8 @@ class DatabaseUtils:
         try:
             result = await db.execute(stmt)
             if as_dict:
-                return [dict(row) for row in result.all()]
-            return result.all()
+                return [dict(row._mapping) for row in result.all()]
+            return list(result.all())
         except Exception as e:
             logger.error("Database join query failed; error_type=%s", type(e).__name__)
             raise
