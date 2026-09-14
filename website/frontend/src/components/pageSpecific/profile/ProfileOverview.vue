@@ -1084,6 +1084,7 @@ import { useI18n } from 'vue-i18n';
 import AppSelect from '@/components/common/AppSelect.vue';
 import ProfileAccountCard from '@/components/pageSpecific/profile/ProfileAccountCard.vue';
 import { useProfessionalProfileEditor } from '@/composables/useProfessionalProfileEditor';
+import { useUsernameProfileEditor } from '@/composables/useUsernameProfileEditor';
 import {
   updateUserProfile,
   updateUserAddress,
@@ -1123,6 +1124,20 @@ const props = defineProps({
 const emit = defineEmits(['profile-updated', 'show-message']);
 
 const {
+  editUsernameMode,
+  editedUsername,
+  savingUsername: saving,
+  syncUsername,
+  startEditUsername,
+  cancelEditUsername,
+  saveUsername,
+} = useUsernameProfileEditor({
+  profile: computed(() => props.userProfile),
+  updateProfile: updateUserProfile,
+  emit,
+});
+
+const {
   editProfessionalMode,
   editedProfessional,
   savingProfessional,
@@ -1137,11 +1152,6 @@ const {
   emit,
   translate: t,
 });
-
-// Username editing
-const editUsernameMode = ref(false);
-const editedUsername = ref('');
-const saving = ref(false);
 
 // Address editing
 const editAddressMode = ref(false);
@@ -1257,7 +1267,7 @@ watch(
   () => props.userProfile,
   (newVal) => {
     if (newVal && !editUsernameMode.value) {
-      editedUsername.value = newVal.username;
+      syncUsername();
     }
     if (newVal && !editProfessionalMode.value) {
       editedProfessional.value = {
@@ -1639,67 +1649,6 @@ const onCountryChange = () => {
     editedAddress.value.postalCode = '';
   }
 };
-
-// Username editing functions
-function startEditUsername() {
-  editUsernameMode.value = true;
-  editedUsername.value = props.userProfile?.username || '';
-}
-
-function cancelEditUsername() {
-  editUsernameMode.value = false;
-  editedUsername.value = props.userProfile?.username || '';
-}
-
-async function saveUsername() {
-  if (saving.value) return;
-
-  if (!editedUsername.value.trim()) {
-    emit('show-message', {
-      text: "Le nom d'utilisateur ne peut pas être vide",
-      type: 'error',
-    });
-    return;
-  }
-
-  if (editedUsername.value === props.userProfile?.username) {
-    editUsernameMode.value = false;
-    return;
-  }
-
-  try {
-    saving.value = true;
-
-    const response = await updateUserProfile({
-      username: editedUsername.value,
-    });
-
-    if (response.data) {
-      emit('show-message', {
-        text: "Nom d'utilisateur mis à jour avec succès",
-        type: 'success',
-      });
-      emit('profile-updated');
-      editUsernameMode.value = false;
-    }
-  } catch (error) {
-    console.error('Error updating username:', error);
-    let errorMessage = "Erreur lors de la mise à jour du nom d'utilisateur";
-
-    if (error.response?.data?.detail) {
-      if (error.response.data.detail.includes('already taken')) {
-        errorMessage = "Ce nom d'utilisateur est déjà pris";
-      } else {
-        errorMessage = error.response.data.detail;
-      }
-    }
-
-    emit('show-message', { text: errorMessage, type: 'error' });
-    editedUsername.value = props.userProfile?.username || '';
-  } finally {
-    saving.value = false;
-  }
-}
 
 // Address editing functions
 async function startEditAddress() {
