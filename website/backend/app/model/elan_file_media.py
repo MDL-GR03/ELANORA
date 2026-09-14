@@ -9,8 +9,8 @@ class ElanFileMedia(Base):
 
     media_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     media_url: Mapped[str] = mapped_column(String(1024), nullable=False)
-    mime_type: Mapped[str] = mapped_column(String(255), nullable=True)
-    relative_media_url: Mapped[str] = mapped_column(String(1024), nullable=True)
+    mime_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    relative_media_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
 
     # Relationships
     elan_files = relationship(

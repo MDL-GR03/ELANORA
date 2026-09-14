@@ -23,3 +23,28 @@ async def test_bulk_insert_chunks_statements_below_driver_limit(monkeypatch) -> 
     )
 
     assert session.execute.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_delete_by_id_deletes_existing_instance(monkeypatch) -> None:
+    instance = AcceptedValue(value="example")
+    session = SimpleNamespace(delete=AsyncMock())
+    lookup = AsyncMock(return_value=instance)
+    monkeypatch.setattr(DatabaseUtils, "get_by_id", lookup)
+
+    deleted = await DatabaseUtils.delete_by_id(session, AcceptedValue, "id", 17)
+
+    assert deleted is True
+    lookup.assert_awaited_once_with(session, AcceptedValue, "id", 17)
+    session.delete.assert_awaited_once_with(instance)
+
+
+@pytest.mark.asyncio
+async def test_delete_by_id_reports_missing_instance(monkeypatch) -> None:
+    session = SimpleNamespace(delete=AsyncMock())
+    monkeypatch.setattr(DatabaseUtils, "get_by_id", AsyncMock(return_value=None))
+
+    deleted = await DatabaseUtils.delete_by_id(session, AcceptedValue, "id", 17)
+
+    assert deleted is False
+    session.delete.assert_not_awaited()

@@ -1,4 +1,5 @@
 import os
+from typing import TypedDict
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,9 +12,18 @@ from app.model.file_content import FileContent
 from app.utils.database import DatabaseUtils
 
 
+class ProjectFileMediaInfo(TypedDict):
+    """File identity and deduplicated linked-media names for API responses."""
+
+    elan_id: int
+    filename: str
+    file_path: str
+    media_filenames: list[str]
+
+
 async def get_project_files_with_media_simple(
     db: AsyncSession, project_id: int
-) -> list[dict]:
+) -> list[ProjectFileMediaInfo]:
     """Get all ELAN files for a project with their associated media using simple joins."""
     # Use a simpler approach with explicit joins to avoid lazy loading issues
     stmt = (
@@ -34,7 +44,7 @@ async def get_project_files_with_media_simple(
     rows = result.fetchall()
 
     # Group by elan_id to collect all media for each file
-    files_dict = {}
+    files_dict: dict[int, ProjectFileMediaInfo] = {}
     for row in rows:
         elan_id = row.elan_id
         if elan_id not in files_dict:
@@ -76,7 +86,7 @@ async def get_project_files_with_media(
         .where(ElanFile.project_id == project_id)
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
 async def get_media_by_url(db: AsyncSession, media_url: str) -> ElanFileMedia | None:

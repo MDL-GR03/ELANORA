@@ -103,16 +103,12 @@ async def get_or_create_file_content(
 
 async def delete_file_content(db: AsyncSession, content_id: int) -> bool:
     """Delete file content by ID."""
-    try:
-        result = await DatabaseUtils.delete_by_id(
-            db, FileContent, "content_id", content_id
-        )
-        if result:
-            logger.info("Deleted one file-content record")
-        return result
-    except Exception as e:
-        logger.error("Failed to delete file content; error_type=%s", type(e).__name__)
-        return False
+    deleted = await DatabaseUtils.delete_by_id(
+        db, FileContent, "content_id", content_id
+    )
+    if deleted:
+        logger.info("Deleted one file-content record")
+    return deleted
 
 
 async def get_file_contents_by_user(
@@ -129,7 +125,7 @@ async def get_orphaned_file_contents(db: AsyncSession) -> list[FileContent]:
         ~FileContent.content_id.in_(select(ElanFile.content_id).distinct())
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    return list(result.scalars().all())
 
 
 async def cleanup_orphaned_file_contents(db: AsyncSession) -> int:

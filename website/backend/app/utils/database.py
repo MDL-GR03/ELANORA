@@ -75,6 +75,20 @@ class DatabaseUtils:
         return instance
 
     @staticmethod
+    async def delete_by_id(
+        db: AsyncSession,
+        model: type[ModelType],
+        id_field: str,
+        id_value: Any,
+    ) -> bool:
+        """Delete one model instance by primary-key field, if it exists."""
+        instance = await DatabaseUtils.get_by_id(db, model, id_field, id_value)
+        if instance is None:
+            return False
+        await db.delete(instance)
+        return True
+
+    @staticmethod
     async def delete_by_filter(
         db: AsyncSession, model: type[ModelType], auto_commit: bool = False, **filters
     ) -> int:
