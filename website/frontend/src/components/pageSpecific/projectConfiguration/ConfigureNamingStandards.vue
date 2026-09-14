@@ -471,9 +471,7 @@
               v-if="
                 importStandards.filter(
                   (s) =>
-                    !existingStandardKeys.has(
-                      `${s.name}::${s.project_file_type_id}`
-                    )
+                    !existingStandardKeys.has(`${s.name}::${s.file_type_id}`)
                 ).length === 0
               "
             >
@@ -485,9 +483,7 @@
               <div
                 v-for="std in importStandards.filter(
                   (s) =>
-                    !existingStandardKeys.has(
-                      `${s.name}::${s.project_file_type_id}`
-                    )
+                    !existingStandardKeys.has(`${s.name}::${s.file_type_id}`)
                 )"
                 :key="std.id"
                 class="import-standard-preview"
@@ -686,6 +682,7 @@ import { useFileTypeStore } from '@stores/fileType';
 import { useRoute } from 'vue-router';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useUserConfirm } from '@/composables/useUserConfirm';
+import { useNamingStandardImport } from '@/composables/useNamingStandardImport';
 import { useI18n } from 'vue-i18n';
 import {
   acceptedValuesPlaceholder,
@@ -1059,41 +1056,6 @@ async function deleteStandard(id) {
   }
 }
 
-async function importMissingFileType(std) {
-  try {
-    await fileTypeService.importSelected(
-      selectedImportProject.value,
-      projectId.value,
-      [getSourceFileTypeNameById(std.project_file_type_id)]
-    );
-    await fileTypeStore.fetchFileTypes(projectId.value);
-    fileTypes.value = [...fileTypeStore.fileTypes];
-    await fetchStandardsForImportProject();
-    // Add this line for success feedback:
-    eventMessageStore.addMessage(
-      t('configureNamingStandards.eventMessages.importSuccessFileType'),
-      'success',
-      4000
-    );
-  } catch (err) {
-    if (err?.response?.status === 409) {
-      eventMessageStore.addMessage(
-        t(
-          'configureNamingStandards.eventMessages.importFailedDuplicateFileType'
-        ),
-        'error',
-        7000
-      );
-    } else {
-      eventMessageStore.addMessage(
-        t('configureNamingStandards.eventMessages.importFailedFileType'),
-        'error',
-        7000
-      );
-    }
-  }
-}
-
 // --- Composition API setup ---
 const fileTypeStore = useFileTypeStore();
 const eventMessageStore = useEventMessageStore();
@@ -1348,134 +1310,36 @@ function getAcceptedValuesPlaceholder(comp) {
 }
 
 // Import modal
-const showImportModal = ref(false);
-const importStep = ref(1);
-const importProjects = ref([]);
-const importProjectOptions = computed(() =>
-  importProjects.value.map((project) => ({
-    value: project.id,
-    label: project.name,
-  }))
-);
-const selectedImportProject = ref(null);
-const importStandards = ref([]);
-const selectedStandardIds = ref([]);
-const foldedStandardIds = ref(new Set());
-
-const targetFileTypeKeys = computed(
-  () => new Set(fileTypes.value.map((ft) => `${ft.file_type_id}:${ft.name}`))
-);
-
-function toggleStandardFold(standardId) {
-  if (foldedStandardIds.value.has(standardId)) {
-    foldedStandardIds.value.delete(standardId);
-  } else {
-    foldedStandardIds.value.add(standardId);
-  }
-}
-
-function isStandardFolded(standardId) {
-  return foldedStandardIds.value.has(standardId);
-}
-
-// Fetch projects with standards (excluding current)
-async function fetchProjectsWithStandards() {
-  const { data } = await projectNamingStandardApi.getProjectsWithStandards();
-  importProjects.value = data.filter((p) => p.id !== projectId.value);
-}
-
-// Fetch standards for selected project (and source file types)
-async function fetchStandardsForImportProject() {
-  const { data } = await projectNamingStandardApi.getProjectNamingStandardsFull(
-    selectedImportProject.value
-  );
-  importStandards.value = data.standards || [];
-  selectedStandardIds.value = [];
-  foldedStandardIds.value = new Set(importStandards.value.map((std) => std.id));
-  // Fetch file types for the source project
-  const fileTypeResp = await fileTypeService.getProjectFileTypes(
-    selectedImportProject.value
-  );
-  sourceFileTypes.value = fileTypeResp.data || [];
-}
-
-// --- Import modal source file types ---
-const sourceFileTypes = ref([]);
-
-// Helper to get source file type name and extension by id
-function getSourceFileTypeDisplay(fileTypeId) {
-  const ft = sourceFileTypes.value.find((f) => f.id === fileTypeId);
-  if (!ft) return '';
-  return `${ft.name} (${ft.extension})`;
-}
-function getSourceFileTypeNameById(fileTypeId) {
-  const ft = sourceFileTypes.value.find((f) => f.id === fileTypeId);
-  return ft ? ft.name : '';
-}
-
-// Start import flow
-function startImportFlow() {
-  showImportModal.value = true;
-  importStep.value = 1;
-  fetchProjectsWithStandards();
-}
-
-// Import selected standards (with event message)
-async function importSelectedStandards() {
-  try {
-    await projectNamingStandardApi.importSelectedStandards({
-      target_project_id: projectId.value,
-      standard_ids: selectedStandardIds.value,
-    });
-
-    showImportModal.value = false;
-
-    // Clear cache before fetching new data
+const {
+  existingStandardKeys,
+  getSourceFileTypeDisplay,
+  goToImportStep2,
+  importMissingFileType,
+  importProjectOptions,
+  importSelectedStandards,
+  importStandards,
+  importStep,
+  isStandardFolded,
+  selectedImportProject,
+  selectedStandardIds,
+  showImportModal,
+  startImportFlow,
+  targetFileTypeKeys,
+  toggleStandardFold,
+} = useNamingStandardImport({
+  projectId,
+  standards,
+  fileTypes,
+  namingStandardStore,
+  fileTypeStore,
+  eventMessages: eventMessageStore,
+  translate: t,
+  namingApi: projectNamingStandardApi,
+  fileTypeApi: fileTypeService,
+  clearExampleCache: () => {
     exampleValuesCache.value = {};
-
-    await namingStandardStore.fetchStandardsAndComponentNames(
-      projectId.value,
-      true
-    );
-
-    eventMessageStore.addMessage(
-      'configureNamingStandards.eventMessages.importSuccessStandard',
-      'success'
-    );
-  } catch (err) {
-    if (err?.response?.status === 409) {
-      eventMessageStore.addMessage(
-        t(
-          'configureNamingStandards.eventMessages.importFailedDuplicateStandard'
-        ),
-        'error',
-        7000
-      );
-    } else {
-      eventMessageStore.addMessage(
-        t('configureNamingStandards.eventMessages.importFailedStandard'),
-        'error',
-        7000
-      );
-    }
-  }
-}
-
-// Add this function for the dropdown "Next" button
-function goToImportStep2() {
-  if (selectedImportProject.value) {
-    importStep.value = 2;
-    fetchStandardsForImportProject();
-  }
-}
-
-// Add this computed to get existing (name, file_type) pairs in the current project
-const existingStandardKeys = computed(
-  () =>
-    new Set(
-      standards.value.map((std) => `${std.name}::${std.project_file_type_id}`)
-    )
-);
+  },
+});
 </script>
 
 <style scoped>

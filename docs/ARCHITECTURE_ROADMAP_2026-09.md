@@ -354,5 +354,9 @@ interactive division of ambiguous character runs, Unicode-aware prefix
 detection, numeric-range prompts and explicit cancellation errors. Separator
 detection ignores separator characters inside component braces, fixing
 hyphenated patterns whose `prefix_*` component previously caused the underscore
-to be selected. The naming-standard import workflow is the next slice before
-decomposing the form presentation.
+to be selected. Cross-project naming-standard import state and requests now live
+in `useNamingStandardImport`, including source project loading, source file-type
+recovery, folded selection state, refresh and translated outcomes. Duplicate
+filtering now compares the stable underlying file type instead of unrelated
+project-local file-type row IDs. The remaining naming-standard work can proceed
+with form and modal presentation decomposition behind these tested boundaries.
