@@ -10,8 +10,11 @@ from app.schema.requests.effective_naming_standard import (
     AssignEffectiveNamingStandardRequest,
 )
 from app.schema.responses.effective_naming_standard import (
+    EffectiveNamingStandardOut,
     EffectiveNamingStandardResponse,
     GetEffectiveStandardsResponse,
+    GetNamingStandardLocationsResponse,
+    NamingStandardLocationOut,
     UnassignEffectiveNamingStandardResponse,
 )
 from app.service.effective_naming_standard import (
@@ -23,9 +26,16 @@ from app.service.effective_naming_standard import (
 router = APIRouter(dependencies=[get_admin_dep])
 
 
-@router.get("/locations")
-async def get_effective_naming_standard_locations():
-    return {"locations": EFFECTIVE_NAMING_STANDARD_LOCATIONS}
+@router.get("/locations", response_model=GetNamingStandardLocationsResponse)
+async def get_effective_naming_standard_locations() -> (
+    GetNamingStandardLocationsResponse
+):
+    return GetNamingStandardLocationsResponse(
+        locations=[
+            NamingStandardLocationOut.model_validate(location)
+            for location in EFFECTIVE_NAMING_STANDARD_LOCATIONS
+        ]
+    )
 
 
 @router.post(
@@ -37,8 +47,7 @@ async def assign_standard(
     project_file_type_id: int,
     payload: AssignEffectiveNamingStandardRequest,
     db: AsyncSession = get_db_dep,
-    admin_user=get_admin_dep,
-):
+) -> EffectiveNamingStandardResponse:
     result = await assign_effective_standard(
         db,
         project_id,
@@ -46,7 +55,12 @@ async def assign_standard(
         payload.naming_standard_id,
         payload.location_id,
     )
-    return {"success": True, "effective_standard": result}
+    return EffectiveNamingStandardResponse(
+        success=True,
+        effective_standard=EffectiveNamingStandardOut.model_validate(
+            result, from_attributes=True
+        ),
+    )
 
 
 @router.delete(
@@ -58,10 +72,9 @@ async def unassign_standard(
     project_file_type_id: int,
     location_id: int,
     db: AsyncSession = get_db_dep,
-    admin_user=get_admin_dep,
-):
+) -> UnassignEffectiveNamingStandardResponse:
     await unassign_effective_standard(db, project_id, project_file_type_id, location_id)
-    return {"success": True}
+    return UnassignEffectiveNamingStandardResponse(success=True)
 
 
 @router.get(
@@ -70,6 +83,11 @@ async def unassign_standard(
 )
 async def get_effective_standards_for_location(
     project_id: int, location_id: int, db: AsyncSession = get_db_dep
-):
+) -> GetEffectiveStandardsResponse:
     standards = await fetch_effective_standards(db, project_id, location_id)
-    return {"effective_standards": standards}
+    return GetEffectiveStandardsResponse(
+        effective_standards=[
+            EffectiveNamingStandardOut.model_validate(standard, from_attributes=True)
+            for standard in standards
+        ]
+    )

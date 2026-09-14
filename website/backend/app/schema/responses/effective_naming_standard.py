@@ -9,6 +9,15 @@ class EffectiveNamingStandardOut(BaseModel):
     location_id: int
 
 
+class NamingStandardLocationOut(BaseModel):
+    id: int
+    label: str
+
+
+class GetNamingStandardLocationsResponse(BaseModel):
+    locations: list[NamingStandardLocationOut]
+
+
 class EffectiveNamingStandardResponse(BaseModel):
     success: bool
     effective_standard: EffectiveNamingStandardOut

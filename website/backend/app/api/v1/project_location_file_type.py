@@ -27,14 +27,14 @@ async def add_file_type(
     location_id: int,
     file_type_id: int,
     db: AsyncSession = get_db_dep,
-):
+) -> AddFileTypeToLocationResponse:
     instance = await service_add_file_type_to_location(
         db, project_id, location_id, file_type_id
     )
-    return {
-        "success": True,
-        "file_type": FileTypeLocationOut.model_validate(instance, from_attributes=True),
-    }
+    return AddFileTypeToLocationResponse(
+        success=True,
+        file_type=FileTypeLocationOut.model_validate(instance, from_attributes=True),
+    )
 
 
 @router.delete(
@@ -46,11 +46,11 @@ async def remove_file_type(
     location_id: int,
     file_type_id: int,
     db: AsyncSession = get_db_dep,
-):
+) -> RemoveFileTypeFromLocationResponse:
     count = await service_remove_file_type_from_location(
         db, project_id, location_id, file_type_id
     )
-    return {"success": True, "removed": count}
+    return RemoveFileTypeFromLocationResponse(success=True, removed=count)
 
 
 @router.get(
@@ -61,11 +61,11 @@ async def get_file_types(
     project_id: int,
     location_id: int,
     db: AsyncSession = get_db_dep,
-):
+) -> GetFileTypesForLocationResponse:
     file_types = await service_get_file_types_for_location(db, project_id, location_id)
-    return {
-        "file_types": [
+    return GetFileTypesForLocationResponse(
+        file_types=[
             FileTypeLocationOut.model_validate(ft, from_attributes=True)
             for ft in file_types
         ]
-    }
+    )
