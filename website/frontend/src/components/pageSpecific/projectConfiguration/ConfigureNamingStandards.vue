@@ -28,235 +28,26 @@
         @toggle="toggleAccordion"
         @delete="deleteStandard"
       />
-      <div
+      <NamingStandardCreateForm
         v-if="showAddStandard"
-        ref="addFormRef"
-        class="configure-naming-add-form"
-      >
-        <div class="configure-naming-add-title">
-          {{ t('configureNamingStandards.add') }}
-        </div>
-        <form class="configure-naming-add-fields" @submit.prevent="addStandard">
-          <!-- Name -->
-          <div class="configure-naming-form-row">
-            <label for="standard-name">{{
-              t('configureNamingStandards.name')
-            }}</label>
-            <input
-              id="standard-name"
-              v-model="newStandard.name"
-              :placeholder="t('configureNamingStandards.name')"
-              required
-            />
-          </div>
-          <!-- Description -->
-          <div class="configure-naming-form-row">
-            <label for="standard-desc">{{
-              t('configureNamingStandards.description')
-            }}</label>
-            <input
-              id="standard-desc"
-              v-model="newStandard.description"
-              :placeholder="t('configureNamingStandards.description')"
-            />
-          </div>
-          <!-- File type -->
-          <div class="configure-naming-form-row">
-            <label for="standard-filetype">{{
-              t('configureNamingStandards.fileType')
-            }}</label>
-            <AppSelect
-              id="standard-filetype"
-              v-model="newStandard.project_file_type_id"
-              :required="true"
-              :placeholder="t('configureNamingStandards.fileType')"
-              :options="fileTypeOptions"
-              @change="onFileTypeChange"
-            />
-          </div>
-          <!-- Pattern: prefix + comma pattern -->
-          <div class="configure-naming-form-row">
-            <label for="pattern-comma-input">{{
-              t('configureNamingStandards.pattern')
-            }}</label>
-            <div class="configure-naming-pattern-row">
-              <input
-                class="configure-naming-prefix-box"
-                :title="prefixValue"
-                :value="prefixValue"
-                readonly
-                tabindex="-1"
-              />
-              <span class="configure-naming-pattern-sep">+</span>
-              <input
-                id="pattern-comma-input"
-                v-model="commaPattern"
-                class="configure-naming-pattern-box"
-                :title="commaPattern"
-                :placeholder="t('configureNamingStandards.commaPattern')"
-                required
-                @input="onCommaPatternInput"
-              />
-            </div>
-          </div>
-
-          <!-- New section for example and accepted separators, one under another -->
-          <div class="configure-naming-pattern-info-section">
-            <div class="configure-naming-example-desc">
-              <span>
-                {{
-                  t('configureNamingStandards.exampleCommaPatternDesc', {
-                    example: 'CLSFBI1912A_S040_B',
-                  })
-                }}
-              </span>
-              <span class="configure-naming-accepted-separators">
-                <b>{{ t('configureNamingStandards.acceptedSeparators') }}</b
-                >: {{ knownSeparators.map((s) => `"${s}"`).join(', ') }}
-              </span>
-            </div>
-            <div class="configure-naming-example-desc">
-              <code>{{ exampleCommaPattern }}</code>
-            </div>
-          </div>
-          <!-- Example and extraction -->
-          <div class="configure-naming-form-row">
-            <label for="example-file-input">{{
-              t('configureNamingStandards.exampleFile')
-            }}</label>
-            <div class="configure-naming-example-block">
-              <input
-                id="example-file-input"
-                v-model="exampleFilename"
-                :placeholder="t('configureNamingStandards.exampleFile')"
-                class="configure-naming-example-input"
-              />
-              <button
-                type="button"
-                class="configure-naming-btn"
-                @click="extractRegexFromExample"
-              >
-                {{ t('configureNamingStandards.extractRegex') }}
-              </button>
-            </div>
-          </div>
-          <!-- Components (optional, can be hidden or shown as needed) -->
-          <div class="configure-naming-components-section">
-            <label
-              class="configure-naming-components-label"
-              for="components-table"
-              >{{ t('configureNamingStandards.componentsTable') }}</label
-            >
-            <table
-              id="components-table"
-              class="configure-naming-components-table configure-naming-components-edit-table"
-            >
-              <thead>
-                <tr>
-                  <th>{{ t('configureNamingStandards.componentName') }}</th>
-                  <th>{{ t('configureNamingStandards.componentRegex') }}</th>
-                  <th>
-                    {{ t('configureNamingStandards.componentDescription') }}
-                  </th>
-                  <th>
-                    {{ t('configureNamingStandards.componentAcceptedValues') }}
-                  </th>
-                  <th>{{ t('configureNamingStandards.componentOrder') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(comp, idx) in newStandard.components"
-                  :key="comp.name"
-                  class="configure-naming-component-row"
-                >
-                  <td>
-                    <input
-                      v-model="comp.name"
-                      placeholder="Component name"
-                      readonly
-                      class="configure-naming-components-table-prefix-disabled"
-                      :tabindex="
-                        idx === 0 && comp.name.startsWith('prefix_') ? -1 : 0
-                      "
-                    />
-                  </td>
-                  <td>
-                    <input
-                      v-model="comp.regex"
-                      placeholder="Regex"
-                      :readonly="idx === 0 && comp.name.startsWith('prefix_')"
-                      :class="{
-                        'configure-naming-components-table-prefix-disabled':
-                          idx === 0 && comp.name.startsWith('prefix_'),
-                      }"
-                      :tabindex="
-                        idx === 0 && comp.name.startsWith('prefix_') ? -1 : 0
-                      "
-                    />
-                  </td>
-                  <td>
-                    <input
-                      v-model="comp.description"
-                      placeholder="Description"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      v-model="comp.accepted_values_str"
-                      :placeholder="getAcceptedValuesPlaceholder(comp)"
-                      :title="getAcceptedValuesPlaceholder(comp)"
-                      @input="onAcceptedValuesInput(comp)"
-                    />
-                  </td>
-                  <td>
-                    <span class="configure-naming-component-order"
-                      >#{{ comp.order }}</span
-                    >
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <div
-              v-if="shouldShowAcceptedValuesWarning"
-              class="configure-naming-warning"
-              style="margin-top: 4px"
-            >
-              <span>
-                <b>{{
-                  t('configureNamingStandards.noteAcceptedValues', {
-                    value: detectedUnusualAcceptedValue,
-                  })
-                }}</b>
-              </span>
-            </div>
-            <div
-              v-if="regexExtractionError"
-              ref="errorMessageRef"
-              class="configure-naming-error"
-              style="margin-top: 4px"
-            >
-              {{ regexExtractionError }}
-            </div>
-          </div>
-          <div class="configure-naming-form-actions">
-            <button
-              class="configure-naming-btn"
-              type="submit"
-              :disabled="!!regexExtractionError"
-            >
-              {{ t('configureNamingStandards.add') }}
-            </button>
-            <button
-              class="configure-naming-btn cancel"
-              type="button"
-              @click="resetAddForm"
-            >
-              {{ t('configureNamingStandards.cancel') }}
-            </button>
-          </div>
-        </form>
-      </div>
+        v-model:draft="newStandard"
+        v-model:comma-pattern="commaPattern"
+        v-model:example-filename="exampleFilename"
+        :file-type-options="fileTypeOptions"
+        :prefix-value="prefixValue"
+        :known-separators="knownSeparators"
+        :example-comma-pattern="exampleCommaPattern"
+        :extraction-error="regexExtractionError"
+        :show-accepted-values-warning="shouldShowAcceptedValuesWarning"
+        :unusual-accepted-value="detectedUnusualAcceptedValue"
+        :get-accepted-values-placeholder="getAcceptedValuesPlaceholder"
+        @submit="addStandard"
+        @cancel="resetAddForm"
+        @file-type-change="onFileTypeChange"
+        @pattern-input="onCommaPatternInput"
+        @extract-regex="extractRegexFromExample"
+        @accepted-values-input="onAcceptedValuesInput"
+      />
     </div>
     <UserPrompt
       v-model="userPromptVisible"
@@ -293,8 +84,8 @@
 
 <script setup>
 import UserPrompt from '@components/common/UserPrompt.vue';
-import AppSelect from '@/components/common/AppSelect.vue';
 import NamingStandardImportDialog from '@/components/pageSpecific/projectConfiguration/NamingStandardImportDialog.vue';
+import NamingStandardCreateForm from '@/components/pageSpecific/projectConfiguration/NamingStandardCreateForm.vue';
 import NamingStandardList from '@/components/pageSpecific/projectConfiguration/NamingStandardList.vue';
 import projectNamingStandardApi from '@/api/service/projectNamingStandard.js';
 import fileTypeService from '@/api/service/fileTypeService.js';
@@ -465,7 +256,6 @@ const regexExtractionError = ref('');
 const commaPattern = ref('');
 const exampleCommaPattern = t('configureNamingStandards.exampleCommaPattern');
 const knownSeparators = KNOWN_NAMING_SEPARATORS;
-const errorMessageRef = ref(null);
 
 function onCommaPatternInput() {
   const fileType = getFileTypeNameRaw(newStandard.value.project_file_type_id);
@@ -557,16 +347,10 @@ async function extractRegexFromExample() {
   }
   newStandard.value.components = result.components;
 }
-const addFormRef = ref(null);
 const standardsTopRef = ref(null);
 
-async function handleShowAddStandard() {
+function handleShowAddStandard() {
   showAddStandard.value = true;
-  nextTick(() => {
-    if (addFormRef.value) {
-      addFormRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  });
 }
 
 // --- Composition API setup ---
@@ -610,22 +394,6 @@ watch(
   },
   { immediate: true }
 );
-
-watch(
-  () => newStandard.value,
-  () => {},
-  { deep: true }
-);
-
-watch(regexExtractionError, async (val) => {
-  if (val) {
-    await nextTick();
-    errorMessageRef.value?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-    });
-  }
-});
 
 const openStandardId = ref(null);
 function toggleAccordion(id) {
@@ -916,183 +684,5 @@ const {
   height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.configure-naming-add-form {
-  overflow-wrap: break-word;
-  margin-top: 32px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px #0002;
-  padding: 32px 36px 28px;
-  margin-left: auto;
-  margin-right: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.configure-naming-add-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2563eb;
-  text-align: center;
-  margin-bottom: 2rem;
-  letter-spacing: 0.5px;
-}
-
-.configure-naming-add-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.configure-naming-form-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.configure-naming-form-row label {
-  width: 110px;
-  font-weight: 500;
-  color: #333;
-  flex-shrink: 0;
-}
-
-.configure-naming-form-row input,
-.configure-naming-form-row select {
-  flex: 1;
-  padding: 7px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 5px;
-  font-size: 1rem;
-  background: #f9fafb;
-}
-
-.configure-naming-pattern-row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-}
-
-.configure-naming-prefix-box {
-  background: #f3f6fa;
-  color: #2563eb;
-  font-weight: 600;
-  border: 1.5px solid #2563eb;
-  border-radius: 5px;
-  font-size: 1rem;
-  max-width: fit-content;
-  cursor: not-allowed;
-  caret-color: transparent;
-}
-
-.configure-naming-pattern-sep {
-  color: #888;
-  font-size: 1.2em;
-  font-weight: 700;
-}
-
-.configure-naming-pattern-box {
-  flex: 2.5;
-  border: 1px solid #d1d5db;
-  border-radius: 5px;
-  padding: 7px 10px;
-  font-size: 1rem;
-  background: #fff;
-}
-
-.configure-naming-example-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
-.configure-naming-example-desc {
-  color: #888;
-  font-size: 0.98em;
-  margin-bottom: 0.2rem;
-  margin-left: 7.4rem;
-}
-
-.configure-naming-example-input {
-  padding: 7px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 5px;
-  font-size: 1rem;
-  background: #fff;
-  margin-bottom: 4px;
-}
-
-.configure-naming-error {
-  color: #e74c3c;
-  font-size: 0.98em;
-  margin-top: 2px;
-  margin-left: 8px;
-}
-
-.configure-naming-components-edit-table input {
-  width: 100%;
-  padding: 6px 8px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 1rem;
-  background: #f9fafb;
-  box-sizing: border-box;
-}
-
-.configure-naming-components-edit-table td {
-  vertical-align: middle;
-  padding: 6px 10px;
-}
-
-.configure-naming-components-edit-table th,
-.configure-naming-components-edit-table td {
-  border: 1px solid #e0e0e0;
-}
-
-.configure-naming-components-edit-table th {
-  background: #f3f6fa;
-  font-weight: 600;
-  color: #2563eb;
-}
-
-.configure-naming-components-edit-table {
-  margin-top: 8px;
-  margin-bottom: 8px;
-  width: 100%;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #fff;
-  box-shadow: 0 1px 4px #0001;
-}
-
-.configure-naming-components-label {
-  font-weight: 600;
-  color: #444;
-  display: block;
-  font-size: 1.08rem;
-  margin-top: 1rem;
-}
-
-.configure-naming-form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.configure-naming-components-table-prefix-disabled {
-  background: #f3f6fa !important;
-  color: #aaa !important;
-  cursor: not-allowed !important;
-  pointer-events: auto !important;
-}
-
-.configure-naming-accepted-separators {
-  margin-left: 2rem;
 }
 </style>
