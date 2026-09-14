@@ -2,10 +2,13 @@
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import CursorResult
 
 from app.core.error_diagnostics import safe_failure_summary
 from app.crud.project import get_project_by_name
@@ -221,17 +224,20 @@ class ContributionChangeSetCoordinator:
 
     async def next_retryable_id(self, db: AsyncSession) -> uuid.UUID | None:
         """Return the oldest queued or transiently failed publication request."""
-        return await db.scalar(
-            select(ContributionChangeSet.change_set_id)
-            .where(
-                ContributionChangeSet.state.in_({"queued", "failed"}),
-                ContributionChangeSet.attempts < MAX_PUBLICATION_ATTEMPTS,
-            )
-            .order_by(
-                ContributionChangeSet.created_at,
-                ContributionChangeSet.change_set_id,
-            )
-            .limit(1)
+        return cast(
+            "uuid.UUID | None",
+            await db.scalar(
+                select(ContributionChangeSet.change_set_id)
+                .where(
+                    ContributionChangeSet.state.in_({"queued", "failed"}),
+                    ContributionChangeSet.attempts < MAX_PUBLICATION_ATTEMPTS,
+                )
+                .order_by(
+                    ContributionChangeSet.created_at,
+                    ContributionChangeSet.change_set_id,
+                )
+                .limit(1)
+            ),
         )
 
     async def requeue_interrupted(self, db: AsyncSession) -> int:
@@ -251,7 +257,7 @@ class ContributionChangeSetCoordinator:
             )
         )
         await db.commit()
-        return int(result.rowcount or 0)
+        return int(cast("CursorResult[Any]", result).rowcount or 0)
 
     async def _mark_failed(
         self, db: AsyncSession, change_set: ContributionChangeSet, message: str

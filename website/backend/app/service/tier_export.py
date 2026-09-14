@@ -4,6 +4,7 @@ import json
 from copy import deepcopy
 from dataclasses import dataclass
 from hashlib import sha256
+from typing import cast
 
 from lxml import etree
 
@@ -386,4 +387,4 @@ def reintegrate_tier_subset(  # noqa: PLR0912, PLR0915
         pretty_print=True,
     )
     validate_eaf(result)
-    return result
+    return cast("bytes", result)

@@ -136,7 +136,7 @@ class ElanService:
 
     async def store_elan_file_data(
         self,
-        file_info: dict,
+        file_info: PersistedEafFile,
         user_id: int,
         project_id: int,
         *,

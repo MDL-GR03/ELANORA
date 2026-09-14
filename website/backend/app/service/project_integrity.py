@@ -172,20 +172,19 @@ class ProjectIntegrityService:
             .group_by(EafRevision.elan_id)
             .subquery()
         )
-        database = dict(
-            (
-                await db.execute(
-                    select(ElanFile.filename, EafRevision.sha256)
-                    .join(latest, latest.c.elan_id == ElanFile.elan_id)
-                    .join(
-                        EafRevision,
-                        (EafRevision.elan_id == latest.c.elan_id)
-                        & (EafRevision.revision_number == latest.c.revision_number),
-                    )
-                    .where(ElanFile.project_id == project.project_id)
-                )
-            ).all()
+        revision_rows = await db.execute(
+            select(ElanFile.filename, EafRevision.sha256)
+            .join(latest, latest.c.elan_id == ElanFile.elan_id)
+            .join(
+                EafRevision,
+                (EafRevision.elan_id == latest.c.elan_id)
+                & (EafRevision.revision_number == latest.c.revision_number),
+            )
+            .where(ElanFile.project_id == project.project_id)
         )
+        database: dict[str, str] = {}
+        for filename, checksum in revision_rows.tuples():
+            database[filename] = checksum
         result: dict[str, Any] = {
             "project_name": project_name,
             "revision_id": str(revision.revision_id),

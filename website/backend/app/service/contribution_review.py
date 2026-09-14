@@ -28,6 +28,13 @@ from app.service.research_topics import require_distinct_topic_name
 from app.storage.paths import safe_project_path
 
 logger = get_logger()
+
+
+def _object_dict(value: object) -> dict[str, Any]:
+    """Copy JSON object data while rejecting unexpected persisted shapes."""
+    return dict(value) if isinstance(value, dict) else {}
+
+
 MIN_DECLINE_REASON_LENGTH = 3
 
 
@@ -64,8 +71,8 @@ class ContributionReviewService:
             raise ValueError("Choose an existing topic or create a new one, not both")
 
         details = dict(upload.git_details or {})
-        upload_data = dict(details.get("upload_data") or {})
-        context = dict(upload_data.get("research_context") or {})
+        upload_data = _object_dict(details.get("upload_data"))
+        context = _object_dict(upload_data.get("research_context"))
         _, _, changed_tiers = self.inspection.semantic_analysis(
             project_name, upload.branch_name, upload_data, upload.base_commit
         )
@@ -305,8 +312,8 @@ class ContributionReviewService:
                 f"contribution #{upload.superseded_by_upload_id} and cannot be accepted"
             )
 
-        upload_data = dict((upload.git_details or {}).get("upload_data") or {})
-        context = dict(upload_data.get("research_context") or {})
+        upload_data = _object_dict((upload.git_details or {}).get("upload_data"))
+        context = _object_dict(upload_data.get("research_context"))
         if context:
             if not str(context.get("summary") or "").strip():
                 raise ValueError(

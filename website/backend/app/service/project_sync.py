@@ -82,21 +82,27 @@ class ProjectSyncCoordinator:
             return operation
         except BaseException as error:
             await db.rollback()
-            operation = await db.get(ProjectSyncOperation, operation.operation_id)
-            if operation is not None:
+            refreshed_operation = await db.get(
+                ProjectSyncOperation, operation.operation_id
+            )
+            if refreshed_operation is not None:
                 head = runner.get_commit_hash()
-                operation.state = (
+                refreshed_operation.state = (
                     "recovery_required"
                     if head != operation.starting_commit
                     else "failed"
                 )
-                operation.resulting_commit = (
+                refreshed_operation.resulting_commit = (
                     head if head != operation.starting_commit else None
                 )
-                operation.error = safe_failure_summary(
+                refreshed_operation.error = safe_failure_summary(
                     error, operation="Project synchronization failed"
                 )
-                self._add_audit(db, operation, f"project.server_sync.{operation.state}")
+                self._add_audit(
+                    db,
+                    refreshed_operation,
+                    f"project.server_sync.{refreshed_operation.state}",
+                )
                 await db.commit()
             raise
 
@@ -231,13 +237,15 @@ class ProjectSyncCoordinator:
             return operation
         except BaseException as error:
             await db.rollback()
-            operation = await db.get(ProjectSyncOperation, operation.operation_id)
-            if operation is not None:
-                operation.state = "failed"
-                operation.error = safe_failure_summary(
+            refreshed_operation = await db.get(
+                ProjectSyncOperation, operation.operation_id
+            )
+            if refreshed_operation is not None:
+                refreshed_operation.state = "failed"
+                refreshed_operation.error = safe_failure_summary(
                     error, operation="Discarding server changes failed"
                 )
-                self._add_audit(db, operation, "project.server_sync.failed")
+                self._add_audit(db, refreshed_operation, "project.server_sync.failed")
                 await db.commit()
             raise
 
