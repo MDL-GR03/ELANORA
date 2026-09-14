@@ -325,3 +325,10 @@ injected for direct testing. The page retains route/workspace navigation and the
 decline dialog itself. The contribution page decomposition is now sufficiently
 split by use case; the next item 6 target is the next oversized component chosen
 by risk and test coverage rather than further fragmenting this page.
+
+`ReviewCasePanel` is the next risk-selected target. Its active-review summary,
+empty/loading/error states and responsive queue controls now live in
+`ReviewQueueOverview`; active versus archived grouping, nested correction search,
+state filtering and bounded pagination now live in `useReviewCaseQueue`. Both
+boundaries have direct tests. The correction-request composer is the next slice,
+followed by reviewer task decisions and revision-transition orchestration.

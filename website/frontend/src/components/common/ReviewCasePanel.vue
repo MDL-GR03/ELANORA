@@ -254,56 +254,19 @@
     </form>
 
     <template v-if="!composerOnly">
-      <div
-        v-if="cases.length"
-        class="review-summary"
-        aria-label="Review status summary"
-      >
-        <div>
-          <strong>{{ activeCount }}</strong>
-          <span>Active</span>
-        </div>
-        <div>
-          <strong>{{ changesRequestedCount }}</strong>
-          <span>Awaiting corrections</span>
-        </div>
-        <div>
-          <strong>{{ resubmittedCount }}</strong>
-          <span>Ready for another review</span>
-        </div>
-      </div>
-
-      <div v-if="loading" class="panel-state">Loading correction requests…</div>
-      <div v-else-if="error" class="panel-state error" role="alert">
-        {{ error }}
-      </div>
-      <div v-else-if="!activeCases.length" class="panel-state">
-        {{
-          uploadId
-            ? 'No correction requests have been opened for this contribution.'
-            : closedCases.length
-              ? 'There are no active correction requests for this project.'
-              : 'No correction requests have been opened for this project.'
-        }}
-      </div>
-      <div
-        v-if="!loading && !error && activeCases.length > 5"
-        class="review-list-filters"
-      >
-        <input
-          v-model.trim="reviewQuery"
-          type="search"
-          placeholder="Find by title, contribution, file, tier, annotation, or instruction"
-          aria-label="Search correction requests"
-        />
-        <AppSelect
-          id="review-status-filter"
-          v-model="reviewStatus"
-          size="small"
-          aria-label="Filter correction requests by status"
-          :options="reviewStatusOptions"
-        />
-      </div>
+      <ReviewQueueOverview
+        v-model:query="reviewQuery"
+        v-model:status="reviewStatus"
+        :cases-count="cases.length"
+        :active-count="activeCount"
+        :changes-requested-count="changesRequestedCount"
+        :resubmitted-count="resubmittedCount"
+        :active-cases-count="activeCases.length"
+        :closed-cases-count="closedCases.length"
+        :upload-id="uploadId"
+        :loading="loading"
+        :error="error"
+      />
       <div v-if="!loading && !error && activeCases.length" class="case-list">
         <div v-if="!visibleActiveCases.length" class="panel-state">
           No correction requests match these filters.
@@ -904,7 +867,9 @@ import reviewService from '@/api/service/reviewService';
 import ConflictMergeView from '@/components/common/ConflictMergeView.vue';
 import ArchivedReviewList from '@/components/common/ArchivedReviewList.vue';
 import AppSelect from '@/components/common/AppSelect.vue';
+import ReviewQueueOverview from '@/components/pageSpecific/contributions/ReviewQueueOverview.vue';
 import { getProjectUsers } from '@/api/service/projectAssociationService';
+import { useReviewCaseQueue } from '@/composables/useReviewCaseQueue';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { useEventMessageStore } from '@/stores/eventMessage.js';
 
@@ -926,6 +891,19 @@ const emit = defineEmits(['created', 'cancel', 'count-change']);
 const confirmAction = useUserConfirm();
 const eventMessages = useEventMessageStore();
 const cases = ref([]);
+const {
+  query: reviewQuery,
+  status: reviewStatus,
+  page: reviewPage,
+  pageCount: reviewPageCount,
+  activeCases,
+  closedCases,
+  visibleActiveCases,
+  activeCount,
+  changesRequestedCount,
+  resubmittedCount,
+  isFinished,
+} = useReviewCaseQueue(cases);
 const replies = reactive({});
 const loading = ref(true);
 const busy = ref(false);
@@ -943,17 +921,8 @@ const visibleTaskLimit = ref(20);
 const revisionFeedbackCaseId = ref('');
 const revisionTaskSelections = reactive({});
 const revisionTargets = reactive({});
-const reviewQuery = ref('');
-const reviewStatus = ref('');
-const reviewPage = ref(1);
 const members = ref([]);
 const membersLoading = ref(false);
-const reviewStatusOptions = [
-  { value: '', label: 'All active statuses' },
-  { value: 'open', label: 'Open questions' },
-  { value: 'changes_requested', label: 'Awaiting corrections' },
-  { value: 'resubmitted', label: 'Ready for review' },
-];
 const taskStatusOptions = [
   { value: '', label: 'All statuses' },
   { value: 'requested', label: 'Needs change' },
@@ -999,15 +968,6 @@ const draft = reactive({
   current_text: '',
   suggested_text: '',
 });
-const activeCount = computed(
-  () => cases.value.filter((item) => !isFinished(item.state)).length
-);
-const closedCases = computed(() =>
-  cases.value.filter((item) => isFinished(item.state))
-);
-const activeCases = computed(() =>
-  cases.value.filter((item) => !isFinished(item.state))
-);
 watch(
   [closedCases, () => props.highlightedCaseId],
   ([archived, highlightedCaseId]) => {
@@ -1016,45 +976,6 @@ watch(
     }
   },
   { immediate: true }
-);
-const filteredActiveCases = computed(() => {
-  const needle = reviewQuery.value.toLocaleLowerCase();
-  return activeCases.value.filter((item) => {
-    const searchable = [
-      item.title,
-      item.upload_id,
-      item.resubmitted_upload_id,
-      item.creator_name,
-      ...(item.tasks || []).flatMap((task) => [
-        task.filename,
-        task.tier_id,
-        task.annotation_id,
-        task.instruction,
-        task.current_text,
-        task.suggested_text,
-      ]),
-    ]
-      .filter((value) => value != null)
-      .join(' ')
-      .toLocaleLowerCase();
-    return (
-      (!reviewStatus.value || item.state === reviewStatus.value) &&
-      (!needle || searchable.includes(needle))
-    );
-  });
-});
-const reviewPageCount = computed(() =>
-  Math.max(1, Math.ceil(filteredActiveCases.value.length / 10))
-);
-const visibleActiveCases = computed(() => {
-  const start = (reviewPage.value - 1) * 10;
-  return filteredActiveCases.value.slice(start, start + 10);
-});
-const changesRequestedCount = computed(
-  () => cases.value.filter((item) => item.state === 'changes_requested').length
-);
-const resubmittedCount = computed(
-  () => cases.value.filter((item) => item.state === 'resubmitted').length
 );
 const selectedFileCount = computed(
   () => taskDrafts.filter((task) => task.selected).length
@@ -1105,7 +1026,6 @@ const unresolvedTaskCount = (item) =>
   item.tasks.filter((task) => task.status !== 'accepted').length;
 const approveTaskLabel = (item) =>
   unresolvedTaskCount(item) === 1 ? 'Approve correction' : 'Approve edit';
-const isFinished = (state) => ['resolved', 'closed'].includes(state);
 async function openReviewArchive() {
   showClosedCases.value = true;
   await nextTick();
@@ -1625,12 +1545,6 @@ watch(fileQuery, () => {
 watch(filePageCount, (count) => {
   if (filePage.value > count) filePage.value = count;
 });
-watch([reviewQuery, reviewStatus], () => {
-  reviewPage.value = 1;
-});
-watch(reviewPageCount, (count) => {
-  if (reviewPage.value > count) reviewPage.value = count;
-});
 defineExpose({ openComposer });
 </script>
 
@@ -1685,31 +1599,6 @@ h5 {
   margin-top: 0.25rem;
   color: var(--color-text-muted);
   font-size: 0.86rem;
-}
-
-.review-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
-}
-
-.review-summary > div {
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: white;
-}
-
-.review-summary strong {
-  color: var(--primary-color);
-  font-size: 1.25rem;
-}
-
-.review-summary span {
-  color: var(--color-text-muted);
-  font-size: 0.78rem;
 }
 
 .case-flags {
@@ -1825,17 +1714,6 @@ textarea {
 .case-list {
   display: grid;
   gap: 0.8rem;
-}
-
-.review-list-filters {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.35fr);
-  gap: 0.65rem;
-  margin-bottom: 0.8rem;
-  padding: 0.75rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-subtle);
 }
 
 .review-pagination {
@@ -2857,16 +2735,6 @@ button.remove-change {
   flex: 1;
 }
 
-.panel-state {
-  padding: 1rem;
-  color: var(--color-text-muted);
-  text-align: center;
-}
-
-.panel-state.error {
-  color: #991b1b;
-}
-
 @media (width <= 700px) {
   .target-fields,
   .change-target-grid,
@@ -2882,10 +2750,6 @@ button.remove-change {
 
   .task-text-suggestion > svg {
     display: none;
-  }
-
-  .review-summary {
-    grid-template-columns: 1fr;
   }
 
   .review-panel > header,
@@ -2916,10 +2780,6 @@ button.remove-change {
   .builder-introduction {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .review-list-filters {
-    grid-template-columns: 1fr;
   }
 
   .file-task-builder {
