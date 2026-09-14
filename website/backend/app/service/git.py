@@ -203,7 +203,7 @@ class GitService:
         # Fetch project details by ID
         project = await get_project_by_id(db, project_id)
         if not project:
-            logger.error(f"Project with ID '{project_id}' not found in database")
+            logger.error("Project was not found in the database")
             raise ValueError(f"Project with ID '{project_id}' not found")
         logger.info(
             f"Fetched project: project_id={project.project_id}, project_name={project.project_name}"
@@ -221,7 +221,7 @@ class GitService:
                 "Location ID for 'uploadPage' not found; defaulting to no compliance check"
             )
         else:
-            logger.debug(f"Using location ID: {location_id} for upload page")
+            logger.debug("Using a configured location for filename validation")
 
         standard = None
         if location_id is not None:
@@ -270,28 +270,28 @@ class GitService:
                 filename = file.filename
                 if ValidationUtils.is_filename_compliant(standard, filename):
                     compliant_files.append(filename)
-                    logger.debug(f"File '{filename}' is compliant with naming standard")
+                    logger.debug(
+                        "An uploaded filename complies with the naming standard"
+                    )
                 else:
                     non_compliant_files.append(filename)
                     logger.warning(
-                        f"File '{filename}' is non-compliant with naming standard"
+                        "An uploaded filename does not comply with the naming standard"
                     )
             if non_compliant_files:
-                logger.error(
-                    f"Compliance check failed for files: {non_compliant_files}"
-                )
+                logger.error("Filename compliance check failed")
                 raise ValueError(
                     f"Filename '{non_compliant_files[0]}' does not comply with the project's naming standard."
                 )  # Raise for first failure
             else:
-                logger.info(f"All {len(files)} files are compliant: {compliant_files}")
+                logger.info("All %s uploaded filenames are compliant", len(files))
         except Exception as e:
             logger.error(
-                f"Compliance check error for files {[f.filename for f in files]}: {e}",
-                exc_info=True,
+                "Filename compliance evaluation failed; error_type=%s",
+                safe_exception_type(e),
             )
             raise ValueError(
-                f"Filename compliance check failed due to data issue: {e}"
+                "Filename compliance check failed due to a data issue"
             ) from e
         # Proceed with the rest of the method
         self.contribution_intake.validate_request(project_path, files)
@@ -362,16 +362,16 @@ class GitService:
                     upload_info["message"] = (
                         "The valid new files were accepted automatically by project policy."
                     )
-                except Exception:
-                    logger.exception(
-                        "Automatic acceptance failed; contribution remains pending"
+                except Exception as error:
+                    logger.error(
+                        "Automatic acceptance failed; contribution remains pending; "
+                        "error_type=%s",
+                        safe_exception_type(error),
                     )
             upload_info["auto_accepted"] = auto_accepted
 
             # Build response
-            logger.info(
-                f"Successfully processed upload for project: {project.project_name}"
-            )
+            logger.info("Successfully processed a project upload")
             return self.contribution_intake.build_response(
                 project.project_name,
                 uploaded_files,
@@ -391,8 +391,11 @@ class GitService:
                 self.contribution_intake.discard_failed_submission(
                     project_path, branch_name
                 )
-            logger.error(f"Batch file operation failed: {e}")
-            raise RuntimeError(f"Failed to add ELAN files: {e}") from e
+            logger.error(
+                "Batch ELAN file operation failed; error_type=%s",
+                safe_exception_type(e),
+            )
+            raise RuntimeError("Failed to add ELAN files") from e
 
     async def list_projects(
         self, db: AsyncSession, instance_id: int
@@ -827,7 +830,7 @@ class GitService:
             }
 
         except Exception as e:
-            raise RuntimeError(f"Failed to get branches: {e}") from e
+            raise RuntimeError("Failed to get branches") from e
 
     async def resolve_conflicts(
         self,
@@ -857,7 +860,7 @@ class GitService:
             }
 
         except Exception as e:
-            raise RuntimeError(f"Failed to resolve conflicts: {e}") from e
+            raise RuntimeError("Failed to resolve conflicts") from e
 
     def _create_readme(self, project_name: str) -> str:
         """Generate README content for a new project."""
@@ -912,7 +915,7 @@ class GitService:
                 "message": f"Switched to branch '{branch_name}' in project '{project_name}'.",
             }
         except Exception as e:
-            raise RuntimeError(f"Failed to checkout branch: {e}") from e
+            raise RuntimeError("Failed to checkout branch") from e
 
     async def list_project_files(
         self, project_name: str, db: AsyncSession, include_media: bool = False
@@ -945,8 +948,7 @@ class GitService:
 
         enriched_files = []
         for elan_file, username in db_files:
-            file_path = Path(elan_file.absolute_file_path)
-            logger.info(f"Getting info for file: {file_path}")
+            logger.debug("Retrieving project file metadata")
 
             # Build base file info
             file_info = {
@@ -971,7 +973,7 @@ class GitService:
 
             enriched_files.append(file_info)
 
-        logger.info(f"Retrieved files for project '{project_name}': {enriched_files}")
+        logger.info("Retrieved %s project files", len(enriched_files))
         return {"files": enriched_files}
 
     async def synchronize_project(
@@ -985,13 +987,13 @@ class GitService:
         project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
 
-        logger.info(f"Starting synchronization for project: {project_name}")
+        logger.info("Starting project synchronization")
 
         # Inspect first. Nothing is staged until every changed EAF passes preflight.
         elan_files_dir = project_path / "elan_files"
         status_output = runner.get_status()
 
-        logger.info(f"Git status output: '{status_output}'")
+        logger.debug("Read project Git status")
 
         # Use GitStatusParser for cleaner parsing
         parser = GitStatusParser()
@@ -1000,14 +1002,17 @@ class GitService:
         # Get all Git-tracked files
         all_tracked_result = runner.run(["ls-files"], check=True)
         all_tracked_files = set(all_tracked_result.stdout.strip().splitlines())
-        logger.info(f"All tracked files in Git: {all_tracked_files}")
+        logger.info("Found %s tracked project files", len(all_tracked_files))
 
         # Use the analyzer to process all files
         files_status, processed_files = analyzer.analyze_project_files(
             status_output, all_tracked_files, elan_files_dir
         )
-        logger.info(f"Processed files: {processed_files}")
-        logger.info(f"Files status: {files_status}")
+        logger.info(
+            "Analyzed project files; processed=%s changed=%s",
+            len(processed_files),
+            len(files_status),
+        )
 
         elan_service = ElanService(db)
         updated_files = []
@@ -1025,44 +1030,44 @@ class GitService:
             status = file_status.status
             file_path = project_path / filename
 
-            logger.info(f"Processing file: {filename} with status: {status}")
+            logger.info("Processing a project file with status=%s", status)
 
             try:
                 if status in {"added", "untracked"}:
                     if file_path.exists():
-                        logger.info(f"Adding new file in DB: {file_path}")
+                        logger.info("Adding a new ELAN file to the database")
                         await elan_service.process_single_file(
                             str(file_path), user_id, project_name
                         )
                         updated_files.append(file_path)
-                        logger.info(f"Successfully added file to DB: {file_path}")
+                        logger.info("Added a new ELAN file to the database")
                     else:
                         logger.warning(
                             f"File marked as {status} but doesn't exist: {file_path}"
                         )
                 elif status == "modified":
                     if file_path.exists():
-                        logger.info(f"Updating modified file in DB: {file_path}")
+                        logger.info("Updating a modified ELAN file in the database")
                         await elan_service.process_single_file_and_update(
                             str(file_path), user_id, project_name
                         )
                         updated_files.append(file_path)
-                        logger.info(f"Successfully updated file in DB: {file_path}")
+                        logger.info("Updated a modified ELAN file in the database")
                     else:
                         logger.warning(
                             f"File marked as modified but doesn't exist: {file_path}"
                         )
                 elif status == "deleted":
-                    logger.info(f"Removing deleted file from DB: {filename}")
+                    logger.info("Removing a deleted project file from the database")
                     await elan_service.delete_elan_files_from_db(filename, project_name)
                     deleted_files.append(filename)
-                    logger.info(f"Successfully deleted file from DB: {filename}")
+                    logger.info("Deleted a project file from the database")
                 elif status == "renamed":
                     # Handle Git-detected renames by updating database filename
                     old_filename = file_status.old_filename
                     new_filename = file_status.new_filename
 
-                    logger.info(f"Processing rename: {old_filename} -> {new_filename}")
+                    logger.info("Processing a project file rename")
 
                     if old_filename and new_filename:
                         # Extract just the filename from the full path for database lookup
@@ -1087,13 +1092,15 @@ class GitService:
                             f"Rename detected but missing old/new filename info: {file_status}"
                         )
                 else:
-                    logger.warning(f"Unknown status '{status}' for file: {filename}")
+                    logger.warning("Unknown project file status=%s", status)
             except Exception as e:
                 logger.error(
-                    f"Failed to process file {filename} with status {status}: {e}"
+                    "Failed to synchronize a project file; status=%s error_type=%s",
+                    status,
+                    safe_exception_type(e),
                 )
                 await db.rollback()
-                raise RuntimeError(f"Failed to synchronize {filename}") from e
+                raise RuntimeError("Failed to synchronize a project file") from e
 
         # Commit database changes if any were made
         await db.commit()
@@ -1107,7 +1114,7 @@ class GitService:
                 message += f"\n\nELANORA-Sync-Operation: {operation_id}"
             runner.commit(message)
 
-        logger.info(f"Synchronization complete for project: {project_name}")
+        logger.info("Project synchronization completed")
 
         # Return a status/check response
         return ProjectSyncCheckResponse(
@@ -1157,23 +1164,24 @@ class GitService:
 
     async def delete_project(self, project_name: str, db: AsyncSession):
         """Delete a project by its ID."""
-        logger.info(f"Starting deletion of project: {project_name}")
+        logger.info("Starting project deletion")
         # Remove all DB artifacts (project, files, annotations, etc.)
         try:
             await delete_project_db(db, project_name)
-            logger.info(f"Database records deleted for project: {project_name}")
+            logger.info("Deleted project database records")
             await db.commit()
         except Exception as db_exc:
             await db.rollback()
             logger.error(
-                f"Failed to delete project from DB: {project_name} | Error: {db_exc}"
+                "Failed to delete project database records; error_type=%s",
+                safe_exception_type(db_exc),
             )
             raise
 
         # Remove the project folder from disk
         if not project_name:
-            logger.error(f"Project name not found for project_name: {project_name}")
-            raise ValueError(f"Project name not found for project_name: {project_name}")
+            logger.error("Project deletion was requested without a project name")
+            raise ValueError("Project name is required")
         project_path = safe_project_path(self.base_path, project_name)
         delete_project_folder(project_path)
 
@@ -1202,13 +1210,11 @@ class GitService:
             Exception: If renaming the folder fails.
 
         """
-        logger.info(
-            f"Starting edit of project: '{old_project_name}' to '{new_project_name}'"
-        )
+        logger.info("Starting project metadata update")
         project = await get_project_by_name(db, old_project_name)
         if not project:
-            logger.error(f"Project '{old_project_name}' not found in DB")
-            raise ValueError(f"Project '{old_project_name}' not found in DB")
+            logger.error("Project metadata update target was not found")
+            raise ValueError("Project not found in database")
 
         old_path = safe_project_path(self.base_path, old_project_name)
 
@@ -1216,24 +1222,19 @@ class GitService:
         if new_project_name != old_project_name:
             new_path = safe_project_path(self.base_path, new_project_name)
             if not old_path.exists():
-                logger.error(
-                    f"Project folder '{old_project_name}' not found at {old_path}"
-                )
-                raise FileNotFoundError(
-                    f"Project folder '{old_project_name}' not found"
-                )
+                logger.error("Project directory was not found during rename")
+                raise FileNotFoundError("Project directory not found")
             if new_path.exists():
-                logger.error(
-                    f"Target project folder '{new_project_name}' already exists at {new_path}"
-                )
-                raise FileExistsError(
-                    f"Target project folder '{new_project_name}' already exists"
-                )
+                logger.error("Target project directory already exists")
+                raise FileExistsError("Target project directory already exists")
             try:
                 os.rename(old_path, new_path)
-                logger.info(f"Renamed folder from '{old_path}' to '{new_path}'")
+                logger.info("Renamed the project directory")
             except Exception as e:
-                logger.error(f"Failed to rename folder: {e}")
+                logger.error(
+                    "Failed to rename the project directory; error_type=%s",
+                    safe_exception_type(e),
+                )
                 raise
 
             project.project_name = new_project_name
@@ -1246,10 +1247,8 @@ class GitService:
 
         project.description = new_project_description
         await db.commit()
-        logger.info(
-            f"Edited project in DB: '{old_project_name}' -> '{new_project_name}'"
-        )
-        logger.info(f"Changed project description to: {new_project_description}")
+        logger.info("Updated project metadata in the database")
+        logger.info("Updated the project description")
         return {
             "new_project_name": new_project_name,
             "new_project_description": new_project_description,
@@ -1272,9 +1271,7 @@ class GitService:
         elan_files_dir = project_path / "elan_files"
         git_dir = project_path / ".git"
 
-        logger.info(f"GitService base_path: {self.base_path}")
-        logger.info(f"Project path: {project_path}")
-        logger.info(f"Project path exists: {project_path.exists()}")
+        logger.info("Checking project synchronization state")
 
         if not project_path.exists():
             return {
@@ -1303,7 +1300,7 @@ class GitService:
         # Preview must not stage or otherwise alter administrator edits.
         status_output = runner.get_status()
 
-        logger.info(f"Git status output: '{status_output}'")
+        logger.debug("Read project Git status")
 
         # Use GitStatusParser for cleaner parsing
         parser = GitStatusParser()
@@ -1312,15 +1309,18 @@ class GitService:
         # Get all Git-tracked files
         all_tracked_result = runner.run(["ls-files"], check=True)
         all_tracked_files = set(all_tracked_result.stdout.strip().splitlines())
-        logger.info(f"All tracked files in Git: {all_tracked_files}")
+        logger.info("Found %s tracked project files", len(all_tracked_files))
 
         # Use the analyzer to process all files
         files_status, processed_files = analyzer.analyze_project_files(
             status_output, all_tracked_files, elan_files_dir
         )
 
-        logger.info(f"Processed files: {processed_files}")
-        logger.info(f"Files status: {files_status}")
+        logger.info(
+            "Analyzed project synchronization state; processed=%s changed=%s",
+            len(processed_files),
+            len(files_status),
+        )
 
         in_sync = not bool(files_status)
 
@@ -1333,11 +1333,11 @@ class GitService:
         runner = GitCommandRunner(project_path)
         remotes = runner.run(["remote", "-v"]).stdout.strip()
         if "origin" in remotes:
-            logger.info(f"Remote 'origin' found for project '{project_name}'")
+            logger.info("Found a configured project Git remote")
             runner.run(["fetch", "origin"], check=True)
             runner.reset_hard("origin/master")
         else:
-            logger.warning(f"No remote 'origin' found for project '{project_name}'")
+            logger.warning("No project Git remote is configured")
             runner.reset_hard()
         runner.clean(force=True, directories=True)
         return "Local changes discarded and folder reset to match the latest remote master."
@@ -1423,13 +1423,11 @@ class GitService:
         try:
             # 1. Update database first
             await update_elan_file_name(db, elan_id, new_filename)
-            logger.info(
-                f"Updated database filename for elan_id={elan_id}: {old_filename} -> {new_filename}"
-            )
+            logger.info("Updated an ELAN filename in the database")
 
             # 2. Rename the file on filesystem
             old_file_path.rename(new_file_path)
-            logger.info(f"Renamed file on filesystem: {old_filename} -> {new_filename}")
+            logger.info("Renamed an ELAN file on the filesystem")
 
             # 3. Update git (add the rename operation)
             runner = GitCommandRunner(project_path)
@@ -1437,13 +1435,11 @@ class GitService:
             commit_hash = runner.commit(
                 f"Rename file: {old_filename} -> {new_filename}"
             )
-            logger.info(f"Committed rename to git with hash: {commit_hash}")
+            logger.info("Committed an ELAN file rename")
 
             # 4. Commit database transaction
             await db.commit()
-            logger.info(
-                f"Successfully completed file rename: {old_filename} -> {new_filename}"
-            )
+            logger.info("Completed an ELAN file rename")
 
             return FileRenameResponse(
                 project_name=project_name,
@@ -1457,7 +1453,9 @@ class GitService:
             )
 
         except Exception as e:
-            logger.error(f"Error during file rename: {e!s}")
+            logger.error(
+                "ELAN file rename failed; error_type=%s", safe_exception_type(e)
+            )
 
             # Rollback database
             await db.rollback()
@@ -1467,14 +1465,14 @@ class GitService:
             if new_file_path.exists() and not old_file_path.exists():
                 try:
                     new_file_path.rename(old_file_path)
-                    logger.info(
-                        f"Rolled back filesystem rename: {new_filename} -> {old_filename}"
-                    )
+                    logger.info("Rolled back an ELAN filesystem rename")
                 except Exception as rollback_error:
-                    logger.warning(f"Could not rollback file rename: {rollback_error}")
+                    logger.warning(
+                        "Could not roll back an ELAN file rename; error_type=%s",
+                        safe_exception_type(rollback_error),
+                    )
 
-            raise e
-            raise RuntimeError(f"Failed to rename file: {e}") from e
+            raise RuntimeError("Failed to rename file") from e
 
     async def rename_files(
         self, project_name: str, renames: list[dict], db: AsyncSession
@@ -1540,9 +1538,12 @@ class GitService:
             )
 
         except Exception as e:
-            logger.error(f"Critical error during bulk rename: {e!s}")
+            logger.error(
+                "Bulk ELAN file rename failed; error_type=%s",
+                safe_exception_type(e),
+            )
             await db.rollback()
-            raise RuntimeError(f"Bulk rename failed: {e}") from e
+            raise RuntimeError("Bulk rename failed") from e
 
     async def _process_single_bulk_rename(
         self,

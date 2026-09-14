@@ -122,11 +122,17 @@ def test_operational_logs_do_not_serialize_exception_payloads() -> None:
         "crud/invitation.py",
         "crud/tier.py",
         "service/contact.py",
+        "service/database_rename_handler.py",
+        "service/elan.py",
         "service/email.py",
+        "service/git.py",
+        "service/git_operations.py",
         "service/notification.py",
+        "service/project_lifecycle.py",
         "service/project_naming_standard.py",
         "service/user.py",
         "utils/project_backup.py",
+        "utils/project_setup_utils.py",
         "utils/validation.py",
     )
     caught_names = {"e", "err", "error", "exc", "exception"}
@@ -160,5 +166,36 @@ def test_operational_logs_do_not_serialize_exception_payloads() -> None:
                 }
                 if names & caught_names:
                     violations.append(f"exception-text:{relative_path}:{node.lineno}")
+
+    assert violations == []
+
+
+def test_filesystem_workflows_do_not_propagate_caught_exception_text() -> None:
+    source_root = Path(__file__).parents[2] / "app"
+    source_files = (
+        "service/elan.py",
+        "service/git.py",
+        "service/git_operations.py",
+        "service/project_lifecycle.py",
+    )
+    caught_names = {"e", "err", "error", "exc", "exception"}
+    violations: list[str] = []
+
+    for relative_path in source_files:
+        source_path = source_root / relative_path
+        tree = ast.parse(source_path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Raise) or node.exc is None:
+                continue
+            for value in ast.walk(node.exc):
+                if not isinstance(value, ast.JoinedStr):
+                    continue
+                names = {
+                    nested.id
+                    for nested in ast.walk(value)
+                    if isinstance(nested, ast.Name)
+                }
+                if names & caught_names:
+                    violations.append(f"{relative_path}:{node.lineno}")
 
     assert violations == []

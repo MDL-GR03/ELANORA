@@ -176,7 +176,8 @@ class ElanService:
             if commit_changes:
                 await self.db.rollback()
             logger.error(
-                f"Failed to store ELAN file data for {file_info['filename']}: {e}"
+                "Failed to store ELAN file data; error_type=%s",
+                safe_exception_type(e),
             )
             raise
 
@@ -195,7 +196,7 @@ class ElanService:
                 self.db, file_info["filename"], project_id
             )
             if existing_file:
-                logger.info(f"Updating existing ELAN file: {existing_file.elan_id}")
+                logger.info("Updating an existing ELAN file")
             else:
                 logger.info("No existing ELAN file record was found")
             # Store all ELAN file data and associations using CRUD
@@ -229,7 +230,8 @@ class ElanService:
             if commit_changes:
                 await self.db.rollback()
             logger.error(
-                f"Failed to store ELAN file data for {file_info['filename']}: {e}"
+                "Failed to store ELAN file data; error_type=%s",
+                safe_exception_type(e),
             )
             raise
 
@@ -330,7 +332,7 @@ class ElanService:
 
         for eaf_file in eaf_files:
             try:
-                logger.debug("Processing: %s", eaf_file.name)
+                logger.debug("Processing an ELAN file")
                 result = await self.process_single_file(
                     str(eaf_file), user_id, project_name
                 )
@@ -468,12 +470,12 @@ class ElanService:
 
     async def get_user_files(self, user_id: int) -> list[dict]:
         """Get all ELAN files for a specific user."""
-        logger.debug(f"Retrieving files for user ID: {user_id}")
+        logger.debug("Retrieving ELAN files for a user")
 
         # Use CRUD function
         files = await get_elan_files_by_user(self.db, user_id)
 
-        logger.debug(f"Found {len(files)} files for user {user_id}")
+        logger.debug("Found %s ELAN files for a user", len(files))
 
         return [
             {
@@ -512,12 +514,12 @@ class ElanService:
 
     async def delete_tier_annotations(self, tier_id: int) -> int:
         """Delete all annotations for a specific tier."""
-        logger.info(f"Deleting all annotations for tier ID: {tier_id}")
+        logger.info("Deleting all annotations for a tier")
 
         # Use CRUD function
         deleted_count = await delete_annotations_by_tier(self.db, tier_id)
 
-        logger.info(f"Deleted {deleted_count} annotations for tier {tier_id}")
+        logger.info("Deleted %s annotations for a tier", deleted_count)
         return deleted_count
 
     async def delete_elan_files_from_db(
@@ -578,7 +580,8 @@ class ElanService:
             if commit_changes:
                 await self.db.rollback()
             logger.error(
-                f"[ELAN-DELETE] Error during deletion of ELAN file '{base_filename}': {e}"
+                "ELAN file deletion failed; error_type=%s",
+                safe_exception_type(e),
             )
             if commit_changes:
                 return False

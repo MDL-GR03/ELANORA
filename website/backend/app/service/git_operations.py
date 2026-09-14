@@ -3,7 +3,6 @@ import shutil
 import stat
 import subprocess
 import tempfile
-import traceback
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -69,19 +68,19 @@ class GitBranchManager:
             cwd=self.project_path,
             check=True,
         )
-        logger.info(f"Created and switched to branch: {branch_name}")
+        logger.info("Created and switched to a contribution branch")
         return branch_name
 
     def switch_to_master(self) -> None:
         """Switch to the repository's canonical branch."""
         branch = self.commandRunner.canonical_branch()
         self.commandRunner.checkout(branch)
-        logger.info("Switched to canonical branch: %s", branch)
+        logger.info("Switched to the canonical branch")
 
     def delete_branch(self, branch_name: str) -> None:
         """Delete a branch."""
         self.commandRunner.delete_branch(branch_name)
-        logger.info(f"Deleted branch: {branch_name}")
+        logger.info("Deleted a contribution branch")
 
 
 class GitDiffAnalyzer:
@@ -109,7 +108,7 @@ class GitDiffAnalyzer:
             check=False,
         )
 
-        logger.debug(f"Git diff output: {diff_name_status_result.stdout}")
+        logger.debug("Generated a Git name-status diff")
 
         new_files, modified_files, deleted_files = diff_parser.parse_name_status_output(
             diff_name_status_result.stdout
@@ -159,7 +158,7 @@ class GitMerger:
         self, branch_name: str, analysis: MergeAnalysis
     ) -> dict[str, Any]:
         """Perform selective merge: auto-merge safe files, isolate conflicts."""
-        logger.info(f"Starting selective merge for branch '{branch_name}'")
+        logger.info("Starting selective Git merge")
         logger.info(
             f"Analysis summary - New files: {len(analysis.new_files)}, Modified: {len(analysis.modified_files)}, Deleted: {len(analysis.deleted_files)}"
         )
@@ -176,7 +175,7 @@ class GitMerger:
         self, branch_name: str, analysis: MergeAnalysis
     ) -> dict[str, Any]:
         """Merge only non-conflicting files, isolate problematic ones."""
-        logger.info(f"Performing selective merge for branch '{branch_name}'")
+        logger.info("Performing selective Git merge")
         runner = GitCommandRunner(self.project_path)
 
         conflict_branch_name = f"{branch_name}_conflicts"
@@ -185,7 +184,7 @@ class GitMerger:
             # Start from master and create conflict branch
             runner.checkout("master")
             runner.run(["checkout", "-b", conflict_branch_name], check=True)
-            logger.info(f"Created conflict branch '{conflict_branch_name}' from master")
+            logger.info("Created an isolated conflict branch")
 
             # Cherry-pick ONLY modified files to conflict branch
             if analysis.modified_files:
@@ -198,9 +197,12 @@ class GitMerger:
                         runner.run(
                             ["checkout", branch_name, "--", modified_file], check=True
                         )
-                        logger.debug(f"Added modified file: {modified_file}")
+                        logger.debug("Added a modified file to the conflict branch")
                     except subprocess.CalledProcessError as e:
-                        logger.warning(f"Could not add {modified_file}: {e}")
+                        logger.warning(
+                            "Could not add a modified file; error_type=%s",
+                            safe_exception_type(e),
+                        )
 
                 # Commit only the modified files
                 runner.add_all()
@@ -220,9 +222,12 @@ class GitMerger:
                         runner.run(
                             ["checkout", "master", "--", modified_file], check=True
                         )
-                        logger.debug(f"Reset to master: {modified_file}")
+                        logger.debug("Reset a modified file to the canonical version")
                     except subprocess.CalledProcessError as e:
-                        logger.warning(f"Could not reset {modified_file}: {e}")
+                        logger.warning(
+                            "Could not reset a modified file; error_type=%s",
+                            safe_exception_type(e),
+                        )
 
             # Handle deleted files (restore them from master)
             if analysis.deleted_files:
@@ -234,10 +239,13 @@ class GitMerger:
                         runner.run(
                             ["checkout", "master", "--", deleted_file], check=True
                         )
-                        logger.debug(f"Restored deleted file: {deleted_file}")
+                        logger.debug(
+                            "Restored a deleted file from the canonical branch"
+                        )
                     except subprocess.CalledProcessError as e:
                         logger.debug(
-                            f"Could not restore {deleted_file} (may not exist in master): {e}"
+                            "Could not restore a deleted file; error_type=%s",
+                            safe_exception_type(e),
                         )
 
             # Commit the cleanup (this makes upload branch have only new files)
@@ -282,15 +290,18 @@ class GitMerger:
                 runner.checkout("master")
                 runner.run(["branch", "-D", conflict_branch_name], check=False)
                 runner.run(["branch", "-D", branch_name], check=False)
-            except Exception:
-                logger.exception("Failed to clean up branches after selective merge")
-            raise RuntimeError(f"Selective merge failed: {e}") from e
+            except Exception as cleanup_error:
+                logger.error(
+                    "Failed to clean up branches after selective merge; error_type=%s",
+                    safe_exception_type(cleanup_error),
+                )
+            raise RuntimeError("Selective merge failed") from e
 
     def auto_merge_if_safe(
         self, branch_name: str, analysis: MergeAnalysis
     ) -> dict[str, Any]:
         """Automatically merge if only new files, otherwise return conflict info."""
-        logger.info(f"Checking if auto-merge is safe for branch '{branch_name}'")
+        logger.info("Checking whether a contribution can be merged automatically")
 
         if not analysis.has_conflicts:
             logger.info("No conflicts detected, proceeding with auto-merge")
@@ -310,7 +321,7 @@ class GitMerger:
         )
 
         merge_message = f"Merge batch upload branch '{branch_name}' into master - {len(new_files)} new files added"
-        logger.debug(f"Merge message: {merge_message}")
+        logger.debug("Prepared an automatic merge commit message")
 
         try:
             subprocess.run(
@@ -349,7 +360,7 @@ class GitMerger:
         self, branch_name: str, analysis: MergeAnalysis
     ) -> dict[str, Any]:
         """Create response for conflicts that need review."""
-        logger.info(f"Creating conflict response for branch '{branch_name}'")
+        logger.info("Creating a contribution conflict response")
         logger.info(
             f"Conflict summary - Modified: {analysis.modified_files}, Deleted: {analysis.deleted_files}"
         )
@@ -363,7 +374,7 @@ class GitMerger:
                 text=True,
                 check=False,
             )
-            logger.debug(f"Generated diff stats for branch '{branch_name}'")
+            logger.debug("Generated contribution diff statistics")
         except Exception as e:
             logger.error(
                 "Generating diff statistics failed; error_type=%s",
@@ -407,7 +418,7 @@ class FileUploadProcessor:
             try:
                 result = await self._process_single_file(file, existing_files)
                 uploaded_files.append(result)
-                logger.info(f"Added file to Git: {file.filename}")
+                logger.info("Added an uploaded file to Git")
             except Exception as e:
                 failed_result = FileUploadResult(
                     filename=file.filename,
@@ -443,20 +454,20 @@ class FileUploadProcessor:
             raise ValueError("Invalid upload filename")
 
         dest_path = elan_files_dir / filename
-        logger.debug(f"Processing file: {filename} -> {dest_path}")
+        logger.debug("Processing an uploaded file")
 
         # Always save the file - let Git determine if it changed
         content = await file.read()
         with open(dest_path, "wb") as buffer:
             buffer.write(content)
 
-        logger.info(f"File saved: {dest_path} ({len(content)} bytes)")
+        logger.info("Saved an uploaded file; size_bytes=%s", len(content))
 
         # Add to git - Git will handle change detection
         try:
             runner = GitCommandRunner(self.project_path)
             runner.run(["add", "--", f"elan_files/{filename}"], check=True)
-            logger.debug(f"Git add successful for {filename}")
+            logger.debug("Staged an uploaded file in Git")
 
         except subprocess.CalledProcessError as e:
             logger.error(
@@ -497,7 +508,7 @@ class FileUploadProcessor:
             )
             return  # Don't treat this as an error
 
-        logger.info(f"Git detected changes in: {staged_files}")
+        logger.info("Git detected %s changed files", len(staged_files))
 
         # Build commit message based on what Git actually detected
         file_count = len(uploaded_files)
@@ -514,7 +525,7 @@ class FileUploadProcessor:
             f"Files: {', '.join([f.filename for f in uploaded_files])}"
         )
 
-        logger.debug(f"Commit message: {full_message}")
+        logger.debug("Prepared an upload commit message")
 
         try:
             runner.run(["commit", "-m", full_message], check=True)
@@ -623,8 +634,7 @@ class GitCommandRunner:
                 break
             conflicted_files.append(candidate)
         if not conflicted_files:
-            detail = result.stderr.strip() or "Git could not inspect the contribution"
-            raise RuntimeError(detail)
+            raise RuntimeError("Git could not inspect the contribution")
         return MergeReadiness("needs_resolution", conflicted_files)
 
     def stage_all_changes(self) -> None:
@@ -860,8 +870,10 @@ class GitCommandRunner:
             if branch_name:
                 self.run(["branch", "-D", branch_name], check=False)
             update_backup(self.project_path.name, self.project_path.parent)
-        except Exception:
-            logger.exception("Exception occurred during cleanup_on_error")
+        except Exception as error:
+            logger.error(
+                "Git cleanup failed; error_type=%s", safe_exception_type(error)
+            )
 
     def detect_merge_conflicts(self) -> list[dict[str, str]]:
         result = self.run(["diff", "--name-only", "--diff-filter=U"])
@@ -889,15 +901,18 @@ class GitCommandRunner:
             try:
                 result = self.run(["rev-parse", "--abbrev-ref", "HEAD"])
                 return result.stdout.strip()
-            except Exception:
-                logger.exception("Unable to determine current Git branch")
+            except Exception as error:
+                logger.error(
+                    "Unable to determine the current Git branch; error_type=%s",
+                    safe_exception_type(error),
+                )
                 return "unknown"
 
 
 def delete_project_folder(project_path: Path) -> None:
-    """Delete the project folder and log errors with details."""
+    """Delete a project folder without logging filesystem details."""
     if not project_path.exists():
-        logger.warning(f"Project folder does not exist: {project_path}")
+        logger.warning("Project directory does not exist")
         return
 
     def on_rm_exc(func, path, exc_info):
@@ -910,24 +925,25 @@ def delete_project_folder(project_path: Path) -> None:
         try:
             os.chmod(path, stat.S_IWRITE)
             func(path)
-            logger.info(f"Retried and deleted after chmod: {path}")
+            logger.info("Deleted a read-only project entry after changing permissions")
             return
-        except Exception as exc:
-            logger.exception(
-                f"Exception occurred while retrying delete for {path}: {exc}"
+        except Exception as retry_error:
+            logger.error(
+                "Retrying project entry deletion failed; error_type=%s",
+                safe_exception_type(retry_error),
             )
         logger.error(
-            f"Failed to delete file or folder during rmtree: {path} | Function: {func.__name__} | Error: {exc}\nTraceback: {''.join(traceback.format_exception(*exc_info)) if isinstance(exc_info, tuple) else str(exc_info)}"
+            "Project entry deletion failed; error_type=%s",
+            safe_exception_type(exc) if isinstance(exc, BaseException) else "Exception",
         )
 
     try:
         shutil.rmtree(project_path, onexc=on_rm_exc)
-        logger.info(f"Successfully deleted project folder: {project_path}")
+        logger.info("Deleted the project directory")
 
     except Exception as fs_exc:
         logger.error(
-            f"Failed to delete project folder: {project_path} | Error: {fs_exc}"
+            "Failed to delete the project directory; error_type=%s",
+            safe_exception_type(fs_exc),
         )
-        raise RuntimeError(
-            f"Failed to delete project folder: {project_path} | Error: {fs_exc}"
-        ) from fs_exc
+        raise RuntimeError("Failed to delete project directory") from fs_exc

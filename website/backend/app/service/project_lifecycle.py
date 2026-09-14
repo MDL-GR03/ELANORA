@@ -9,6 +9,7 @@ from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud.project import create_project_db, project_exists_by_name
 from app.service.elan import ElanService
 from app.service.git_operations import GitCommandRunner, delete_project_folder
@@ -108,7 +109,7 @@ class ProjectLifecycleService:
                 elif status == "skipped":
                     skipped_files.append(str(result["filename"]))
                 else:
-                    raise RuntimeError(f"Could not import {elan_file.name}")
+                    raise RuntimeError("Could not import an ELAN file")
 
             await append_project_revision(
                 db,
@@ -127,16 +128,20 @@ class ProjectLifecycleService:
                 delete_project_folder(cleanup_path)
             try:
                 remove_project_backup(project_name)
-            except Exception:
-                logger.exception("Unable to clean recovery cache for failed import")
+            except Exception as cleanup_error:
+                logger.error(
+                    "Unable to clean recovery cache for failed import; error_type=%s",
+                    safe_exception_type(cleanup_error),
+                )
             raise
 
         try:
             update_backup(project_name, self.base_path)
-        except Exception:
-            logger.exception(
-                "Project %r was imported, but its recovery cache could not be updated",
-                project_name,
+        except Exception as backup_error:
+            logger.error(
+                "An imported project's recovery cache could not be updated; "
+                "error_type=%s",
+                safe_exception_type(backup_error),
             )
         return {
             "project_name": project_name,
@@ -161,17 +166,16 @@ class ProjectLifecycleService:
         staging_path: Path | None = None
         published = False
 
-        logger.info(f"Checking if project folder exists: {project_path}")
-        logger.info(f"Folder exists? {project_path.exists()}")
+        logger.info("Checking whether the project directory exists")
 
         if project_path.exists():
-            logger.warning(f"Project folder '{project_path}' already exists.")
+            logger.warning("The project directory already exists")
             raise ValueError(f"Project '{project_name}' already exists")
 
         exists = await project_exists_by_name(db, project_name)
-        logger.info(f"Checking if project exists in DB: {project_name} -> {exists}")
+        logger.info("Checked whether the project exists in the database")
         if exists:
-            logger.warning(f"Project '{project_name}' already exists in the database.")
+            logger.warning("The project already exists in the database")
             raise ValueError(f"Project '{project_name}' already exists")
 
         try:
@@ -227,10 +231,10 @@ class ProjectLifecycleService:
             # authoritative stores have accepted the project.
             try:
                 update_backup(project_name, self.base_path)
-            except Exception:
-                logger.exception(
-                    "Project %r was created, but its recovery cache could not be updated",
-                    project_name,
+            except Exception as backup_error:
+                logger.error(
+                    "A new project's recovery cache could not be updated; error_type=%s",
+                    safe_exception_type(backup_error),
                 )
 
             return {
@@ -243,7 +247,9 @@ class ProjectLifecycleService:
 
         except Exception as e:
             await db.rollback()
-            logger.exception("Project creation failed for %r", project_name)
+            logger.error(
+                "Project creation failed; error_type=%s", safe_exception_type(e)
+            )
             # The path and recovery cache were created by this request. Remove
             # both on failure so filesystem and database state cannot diverge.
             try:
@@ -253,7 +259,5 @@ class ProjectLifecycleService:
                     delete_project_folder(staging_path)
                 remove_project_backup(project_name)
             except Exception:
-                logger.exception(
-                    "Unable to clean up failed project creation for %r", project_name
-                )
-            raise RuntimeError(f"Project creation failed: {e}") from e
+                logger.error("Unable to clean up failed project creation")
+            raise RuntimeError("Project creation failed") from e

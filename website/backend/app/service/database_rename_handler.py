@@ -3,6 +3,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.crud.elan_file import (
     get_elan_file_by_filename_and_project,
     update_elan_file_name,
@@ -34,12 +35,12 @@ class DatabaseRenameHandler:
 
         """
         try:
-            logger.info(f"Processing rename in DB: {old_filename} -> {new_filename}")
+            logger.info("Processing an ELAN filename change in the database")
 
             # Get the project
             project = await get_project_by_name(self.db, project_name)
             if not project:
-                logger.warning(f"Could not find project {project_name}")
+                logger.warning("Could not find the project for an ELAN filename change")
                 return False
 
             # Get the elan_file for the old filename
@@ -62,6 +63,7 @@ class DatabaseRenameHandler:
 
         except Exception as e:
             logger.error(
-                f"Failed to process rename {old_filename} -> {new_filename}: {e}"
+                "Failed to process an ELAN filename change; error_type=%s",
+                safe_exception_type(e),
             )
             return False

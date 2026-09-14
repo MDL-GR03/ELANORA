@@ -9,7 +9,7 @@ logger = get_logger()
 def create_project_structure(project_path: Path) -> None:
     project_path.mkdir(parents=True, exist_ok=True)
     (project_path / "elan_files").mkdir(exist_ok=True)
-    logger.info(f"Created project structure at {project_path}")
+    logger.info("Created project directory structure")
 
 
 def create_gitignore(project_path: Path) -> None:
@@ -25,7 +25,7 @@ def create_gitignore(project_path: Path) -> None:
     file_path = project_path / ".gitignore"
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(gitignore_content)
-    logger.info(f"Created .gitignore at {file_path}")
+    logger.info("Created the project Git ignore file")
 
 
 def create_readme(project_path: Path, project_name: str) -> None:
@@ -33,7 +33,7 @@ def create_readme(project_path: Path, project_name: str) -> None:
     file_path = project_path / "README.md"
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(readme_content)
-    logger.info(f"Created README.md for project '{project_name}' at {file_path}")
+    logger.info("Created project README")
 
 
 def copy_githooks(project_path: Path, project_name: str) -> None:
@@ -41,7 +41,7 @@ def copy_githooks(project_path: Path, project_name: str) -> None:
     hooks_dir = project_path / ".git" / "hooks"
     hooks_dir.mkdir(parents=True, exist_ok=True)
     if not central_githooks.is_dir():
-        logger.info("No central Git hooks configured at %s", central_githooks)
+        logger.info("No central Git hooks are configured")
         return
     copied_count = 0
     for hook_file in central_githooks.iterdir():
@@ -58,9 +58,9 @@ def copy_githooks(project_path: Path, project_name: str) -> None:
             with open(hook_dest, "w", encoding="utf-8") as f:
                 f.write(hook_content)
             os.chmod(hook_dest, 0o755)  # noqa: S103 - Git hooks must be executable
-            logger.info(f"Copied git hook '{hook_name}' to {hook_dest}")
+            logger.info("Copied a project Git hook")
             copied_count += 1
-    logger.info(f"Copied {copied_count} git hooks to {hooks_dir}")
+    logger.info("Copied %s project Git hooks", copied_count)
 
 
 def update_project_githooks(project_path: Path, new_project_name: str) -> None:
@@ -70,10 +70,10 @@ def update_project_githooks(project_path: Path, new_project_name: str) -> None:
     central_githooks = project_path.parent / ".githooks"
     hooks_dir = project_path / ".git" / "hooks"
     if not central_githooks.is_dir():
-        logger.info("No central Git hooks configured at %s", central_githooks)
+        logger.info("No central Git hooks are configured")
         return
     if not hooks_dir.exists():
-        logger.warning(f"Hooks directory does not exist: {hooks_dir}")
+        logger.warning("The project Git hooks directory does not exist")
         return
     copied_count = 0
     for hook_file in central_githooks.iterdir():
@@ -90,6 +90,6 @@ def update_project_githooks(project_path: Path, new_project_name: str) -> None:
             with open(hook_dest, "w", encoding="utf-8") as f:
                 f.write(hook_content)
             os.chmod(hook_dest, 0o755)  # noqa: S103 - Git hooks must be executable
-            logger.info(f"Updated git hook '{hook_name}' at {hook_dest}")
+            logger.info("Updated a project Git hook")
             copied_count += 1
-    logger.info(f"Updated {copied_count} git hooks in {hooks_dir}")
+    logger.info("Updated %s project Git hooks", copied_count)
