@@ -1,7 +1,14 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    Numeric,
+    String,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -16,6 +23,25 @@ class Annotation(Base):
     """Annotation model representing individual annotations."""
 
     __tablename__ = "ANNOTATION"
+    __table_args__ = (
+        CheckConstraint(
+            "start_time IS NULL OR start_time >= 0",
+            name="ck_annotation_start_time_nonnegative",
+        ),
+        CheckConstraint(
+            "end_time IS NULL OR end_time >= 0",
+            name="ck_annotation_end_time_nonnegative",
+        ),
+        CheckConstraint(
+            "start_time IS NULL OR end_time IS NULL OR end_time >= start_time",
+            name="ck_annotation_time_interval",
+        ),
+        ForeignKeyConstraint(
+            ["tier_id", "elan_id"],
+            ["TIER.tier_id", "TIER.elan_id"],
+            name="fk_annotation_tier_elan",
+        ),
+    )
 
     annotation_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     elan_id: Mapped[int] = mapped_column(
@@ -34,14 +60,14 @@ class Annotation(Base):
     external_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
     start_time: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
     end_time: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
-    tier_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("TIER.tier_id"), nullable=False
-    )
+    tier_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Relationships
-    tier: Mapped["Tier"] = relationship("Tier", back_populates="annotations")
+    tier: Mapped["Tier"] = relationship(
+        "Tier", back_populates="annotations", overlaps="elan_file"
+    )
     annotation_value: Mapped["AnnotationValue"] = relationship("AnnotationValue")
-    elan_file: Mapped["ElanFile"] = relationship("ElanFile")
+    elan_file: Mapped["ElanFile"] = relationship("ElanFile", overlaps="tier")
 
     def __repr__(self) -> str:
         """Return a string representation of the Annotation."""

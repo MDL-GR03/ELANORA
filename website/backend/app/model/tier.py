@@ -35,11 +35,12 @@ class Tier(Base):
         "Tier", back_populates="parent_tier"
     )
     annotations: Mapped[list["Annotation"]] = relationship(
-        "Annotation", back_populates="tier"
+        "Annotation", back_populates="tier", overlaps="elan_file"
     )
 
     __table_args__ = (
         UniqueConstraint("elan_id", "tier_name", name="uq_tier_elan_name"),
+        UniqueConstraint("tier_id", "elan_id", name="uq_tier_identity_elan"),
     )
 
     def __repr__(self) -> str:
