@@ -1,5 +1,8 @@
+from typing import Any
+
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
@@ -20,15 +23,19 @@ from app.crud.file_type import (
     get_file_type_by_extension,
     get_file_type_by_id,
 )
+from app.model.file_type import FileType
+from app.model.project_file_type import ProjectFileType
 
 logger = get_logger(__name__)
 
 
 class FileTypeService:
     @staticmethod
-    async def create_file_type(db, name: str, extension: str):
+    async def create_file_type(db: AsyncSession, name: str, extension: str) -> FileType:
         try:
-            file_type = await file_type_crud.create_file_type(db, name, extension)
+            # FileType is global and stores only the extension. The display name
+            # belongs to the project-specific ProjectFileType association.
+            file_type = await file_type_crud.create_file_type(db, extension)
             await db.commit()
             return file_type
         except Exception:
@@ -36,7 +43,9 @@ class FileTypeService:
             raise
 
     @staticmethod
-    async def update_file_type(db, file_type_id: int, update_fields: dict):
+    async def update_file_type(
+        db: AsyncSession, file_type_id: int, update_fields: dict[str, Any]
+    ) -> None:
         try:
             await file_type_crud.update_file_type(db, file_type_id, update_fields)
             await db.commit()
@@ -45,7 +54,7 @@ class FileTypeService:
             raise
 
     @staticmethod
-    async def delete_file_type(db, file_type_id: int):
+    async def delete_file_type(db: AsyncSession, file_type_id: int) -> None:
         try:
             await file_type_crud.delete_file_type(db, file_type_id)
             await db.commit()
@@ -60,14 +69,15 @@ class FileTypeService:
                         "message": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first.",
                     },
                 ) from exc
+            raise
         except Exception:
             await db.rollback()
             raise
 
     @staticmethod
     async def create_file_type_for_project(
-        db, name: str, extension: str, project_id: int
-    ):
+        db: AsyncSession, name: str, extension: str, project_id: int
+    ) -> dict[str, Any]:
         # Get or create the global FileType (by extension)
         file_type = await get_file_type_by_extension(db, extension)
         if not file_type:
@@ -85,6 +95,8 @@ class FileTypeService:
         await db.commit()
         # Fetch the related FileType for the extension
         file_type = await get_file_type_by_id(db, project_file_type.file_type_id)
+        if file_type is None:
+            raise RuntimeError("Created project file type lost its global file type")
         # Return a dict or a Pydantic model
         return {
             "id": project_file_type.id,
@@ -95,13 +107,15 @@ class FileTypeService:
         }
 
     @staticmethod
-    async def get_file_types_for_project(db, project_id: int):
+    async def get_file_types_for_project(
+        db: AsyncSession, project_id: int
+    ) -> list[ProjectFileType]:
         return await get_project_file_types(db, project_id)
 
     @staticmethod
     async def add_existing_file_type_to_project(
-        db, file_type_id: int, project_id: int, name: str
-    ):
+        db: AsyncSession, file_type_id: int, project_id: int, name: str
+    ) -> FileType:
         file_type = await get_file_type_by_id(db, file_type_id)
         if not file_type:
             raise HTTPException(status_code=404, detail="File type not found")
@@ -115,8 +129,8 @@ class FileTypeService:
 
     @staticmethod
     async def import_project_file_type(
-        db, target_project_id: int, name: str, file_type_id: int
-    ):
+        db: AsyncSession, target_project_id: int, name: str, file_type_id: int
+    ) -> ProjectFileType:
         """Create a new ProjectFileType in the target project, using an existing FileType."""
         try:
             project_file_type = await add_project_file_type(
@@ -127,6 +141,8 @@ class FileTypeService:
             refreshed = await get_project_file_type_with_file_type(
                 db, project_file_type.id
             )
+            if refreshed is None:
+                raise RuntimeError("Imported project file type could not be reloaded")
             return refreshed
         except Exception:
             await db.rollback()
@@ -134,13 +150,16 @@ class FileTypeService:
 
     @staticmethod
     async def import_selected_file_types(
-        db, source_project_id: int, target_project_id: int, file_type_names: list[str]
-    ):
+        db: AsyncSession,
+        source_project_id: int,
+        target_project_id: int,
+        file_type_names: list[str],
+    ) -> list[ProjectFileType]:
         """Import selected file types (by name) from source_project_id to target_project_id."""
         source_types = await FileTypeService.get_file_types_for_project(
             db, source_project_id
         )
-        imported = []
+        imported: list[ProjectFileType] = []
         for ft in source_types:
             if ft.name in file_type_names:
                 try:
@@ -158,8 +177,8 @@ class FileTypeService:
 
     @staticmethod
     async def remove_file_type_from_project(
-        db, project_file_type_id: int, project_id: int
-    ):
+        db: AsyncSession, project_file_type_id: int, project_id: int
+    ) -> None:
         pft = await get_project_file_type_by_id(db, project_file_type_id)
         if not pft:
             raise HTTPException(status_code=404, detail="Project file type not found")
@@ -186,8 +205,11 @@ class FileTypeService:
 
     @staticmethod
     async def update_project_file_type(
-        db, project_id: int, project_file_type_id: int, update_fields: dict
-    ):
+        db: AsyncSession,
+        project_id: int,
+        project_file_type_id: int,
+        update_fields: dict[str, str | None],
+    ) -> dict[str, Any]:
         pft = await get_project_file_type_by_id(db, project_file_type_id)
         if not pft:
             raise HTTPException(status_code=404, detail="Project file type not found")
@@ -197,14 +219,13 @@ class FileTypeService:
             )
 
         # Update name if present
-        if "name" in update_fields:
-            await update_project_file_type_name(
-                db, project_file_type_id, update_fields["name"]
-            )
+        new_name = update_fields.get("name")
+        if new_name is not None:
+            await update_project_file_type_name(db, project_file_type_id, new_name)
 
         # Update extension if present
-        if "extension" in update_fields:
-            new_ext = update_fields["extension"]
+        new_ext = update_fields.get("extension")
+        if new_ext is not None:
             # Check if a FileType with this extension already exists
             existing_ft = await get_file_type_by_extension(db, new_ext)
             if existing_ft:
