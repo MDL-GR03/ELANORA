@@ -1,5 +1,7 @@
 """Real PostgreSQL scenarios for durable contribution reviews."""
 
+from datetime import datetime
+
 import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -392,6 +394,7 @@ async def test_contribution_queue_retains_provenance_and_excludes_resolved_work(
         submitted_by=contributor.user_id,
         base_commit="b" * 40,
         accepted_commit="c" * 40,
+        resolved_at=datetime.now(),
     )
     session.add(resolved)
     await session.commit()

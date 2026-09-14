@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import (
     JSON,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
@@ -30,6 +31,13 @@ class PendingUpload(Base):
 
     __tablename__ = "PENDING_UPLOAD"
     __table_args__ = (
+        CheckConstraint(
+            "(status IN ('RESOLVED', 'NO_CHANGES', 'DISMISSED') "
+            "AND resolved_at IS NOT NULL) OR "
+            "(status NOT IN ('RESOLVED', 'NO_CHANGES', 'DISMISSED') "
+            "AND resolved_at IS NULL)",
+            name="ck_pending_upload_resolution_lifecycle",
+        ),
         UniqueConstraint(
             "upload_id", "project_id", name="uq_pending_upload_identity_project"
         ),

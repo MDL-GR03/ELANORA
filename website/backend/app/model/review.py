@@ -41,6 +41,11 @@ class ReviewCase(Base):
         CheckConstraint(
             "end_ms IS NULL OR end_ms >= start_ms", name="ck_review_case_interval"
         ),
+        CheckConstraint(
+            "(state IN ('resolved','closed') AND resolved_at IS NOT NULL) OR "
+            "(state NOT IN ('resolved','closed') AND resolved_at IS NULL)",
+            name="ck_review_case_resolution_lifecycle",
+        ),
         Index("ix_review_case_project_state", "project_id", "state"),
         ForeignKeyConstraint(
             ["upload_id", "project_id"],

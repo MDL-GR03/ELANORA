@@ -28,6 +28,15 @@ class ProjectSyncOperation(Base):
             "state IN ('preparing','prepared','committing','completed','discarded','failed','recovery_required')",
             name="ck_project_sync_operation_state",
         ),
+        CheckConstraint(
+            "(state IN ('completed','discarded') AND completed_at IS NOT NULL) OR "
+            "(state NOT IN ('completed','discarded') AND completed_at IS NULL)",
+            name="ck_project_sync_operation_completion",
+        ),
+        CheckConstraint(
+            "state <> 'completed' OR resulting_commit IS NOT NULL",
+            name="ck_project_sync_operation_completed_commit",
+        ),
         Index("ix_project_sync_operation_project_id", "project_id"),
         Index("ix_project_sync_operation_state", "state"),
     )

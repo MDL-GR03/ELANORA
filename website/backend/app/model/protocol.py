@@ -274,6 +274,22 @@ class ProjectComplianceScan(Base):
             "trigger IN ('manual', 'preview', 'protocol_pinned')",
             name="ck_compliance_scan_trigger",
         ),
+        CheckConstraint(
+            "total_files >= 0 AND passed_files >= 0 AND failed_files >= 0",
+            name="ck_compliance_scan_counts_nonnegative",
+        ),
+        CheckConstraint(
+            "passed_files + failed_files <= total_files",
+            name="ck_compliance_scan_counts_within_total",
+        ),
+        CheckConstraint(
+            "status <> 'running' OR completed_at IS NULL",
+            name="ck_compliance_scan_running_incomplete",
+        ),
+        CheckConstraint(
+            "status <> 'completed' OR completed_at IS NOT NULL",
+            name="ck_compliance_scan_completed_at",
+        ),
         Index("ix_compliance_scan_project_started", "project_id", "started_at"),
     )
 

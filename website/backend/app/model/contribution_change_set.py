@@ -32,6 +32,15 @@ class ContributionChangeSet(Base):
             "resolution_strategy IN ('auto','accept_incoming','accept_current')",
             name="ck_contribution_change_set_resolution_strategy",
         ),
+        CheckConstraint(
+            "attempts >= 0", name="ck_contribution_change_set_attempts_nonnegative"
+        ),
+        CheckConstraint(
+            "(state = 'completed' AND completed_at IS NOT NULL "
+            "AND resulting_commit IS NOT NULL) OR "
+            "(state <> 'completed' AND completed_at IS NULL)",
+            name="ck_contribution_change_set_completion",
+        ),
         Index("ix_contribution_change_set_state", "state", "created_at"),
         Index("uq_contribution_change_set_upload_id", "upload_id", unique=True),
         ForeignKeyConstraint(
