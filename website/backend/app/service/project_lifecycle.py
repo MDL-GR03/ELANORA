@@ -63,7 +63,9 @@ class ProjectLifecycleService:
                     continue
                 filename = Path(upload.filename).name
                 if filename in saved_names:
-                    raise ValueError(f"The imported folder contains duplicate file {filename!r}")
+                    raise ValueError(
+                        f"The imported folder contains duplicate file {filename!r}"
+                    )
                 saved_names.add(filename)
                 destination = elan_files_dir / filename
                 with destination.open("wb") as output:

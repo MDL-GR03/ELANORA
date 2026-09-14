@@ -298,5 +298,13 @@ approval of a distinct proposed topic now lives in `ContributionReviewService`;
 it preserves the researcher's summary and derives a new topic's tiers from the
 inspected contribution. Verified duplicate dismissal and terminal decline now
 live there too, including audit records, contributor notifications, review-case
-closure, reason validation and best-effort branch cleanup. Correction decisions
-and acceptance eligibility remain the next review boundaries to extract.
+closure, reason validation and best-effort branch cleanup. The correction
+lifecycle was already isolated in `ReviewService`. Final acceptance eligibility
+now lives in `ContributionReviewService`, including supersession, unresolved
+topic, open-review, EAF and pinned-protocol checks. Accepted contribution
+publication now lives in `ContributionPublicationService`, which coordinates the
+Git publication, relational projection, immutable revision ledger, audit event,
+contributor notification, database rollback, Git rollback and backup refresh.
+`GitService` retains a compatibility delegate while callers migrate. The next
+item 6 slice is decomposing the contribution frontend by workflow and removing
+the remaining presentation and request orchestration from its page component.

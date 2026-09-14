@@ -20,7 +20,9 @@ class ContributionInspectionService:
         self.base_path = base_path
 
     @staticmethod
-    def duplicate_map(pending_uploads: list[Any], runner: GitCommandRunner) -> dict[int, int]:
+    def duplicate_map(
+        pending_uploads: list[Any], runner: GitCommandRunner
+    ) -> dict[int, int]:
         """Map later pending uploads to the earliest identical submitted tree."""
         tree_groups: dict[str, list[int]] = {}
         for upload in pending_uploads:
@@ -67,9 +69,7 @@ class ContributionInspectionService:
                 if differing_ids:
                     shared[filename] = differing_ids
             if shared:
-                collisions.append(
-                    {"contribution_id": other_id, "annotations": shared}
-                )
+                collisions.append({"contribution_id": other_id, "annotations": shared})
         return sorted(collisions, key=lambda item: item["contribution_id"])
 
     def research_scope(
@@ -200,7 +200,9 @@ class ContributionInspectionService:
         return item
 
     @staticmethod
-    def inspection_error_item(upload: Any, upload_data: dict[str, Any]) -> dict[str, Any]:
+    def inspection_error_item(
+        upload: Any, upload_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """Return a deliberately sparse queue item when Git inspection fails."""
         branch_name = upload.branch_name
         return {
@@ -288,9 +290,7 @@ class ContributionInspectionService:
                 summary["media_changed"] += 1
         return summary, targets, changed_tiers
 
-    def test_compatibility(
-        self, project_name: str, branch_name: str
-    ) -> dict[str, Any]:
+    def test_compatibility(self, project_name: str, branch_name: str) -> dict[str, Any]:
         """Preview Git compatibility without retaining working-tree changes."""
         project_path = safe_project_path(self.base_path, project_name)
         if not project_path.exists():

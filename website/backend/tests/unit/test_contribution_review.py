@@ -9,7 +9,9 @@ from app.service.contribution_review import ContributionReviewService
 
 
 @pytest.mark.asyncio
-async def test_admin_assigns_existing_topic_without_rewriting_research_summary() -> None:
+async def test_admin_assigns_existing_topic_without_rewriting_research_summary() -> (
+    None
+):
     inspection = MagicMock()
     inspection.semantic_analysis.return_value = ({}, {}, {"Prosody"})
     service = ContributionReviewService(MagicMock(), inspection)
@@ -21,9 +23,7 @@ async def test_admin_assigns_existing_topic_without_rewriting_research_summary()
         base_commit="base",
         git_details={
             "upload_data": {
-                "research_context": {
-                    "summary": "Corrected phrase-final prominence"
-                }
+                "research_context": {"summary": "Corrected phrase-final prominence"}
             }
         },
     )
@@ -40,9 +40,7 @@ async def test_admin_assigns_existing_topic_without_rewriting_research_summary()
         "app.service.contribution_review.get_project_by_name",
         new=AsyncMock(return_value=SimpleNamespace(project_id=3)),
     ):
-        result = await service.assign_research_topic(
-            "corpus", 17, 8, None, db
-        )
+        result = await service.assign_research_topic("corpus", 17, 8, None, db)
 
     assert result["summary"] == "Corrected phrase-final prominence"
     assert result["declared_topic_id"] == 8
@@ -123,3 +121,63 @@ async def test_decline_requires_a_meaningful_reason(tmp_path: Path) -> None:
         await service.decline("corpus", 17, "  ", db, 2)
 
     db.commit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_superseded_contribution_is_not_eligible_for_acceptance(
+    tmp_path: Path,
+) -> None:
+    service = ContributionReviewService(tmp_path, MagicMock())
+    upload = SimpleNamespace(
+        upload_id=17,
+        branch_name="pending",
+        superseded_by_upload_id=18,
+    )
+    db = AsyncMock()
+
+    with (
+        patch(
+            "app.service.contribution_review.get_project_by_name",
+            new=AsyncMock(return_value=SimpleNamespace(project_id=3)),
+        ),
+        patch(
+            "app.service.contribution_review.get_pending_uploads",
+            new=AsyncMock(return_value=[upload]),
+        ),
+        pytest.raises(ValueError, match="superseded by contribution #18"),
+    ):
+        await service.require_acceptance_eligibility("corpus", "pending", db)
+
+
+@pytest.mark.asyncio
+async def test_proposed_topic_must_be_resolved_before_acceptance(
+    tmp_path: Path,
+) -> None:
+    service = ContributionReviewService(tmp_path, MagicMock())
+    upload = SimpleNamespace(
+        upload_id=17,
+        branch_name="pending",
+        superseded_by_upload_id=None,
+        git_details={
+            "upload_data": {
+                "research_context": {
+                    "summary": "Updated prosodic phrasing",
+                    "topic_review_status": "proposed",
+                }
+            }
+        },
+    )
+    db = AsyncMock()
+
+    with (
+        patch(
+            "app.service.contribution_review.get_project_by_name",
+            new=AsyncMock(return_value=SimpleNamespace(project_id=3)),
+        ),
+        patch(
+            "app.service.contribution_review.get_pending_uploads",
+            new=AsyncMock(return_value=[upload]),
+        ),
+        pytest.raises(ValueError, match="Assign the proposed research topic"),
+    ):
+        await service.require_acceptance_eligibility("corpus", "pending", db)

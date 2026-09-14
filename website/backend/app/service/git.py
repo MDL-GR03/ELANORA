@@ -20,10 +20,7 @@ from app.crud.elan_file import (
     get_elan_files_by_project,
     update_elan_file_name,
 )
-from app.crud.pending_upload import (
-    get_pending_uploads,
-    mark_upload_processed,
-)
+from app.crud.pending_upload import get_pending_uploads
 from app.crud.project import (
     delete_project_db,
     get_project_by_id,
@@ -36,13 +33,10 @@ from app.crud.project import (
 from app.crud.project_naming_standard import get_standard_with_components_full
 from app.elan.validation import validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
-from app.model.audit_event import AuditEvent
-from app.model.enums import ProjectPermission, ReviewCaseState
-from app.model.notification import Notification
+from app.model.enums import ProjectPermission
 from app.model.research_topic import (
     ProjectBaselineTier,
 )
-from app.model.review import ReviewCase
 from app.schema.common.git import FileStatus
 from app.schema.responses.git import (
     BulkRenameResponse,
@@ -58,9 +52,9 @@ from app.service.contribution_intake import (
     DuplicatePendingContributionError,
     SubmissionContext,
 )
+from app.service.contribution_publication import ContributionPublicationService
 from app.service.contribution_review import ContributionReviewService
 from app.service.database_rename_handler import DatabaseRenameHandler
-from app.service.eaf_review import validate_repository_eafs
 from app.service.elan import ElanService
 from app.service.git_operations import (
     FileUploadProcessor,
@@ -73,17 +67,11 @@ from app.service.git_status_parser import GitFileStatusAnalyzer, GitStatusParser
 from app.service.project_history import ProjectHistoryService, ProjectRestoreCommand
 from app.service.project_integrity import ProjectIntegrityService
 from app.service.project_lifecycle import ProjectLifecycleService
-from app.service.project_revision import append_project_revision
-from app.service.protocol import (
-    get_pinned_protocol_version,
-    validate_content_against_protocol,
-)
 from app.storage.paths import safe_project_path
 from app.utils.project_backup import (
     remove_project_backup,
     rename_project_backup_folder,
     restore_project_backup,
-    update_backup,
 )
 from app.utils.project_setup_utils import update_project_githooks
 from app.utils.validation import ValidationUtils
@@ -119,6 +107,9 @@ class GitService:
         self.contribution_inspection = ContributionInspectionService(self.base_path)
         self.contribution_review = ContributionReviewService(
             self.base_path, self.contribution_inspection
+        )
+        self.contribution_publication = ContributionPublicationService(
+            self.base_path, self.contribution_review
         )
 
     def check_git_availability(self) -> dict[str, Any]:
@@ -310,7 +301,9 @@ class GitService:
         try:
             # Setup Git environment
             self.contribution_intake.configure_git_user(project_path, user_name)
-            existing_files = self.contribution_intake.existing_files(project_path, files)
+            existing_files = self.contribution_intake.existing_files(
+                project_path, files
+            )
 
             # Initialize managers
             branch_manager = GitBranchManager(project_path)
@@ -388,11 +381,15 @@ class GitService:
 
         except (DuplicatePendingContributionError, ContributionAlreadyCurrentError):
             if branch_name and not contribution_recorded:
-                self.contribution_intake.discard_failed_submission(project_path, branch_name)
+                self.contribution_intake.discard_failed_submission(
+                    project_path, branch_name
+                )
             raise
         except Exception as e:
             if branch_name and not contribution_recorded:
-                self.contribution_intake.discard_failed_submission(project_path, branch_name)
+                self.contribution_intake.discard_failed_submission(
+                    project_path, branch_name
+                )
             logger.error(f"Batch file operation failed: {e}")
             raise RuntimeError(f"Failed to add ELAN files: {e}") from e
 
@@ -758,145 +755,23 @@ class GitService:
         expected_parent_commit: str | None = None,
     ) -> dict[str, Any]:
         """Merge a reviewed contribution, synchronize it, and close its queue record."""
-        project = await get_project_by_name(db, project_name)
-        if project is None:
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-        pending = await get_pending_uploads(db, project.project_id)
-        pending_upload = next(
-            (upload for upload in pending if upload.branch_name == branch_name), None
-        )
-        if pending_upload is None:
-            raise FileNotFoundError("Pending contribution not found")
-        if pending_upload.superseded_by_upload_id is not None:
-            raise ValueError(
-                f"Contribution #{pending_upload.upload_id} was superseded by "
-                f"contribution #{pending_upload.superseded_by_upload_id} and cannot be accepted"
-            )
 
-        upload_data = dict((pending_upload.git_details or {}).get("upload_data") or {})
-        research_context = dict(upload_data.get("research_context") or {})
-        if research_context:
-            if not str(research_context.get("summary") or "").strip():
-                raise ValueError(
-                    "The researcher must describe the work before this contribution can be merged"
-                )
-            if research_context.get("topic_review_status") == "proposed":
-                raise ValueError(
-                    "Assign the proposed research topic before merging this contribution"
-                )
-
-        blocking_review = await db.scalar(
-            select(ReviewCase.case_id).where(
-                (
-                    (ReviewCase.upload_id == pending_upload.upload_id)
-                    | (ReviewCase.resubmitted_upload_id == pending_upload.upload_id)
-                ),
-                ReviewCase.state.in_(
-                    [
-                        ReviewCaseState.OPEN.value,
-                        ReviewCaseState.CHANGES_REQUESTED.value,
-                        ReviewCaseState.RESUBMITTED.value,
-                    ]
-                ),
-            )
-        )
-        if blocking_review is not None:
-            raise ValueError(
-                "Resolve the contribution's open review cases before accepting it"
-            )
-
-        project_path = safe_project_path(self.base_path, project_name)
-        submitted_eafs = validate_repository_eafs(project_path, branch_name)
-        current_protocol = await get_pinned_protocol_version(db, project)
-        protocol_errors = [
-            (filename, finding)
-            for filename, content in submitted_eafs.items()
-            for finding in (
-                validate_content_against_protocol(content, current_protocol)
-                if current_protocol is not None
-                else ()
-            )
-        ]
-        if protocol_errors:
-            filename, finding = protocol_errors[0]
-            additional = len(protocol_errors) - 1
-            suffix = f" and {additional} more issue(s)" if additional else ""
-            raise ValueError(
-                f"{filename}: {finding.message}{suffix}. Correct the file in ELAN and submit it again."
-            )
-        runner = GitCommandRunner(project_path)
-        parent_commit = expected_parent_commit or runner.get_commit_hash()
-        result = runner.complete_pending_merge(branch_name, resolution_strategy)
-        accepted_commit = runner.get_commit_hash()
-        try:
+        async def rebuild_projection(
+            name: str, session: AsyncSession, actor_user_id: int
+        ) -> None:
             await self.rebuild_project_database(
-                project_name, db, user_id, commit_changes=False
+                name, session, actor_user_id, commit_changes=False
             )
-            await mark_upload_processed(
-                db,
-                project.project_id,
-                branch_name,
-                user_id,
-                accepted_commit,
-            )
-            await append_project_revision(
-                db,
-                project_id=project.project_id,
-                git_commit=accepted_commit,
-                parent_git_commit=parent_commit,
-                source_type="contribution",
-                actor_user_id=user_id,
-                contribution_id=pending_upload.upload_id,
-                details={
-                    "branch_name": branch_name,
-                    "base_commit": pending_upload.base_commit or "",
-                    "resolution_strategy": resolution_strategy,
-                },
-            )
-            db.add(
-                AuditEvent(
-                    actor_user_id=user_id,
-                    project_id=project.project_id,
-                    action="contribution.accepted",
-                    resource_type="pending_upload",
-                    resource_id=str(pending_upload.upload_id),
-                    details={
-                        "branch_name": branch_name,
-                        "base_commit": pending_upload.base_commit,
-                        "accepted_commit": accepted_commit,
-                        "resolution_strategy": resolution_strategy,
-                        "merge_status": result["status"],
-                        "protocol_version_id": (
-                            str(current_protocol.protocol_version_id)
-                            if current_protocol is not None
-                            else None
-                        ),
-                    },
-                )
-            )
-            if pending_upload.submitted_by not in {None, user_id}:
-                db.add(
-                    Notification(
-                        user_id=pending_upload.submitted_by,
-                        title="Contribution accepted",
-                        message=f"Your contribution to {project_name} is now part of the project.",
-                        action_url=f"/contribution?project={project.project_id}",
-                    )
-                )
-            await db.commit()
-        except Exception:
-            await db.rollback()
-            runner.reset_hard(parent_commit)
-            update_backup(project_path.name, project_path.parent)
-            raise
-        runner.delete_branch_localy(branch_name)
-        update_backup(project_path.name, project_path.parent)
-        return {
-            "project_name": project_name,
-            **result,
-            "accepted_commit": accepted_commit,
-            "resolved_at": datetime.now().isoformat(),
-        }
+
+        return await self.contribution_publication.publish(
+            project_name,
+            branch_name,
+            resolution_strategy,
+            db,
+            user_id,
+            rebuild_projection,
+            expected_parent_commit,
+        )
 
     async def dismiss_duplicate_upload(
         self,

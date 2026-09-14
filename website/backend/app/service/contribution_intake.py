@@ -108,7 +108,9 @@ class ContributionIntakeService:
             raise ContributionAlreadyCurrentError(
                 "These files are already the current accepted version; no contribution was created."
             )
-        await self._reject_duplicate_tree(db, project.project_id, runner, submitted_tree)
+        await self._reject_duplicate_tree(
+            db, project.project_id, runner, submitted_tree
+        )
 
         branch_manager.switch_to_master()
         analysis = diff_analyzer.analyze_merge_differences(branch_name)

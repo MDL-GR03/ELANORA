@@ -31,7 +31,9 @@ EAF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.e
 @pytest.fixture(autouse=True)
 def isolate_recovery_backups(monkeypatch: pytest.MonkeyPatch) -> None:
     """Keep merge workflow tests inside tmp_path; backup behavior is independent."""
-    monkeypatch.setattr("app.service.git.update_backup", lambda *_args: None)
+    monkeypatch.setattr(
+        "app.service.contribution_publication.update_backup", lambda *_args: None
+    )
     monkeypatch.setattr("app.service.git_operations.update_backup", lambda *_args: None)
 
 

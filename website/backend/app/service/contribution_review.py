@@ -17,7 +17,12 @@ from app.model.pending_upload import PendingUpload
 from app.model.research_topic import ResearchTopic, ResearchTopicTier
 from app.model.review import ReviewCase
 from app.service.contribution_inspection import ContributionInspectionService
+from app.service.eaf_review import validate_repository_eafs
 from app.service.git_operations import GitCommandRunner
+from app.service.protocol import (
+    get_pinned_protocol_version,
+    validate_content_against_protocol,
+)
 from app.service.research_topics import require_distinct_topic_name
 from app.storage.paths import safe_project_path
 
@@ -96,8 +101,7 @@ class ContributionReviewService:
                 description=f"Created while classifying contribution #{upload.upload_id}.",
                 allow_new_tiers=False,
                 tiers=[
-                    ResearchTopicTier(tier_name=name)
-                    for name in sorted(changed_tiers)
+                    ResearchTopicTier(tier_name=name) for name in sorted(changed_tiers)
                 ],
             )
             db.add(topic)
@@ -272,3 +276,80 @@ class ContributionReviewService:
         except Exception:
             logger.exception("Could not remove declined branch %s", upload.branch_name)
         return {"status": "dismissed", "upload_id": upload.upload_id}
+
+    async def require_acceptance_eligibility(
+        self,
+        project_name: str,
+        branch_name: str,
+        db: AsyncSession,
+    ) -> tuple[Any, PendingUpload, Any]:
+        """Reject publication until every administrator decision is resolved."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError(f"Project '{project_name}' not found")
+        pending = await get_pending_uploads(db, project.project_id)
+        upload = next(
+            (item for item in pending if item.branch_name == branch_name), None
+        )
+        if upload is None:
+            raise FileNotFoundError("Pending contribution not found")
+        if upload.superseded_by_upload_id is not None:
+            raise ValueError(
+                f"Contribution #{upload.upload_id} was superseded by "
+                f"contribution #{upload.superseded_by_upload_id} and cannot be accepted"
+            )
+
+        upload_data = dict((upload.git_details or {}).get("upload_data") or {})
+        context = dict(upload_data.get("research_context") or {})
+        if context:
+            if not str(context.get("summary") or "").strip():
+                raise ValueError(
+                    "The researcher must describe the work before this contribution can be merged"
+                )
+            if context.get("topic_review_status") == "proposed":
+                raise ValueError(
+                    "Assign the proposed research topic before merging this contribution"
+                )
+
+        blocking_review = await db.scalar(
+            select(ReviewCase.case_id).where(
+                ReviewCase.project_id == project.project_id,
+                (
+                    (ReviewCase.upload_id == upload.upload_id)
+                    | (ReviewCase.resubmitted_upload_id == upload.upload_id)
+                ),
+                ReviewCase.state.in_(
+                    [
+                        ReviewCaseState.OPEN.value,
+                        ReviewCaseState.CHANGES_REQUESTED.value,
+                        ReviewCaseState.RESUBMITTED.value,
+                    ]
+                ),
+            )
+        )
+        if blocking_review is not None:
+            raise ValueError(
+                "Resolve the contribution's open review cases before accepting it"
+            )
+
+        project_path = safe_project_path(self.base_path, project_name)
+        submitted_eafs = validate_repository_eafs(project_path, branch_name)
+        protocol = await get_pinned_protocol_version(db, project)
+        protocol_errors = [
+            (filename, finding)
+            for filename, content in submitted_eafs.items()
+            for finding in (
+                validate_content_against_protocol(content, protocol)
+                if protocol is not None
+                else ()
+            )
+        ]
+        if protocol_errors:
+            filename, finding = protocol_errors[0]
+            additional = len(protocol_errors) - 1
+            suffix = f" and {additional} more issue(s)" if additional else ""
+            raise ValueError(
+                f"{filename}: {finding.message}{suffix}. "
+                "Correct the file in ELAN and submit it again."
+            )
+        return project, upload, protocol

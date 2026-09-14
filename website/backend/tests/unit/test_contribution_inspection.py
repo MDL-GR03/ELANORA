@@ -27,9 +27,9 @@ def test_annotation_collisions_only_report_different_results_for_same_target() -
     assert ContributionInspectionService.annotation_collisions(
         14, targets, {14, 15, 16}
     ) == [{"contribution_id": 15, "annotations": {"session.eaf": ["a1"]}}]
-    assert ContributionInspectionService.annotation_collisions(
-        14, targets, {15, 16}
-    ) == []
+    assert (
+        ContributionInspectionService.annotation_collisions(14, targets, {15, 16}) == []
+    )
 
 
 def test_research_scope_allows_configured_baseline_changes() -> None:
@@ -90,9 +90,7 @@ def test_research_scope_requires_protocol_recheck_after_protocol_change() -> Non
     )
 
     with patch.object(service, "semantic_analysis", return_value=({}, {}, set())):
-        _, _, _, protocol, _ = service.research_scope(
-            "corpus", project, upload, set()
-        )
+        _, _, _, protocol, _ = service.research_scope("corpus", project, upload, set())
 
     assert protocol == "recheck_required"
 
