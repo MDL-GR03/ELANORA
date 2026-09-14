@@ -1,11 +1,13 @@
 <template>
   <div class="import-modal-overlay" role="presentation" @click.self="close">
     <div
+      ref="dialogElement"
       class="import-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="import-standards-title"
-      @keydown.esc="close"
+      tabindex="-1"
+      @keydown="handleKeydown"
     >
       <header class="import-modal-heading">
         <span class="import-modal-icon" aria-hidden="true">
@@ -17,6 +19,7 @@
         </div>
       </header>
       <button
+        ref="closeButton"
         type="button"
         class="import-modal-close"
         :aria-label="t('common.cancel')"
@@ -63,10 +66,7 @@
             :key="standard.id"
             class="import-standard-preview"
           >
-            <div
-              class="import-standard-header-col"
-              @click="$emit('toggle-fold', standard.id)"
-            >
+            <div class="import-standard-header-col">
               <div class="import-standard-header-row">
                 <input
                   :id="`import-standard-${standard.id}`"
@@ -89,14 +89,27 @@
                     }}
                   </span>
                 </label>
-                <font-awesome-icon
-                  class="import-standard-chevron"
-                  :icon="
-                    isStandardFolded(standard.id)
-                      ? 'fa-solid fa-chevron-right'
-                      : 'fa-solid fa-chevron-down'
+                <button
+                  type="button"
+                  class="import-fold-toggle"
+                  :aria-expanded="!isStandardFolded(standard.id)"
+                  :aria-controls="`import-standard-details-${standard.id}`"
+                  :aria-label="
+                    t('configureNamingStandards.importModal.toggleDetails', {
+                      name: standard.name,
+                    })
                   "
-                />
+                  @click="$emit('toggle-fold', standard.id)"
+                >
+                  <font-awesome-icon
+                    class="import-standard-chevron"
+                    :icon="
+                      isStandardFolded(standard.id)
+                        ? 'fa-solid fa-chevron-right'
+                        : 'fa-solid fa-chevron-down'
+                    "
+                  />
+                </button>
               </div>
               <div
                 v-if="!hasTargetFileType(standard)"
@@ -119,6 +132,7 @@
             <transition name="fade">
               <div
                 v-show="!isStandardFolded(standard.id)"
+                :id="`import-standard-details-${standard.id}`"
                 class="import-standard-details"
                 :class="{ unavailable: !hasTargetFileType(standard) }"
               >
@@ -213,7 +227,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import AppSelect from '@/components/common/AppSelect.vue';
@@ -241,6 +255,10 @@ const emit = defineEmits([
   'import-selected',
 ]);
 const { t } = useI18n();
+const dialogElement = ref(null);
+const closeButton = ref(null);
+const previouslyFocused =
+  document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
 const availableStandards = computed(() =>
   props.importStandards.filter(
@@ -259,6 +277,37 @@ const hasTargetFileType = (standard) =>
 function close() {
   emit('close');
 }
+
+function handleKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    close();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const controls = [
+    ...dialogElement.value.querySelectorAll(
+      'button:not(:disabled), input:not(:disabled), [href]'
+    ),
+  ];
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last?.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first?.focus();
+  }
+}
+
+onMounted(async () => {
+  await nextTick();
+  closeButton.value?.focus();
+});
+onBeforeUnmount(() => {
+  if (previouslyFocused?.isConnected) previouslyFocused.focus();
+});
 function toggleSelectedStandard(standardId, event) {
   const selected = new Set(props.selectedStandardIds);
   if (event.target.checked) selected.add(standardId);
@@ -422,7 +471,6 @@ button:disabled {
 
 .import-standard-header-col {
   padding: 12px;
-  cursor: pointer;
 }
 
 .import-standard-header-row {
@@ -444,8 +492,26 @@ button:disabled {
   color: #52627a;
 }
 
-.import-standard-chevron {
+.import-fold-toggle {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
   margin-left: auto;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 0.55rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.import-fold-toggle:hover,
+.import-fold-toggle:focus-visible {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  outline: none;
+}
+
+.import-standard-chevron {
   color: #718096;
 }
 

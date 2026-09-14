@@ -878,6 +878,7 @@
       "description": "Description",
       "exampleFile": "Example filename",
       "components": "Components",
+      "toggleDetails": "{name}: toggle details",
       "importSelected": "Import Selected"
     },
     "eventMessages": {

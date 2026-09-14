@@ -23,9 +23,10 @@ const baseProps = {
   isStandardFolded: () => true,
 };
 
-const mountDialog = (props = {}) =>
+const mountDialog = (props = {}, options = {}) =>
   mount(NamingStandardImportDialog, {
     props: { ...baseProps, ...props },
+    ...(options.attachTo ? { attachTo: options.attachTo } : {}),
     global: {
       stubs: {
         FontAwesomeIcon: true,
@@ -110,5 +111,46 @@ describe('NamingStandardImportDialog', () => {
     await wrapper.setProps({ selectedStandardIds: [3] });
     await wrapper.get('.import-modal-footer .primary-action').trigger('click');
     expect(wrapper.emitted('import-selected')).toHaveLength(1);
+  });
+
+  it('uses a keyboard-accessible disclosure for standard details', async () => {
+    const wrapper = mountDialog({
+      importStep: 2,
+      importStandards: [
+        {
+          id: 3,
+          name: 'Reusable',
+          file_type_id: 5,
+          file_type_name: 'ELAN',
+          project_file_type_id: 201,
+          components: [],
+        },
+      ],
+      targetFileTypeKeys: new Set(['5:ELAN']),
+    });
+    const toggle = wrapper.get('.import-fold-toggle');
+
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    expect(toggle.attributes('aria-controls')).toBe(
+      'import-standard-details-3'
+    );
+    await toggle.trigger('click');
+    expect(wrapper.emitted('toggle-fold')).toEqual([[3]]);
+    wrapper.unmount();
+  });
+
+  it('focuses its close control and returns focus when removed', async () => {
+    const opener = document.createElement('button');
+    document.body.append(opener);
+    opener.focus();
+    const wrapper = mountDialog({}, { attachTo: document.body });
+    await wrapper.vm.$nextTick();
+
+    expect(document.activeElement).toBe(
+      wrapper.get('.import-modal-close').element
+    );
+    wrapper.unmount();
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
   });
 });

@@ -803,6 +803,7 @@
       "description": "説明",
       "exampleFile": "サンプルファイル名",
       "components": "コンポーネント",
+      "toggleDetails": "{name}：詳細を切り替える",
       "importSelected": "選択したものをインポート"
     },
     "eventMessages": {

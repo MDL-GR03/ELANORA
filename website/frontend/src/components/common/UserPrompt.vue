@@ -1,11 +1,12 @@
 <template>
   <div v-if="visible" class="prompt-backdrop" @mousedown.self="cancel">
     <div
+      ref="dialogElement"
       class="prompt-dialog"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="prompt-title"
-      @keydown.esc="cancel"
+      :aria-labelledby="titleId"
+      @keydown="handleKeydown"
     >
       <header class="prompt-header">
         <span class="prompt-icon"
@@ -13,7 +14,7 @@
         /></span>
         <div>
           <span class="prompt-eyebrow">Information required</span>
-          <h2 id="prompt-title">Enter a value</h2>
+          <h2 :id="titleId">{{ title }}</h2>
         </div>
         <button
           type="button"
@@ -26,22 +27,17 @@
       </header>
 
       <form class="prompt-form" @submit.prevent="submit">
-        <label for="user-prompt-value">{{ message }}</label>
+        <label :for="inputId">{{ message }}</label>
         <input
-          id="user-prompt-value"
+          :id="inputId"
+          ref="inputElement"
           v-model="inputValue"
           :type="type"
           class="prompt-input"
           :aria-invalid="Boolean(warning)"
-          :aria-describedby="warning ? 'prompt-warning' : undefined"
-          autofocus
+          :aria-describedby="warning ? warningId : undefined"
         />
-        <div
-          v-if="warning"
-          id="prompt-warning"
-          class="prompt-warning"
-          role="alert"
-        >
+        <div v-if="warning" :id="warningId" class="prompt-warning" role="alert">
           <FontAwesomeIcon :icon="faTriangleExclamation" />
           {{ warning }}
         </div>
@@ -59,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
   faPenToSquare,
@@ -73,37 +69,90 @@ const props = defineProps({
   defaultValue: { type: [String, Number], default: '' },
   type: { type: String, default: 'number' },
   validator: { type: Function, default: null },
+  title: { type: String, default: 'Enter a value' },
 });
 const emit = defineEmits(['update:modelValue', 'submit', 'cancel']);
 const visible = ref(props.modelValue);
 const inputValue = ref(props.defaultValue ?? '');
 const warning = ref('');
+const dialogElement = ref(null);
+const inputElement = ref(null);
+const generatedId = useId();
+const titleId = `prompt-title-${generatedId}`;
+const inputId = `user-prompt-value-${generatedId}`;
+const warningId = `prompt-warning-${generatedId}`;
+let previouslyFocused = null;
 
 let wasVisible = false;
 watch(
   () => props.modelValue,
-  (value) => {
+  async (value) => {
     visible.value = value;
-    if (value && !wasVisible) inputValue.value = props.defaultValue ?? '';
+    if (value && !wasVisible) {
+      previouslyFocused =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      inputValue.value = props.defaultValue ?? '';
+      validate(inputValue.value);
+      await nextTick();
+      inputElement.value?.focus();
+    } else if (!value && previouslyFocused?.isConnected) {
+      await nextTick();
+      previouslyFocused.focus();
+      previouslyFocused = null;
+    }
     wasVisible = value;
   },
   { immediate: true }
 );
 
 watch(inputValue, (value) => {
-  if (props.validator) {
-    const message = props.validator(value);
-    warning.value = typeof message === 'string' ? message : '';
-  } else {
-    warning.value = '';
-  }
+  validate(value);
 });
 
+function validate(value) {
+  const message = props.validator?.(value);
+  warning.value = typeof message === 'string' ? message : '';
+  return !warning.value;
+}
+
 function submit() {
+  if (!validate(inputValue.value)) {
+    inputElement.value?.focus();
+    return;
+  }
   const trimmed = (inputValue.value ?? '').toString().trim();
   emit('submit', trimmed);
   emit('update:modelValue', false);
 }
+
+function handleKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    cancel();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const controls = [
+    ...dialogElement.value.querySelectorAll(
+      'button:not(:disabled), input:not(:disabled)'
+    ),
+  ];
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last?.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first?.focus();
+  }
+}
+
+onBeforeUnmount(() => {
+  if (previouslyFocused?.isConnected) previouslyFocused.focus();
+});
 function cancel() {
   emit('cancel');
   emit('update:modelValue', false);

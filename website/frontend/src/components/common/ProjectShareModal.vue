@@ -6,12 +6,14 @@
     @click="closeModal"
   >
     <div
+      ref="dialogElement"
       class="modal-content share-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="share-project-title"
+      tabindex="-1"
       @click.stop
-      @keydown.esc="closeModal"
+      @keydown="handleDialogKeydown"
     >
       <div class="modal-header">
         <span class="share-modal-icon">
@@ -38,27 +40,43 @@
         <!-- Tab Selector -->
         <div class="tab-selector" role="tablist" aria-label="Invitation method">
           <button
+            id="invite-by-email-tab"
+            type="button"
             class="tab-button"
             :class="{ active: inviteMode === 'email' }"
             role="tab"
             :aria-selected="inviteMode === 'email'"
+            aria-controls="invite-by-email-panel"
+            :tabindex="inviteMode === 'email' ? 0 : -1"
             @click="setInviteMode('email')"
+            @keydown="handleTabKeydown"
           >
             {{ t('project.share.invite_by_email') }}
           </button>
           <button
+            id="invite-existing-user-tab"
+            type="button"
             class="tab-button"
             :class="{ active: inviteMode === 'user' }"
             role="tab"
             :aria-selected="inviteMode === 'user'"
+            aria-controls="invite-existing-user-panel"
+            :tabindex="inviteMode === 'user' ? 0 : -1"
             @click="setInviteMode('user')"
+            @keydown="handleTabKeydown"
           >
             {{ t('project.share.invite_existing_user') }}
           </button>
         </div>
 
         <!-- Email Invitation Form -->
-        <div v-if="inviteMode === 'email'" class="tab-content">
+        <div
+          v-if="inviteMode === 'email'"
+          id="invite-by-email-panel"
+          class="tab-content"
+          role="tabpanel"
+          aria-labelledby="invite-by-email-tab"
+        >
           <form class="invitation-form" @submit.prevent="sendProjectInvitation">
             <div class="share-form-group">
               <label for="share-email" class="form-label">
@@ -71,10 +89,17 @@
                 type="email"
                 class="form-input"
                 :class="{ error: emailError }"
+                :aria-invalid="Boolean(emailError) || undefined"
+                :aria-describedby="emailError ? 'share-email-error' : undefined"
                 :placeholder="t('project.share.email_placeholder')"
                 required
               />
-              <div v-if="emailError" class="share-error-message">
+              <div
+                v-if="emailError"
+                id="share-email-error"
+                class="share-error-message"
+                role="alert"
+              >
                 {{ emailError }}
               </div>
             </div>
@@ -126,7 +151,13 @@
         </div>
 
         <!-- User Selection Form -->
-        <div v-if="inviteMode === 'user'" class="tab-content">
+        <div
+          v-if="inviteMode === 'user'"
+          id="invite-existing-user-panel"
+          class="tab-content"
+          role="tabpanel"
+          aria-labelledby="invite-existing-user-tab"
+        >
           <form class="invitation-form" @submit.prevent="sendUserInvitation">
             <div class="share-form-group">
               <label for="share-user" class="form-label">
@@ -137,6 +168,7 @@
                 id="share-user"
                 v-model="form.selectedUserId"
                 :invalid="Boolean(userError)"
+                :aria-describedby="userError ? 'share-user-error' : undefined"
                 :required="true"
                 :disabled="loadingUsers"
                 :placeholder="
@@ -146,7 +178,12 @@
                 "
                 :options="userOptions"
               />
-              <div v-if="userError" class="share-error-message">
+              <div
+                v-if="userError"
+                id="share-user-error"
+                class="share-error-message"
+                role="alert"
+              >
                 {{ userError }}
               </div>
             </div>
@@ -198,12 +235,12 @@
         </div>
 
         <!-- Success Message -->
-        <div v-if="successMessage" class="share-success-message">
+        <div v-if="successMessage" class="share-success-message" role="status">
           {{ successMessage }}
         </div>
 
         <!-- Error Message -->
-        <div v-if="errorMessage" class="share-error-message">
+        <div v-if="errorMessage" class="share-error-message" role="alert">
           {{ errorMessage }}
         </div>
       </div>
@@ -212,7 +249,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { sendInvitation as sendInvitationAPI } from '@/api/service/invitationService';
@@ -263,6 +307,8 @@ const successMessage = ref('');
 const errorMessage = ref('');
 const loadingUsers = ref(false);
 const availableUsers = ref([]);
+const dialogElement = ref(null);
+let previouslyFocused = null;
 
 const projectName = computed(() => props.projectName);
 const languageOptions = [
@@ -300,8 +346,8 @@ const loadActiveUsers = async () => {
     if (response.data && response.data.users) {
       availableUsers.value = response.data.users;
     }
-  } catch (error) {
-    console.error('Error loading users:', error);
+  } catch {
+    console.error('Error loading users');
     eventMessageStore.addMessage('project.share.error_loading_users', 'error');
   } finally {
     loadingUsers.value = false;
@@ -311,7 +357,19 @@ const loadActiveUsers = async () => {
 // Watch for mode changes and modal visibility
 watch(
   () => props.show,
-  (newShow) => {
+  async (newShow) => {
+    if (newShow) {
+      previouslyFocused =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      await nextTick();
+      dialogElement.value?.focus();
+    } else if (previouslyFocused?.isConnected) {
+      await nextTick();
+      previouslyFocused.focus();
+      previouslyFocused = null;
+    }
     if (newShow && inviteMode.value === 'user') {
       loadActiveUsers();
     }
@@ -333,7 +391,7 @@ onMounted(() => {
 
 // Helper function to handle invitation errors
 const handleInvitationError = (error) => {
-  console.error('Error sending invitation:', error);
+  console.error('Error sending invitation');
 
   // Check if it's a server response with a specific message
   if (error.response?.data?.message) {
@@ -389,6 +447,40 @@ const setInviteMode = (mode) => {
   errorMessage.value = '';
 };
 
+function handleTabKeydown(event) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  const mode =
+    event.key === 'ArrowLeft' || event.key === 'Home' ? 'email' : 'user';
+  setInviteMode(mode);
+  const targetId =
+    mode === 'email' ? 'invite-by-email-tab' : 'invite-existing-user-tab';
+  void nextTick(() => document.getElementById(targetId)?.focus());
+}
+
+function handleDialogKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeModal();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const controls = [
+    ...dialogElement.value.querySelectorAll(
+      'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), [href]'
+    ),
+  ];
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last?.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first?.focus();
+  }
+}
+
 const closeModal = () => {
   // Reset form and states
   form.value = {
@@ -408,6 +500,10 @@ const closeModal = () => {
   inviteMode.value = 'email';
   emit('close');
 };
+
+onBeforeUnmount(() => {
+  if (previouslyFocused?.isConnected) previouslyFocused.focus();
+});
 
 const sendProjectInvitation = async () => {
   emailError.value = '';

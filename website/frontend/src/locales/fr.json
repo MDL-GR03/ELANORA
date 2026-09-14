@@ -866,6 +866,7 @@
       "description": "Description",
       "exampleFile": "Nom de fichier exemple",
       "components": "Composants",
+      "toggleDetails": "{name} : afficher ou masquer les détails",
       "importSelected": "Importer la sélection",
       "importFailed": "Échec de l'importation des normes."
     },
