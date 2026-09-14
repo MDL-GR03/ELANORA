@@ -362,4 +362,7 @@ project-local file-type row IDs. `NamingStandardImportDialog` now owns the
 responsive, keyboard-dismissible import presentation with direct tests for its
 dialog semantics, duplicate filtering, missing-file-type recovery and immutable
 selection events. The final action appears only at the applicable selection
-step. The add/edit form is the next naming-standard presentation boundary.
+step. `NamingStandardList` now owns accessible standard disclosure controls,
+responsive pattern evidence and horizontally safe component tables, with direct
+interaction tests. The create form is the last substantial naming-standard
+presentation boundary before reassessing the next oversized feature.
