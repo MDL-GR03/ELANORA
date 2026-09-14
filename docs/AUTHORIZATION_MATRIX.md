@@ -43,6 +43,27 @@ member identities, project permissions, and the delegated protocol-manager
 capability. Institution administrators see every configuration section;
 delegated project administrators see only the member-management section.
 
+## How project routes are protected
+
+A route that accepts a `project_id` must resolve the caller's access to that
+specific project. Three mechanisms are recognized, and
+`tests/unit/test_project_authorization_boundary.py` fails the build if a route
+uses none of them:
+
+1. A project guard dependency: `get_project_read_dep`, `get_project_write_dep`,
+   `get_project_admin_dep`, or `get_protocol_manager_dep`. Prefer this.
+2. An imperative `authorize_project(...)` call at the top of the route body,
+   used where the required permission depends on the request.
+3. The institution guard alone, for installation-wide configuration routes.
+   Because one installation holds exactly one institution, an institution
+   administrator legitimately administers every project in it. These routes are
+   enumerated explicitly in `INSTITUTION_ADMIN_ROUTES`, so relying on the
+   institution guard is always a recorded decision rather than an omission.
+
+The guard test also rejects stale allow-list entries and any listed route that
+stops requiring the institution administrator, so the list cannot quietly
+become a way to leave a route open.
+
 Public endpoints are limited to installation status/initialization (which is
 single-use and setup-token protected), login and account-recovery flows,
 invitation-code validation, public instance identity/logo, location reference
