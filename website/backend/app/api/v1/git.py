@@ -1,6 +1,7 @@
 import uuid
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
+from app.core.exceptions import RenameConflictError
 from app.dependency.database import get_db_dep
 from app.dependency.elan_validation import validate_and_record_elan_files
 from app.dependency.project_access import (
@@ -53,6 +55,8 @@ from app.schema.responses.git import (
     ProjectCheckoutResponse,
     ProjectCreateResponse,
     ProjectEditResponse,
+    ProjectFilesResponse,
+    ProjectFilesWithMediaResponse,
     ProjectListResponse,
     ProjectRevisionHealthResponse,
     ProjectRevisionRecoveryResponse,
@@ -62,17 +66,16 @@ from app.schema.responses.git import (
     ProjectVersionRestoreResponse,
 )
 from app.service.contribution_change_set import ContributionChangeSetCoordinator
+from app.service.contribution_intake import (
+    ContributionAlreadyCurrentError,
+    DuplicatePendingContributionError,
+)
 from app.service.eaf_review import (
     EafReviewUnavailableError,
     compare_repository_eaf,
     comparison_payload,
 )
-from app.service.git import (
-    ContributionAlreadyCurrentError,
-    DuplicatePendingContributionError,
-    GitService,
-    RenameConflictError,
-)
+from app.service.git import GitService
 from app.service.project_sync import ProjectSyncCoordinator, operation_payload
 from app.service.research_topics import (
     SimilarResearchTopicError,
@@ -100,6 +103,15 @@ logger = get_logger()
 
 eaf_upload_files_dep = File(...)
 correction_case_id_dep = Form(default=None)
+
+
+def _string_list(value: object) -> list[str]:
+    """Return only string members from untrusted persisted JSON arrays."""
+    return (
+        [item for item in value if isinstance(item, str)]
+        if isinstance(value, list)
+        else []
+    )
 
 
 async def _prepare_tier_scoped_uploads(
@@ -254,8 +266,7 @@ async def _prepare_tier_scoped_uploads(
         {
             tier
             for item in scoped_files
-            for tier in item.get("editable_baseline_tiers", [])
-            if isinstance(tier, str)
+            for tier in _string_list(item.get("editable_baseline_tiers"))
         }
     )
     subject = topic.name if topic else None
@@ -307,7 +318,7 @@ async def create_project(
     project_data: ProjectCreateRequest,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> ProjectCreateResponse:
     """Create a new ELAN project with Git repository.
 
     Args:
@@ -470,7 +481,9 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
 
 
 @router.get("/projects/{project_name}/branches")
-async def get_project_branches(project_name: str, user: User = get_admin_dep):
+async def get_project_branches(
+    project_name: str, user: User = get_admin_dep
+) -> dict[str, Any]:
     """Get all branches for a project."""
     try:
         result = git_service.get_branches(project_name)
@@ -490,7 +503,7 @@ async def checkout_project_branch(
     project_name: str,
     checkout_data: ProjectCheckoutRequest,
     user: User = get_admin_dep,
-):
+) -> ProjectCheckoutResponse:
     """Switch to a different branch in the given project."""
     try:
         result = git_service.checkout_branch(project_name, checkout_data.branch_name)
@@ -505,7 +518,7 @@ async def checkout_project_branch(
 async def list_projects(
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> ProjectListResponse:
     """List all project names for the current instance (admin only)."""
     projects = await git_service.list_projects(db, user.instance_id)
     return ProjectListResponse(projects=projects)
@@ -515,7 +528,7 @@ async def list_projects(
 async def list_user_projects(
     db: AsyncSession = get_db_dep,
     user: User = get_user_dep,
-):
+) -> ProjectListResponse:
     """List project names that the current user has access to."""
     projects = await git_service.list_user_projects(db, user.user_id, user.instance_id)
     return ProjectListResponse(projects=projects)
@@ -562,7 +575,7 @@ async def get_project_files(
     include_media: bool = False,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_read_dep,
-):
+) -> ProjectFilesResponse | ProjectFilesWithMediaResponse:
     """Get project files, optionally with media information.
 
     Args:
@@ -577,7 +590,10 @@ async def get_project_files(
     """
     try:
         result = await git_service.list_project_files(project_name, db, include_media)
-        return result
+        response_type = (
+            ProjectFilesWithMediaResponse if include_media else ProjectFilesResponse
+        )
+        return response_type(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
@@ -590,10 +606,12 @@ async def get_project_files(
 async def synchronize_project_check(
     project_name: str,
     user: User = get_admin_dep,
-):
+) -> ProjectSyncCheckResponse:
     """Preview unmanaged server-side EAF changes without modifying the repository."""
     try:
-        return git_service.synchronize_project_check(project_name)
+        return ProjectSyncCheckResponse(
+            **git_service.synchronize_project_check(project_name)
+        )
     except Exception as e:
         logger.error(
             "Failed to inspect server-side project changes; error_type=%s",
@@ -607,7 +625,7 @@ async def delete_project(
     project_name: str,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> dict[str, str]:
     """Delete a project, its files, and all associated database artifacts."""
     try:
         await git_service.delete_project(project_name, db)
@@ -626,7 +644,7 @@ async def edit_project(
     req: ProjectEditRequest,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> ProjectEditResponse:
     try:
         result = await git_service.edit_project(
             project_name, req.new_project_name, req.new_project_description, db
@@ -649,20 +667,20 @@ async def synchronize_project(
     project_name: str,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> ProjectSyncExecutionResponse:
     """Synchronize the project's elan_files folder with the git repo and update the database.
 
     Only changed, added, or deleted files are processed.
     """
     try:
         operation = await sync_coordinator.execute(project_name, db, user.user_id)
-        return {
-            "project_name": project_name,
-            "in_sync": operation.state == "completed",
-            "files_status": operation.changes,
-            "status": operation.state,
-            "operation_id": str(operation.operation_id),
-        }
+        return ProjectSyncExecutionResponse(
+            project_name=project_name,
+            in_sync=operation.state == "completed",
+            files_status=operation.changes,
+            status=operation.state,
+            operation_id=str(operation.operation_id),
+        )
     except (EafValidationError, ValueError) as e:
         raise HTTPException(status_code=422, detail=INVALID_PROJECT_STATE) from e
     except Exception as e:
@@ -677,7 +695,7 @@ async def list_synchronization_operations(
     project_name: str,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> dict[str, list[dict[str, Any]]]:
     """Return the durable administrator recovery history for one project."""
     try:
         operations = await sync_coordinator.list_for_project(project_name, db)
@@ -695,7 +713,7 @@ async def recover_synchronization_operation(
     operation_id: uuid.UUID,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> dict[str, Any]:
     """Reconcile PostgreSQL from a Git commit left by an interrupted operation."""
     try:
         operation = await sync_coordinator.recover(
@@ -715,7 +733,7 @@ async def discard_local_changes(
     project_name: str,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> dict[str, str]:
     """Preserve evidence, then reset the project folder to canonical Git state."""
     try:
         operation = await sync_coordinator.discard(project_name, db, user.user_id)
@@ -737,7 +755,7 @@ async def restore_from_backup(
     project_name: str,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> dict[str, str]:
     """Restore the project folder from the most recent backup and update the database."""
     try:
         result = await git_service.restore_project_from_backup(
@@ -753,7 +771,7 @@ async def decline_backup(
     project_name: str,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> None:
     """Decline restoration of the most recent backup for the project, delete it and erase all related data from the database."""
     try:
         await git_service.decline_project_backup(db, project_name)
@@ -770,7 +788,7 @@ async def get_pending_uploads(
     project_name: str,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_read_dep,
-):
+) -> PendingUploadsResponse:
     """List contribution status for authorized project members."""
     try:
         result = await git_service.get_pending_uploads_with_status(project_name, db)
@@ -919,7 +937,7 @@ async def test_pending_upload(
     project_name: str,
     branch_name: str,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> dict[str, Any]:
     """Test whether a pending contribution merges cleanly without changing history."""
     try:
         return git_service.test_pending_upload(project_name, branch_name)
@@ -964,7 +982,7 @@ async def merge_pending_upload(
     request: PendingUploadMergeRequest,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> dict[str, Any]:
     """Durably request and execute publication of one reviewed contribution."""
     try:
         change_set = await contribution_change_sets.request(
@@ -993,7 +1011,7 @@ async def decline_pending_upload(
     request: PendingUploadDeclineRequest,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> dict[str, Any]:
     """Decline a contribution while retaining its provenance and review history."""
     try:
         return await git_service.decline_pending_upload(
@@ -1017,7 +1035,7 @@ async def set_contribution_research_topic(
     request: ContributionResearchTopicRequest,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> dict[str, Any]:
     """Assign or create the curated topic used to classify a contribution."""
     try:
         return await git_service.set_contribution_research_topic(
@@ -1042,7 +1060,7 @@ async def dismiss_duplicate_upload(
     upload_id: int,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> dict[str, Any]:
     """Remove a redundant pending branch while retaining provenance and audit history."""
     try:
         return await git_service.dismiss_duplicate_upload(
