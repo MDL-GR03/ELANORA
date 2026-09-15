@@ -19,7 +19,7 @@ export const setupI18n = () => {
   return createI18n({
     legacy: false,
     locale: storedLanguage,
-    fallbackLanguage: 'en',
+    fallbackLocale: 'en',
     messages,
   });
 };
