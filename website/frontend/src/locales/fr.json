@@ -1191,6 +1191,31 @@
   },
 
   "contributionWorkspace": {
+    "modes": {
+      "default": {
+        "title": "Espace de travail de la contribution"
+      },
+      "details": {
+        "title": "Détails de la contribution",
+        "description": "Examinez les fichiers, les résultats de validation et les modifications d'annotations ELAN."
+      },
+      "correction": {
+        "title": "Demander des corrections",
+        "description": "Sélectionnez les fichiers concernés et consignez chaque modification demandée."
+      },
+      "resolution": {
+        "title": "Résoudre les conflits de la contribution",
+        "description": "Comparez les versions en conflit et consignez une résolution sûre."
+      }
+    },
+    "messages": {
+      "correctionSent": "Demande de correction envoyée.",
+      "conflictsResolved": "Conflits de la contribution résolus.",
+      "noLongerPending": "La contribution n° {id} n'est plus en attente de revue ; son espace de travail a été fermé."
+    },
+    "queue": {
+      "noMatches": "Aucune contribution active ne correspond à ce filtre."
+    },
     "decline": {
       "eyebrow": "Contribution n° {id}",
       "title": "Refuser la contribution",

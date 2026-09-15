@@ -14,6 +14,9 @@ export function useContributionQueueData({
 }) {
   const pendingUploads = ref([]);
   const uploadsLoading = ref(false);
+  // True once the current project's contributions have actually been read,
+  // so an empty list can be told apart from one that has not loaded yet.
+  const uploadsLoaded = ref(false);
   const error = ref('');
   const activeReviewCount = ref(0);
   const reviewCases = ref([]);
@@ -25,6 +28,7 @@ export function useContributionQueueData({
   async function fetchPendingUploads(showLoading = true) {
     if (!currentProjectName.value) {
       pendingUploads.value = [];
+      uploadsLoaded.value = false;
       return;
     }
     if (fetchInFlight) return;
@@ -42,6 +46,7 @@ export function useContributionQueueData({
         requestedProject === currentProjectName.value
       ) {
         pendingUploads.value = response.pending_uploads || [];
+        uploadsLoaded.value = true;
         topicSuggestionNames.value = Object.fromEntries(
           pendingUploads.value
             .filter((upload) => upload.research_context?.proposed_topic_name)
@@ -59,6 +64,7 @@ export function useContributionQueueData({
       ) {
         error.value = translate('pendingUploads.errors.loadFailed');
         pendingUploads.value = [];
+        uploadsLoaded.value = false;
       }
     } finally {
       fetchInFlight = false;
@@ -105,12 +111,14 @@ export function useContributionQueueData({
 
   function clear() {
     pendingUploads.value = [];
+    uploadsLoaded.value = false;
     error.value = '';
   }
 
   return {
     pendingUploads,
     uploadsLoading,
+    uploadsLoaded,
     error,
     activeReviewCount,
     reviewCases,

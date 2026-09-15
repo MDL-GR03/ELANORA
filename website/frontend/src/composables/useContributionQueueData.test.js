@@ -99,4 +99,28 @@ describe('useContributionQueueData', () => {
     expect(queue.reviewCases.value).toEqual([]);
     expect(queue.researchTopics.value).toEqual([]);
   });
+
+  it('reports loaded only after the current project has actually been read', async () => {
+    const { queue } = setup();
+    expect(queue.uploadsLoaded.value).toBe(false);
+
+    await queue.fetchPendingUploads();
+    expect(queue.uploadsLoaded.value).toBe(true);
+
+    queue.clear();
+    expect(queue.uploadsLoaded.value).toBe(false);
+  });
+
+  it('does not report a failed load as an empty, loaded queue', async () => {
+    const { queue, gitClient } = setup();
+    await queue.fetchPendingUploads();
+    gitClient.getPendingUploadsWithStatus.mockRejectedValueOnce(
+      new Error('offline')
+    );
+
+    await queue.fetchPendingUploads();
+
+    expect(queue.pendingUploads.value).toEqual([]);
+    expect(queue.uploadsLoaded.value).toBe(false);
+  });
 });

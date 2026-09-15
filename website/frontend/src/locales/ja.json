@@ -1299,6 +1299,31 @@
     }
   },
   "contributionWorkspace": {
+    "modes": {
+      "default": {
+        "title": "貢献の作業スペース"
+      },
+      "details": {
+        "title": "貢献の詳細",
+        "description": "ファイル、検証結果、ELAN 注釈の変更を確認します。"
+      },
+      "correction": {
+        "title": "修正を依頼",
+        "description": "対象のファイルを選び、依頼する具体的な修正をそれぞれ記録します。"
+      },
+      "resolution": {
+        "title": "貢献の競合を解決",
+        "description": "競合するバージョンを比較し、安全な解決方法を記録します。"
+      }
+    },
+    "messages": {
+      "correctionSent": "修正依頼を送信しました。",
+      "conflictsResolved": "貢献の競合を解決しました。",
+      "noLongerPending": "貢献 #{id} はレビュー待ちではなくなったため、作業スペースを閉じました。"
+    },
+    "queue": {
+      "noMatches": "このフィルターに一致する有効な貢献はありません。"
+    },
     "decline": {
       "eyebrow": "貢献 #{id}",
       "title": "貢献を却下",

@@ -178,7 +178,7 @@
             v-if="!filteredContributionThreads.length"
             class="queue-empty-filter"
           >
-            No active contributions match this filter.
+            {{ t('contributionWorkspace.queue.noMatches') }}
           </div>
         </div>
       </div>
@@ -243,6 +243,7 @@ import { useRoute, useRouter } from 'vue-router';
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import { useContributionMutations } from '@/composables/useContributionMutations';
 import { useContributionQueueData } from '@/composables/useContributionQueueData';
+import { useContributionWorkspace } from '@/composables/useContributionWorkspace';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { hasProjectPermission } from '@/utils/authorization';
 import {
@@ -261,7 +262,6 @@ const eventMessages = useEventMessageStore();
 const topicDecisions = ref({});
 const expandedTopicDecision = ref(null);
 
-const selectedUpload = ref(null);
 // Kept apart from selectedUpload, which follows the workspace in the URL.
 const declineTarget = ref(null);
 
@@ -284,6 +284,7 @@ const currentProjectName = computed(() => {
 const {
   pendingUploads,
   uploadsLoading,
+  uploadsLoaded,
   error,
   activeReviewCount,
   reviewCases,
@@ -327,43 +328,35 @@ const researchTopicOptions = computed(() =>
     label: topic.name,
   }))
 );
-const activeView = computed(() => {
-  if (route.query.view === 'reviews') return 'reviews';
-  if (route.query.view === 'history' && canAdminister.value) return 'history';
-  return 'queue';
-});
-const highlightedCaseId = computed(() => String(route.query.case || ''));
-const resubmissionUploadId = computed(() =>
-  route.query.resubmission ? Number(route.query.resubmission) : null
-);
-const workspaceMode = computed(() => {
-  const mode = String(route.query.workspace || '');
-  return ['details', 'correction', 'resolution'].includes(mode) ? mode : '';
-});
-const workspaceTitle = computed(
-  () =>
-    ({
-      details: 'Contribution details',
-      correction: 'Request corrections',
-      resolution: 'Resolve contribution conflicts',
-    })[workspaceMode.value] || 'Contribution workspace'
-);
-const workspaceDescription = computed(
-  () =>
-    ({
-      details:
-        'Inspect files, validation results, and ELAN annotation changes.',
-      correction:
-        'Select affected files and record each concrete requested edit.',
-      resolution: 'Compare conflicting versions and record a safe resolution.',
-    })[workspaceMode.value] || ''
-);
 const canAdminister = computed(() =>
   hasProjectPermission(userStore.user, currentProject.value, 'admin')
 );
 const canContribute = computed(() =>
   hasProjectPermission(userStore.user, currentProject.value, 'write')
 );
+const {
+  activeView,
+  highlightedCaseId,
+  resubmissionUploadId,
+  workspaceMode,
+  selectedUpload,
+  workspaceTitle,
+  workspaceDescription,
+  setActiveView,
+  openWorkspace,
+  closeWorkspace,
+  openLinkedReview,
+  showReviewCase,
+} = useContributionWorkspace({
+  route,
+  router,
+  pendingUploads,
+  uploadsLoaded,
+  canAdminister,
+  translate: t,
+  notify: (key, type, params) =>
+    eventMessages.addMessage(key, type, undefined, params),
+});
 const selectedUploadFilenames = computed(() => {
   const files = selectedUpload.value?.files;
   if (!files) return [];
@@ -373,15 +366,6 @@ const selectedUploadFilenames = computed(() => {
     ...(files.deleted || []),
   ];
 });
-
-function setActiveView(view) {
-  const query = { ...route.query, view };
-  if (view !== 'reviews') {
-    delete query.case;
-    delete query.resubmission;
-  }
-  void router.replace({ query });
-}
 
 // Upload computed properties
 const contributionThreads = computed(() =>
@@ -478,18 +462,6 @@ watch(
   { immediate: true }
 );
 
-watch(
-  () => [route.query.workspace, route.query.upload, pendingUploads.value],
-  ([mode, uploadId]) => {
-    if (!mode || !uploadId) return;
-    selectedUpload.value =
-      pendingUploads.value.find(
-        (upload) => upload.upload_id === Number(uploadId)
-      ) || null;
-  },
-  { immediate: true }
-);
-
 onMounted(async () => {
   // Set up auto-refresh every 30 seconds
   refreshInterval = setInterval(() => {
@@ -522,19 +494,6 @@ async function onReviewCountChange(count) {
   await Promise.all([fetchReviewCount(), fetchPendingUploads(false)]);
 }
 
-function openLinkedReview(reviewCase) {
-  void router.replace({
-    query: {
-      ...route.query,
-      view: 'reviews',
-      case: reviewCase.case_id,
-      ...(reviewCase.resubmitted_upload_id
-        ? { resubmission: reviewCase.resubmitted_upload_id }
-        : {}),
-    },
-  });
-}
-
 function openDeclineModal(upload) {
   declineTarget.value = upload;
 }
@@ -550,58 +509,33 @@ async function declineUpload(reason) {
   }
 }
 
-function openWorkspace(mode, upload) {
-  selectedUpload.value = upload;
-  void router.replace({
-    query: {
-      ...route.query,
-      view: 'queue',
-      workspace: mode,
-      upload: upload.upload_id,
-    },
-  });
-}
-
 function resolveUpload(upload) {
-  openWorkspace('resolution', upload);
+  void openWorkspace('resolution', upload);
 }
 
 function viewUploadDetails(upload) {
-  openWorkspace('details', upload);
+  void openWorkspace('details', upload);
 }
 
 function requestCorrection(upload) {
-  openWorkspace('correction', upload);
-}
-
-function closeWorkspace() {
-  selectedUpload.value = null;
-  const query = { ...route.query };
-  delete query.workspace;
-  delete query.upload;
-  void router.replace({ query });
+  void openWorkspace('correction', upload);
 }
 
 async function onCorrectionCreated(created) {
-  selectedUpload.value = null;
-  eventMessages.addMessage('Correction request sent.', 'success');
+  eventMessages.addMessage(
+    'contributionWorkspace.messages.correctionSent',
+    'success'
+  );
   await fetchReviewCount();
-  const query = {
-    ...route.query,
-    view: 'reviews',
-    case: created.case_id,
-  };
-  delete query.workspace;
-  delete query.upload;
-  await router.replace({
-    query,
-  });
+  await showReviewCase(created.case_id);
 }
 
 async function onUploadResolved() {
-  closeWorkspace();
-  eventMessages.addMessage('Contribution conflicts resolved.', 'success');
-  // Refresh the list to show updated status
+  await closeWorkspace();
+  eventMessages.addMessage(
+    'contributionWorkspace.messages.conflictsResolved',
+    'success'
+  );
   await fetchPendingUploads();
 }
 

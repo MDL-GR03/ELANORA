@@ -1201,6 +1201,31 @@
   },
 
   "contributionWorkspace": {
+    "modes": {
+      "default": {
+        "title": "Contribution workspace"
+      },
+      "details": {
+        "title": "Contribution details",
+        "description": "Inspect files, validation results, and ELAN annotation changes."
+      },
+      "correction": {
+        "title": "Request corrections",
+        "description": "Select affected files and record each concrete requested edit."
+      },
+      "resolution": {
+        "title": "Resolve contribution conflicts",
+        "description": "Compare conflicting versions and record a safe resolution."
+      }
+    },
+    "messages": {
+      "correctionSent": "Correction request sent.",
+      "conflictsResolved": "Contribution conflicts resolved.",
+      "noLongerPending": "Contribution #{id} is no longer awaiting review, so its workspace was closed."
+    },
+    "queue": {
+      "noMatches": "No active contributions match this filter."
+    },
     "decline": {
       "eyebrow": "Contribution #{id}",
       "title": "Decline contribution",
