@@ -59,6 +59,16 @@ class Settings(BaseSettings):
     asset_s3_endpoint_url: str | None = None
     asset_s3_access_key_id: SecretStr | None = None
     asset_s3_secret_access_key: SecretStr | None = None
+    # Nightly encrypted backups, kept where this installation cannot reach them.
+    backup_storage_backend: AssetStorageBackend = "local"
+    backup_local_root: Path = Path("elanora_backups")
+    backup_s3_bucket: str | None = None
+    backup_s3_prefix: str = "elanora"
+    backup_s3_region: str | None = None
+    backup_s3_endpoint_url: str | None = None
+    backup_s3_access_key_id: SecretStr | None = None
+    backup_s3_secret_access_key: SecretStr | None = None
+    backup_retain_copies: int = Field(default=14, ge=1, le=3650)
     sync_staging_base_path: Path = Path(".elanora_sync_staging")
     elan_max_file_size_mb: int = Field(default=50, ge=1, le=2048)
     elan_max_batch_size_mb: int = Field(default=500, ge=1, le=8192)
@@ -103,6 +113,13 @@ class Settings(BaseSettings):
             )
         if self.asset_storage_backend == "s3" and not self.asset_s3_bucket:
             raise ValueError("ASSET_S3_BUCKET is required for S3 asset storage")
+        if self.backup_storage_backend == "s3" and not self.backup_s3_bucket:
+            raise ValueError("BACKUP_S3_BUCKET is required for S3 backup storage")
+        if bool(self.backup_s3_access_key_id) != bool(self.backup_s3_secret_access_key):
+            raise ValueError(
+                "BACKUP_S3_ACCESS_KEY_ID and BACKUP_S3_SECRET_ACCESS_KEY "
+                "must be set together"
+            )
         if bool(self.asset_s3_access_key_id) != bool(self.asset_s3_secret_access_key):
             raise ValueError(
                 "ASSET_S3_ACCESS_KEY_ID and ASSET_S3_SECRET_ACCESS_KEY must be set together"

@@ -20,6 +20,7 @@ elanora-check-integrity = "app.cli.check_integrity:main"
 elanora-disaster-recovery = "app.cli.disaster_recovery:main"
 elanora-copy-naming-standards = "app.cli.copy_naming_standards:main"
 elanora-purge-expired-projects = "app.cli.purge_expired_projects:main"
+elanora-backup = "app.cli.backup:main"
 
 [tool.poetry]
 packages = [

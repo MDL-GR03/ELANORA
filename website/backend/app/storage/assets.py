@@ -13,6 +13,7 @@ class AssetStorage(Protocol):
     def put(self, key: str, content: bytes) -> None: ...
     def read(self, key: str) -> bytes: ...
     def delete(self, key: str) -> None: ...
+    def list_keys(self, prefix: str) -> list[str]: ...
 
 
 class LocalAssetStorage:
@@ -36,6 +37,16 @@ class LocalAssetStorage:
         if self.root not in target.parents:
             raise ValueError("Asset key escapes storage root")
         return target.read_bytes()
+
+    def list_keys(self, prefix: str) -> list[str]:
+        scope = (self.root / prefix).resolve()
+        if scope != self.root and self.root not in scope.parents:
+            raise ValueError("Asset key escapes storage root")
+        return sorted(
+            str(path.relative_to(self.root))
+            for path in self.root.rglob("*")
+            if path.is_file() and str(path.relative_to(self.root)).startswith(prefix)
+        )
 
     def delete(self, key: str) -> None:
         target = (self.root / key).resolve()
@@ -106,6 +117,17 @@ class S3AssetStorage:
     def delete(self, key: str) -> None:
         self.client.delete_object(Bucket=self.bucket, Key=self._object_key(key))
 
+    def list_keys(self, prefix: str) -> list[str]:
+        """Keys under a prefix, without the store-wide prefix, in one listing."""
+        scope = f"{self.prefix}/{prefix}" if self.prefix else prefix
+        paginator = self.client.get_paginator("list_objects_v2")
+        keys: list[str] = []
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=scope):
+            for item in page.get("Contents", []):
+                key = str(item["Key"])
+                keys.append(key[len(self.prefix) + 1 :] if self.prefix else key)
+        return sorted(keys)
+
 
 def get_asset_storage() -> AssetStorage:
     """Resolve the configured asset backend behind a stable domain boundary."""
@@ -128,3 +150,26 @@ def get_asset_storage() -> AssetStorage:
             ),
         )
     return LocalAssetStorage(settings.instance_assets_base_path)
+
+
+def get_backup_storage() -> AssetStorage:
+    """Resolve where nightly backups are written, off this host in production."""
+    settings = get_settings()
+    if settings.backup_storage_backend == "s3":
+        return S3AssetStorage(
+            settings.backup_s3_bucket or "",
+            prefix=settings.backup_s3_prefix,
+            region=settings.backup_s3_region,
+            endpoint_url=settings.backup_s3_endpoint_url,
+            access_key_id=(
+                settings.backup_s3_access_key_id.get_secret_value()
+                if settings.backup_s3_access_key_id
+                else None
+            ),
+            secret_access_key=(
+                settings.backup_s3_secret_access_key.get_secret_value()
+                if settings.backup_s3_secret_access_key
+                else None
+            ),
+        )
+    return LocalAssetStorage(Path(settings.backup_local_root))

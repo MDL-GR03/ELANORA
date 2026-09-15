@@ -15,6 +15,46 @@ to institution-controlled off-host storage with version retention and access
 logging. ELANORA stores linked audiovisual media as references, not managed
 objects; the institution must back up those source recordings separately.
 
+## Nightly off-host backups
+
+The institution accepts losing at most 24 hours of work and restoring within one
+day. `elanora-backup` meets that with one scheduled command:
+
+```sh
+ELANORA_BACKUP_PASSPHRASE=... poetry run elanora-backup create   # take and prune
+poetry run elanora-backup list                                   # oldest first
+ELANORA_BACKUP_PASSPHRASE=... poetry run elanora-backup verify   # check the newest
+```
+
+`create` dumps the database with `pg_dump`, bundles it with project storage and
+instance assets, encrypts it, writes it to the configured backup store under
+`backups/elanora-<UTC moment>.elanora`, and removes copies beyond
+`BACKUP_RETAIN_COPIES` (14 by default). Nothing is stored unless the dump, the
+bundle and its own verification all succeed, and a second run in the same second
+is refused rather than overwriting a good copy.
+
+Configure where backups go, which must not be storage this installation can
+reach on its own:
+
+| Setting | Meaning |
+| --- | --- |
+| `BACKUP_STORAGE_BACKEND` | `local` or `s3`. |
+| `BACKUP_LOCAL_ROOT` | Directory for `local`, on a mounted off-host volume. |
+| `BACKUP_S3_BUCKET`, `BACKUP_S3_PREFIX`, `BACKUP_S3_REGION`, `BACKUP_S3_ENDPOINT_URL` | Object store for `s3`; any S3-compatible service works. |
+| `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | Credentials, set together. |
+| `BACKUP_RETAIN_COPIES` | How many copies to keep. |
+
+Schedule the backup nightly and the verification weekly, for example with a
+systemd timer or cron:
+
+```cron
+15 2 * * *  cd /srv/elanora/website/backend && ELANORA_BACKUP_PASSPHRASE=... poetry run elanora-backup create
+45 3 * * 0  cd /srv/elanora/website/backend && ELANORA_BACKUP_PASSPHRASE=... poetry run elanora-backup verify
+```
+
+Verification proves a copy is readable and matches its manifest. It does not
+replace the restore drill below, which is what measures the recovery time.
+
 ## Create a consistent bundle
 
 Choose an institutional RPO and schedule this procedure accordingly. The current
