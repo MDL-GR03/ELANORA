@@ -7,16 +7,22 @@
     <header>
       <div>
         <span class="eyebrow">{{
-          composerOnly ? 'New request' : 'Research review'
+          composerOnly
+            ? t('reviewCases.panel.newRequestEyebrow')
+            : t('reviewCases.panel.researchEyebrow')
         }}</span>
         <h4 id="review-cases-title">
-          {{ composerOnly ? 'Request a correction' : 'Correction requests' }}
+          {{
+            composerOnly
+              ? t('reviewCases.panel.requestTitle')
+              : t('reviewCases.panel.listTitle')
+          }}
         </h4>
         <p class="panel-description">
           {{
             composerOnly
-              ? 'Describe what the researcher must correct before this contribution can be merged into the project.'
-              : 'Track questions raised during review, requested changes, corrected uploads, and final decisions.'
+              ? t('reviewCases.panel.requestDescription')
+              : t('reviewCases.panel.listDescription')
           }}
         </p>
       </div>
@@ -27,7 +33,7 @@
         @click="showComposer = !showComposer"
       >
         <font-awesome-icon icon="fa-solid fa-plus" />
-        Open review case
+        {{ t('reviewCases.panel.openCase') }}
       </button>
     </header>
 
@@ -37,26 +43,26 @@
       @submit.prevent="createCase"
     >
       <label>
-        <span>Short title</span>
+        <span>{{ t('reviewCases.composer.shortTitle') }}</span>
         <input v-model.trim="draft.title" required maxlength="200" />
       </label>
       <fieldset v-if="filenames.length" class="file-task-builder">
-        <legend>Select files and describe each requested change</legend>
+        <legend>{{ t('reviewCases.composer.selectFiles') }}</legend>
         <div class="builder-introduction">
-          <p class="builder-help">
-            Select only files that need another revision. Add as many precise
-            changes as needed inside each selected file.
-          </p>
-          <strong
-            >{{ selectedFileCount }} of {{ taskDrafts.length }} selected</strong
-          >
+          <p class="builder-help">{{ t('reviewCases.composer.help') }}</p>
+          <strong>{{
+            t('reviewCases.composer.selectedCount', {
+              selected: selectedFileCount,
+              total: taskDrafts.length,
+            })
+          }}</strong>
         </div>
         <label v-if="taskDrafts.length > 8" class="file-builder-search">
-          <span>Find a file</span>
+          <span>{{ t('reviewCases.composer.findFile') }}</span>
           <input
             v-model.trim="fileQuery"
             type="search"
-            placeholder="Search by project-relative filename"
+            :placeholder="t('reviewCases.composer.findFilePlaceholder')"
           />
         </label>
         <article
@@ -78,8 +84,11 @@
               <strong>{{ task.filename }}</strong>
               <small>{{
                 task.selected
-                  ? `${task.changes.length} requested change${task.changes.length === 1 ? '' : 's'}`
-                  : 'No correction requested'
+                  ? t(
+                      'reviewCases.composer.requestedChanges',
+                      task.changes.length
+                    )
+                  : t('reviewCases.composer.noCorrection')
               }}</small>
             </span>
           </label>
@@ -89,7 +98,7 @@
             class="edit-file-changes"
             @click="activeFilename = task.filename"
           >
-            Edit requested changes
+            {{ t('reviewCases.composer.editChanges') }}
           </button>
           <div
             v-if="task.selected && activeFilename === task.filename"
@@ -101,38 +110,64 @@
               class="change-request-draft"
             >
               <header>
-                <strong>Requested change {{ changeIndex + 1 }}</strong>
+                <strong>{{
+                  t('reviewCases.composer.changeNumber', {
+                    number: changeIndex + 1,
+                  })
+                }}</strong>
                 <button
                   v-if="task.changes.length > 1"
                   type="button"
                   class="remove-change"
-                  :aria-label="`Remove requested change ${changeIndex + 1} for ${task.filename}`"
+                  :aria-label="
+                    t('reviewCases.composer.removeChangeFor', {
+                      number: changeIndex + 1,
+                      filename: task.filename,
+                    })
+                  "
                   @click="removeTaskChange(task, change.id)"
                 >
                   <font-awesome-icon icon="fa-solid fa-trash" />
-                  Remove
+                  {{ t('reviewCases.composer.remove') }}
                 </button>
               </header>
               <label>
-                <span>What must be corrected?</span>
+                <span>{{ t('reviewCases.composer.whatToCorrect') }}</span>
                 <textarea
                   v-model.trim="change.instruction"
                   required
                   maxlength="10000"
-                  placeholder="Give the researcher one concrete, verifiable instruction"
+                  :placeholder="
+                    t('reviewCases.composer.instructionPlaceholder')
+                  "
                 ></textarea>
               </label>
               <div class="change-target-grid">
                 <label>
-                  <span>Tier <small>Optional</small></span>
+                  <span
+                    >{{ t('reviewCases.composer.tier') }}
+                    <small>{{
+                      t('reviewCases.composer.optional')
+                    }}</small></span
+                  >
                   <input v-model.trim="change.tier_id" maxlength="255" />
                 </label>
                 <label>
-                  <span>Annotation ID <small>Optional</small></span>
+                  <span
+                    >{{ t('reviewCases.composer.annotationId') }}
+                    <small>{{
+                      t('reviewCases.composer.optional')
+                    }}</small></span
+                  >
                   <input v-model.trim="change.annotation_id" maxlength="255" />
                 </label>
                 <label>
-                  <span>Start time (ms) <small>Optional</small></span>
+                  <span
+                    >{{ t('reviewCases.composer.startMs') }}
+                    <small>{{
+                      t('reviewCases.composer.optional')
+                    }}</small></span
+                  >
                   <input
                     v-model.number="change.start_ms"
                     type="number"
@@ -140,13 +175,23 @@
                   />
                 </label>
                 <label>
-                  <span>End time (ms) <small>Optional</small></span>
+                  <span
+                    >{{ t('reviewCases.composer.endMs') }}
+                    <small>{{
+                      t('reviewCases.composer.optional')
+                    }}</small></span
+                  >
                   <input v-model.number="change.end_ms" type="number" min="0" />
                 </label>
               </div>
               <div class="text-suggestion">
                 <label>
-                  <span>Current text <small>Optional</small></span>
+                  <span
+                    >{{ t('reviewCases.composer.currentText') }}
+                    <small>{{
+                      t('reviewCases.composer.optional')
+                    }}</small></span
+                  >
                   <textarea
                     v-model.trim="change.current_text"
                     maxlength="10000"
@@ -154,7 +199,12 @@
                 </label>
                 <span class="suggestion-arrow" aria-hidden="true">→</span>
                 <label>
-                  <span>Suggested replacement <small>Optional</small></span>
+                  <span
+                    >{{ t('reviewCases.composer.suggestedReplacement') }}
+                    <small>{{
+                      t('reviewCases.composer.optional')
+                    }}</small></span
+                  >
                   <textarea
                     v-model.trim="change.suggested_text"
                     maxlength="10000"
@@ -168,7 +218,7 @@
               @click="addTaskChange(task)"
             >
               <font-awesome-icon icon="fa-solid fa-plus" />
-              Add another change for this file
+              {{ t('reviewCases.composer.addChange') }}
             </button>
           </div>
         </article>
@@ -178,43 +228,48 @@
             :disabled="filePage === 1"
             @click="filePage -= 1"
           >
-            Previous
+            {{ t('reviewCases.pagination.previous') }}
           </button>
-          <span>Page {{ filePage }} of {{ filePageCount }}</span>
+          <span>{{
+            t('reviewCases.pagination.pageOf', {
+              page: filePage,
+              count: filePageCount,
+            })
+          }}</span>
           <button
             type="button"
             :disabled="filePage === filePageCount"
             @click="filePage += 1"
           >
-            Next
+            {{ t('reviewCases.pagination.next') }}
           </button>
         </div>
       </fieldset>
       <div v-if="!requestChangesOnCreate" class="target-fields">
         <label>
-          <span>Tier (optional)</span>
+          <span>{{ t('reviewCases.composer.tierOptional') }}</span>
           <input v-model.trim="draft.tier_id" maxlength="255" />
         </label>
         <label>
-          <span>Annotation ID (optional)</span>
+          <span>{{ t('reviewCases.composer.annotationOptional') }}</span>
           <input v-model.trim="draft.annotation_id" maxlength="255" />
         </label>
       </div>
       <div v-if="!requestChangesOnCreate" class="target-fields">
         <label>
-          <span>Start time in ms (optional)</span>
+          <span>{{ t('reviewCases.composer.startOptional') }}</span>
           <input v-model.number="draft.start_ms" type="number" min="0" />
         </label>
         <label>
-          <span>End time in ms (optional)</span>
+          <span>{{ t('reviewCases.composer.endOptional') }}</span>
           <input v-model.number="draft.end_ms" type="number" min="0" />
         </label>
       </div>
       <label v-if="!requestChangesOnCreate">
         <span>{{
           requestChangesOnCreate
-            ? 'Explain what must be corrected'
-            : 'Explain what should be checked'
+            ? t('reviewCases.composer.explainCorrection')
+            : t('reviewCases.composer.explainCheck')
         }}</span>
         <textarea
           v-model.trim="draft.initial_comment"
@@ -224,7 +279,7 @@
       </label>
       <div v-if="!requestChangesOnCreate" class="text-suggestion">
         <label>
-          <span>Current text (optional)</span>
+          <span>{{ t('reviewCases.composer.currentOptional') }}</span>
           <textarea
             v-model.trim="draft.current_text"
             maxlength="10000"
@@ -232,7 +287,7 @@
         </label>
         <span class="suggestion-arrow" aria-hidden="true">→</span>
         <label>
-          <span>Suggested replacement (optional)</span>
+          <span>{{ t('reviewCases.composer.suggestedOptional') }}</span>
           <textarea
             v-model.trim="draft.suggested_text"
             maxlength="10000"
@@ -246,10 +301,14 @@
           :disabled="busy || (requestChangesOnCreate && !hasSelectedTasks)"
         >
           {{
-            requestChangesOnCreate ? 'Send correction request' : 'Open question'
+            requestChangesOnCreate
+              ? t('reviewCases.composer.send')
+              : t('reviewCases.composer.openQuestion')
           }}
         </button>
-        <button type="button" @click="cancelComposer">Cancel</button>
+        <button type="button" @click="cancelComposer">
+          {{ t('reviewCases.composer.cancel') }}
+        </button>
       </div>
     </form>
 
@@ -269,7 +328,7 @@
       />
       <div v-if="!loading && !error && activeCases.length" class="case-list">
         <div v-if="!visibleActiveCases.length" class="panel-state">
-          No correction requests match these filters.
+          {{ t('reviewCases.card.noMatches') }}
         </div>
         <article
           v-for="item in visibleActiveCases"
@@ -286,7 +345,7 @@
                 </span>
                 <span v-if="item.unread" class="activity-badge">
                   <font-awesome-icon icon="fa-solid fa-circle" />
-                  Unread activity
+                  {{ t('reviewCases.card.unread') }}
                 </span>
               </div>
               <h5>{{ item.title }}</h5>
@@ -299,14 +358,20 @@
               </p>
               <div class="contribution-lineage">
                 <span>
-                  <small>Originally reviewed</small>
-                  Contribution #{{ item.upload_id }}
+                  <small>{{ t('reviewCases.card.originallyReviewed') }}</small>
+                  {{
+                    t('reviewCases.card.contribution', { id: item.upload_id })
+                  }}
                 </span>
                 <template v-if="item.resubmitted_upload_id">
                   <font-awesome-icon icon="fa-solid fa-arrow-right" />
                   <span class="current-contribution">
-                    <small>Corrected version to review</small>
-                    Contribution #{{ item.resubmitted_upload_id }}
+                    <small>{{ t('reviewCases.card.correctedToReview') }}</small>
+                    {{
+                      t('reviewCases.card.contribution', {
+                        id: item.resubmitted_upload_id,
+                      })
+                    }}
                   </span>
                 </template>
               </div>
@@ -316,14 +381,16 @@
               class="reviewer-field"
               :for="`review-lead-${item.case_id}`"
             >
-              <span>Review lead</span>
+              <span>{{ t('reviewCases.card.reviewLead') }}</span>
               <AppSelect
                 :id="`review-lead-${item.case_id}`"
                 :model-value="item.assigned_to || ''"
-                :aria-label="`Choose the reviewer responsible for ${item.title}`"
-                title="The review lead follows the discussion, checks corrected uploads, and makes sure a final decision is recorded."
+                :aria-label="
+                  t('reviewCases.card.chooseLead', { title: item.title })
+                "
+                :title="t('reviewCases.card.leadHelp')"
                 :disabled="busy || membersLoading"
-                placeholder="Select a review lead"
+                :placeholder="t('reviewCases.card.selectLead')"
                 :options="reviewLeadOptions"
                 @change="assign(item, $event)"
               />
@@ -333,14 +400,14 @@
           <div
             v-if="item.current_text || item.suggested_text"
             class="suggestion-diff"
-            aria-label="Requested text replacement"
+            :aria-label="t('reviewCases.card.replacement')"
           >
             <div v-if="item.current_text" class="diff-before">
-              <span>Current</span>
+              <span>{{ t('reviewCases.card.current') }}</span>
               <p>{{ item.current_text }}</p>
             </div>
             <div v-if="item.suggested_text" class="diff-after">
-              <span>Suggested</span>
+              <span>{{ t('reviewCases.card.suggested') }}</span>
               <p>{{ item.suggested_text }}</p>
             </div>
           </div>
@@ -348,26 +415,31 @@
           <section v-if="item.tasks?.length" class="file-task-list">
             <div class="file-task-heading">
               <div>
-                <span>Required work</span>
+                <span>{{ t('reviewCases.tasks.requiredWork') }}</span>
                 <h6>
                   {{
                     isFinished(item.state)
-                      ? 'Files included in this review'
+                      ? t('reviewCases.tasks.filesIncluded')
                       : item.state === 'resubmitted'
-                        ? 'Requested edits to review'
-                        : 'Files marked for correction'
+                        ? t('reviewCases.tasks.editsToReview')
+                        : t('reviewCases.tasks.filesMarked')
                   }}
                 </h6>
               </div>
               <strong>
                 {{
                   isFinished(item.state)
-                    ? 'Review closed'
+                    ? t('reviewCases.tasks.reviewClosed')
                     : item.state === 'resubmitted'
                       ? canManage
-                        ? unresolvedTaskCount(item) + ' decision remaining'
-                        : 'Awaiting reviewer decision'
-                      : unresolvedTaskCount(item) + ' remaining'
+                        ? t(
+                            'reviewCases.tasks.decisionsRemaining',
+                            unresolvedTaskCount(item)
+                          )
+                        : t('reviewCases.tasks.awaitingDecision')
+                      : t('reviewCases.tasks.remaining', {
+                          count: unresolvedTaskCount(item),
+                        })
                 }}
               </strong>
             </div>
@@ -375,14 +447,14 @@
               <input
                 v-model.trim="taskQuery"
                 type="search"
-                placeholder="Filter by filename, tier, annotation, or instruction"
-                aria-label="Filter correction files"
+                :placeholder="t('reviewCases.tasks.filterPlaceholder')"
+                :aria-label="t('reviewCases.tasks.filterFiles')"
               />
               <AppSelect
                 id="correction-task-status-filter"
                 v-model="taskStatus"
                 size="small"
-                aria-label="Filter by task status"
+                :aria-label="t('reviewCases.tasks.filterStatus')"
                 :options="taskStatusOptions"
               />
             </div>
@@ -416,17 +488,23 @@
                   task.end_ms != null
                 "
                 class="task-targets"
-                aria-label="Requested change location"
+                :aria-label="t('reviewCases.tasks.location')"
               >
-                <span v-if="task.tier_id">Tier: {{ task.tier_id }}</span>
-                <span v-if="task.annotation_id"
-                  >Annotation: {{ task.annotation_id }}</span
-                >
+                <span v-if="task.tier_id">{{
+                  t('reviewCases.tasks.tierOf', { tier: task.tier_id })
+                }}</span>
+                <span v-if="task.annotation_id">{{
+                  t('reviewCases.tasks.annotationOf', {
+                    id: task.annotation_id,
+                  })
+                }}</span>
                 <span v-if="task.start_ms != null || task.end_ms != null">
-                  Time: {{ task.start_ms ?? 'start' }}–{{
-                    task.end_ms ?? 'end'
+                  {{
+                    t('reviewCases.tasks.timeOf', {
+                      start: task.start_ms ?? t('reviewCases.tasks.start'),
+                      end: task.end_ms ?? t('reviewCases.tasks.end'),
+                    })
                   }}
-                  ms
                 </span>
               </div>
               <div
@@ -434,7 +512,7 @@
                 class="task-text-suggestion"
               >
                 <div v-if="task.current_text">
-                  <span>Current text</span>
+                  <span>{{ t('reviewCases.tasks.currentText') }}</span>
                   <p>{{ task.current_text }}</p>
                 </div>
                 <font-awesome-icon
@@ -442,7 +520,7 @@
                   icon="fa-solid fa-arrow-right"
                 />
                 <div v-if="task.suggested_text">
-                  <span>Suggested replacement</span>
+                  <span>{{ t('reviewCases.tasks.suggestedReplacement') }}</span>
                   <p>{{ task.suggested_text }}</p>
                 </div>
               </div>
@@ -468,10 +546,10 @@
                 <span>
                   <strong>{{
                     activeDiff === task.task_id
-                      ? 'Close annotation comparison'
-                      : 'Review annotation changes'
+                      ? t('reviewCases.tasks.closeComparison')
+                      : t('reviewCases.tasks.reviewChanges')
                   }}</strong>
-                  <small>Compare accepted and submitted ELAN annotations</small>
+                  <small>{{ t('reviewCases.tasks.compareHelp') }}</small>
                 </span>
                 <font-awesome-icon
                   class="comparison-chevron"
@@ -489,7 +567,7 @@
                 :filename="task.filename"
                 :allow-open-review="canManage && item.state === 'resubmitted'"
                 :selected-annotation-ids="selectedAnnotationIds(item, task)"
-                review-action-label="Add to correction request"
+                :review-action-label="t('reviewCases.tasks.addToRequest')"
                 @open-review="selectRevisionTarget(item, task, $event)"
               />
               <div
@@ -499,8 +577,8 @@
                 <span>
                   {{
                     isTaskSelectedForRevision(item, task)
-                      ? 'Correction request drafted'
-                      : 'Decision for this file'
+                      ? t('reviewCases.tasks.requestDrafted')
+                      : t('reviewCases.tasks.decisionForFile')
                   }}
                 </span>
                 <div class="task-actions">
@@ -544,8 +622,8 @@
                     />
                     {{
                       isTaskSelectedForRevision(item, task)
-                        ? 'Cancel correction request'
-                        : 'Request another revision'
+                        ? t('reviewCases.tasks.cancelRequest')
+                        : t('reviewCases.tasks.requestAnother')
                     }}
                   </button>
                 </div>
@@ -556,8 +634,7 @@
                   "
                   class="task-decision-note"
                 >
-                  Approving this final correction closes the review. Merging the
-                  contribution remains a separate decision.
+                  {{ t('reviewCases.tasks.finalNote') }}
                 </small>
               </div>
             </article>
@@ -567,7 +644,7 @@
               class="load-more-tasks"
               @click="visibleTaskLimit += 20"
             >
-              Show 20 more requested edits
+              {{ t('reviewCases.tasks.showMore') }}
             </button>
           </section>
 
@@ -590,7 +667,7 @@
                   class="next-step-link"
                   @click="openReviewArchive"
                 >
-                  Open archived review
+                  {{ t('reviewCases.nextStep.openArchive') }}
                 </button>
               </div>
             </div>
@@ -605,10 +682,12 @@
               <section
                 v-if="revisionTargets[item.case_id]?.length"
                 class="revision-targets"
-                aria-label="Selected annotation corrections"
+                :aria-label="t('reviewCases.revision.selectedAnnotations')"
               >
                 <div class="revision-targets-heading">
-                  <strong>Selected corrections</strong>
+                  <strong>{{
+                    t('reviewCases.revision.selectedCorrections')
+                  }}</strong>
                   <span>{{ revisionTargets[item.case_id].length }}</span>
                 </div>
                 <article
@@ -619,11 +698,13 @@
                   <div class="revision-target-identity">
                     <div>
                       <strong>{{ target.annotation_id }}</strong>
-                      <span>{{ target.tier_id || 'Unknown tier' }}</span>
+                      <span>{{
+                        target.tier_id || t('reviewCases.revision.unknownTier')
+                      }}</span>
                     </div>
                     <button
                       type="button"
-                      aria-label="Remove annotation from correction request"
+                      :aria-label="t('reviewCases.revision.removeTarget')"
                       @click="removeRevisionTarget(item, target)"
                     >
                       <font-awesome-icon icon="fa-solid fa-xmark" />
@@ -633,11 +714,13 @@
                     {{ revisionTargetSummary(target) }}
                   </span>
                   <label>
-                    <span>Instruction for this annotation (optional)</span>
+                    <span>{{ t('reviewCases.revision.instruction') }}</span>
                     <input
                       v-model.trim="target.comment"
                       maxlength="1000"
-                      placeholder="Add a specific correction or suggested wording"
+                      :placeholder="
+                        t('reviewCases.revision.instructionPlaceholder')
+                      "
                     />
                   </label>
                 </article>
@@ -646,15 +729,15 @@
                 <span>
                   {{
                     revisionTargets[item.case_id]?.length
-                      ? 'Note for the whole revision (optional)'
-                      : 'Correction instructions'
+                      ? t('reviewCases.revision.wholeNote')
+                      : t('reviewCases.revision.instructions')
                   }}
                 </span>
                 <textarea
                   v-model.trim="replies[item.case_id]"
                   maxlength="10000"
                   :required="!revisionTargets[item.case_id]?.length"
-                  placeholder="Add guidance that applies to every selected correction"
+                  :placeholder="t('reviewCases.revision.notePlaceholder')"
                 ></textarea>
               </label>
             </div>
@@ -674,7 +757,7 @@
                 }"
               >
                 <font-awesome-icon icon="fa-solid fa-cloud-arrow-up" />
-                Upload corrected files
+                {{ t('reviewCases.actions.uploadCorrected') }}
               </router-link>
               <button
                 v-if="item.state === 'open'"
@@ -682,7 +765,7 @@
                 :disabled="busy || !item.assigned_to"
                 @click="transition(item, 'changes_requested')"
               >
-                Request first revision
+                {{ t('reviewCases.actions.requestFirst') }}
               </button>
               <button
                 v-if="
@@ -702,8 +785,10 @@
                 <font-awesome-icon icon="fa-solid fa-rotate-left" />
                 {{
                   revisionFeedbackCaseId === item.case_id
-                    ? `Send revision request (${revisionRequestCount(item)})`
-                    : 'Add feedback and continue'
+                    ? t('reviewCases.actions.sendRequest', {
+                        count: revisionRequestCount(item),
+                      })
+                    : t('reviewCases.actions.addFeedback')
                 }}
               </button>
               <button
@@ -717,7 +802,7 @@
                 @click="transition(item, 'resolved')"
               >
                 <font-awesome-icon icon="fa-solid fa-circle-check" />
-                Approve correction and close review
+                {{ t('reviewCases.actions.approveAndClose') }}
               </button>
               <button
                 v-if="item.state === 'open'"
@@ -726,7 +811,7 @@
                 :disabled="busy || !item.assigned_to"
                 @click="transition(item, 'resolved')"
               >
-                Close without changes
+                {{ t('reviewCases.actions.closeWithoutChanges') }}
               </button>
             </div>
             <button
@@ -737,7 +822,7 @@
               @click="transition(item, 'open')"
             >
               <font-awesome-icon icon="fa-solid fa-rotate-left" />
-              Reopen review
+              {{ t('reviewCases.actions.reopen') }}
             </button>
             <router-link
               v-else-if="
@@ -753,7 +838,7 @@
               }"
             >
               <font-awesome-icon icon="fa-solid fa-cloud-arrow-up" />
-              Upload corrected files
+              {{ t('reviewCases.actions.uploadCorrected') }}
             </router-link>
             <button
               v-else-if="
@@ -767,7 +852,7 @@
               :disabled="busy"
               @click="linkResubmission(item)"
             >
-              Link this corrected upload
+              {{ t('reviewCases.actions.linkUpload') }}
             </button>
           </div>
 
@@ -789,16 +874,20 @@
             class="reply"
             @submit.prevent="addComment(item)"
           >
-            <label :for="`reply-${item.case_id}`">Add to the discussion</label>
+            <label :for="`reply-${item.case_id}`">{{
+              t('reviewCases.discussion.add')
+            }}</label>
             <div>
               <input
                 :id="`reply-${item.case_id}`"
                 v-model.trim="replies[item.case_id]"
                 required
                 maxlength="10000"
-                placeholder="Write a clear, research-focused comment"
+                :placeholder="t('reviewCases.discussion.placeholder')"
               />
-              <button type="submit" :disabled="busy">Comment</button>
+              <button type="submit" :disabled="busy">
+                {{ t('reviewCases.discussion.comment') }}
+              </button>
             </div>
           </form>
         </article>
@@ -808,15 +897,20 @@
             :disabled="reviewPage === 1"
             @click="reviewPage -= 1"
           >
-            Previous
+            {{ t('reviewCases.pagination.previous') }}
           </button>
-          <span>Page {{ reviewPage }} of {{ reviewPageCount }}</span>
+          <span>{{
+            t('reviewCases.pagination.pageOf', {
+              page: reviewPage,
+              count: reviewPageCount,
+            })
+          }}</span>
           <button
             type="button"
             :disabled="reviewPage === reviewPageCount"
             @click="reviewPage += 1"
           >
-            Next
+            {{ t('reviewCases.pagination.next') }}
           </button>
         </div>
       </div>
@@ -832,8 +926,8 @@
           <font-awesome-icon icon="fa-solid fa-box-archive" />
         </span>
         <span class="closed-history-copy">
-          <strong>Archived review history</strong>
-          <small>Browse completed decisions and their discussions</small>
+          <strong>{{ t('reviewCases.archive.title') }}</strong>
+          <small>{{ t('reviewCases.archive.help') }}</small>
         </span>
         <span class="closed-history-count">{{ closedCases.length }}</span>
         <font-awesome-icon
@@ -864,6 +958,7 @@ import {
   ref,
   watch,
 } from 'vue';
+import { useI18n } from 'vue-i18n';
 import reviewService from '@/api/service/reviewService';
 import ConflictMergeView from '@/components/common/ConflictMergeView.vue';
 import ArchivedReviewList from '@/components/common/ArchivedReviewList.vue';
@@ -892,6 +987,7 @@ const props = defineProps({
   requestChangesOnCreate: { type: Boolean, default: false },
 });
 const emit = defineEmits(['created', 'cancel', 'count-change']);
+const { t, locale } = useI18n();
 const confirmAction = useUserConfirm();
 const eventMessages = useEventMessageStore();
 const cases = ref([]);
@@ -920,13 +1016,12 @@ const showClosedCases = ref(false);
 const visibleTaskLimit = ref(20);
 const members = ref([]);
 const membersLoading = ref(false);
-const taskStatusOptions = [
-  { value: '', label: 'All statuses' },
-  { value: 'requested', label: 'Needs change' },
-  { value: 'reopened', label: 'Needs another change' },
-  { value: 'addressed', label: 'Marked done' },
-  { value: 'accepted', label: 'Accepted' },
-];
+const taskStatusOptions = computed(() =>
+  ['', 'requested', 'reopened', 'addressed', 'accepted'].map((value) => ({
+    value,
+    label: t(`reviewCases.statusOptions.${value || 'all'}`),
+  }))
+);
 const reviewLeadOptions = computed(() =>
   members.value.map((member) => ({
     value: member.user_id,
@@ -962,19 +1057,27 @@ const canActAsContributor = (item) =>
   Number.isInteger(props.currentUserId) &&
   item.contributor_id === props.currentUserId;
 
-const formatState = (state) => state.replaceAll('_', ' ');
+const CASE_STATES = [
+  'open',
+  'changes_requested',
+  'resubmitted',
+  'resolved',
+  'closed',
+];
+const TASK_STATUSES = ['requested', 'reopened', 'addressed', 'accepted'];
+const formatState = (state) =>
+  CASE_STATES.includes(state)
+    ? t(`reviewCases.states.${state}`)
+    : state.replaceAll('_', ' ');
 const formatTaskStatus = (status, item = null) => {
   if (item?.state === 'resubmitted' && status !== 'accepted') {
-    return props.canManage ? 'Decision needed' : 'In review';
+    return props.canManage
+      ? t('reviewCases.taskStatus.decisionNeeded')
+      : t('reviewCases.taskStatus.inReview');
   }
-  return (
-    {
-      requested: 'Needs change',
-      reopened: 'Needs another change',
-      addressed: 'Submitted for review',
-      accepted: 'Approved',
-    }[status] || status
-  );
+  return TASK_STATUSES.includes(status)
+    ? t(`reviewCases.taskStatus.${status}`)
+    : status;
 };
 const {
   approveTask,
@@ -998,6 +1101,7 @@ const {
   error,
   replaceCase,
   notify: (message, type) => eventMessages.addMessage(message, type),
+  t,
 });
 const {
   assign,
@@ -1021,6 +1125,7 @@ const {
   replaceCase,
   confirmAction,
   notify: (message, type) => eventMessages.addMessage(message, type),
+  t,
 });
 async function openReviewArchive() {
   showClosedCases.value = true;
@@ -1053,34 +1158,42 @@ const visibleTasks = (item) =>
 const showNextStep = (item) =>
   !(props.canManage && item.state === 'resubmitted') ||
   selectedRevisionTaskIds(item).length > 0;
-const nextStepDescription = (state, item) =>
-  ({
-    open: 'Discuss the question, then either ask for a corrected upload or finish the review.',
-    changes_requested:
-      'The contributor must revise the ELAN file and submit a corrected version.',
-    resubmitted: props.canManage
-      ? revisionFeedbackCaseId.value === item.case_id
-        ? revisionTargets[item.case_id]?.length
-          ? 'Review the selected annotations and add a note only when more context is needed.'
-          : 'Explain precisely what still needs to change before sending the request.'
-        : `Draft only — nothing has been sent. ${selectedRevisionTaskIds(item).length} edit${selectedRevisionTaskIds(item).length === 1 ? '' : 's'} will be included if you continue.`
-      : `Your corrected contribution #${item.resubmitted_upload_id} was sent to the review lead. You can follow the decision and discussion here.`,
-    resolved:
-      'No further action is required. Reopen the review if this decision was premature.',
-    closed: 'This review is closed. Its discussion remains preserved below.',
-  })[state] || 'Continue the research review.';
-const nextStepTitle = (state, item) =>
-  ({
-    open: 'Decide the next step',
-    changes_requested: 'Waiting for corrected files',
-    resubmitted: props.canManage
-      ? revisionFeedbackCaseId.value === item.case_id
-        ? 'Request another revision'
-        : 'Correction request not sent'
-      : 'Corrected version submitted',
-    resolved: 'Review resolved',
-    closed: 'Review closed',
-  })[state] || 'Review in progress';
+const nextStepDescription = (state, item) => {
+  const key = (name) => t(`reviewCases.nextStep.descriptions.${name}`);
+  if (state === 'resubmitted') {
+    if (!props.canManage) {
+      return t('reviewCases.nextStep.descriptions.submitted', {
+        id: item.resubmitted_upload_id,
+      });
+    }
+    if (revisionFeedbackCaseId.value === item.case_id) {
+      return revisionTargets[item.case_id]?.length
+        ? key('selectedTargets')
+        : key('explain');
+    }
+    return t('reviewCases.nextStep.descriptions.draft', {
+      edits: t(
+        'reviewCases.nextStep.descriptions.edits',
+        selectedRevisionTaskIds(item).length
+      ),
+    });
+  }
+  return ['open', 'changes_requested', 'resolved', 'closed'].includes(state)
+    ? key(state)
+    : key('other');
+};
+const nextStepTitle = (state, item) => {
+  const title = (name) => t(`reviewCases.nextStep.titles.${name}`);
+  if (state === 'resubmitted') {
+    if (!props.canManage) return title('submitted');
+    return revisionFeedbackCaseId.value === item.case_id
+      ? title('requestAnother')
+      : title('notSent');
+  }
+  return ['open', 'changes_requested', 'resolved', 'closed'].includes(state)
+    ? title(state)
+    : title('other');
+};
 const nextStepIcon = (state) =>
   ({
     open: 'fa-solid fa-circle-question',
@@ -1090,7 +1203,7 @@ const nextStepIcon = (state) =>
     closed: 'fa-solid fa-box-archive',
   })[state] || 'fa-solid fa-circle-info';
 const formatDate = (value) =>
-  new Intl.DateTimeFormat(undefined, {
+  new Intl.DateTimeFormat(locale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
@@ -1112,8 +1225,7 @@ async function loadCases(showLoading = true) {
     emit('count-change', activeCount.value);
   } catch (requestError) {
     error.value =
-      requestError?.response?.data?.detail ||
-      'Review cases could not be loaded.';
+      requestError?.response?.data?.detail || t('reviewCases.errors.load');
   } finally {
     if (showLoading) loading.value = false;
   }
@@ -1150,8 +1262,7 @@ async function createCase() {
     emit('count-change', activeCount.value);
   } catch (requestError) {
     error.value =
-      requestError?.response?.data?.detail ||
-      'The review case could not be created.';
+      requestError?.response?.data?.detail || t('reviewCases.errors.create');
   } finally {
     busy.value = false;
   }
@@ -1170,7 +1281,7 @@ async function addComment(item) {
     replies[item.case_id] = '';
   } catch (requestError) {
     error.value =
-      requestError?.response?.data?.detail || 'The comment could not be added.';
+      requestError?.response?.data?.detail || t('reviewCases.errors.comment');
   } finally {
     busy.value = false;
   }
@@ -1180,7 +1291,10 @@ function memberDisplayName(member) {
     .filter(Boolean)
     .join(' ');
   return (
-    fullName || member.username || member.email || 'Unnamed project member'
+    fullName ||
+    member.username ||
+    member.email ||
+    t('reviewCases.card.unnamedMember')
   );
 }
 function cancelComposer() {

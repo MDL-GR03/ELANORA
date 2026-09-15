@@ -15,42 +15,42 @@ export function useReviewCaseTransitions({
   replaceCase,
   confirmAction,
   notify,
+  t,
 }) {
   function transitionConfirmation(item, state) {
     return {
       changes_requested: {
         title:
           item.state === 'resubmitted'
-            ? 'Request another revision?'
-            : 'Request a revision?',
+            ? t('reviewCases.confirm.requestAnotherTitle')
+            : t('reviewCases.confirm.requestTitle'),
         message:
           item.state === 'resubmitted'
-            ? 'This corrected version will not be approved yet. The same review remains open and the researcher will be asked to submit another version.'
-            : 'The researcher will be asked to revise this contribution. The same discussion will track the corrected version.',
+            ? t('reviewCases.confirm.requestAnotherMessage')
+            : t('reviewCases.confirm.requestMessage'),
         confirmText:
           item.state === 'resubmitted'
-            ? 'Request another revision'
-            : 'Request revision',
+            ? t('reviewCases.confirm.requestAnotherConfirm')
+            : t('reviewCases.confirm.requestConfirm'),
       },
       resolved: {
         title:
           item.state === 'resubmitted'
-            ? 'Approve this correction?'
-            : 'Close this review?',
+            ? t('reviewCases.confirm.approveTitle')
+            : t('reviewCases.confirm.closeTitle'),
         message:
           item.state === 'resubmitted'
-            ? 'This records that the corrected version satisfies the request and closes the correction review. It does not merge the contribution; a separate merge decision is still required.'
-            : 'This closes the question without requesting file changes. It can be reopened later.',
+            ? t('reviewCases.confirm.approveMessage')
+            : t('reviewCases.confirm.closeMessage'),
         confirmText:
           item.state === 'resubmitted'
-            ? 'Approve correction and close review'
-            : 'Close review',
+            ? t('reviewCases.confirm.approveConfirm')
+            : t('reviewCases.confirm.closeConfirm'),
       },
       open: {
-        title: 'Reopen this review?',
-        message:
-          'The case will return to active review. Its previous discussion and decisions remain in the history.',
-        confirmText: 'Reopen review',
+        title: t('reviewCases.confirm.reopenTitle'),
+        message: t('reviewCases.confirm.reopenMessage'),
+        confirmText: t('reviewCases.confirm.reopenConfirm'),
       },
     }[state];
   }
@@ -59,7 +59,10 @@ export function useReviewCaseTransitions({
     const confirmation = transitionConfirmation(item, state);
     if (
       confirmation &&
-      !(await confirmAction({ ...confirmation, cancelText: 'Cancel' }))
+      !(await confirmAction({
+        ...confirmation,
+        cancelText: t('reviewCases.confirm.cancel'),
+      }))
     ) {
       return false;
     }
@@ -69,12 +72,12 @@ export function useReviewCaseTransitions({
       replaceCase(
         await reviewService.transition(toValue(projectId), item.case_id, state)
       );
-      notify('Review status updated.', 'success');
+      notify(t('reviewCases.notify.statusUpdated'), 'success');
       return true;
     } catch (requestError) {
       error.value =
         requestError?.response?.data?.detail ||
-        'The review state could not be changed.';
+        t('reviewCases.errors.transition');
       notify(error.value, 'error');
       return false;
     } finally {
@@ -98,11 +101,15 @@ export function useReviewCaseTransitions({
     const targetDetails = (revisionTargets[item.case_id] || [])
       .map(
         (target) =>
-          `- ${revisionTargetSummary(target)}${target.comment?.trim() ? `\n  Instruction: ${target.comment.trim()}` : ''}`
+          `- ${revisionTargetSummary(target)}${
+            target.comment?.trim()
+              ? `\n  ${t('reviewCases.revision.recordedInstruction', { text: target.comment.trim() })}`
+              : ''
+          }`
       )
       .join('\n');
     return targetDetails
-      ? `${feedback ? `${feedback}\n\n` : ''}Requested annotation corrections:\n${targetDetails}`
+      ? `${feedback ? `${feedback}\n\n` : ''}${t('reviewCases.revision.recordedHeading')}\n${targetDetails}`
       : feedback;
   }
 
@@ -112,10 +119,15 @@ export function useReviewCaseTransitions({
     const recordedFeedback = buildRevisionFeedback(item);
     if (
       !(await confirmAction({
-        title: 'Request another revision?',
-        message: `This will return ${selectedTaskIds.length} requested edit${selectedTaskIds.length === 1 ? '' : 's'} to the researcher. Your required feedback will be added to the discussion, and another corrected upload will be required.`,
-        confirmText: 'Send revision request',
-        cancelText: 'Cancel',
+        title: t('reviewCases.confirm.requestAnotherTitle'),
+        message: t('reviewCases.confirm.sendRevisionMessage', {
+          edits: t(
+            'reviewCases.confirm.requestedEdits',
+            selectedTaskIds.length
+          ),
+        }),
+        confirmText: t('reviewCases.confirm.sendRevisionConfirm'),
+        cancelText: t('reviewCases.confirm.cancel'),
       }))
     ) {
       return false;
@@ -133,12 +145,12 @@ export function useReviewCaseTransitions({
       );
       replies[item.case_id] = '';
       clearRevisionDraft(item.case_id);
-      notify('Another revision was requested.', 'success');
+      notify(t('reviewCases.notify.revisionRequested'), 'success');
       return true;
     } catch (requestError) {
       error.value =
         requestError?.response?.data?.detail ||
-        'The new revision request could not be recorded.';
+        t('reviewCases.errors.revision');
       notify(error.value, 'error');
       return false;
     } finally {
@@ -169,8 +181,7 @@ export function useReviewCaseTransitions({
       return true;
     } catch (requestError) {
       error.value =
-        requestError?.response?.data?.detail ||
-        'The assignment could not be saved.';
+        requestError?.response?.data?.detail || t('reviewCases.errors.assign');
       return false;
     } finally {
       busy.value = false;
@@ -188,12 +199,11 @@ export function useReviewCaseTransitions({
           toValue(resubmissionUploadId)
         )
       );
-      notify('Corrected upload linked to this review.', 'success');
+      notify(t('reviewCases.notify.linked'), 'success');
       return true;
     } catch (requestError) {
       error.value =
-        requestError?.response?.data?.detail ||
-        'The corrected upload could not be linked.';
+        requestError?.response?.data?.detail || t('reviewCases.errors.link');
       notify(error.value, 'error');
       return false;
     } finally {

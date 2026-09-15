@@ -12,6 +12,7 @@ const protectedNamespaces = [
   'contributionWorkspace',
   'researchScopes',
   'reviewArchive',
+  'reviewCases',
   'uploadPage',
 ];
 const locales = Object.fromEntries(

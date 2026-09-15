@@ -2,6 +2,7 @@ import { reactive, ref } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useReviewCaseTransitions } from './useReviewCaseTransitions';
+import { englishI18n } from '@/testing/i18n';
 
 describe('useReviewCaseTransitions', () => {
   let reviewService;
@@ -51,6 +52,7 @@ describe('useReviewCaseTransitions', () => {
       replaceCase,
       confirmAction,
       notify,
+      t: englishI18n().global.t,
     });
   });
 

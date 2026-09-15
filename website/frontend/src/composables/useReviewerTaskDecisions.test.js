@@ -2,6 +2,7 @@ import { ref } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useReviewerTaskDecisions } from './useReviewerTaskDecisions';
+import { englishI18n } from '@/testing/i18n';
 
 const resubmittedCase = () => ({
   case_id: 'case-1',
@@ -33,6 +34,7 @@ describe('useReviewerTaskDecisions', () => {
       error,
       replaceCase,
       notify,
+      t: englishI18n().global.t,
     });
   });
 

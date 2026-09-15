@@ -2,23 +2,25 @@
   <div
     v-if="casesCount"
     class="review-summary"
-    aria-label="Review status summary"
+    :aria-label="t('reviewCases.queue.summary')"
   >
     <div>
       <strong>{{ activeCount }}</strong>
-      <span>Active</span>
+      <span>{{ t('reviewCases.queue.active') }}</span>
     </div>
     <div>
       <strong>{{ changesRequestedCount }}</strong>
-      <span>Awaiting corrections</span>
+      <span>{{ t('reviewCases.queue.awaiting') }}</span>
     </div>
     <div>
       <strong>{{ resubmittedCount }}</strong>
-      <span>Ready for another review</span>
+      <span>{{ t('reviewCases.queue.ready') }}</span>
     </div>
   </div>
 
-  <div v-if="loading" class="panel-state">Loading correction requests…</div>
+  <div v-if="loading" class="panel-state">
+    {{ t('reviewCases.queue.loading') }}
+  </div>
   <div v-else-if="error" class="panel-state error" role="alert">
     {{ error }}
   </div>
@@ -33,15 +35,15 @@
     <input
       :value="query"
       type="search"
-      placeholder="Find by title, contribution, file, tier, annotation, or instruction"
-      aria-label="Search correction requests"
+      :placeholder="t('reviewCases.queue.searchPlaceholder')"
+      :aria-label="t('reviewCases.queue.search')"
       @input="$emit('update:query', $event.target.value.trim())"
     />
     <AppSelect
       id="review-status-filter"
       :model-value="status"
       size="small"
-      aria-label="Filter correction requests by status"
+      :aria-label="t('reviewCases.queue.statusFilter')"
       :options="statusOptions"
       @update:model-value="$emit('update:status', $event)"
     />
@@ -50,6 +52,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 import AppSelect from '@/components/common/AppSelect.vue';
 
@@ -68,21 +71,25 @@ const props = defineProps({
 });
 
 defineEmits(['update:query', 'update:status']);
+const { t } = useI18n();
 
-const statusOptions = [
-  { value: '', label: 'All active statuses' },
-  { value: 'open', label: 'Open questions' },
-  { value: 'changes_requested', label: 'Awaiting corrections' },
-  { value: 'resubmitted', label: 'Ready for review' },
-];
+const statusOptions = computed(() => [
+  { value: '', label: t('reviewCases.queue.statuses.all') },
+  { value: 'open', label: t('reviewCases.queue.statuses.open') },
+  {
+    value: 'changes_requested',
+    label: t('reviewCases.queue.statuses.changes_requested'),
+  },
+  { value: 'resubmitted', label: t('reviewCases.queue.statuses.resubmitted') },
+]);
 const emptyMessage = computed(() => {
   if (props.uploadId) {
-    return 'No correction requests have been opened for this contribution.';
+    return t('reviewCases.queue.emptyContribution');
   }
   if (props.closedCasesCount) {
-    return 'There are no active correction requests for this project.';
+    return t('reviewCases.queue.emptyActive');
   }
-  return 'No correction requests have been opened for this project.';
+  return t('reviewCases.queue.emptyProject');
 });
 </script>
 

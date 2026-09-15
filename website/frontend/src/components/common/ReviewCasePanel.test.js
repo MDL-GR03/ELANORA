@@ -4,6 +4,10 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia } from 'pinia';
 
+import { createI18n } from 'vue-i18n';
+
+import ja from '@/locales/ja.json';
+import { englishI18n } from '@/testing/i18n';
 import ReviewCasePanel from './ReviewCasePanel.vue';
 import reviewService from '@/api/service/reviewService';
 
@@ -39,7 +43,7 @@ describe('ReviewCasePanel correction composer', () => {
         requestChangesOnCreate: true,
       },
       global: {
-        plugins: [createPinia()],
+        plugins: [createPinia(), englishI18n()],
         stubs: {
           FontAwesomeIcon: true,
           ConflictMergeView: true,
@@ -115,7 +119,7 @@ describe('ReviewCasePanel correction composer', () => {
     const wrapper = mount(ReviewCasePanel, {
       props: { projectId: 12, projectName: 'test', canManage: true },
       global: {
-        plugins: [createPinia()],
+        plugins: [createPinia(), englishI18n()],
         stubs: {
           FontAwesomeIcon: true,
           ConflictMergeView: true,
@@ -190,7 +194,7 @@ describe('ReviewCasePanel correction composer', () => {
     const wrapper = mount(ReviewCasePanel, {
       props: { projectId: 12, canManage: true },
       global: {
-        plugins: [createPinia()],
+        plugins: [createPinia(), englishI18n()],
         stubs: {
           FontAwesomeIcon: true,
           ConflictMergeView: true,
@@ -252,7 +256,7 @@ describe('ReviewCasePanel correction composer', () => {
     const wrapper = mount(ReviewCasePanel, {
       props: { projectId: 12, canManage: true },
       global: {
-        plugins: [createPinia()],
+        plugins: [createPinia(), englishI18n()],
         stubs: {
           FontAwesomeIcon: true,
           ConflictMergeView: true,
@@ -273,5 +277,59 @@ describe('ReviewCasePanel correction composer', () => {
       'accepted'
     );
     expect(reviewService.transition).not.toHaveBeenCalled();
+  });
+
+  it('shows an active review in Japanese without untranslated keys', async () => {
+    reviewService.list.mockResolvedValueOnce([
+      {
+        case_id: 'case-ja',
+        project_id: 12,
+        upload_id: 9,
+        resubmitted_upload_id: null,
+        contributor_id: 4,
+        title: 'グロスの修正',
+        state: 'changes_requested',
+        assigned_to: 2,
+        creator_name: 'MDL',
+        comments: [],
+        tasks: [
+          {
+            task_id: 'task-ja',
+            filename: 'elan_files/subject.eaf',
+            instruction: 'A1 を修正してください',
+            status: 'requested',
+            tier_id: 'gloss',
+            start_ms: 100,
+            end_ms: null,
+          },
+        ],
+      },
+    ]);
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'ja',
+      fallbackLocale: 'en',
+      messages: { ja },
+    });
+    const wrapper = mount(ReviewCasePanel, {
+      props: { projectId: 12, canManage: true },
+      global: {
+        plugins: [createPinia(), i18n],
+        stubs: {
+          FontAwesomeIcon: true,
+          ConflictMergeView: true,
+          ArchivedReviewList: true,
+          RouterLink: true,
+        },
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.get('#review-cases-title').text()).toBe('修正依頼');
+    expect(wrapper.get('.state-badge').text()).toBe('変更依頼中');
+    expect(wrapper.get('.task-status').text()).toBe('変更が必要');
+    expect(wrapper.get('.task-targets').text()).toContain('時間：100–終了 ms');
+    expect(wrapper.text()).toContain('修正版ファイルを待っています');
+    expect(wrapper.text()).not.toMatch(/reviewCases\./);
   });
 });

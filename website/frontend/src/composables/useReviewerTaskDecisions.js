@@ -7,6 +7,7 @@ export function useReviewerTaskDecisions({
   error,
   replaceCase,
   notify,
+  t,
 }) {
   const updatingTask = ref({ id: '', status: '' });
   const revisionFeedbackCaseId = ref('');
@@ -16,7 +17,9 @@ export function useReviewerTaskDecisions({
   const unresolvedTaskCount = (item) =>
     item.tasks.filter((task) => task.status !== 'accepted').length;
   const approveTaskLabel = (item) =>
-    unresolvedTaskCount(item) === 1 ? 'Approve correction' : 'Approve edit';
+    unresolvedTaskCount(item) === 1
+      ? t('reviewCases.tasks.approveCorrection')
+      : t('reviewCases.tasks.approveEdit');
 
   function selectedRevisionTaskIds(item) {
     if (revisionTaskSelections[item.case_id]) {
@@ -67,14 +70,21 @@ export function useReviewerTaskDecisions({
   function revisionTargetSummary(target) {
     const time =
       target.start_ms != null || target.end_ms != null
-        ? ` · ${target.start_ms ?? 'start'}–${target.end_ms ?? 'end'} ms`
+        ? t('reviewCases.revision.targetTime', {
+            start: target.start_ms ?? t('reviewCases.tasks.start'),
+            end: target.end_ms ?? t('reviewCases.tasks.end'),
+          })
         : '';
-    return `Target: ${target.annotation_id} · Tier: ${target.tier_id || 'unknown'}${time}`;
+    return t('reviewCases.revision.targetSummary', {
+      id: target.annotation_id,
+      tier: target.tier_id || t('reviewCases.revision.unknown'),
+      time,
+    });
   }
   function taskBusyLabel(task, status, label) {
     return updatingTask.value.id === task.task_id &&
       updatingTask.value.status === status
-      ? 'Saving…'
+      ? t('reviewCases.tasks.saving')
       : label;
   }
 
@@ -97,15 +107,14 @@ export function useReviewerTaskDecisions({
       notify(
         completesReview
           ? updated.resubmitted_upload_status === 'no_changes'
-            ? 'Correction approved. No project content changed.'
-            : 'Correction approved and review completed.'
-          : 'Requested edit approved.',
+            ? t('reviewCases.notify.approvedNoChanges')
+            : t('reviewCases.notify.approvedCompleted')
+          : t('reviewCases.notify.editApproved'),
         'success'
       );
     } catch (requestError) {
       error.value =
-        requestError?.response?.data?.detail ||
-        'The requested edit could not be approved.';
+        requestError?.response?.data?.detail || t('reviewCases.errors.approve');
       notify(error.value, 'error');
     } finally {
       busy.value = false;

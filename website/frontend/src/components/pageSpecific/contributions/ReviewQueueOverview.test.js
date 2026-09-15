@@ -3,9 +3,11 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
+import { englishI18n } from '@/testing/i18n';
 import ReviewQueueOverview from './ReviewQueueOverview.vue';
 
 const global = {
+  plugins: [englishI18n()],
   stubs: { 'font-awesome-icon': { template: '<span />' } },
 };
 
