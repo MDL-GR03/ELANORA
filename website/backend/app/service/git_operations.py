@@ -796,31 +796,6 @@ class GitCommandRunner:
         self.delete_branch_on_remote(branch_name)
         update_backup(self.project_path.name, self.project_path.parent)
 
-    def resolve_conflicts(
-        self, branch_name: str, resolution_strategy: str
-    ) -> dict[str, Any]:
-        self.checkout(self.canonical_branch())
-        self.run(["merge", branch_name, "--no-ff"], check=False)
-        if resolution_strategy == "accept_incoming":
-            self.run(["checkout", "--theirs", "."], check=True)
-        elif resolution_strategy == "accept_current":
-            self.run(["checkout", "--ours", "."], check=True)
-        self.run(["add", "."], check=True)
-        self.run(
-            [
-                "commit",
-                "-m",
-                f"Resolve conflicts from {branch_name} using {resolution_strategy}",
-            ],
-            check=True,
-        )
-        update_backup(self.project_path.name, self.project_path.parent)
-        return {
-            "branch_name": branch_name,
-            "resolution_strategy": resolution_strategy,
-            "status": "resolved",
-        }
-
     def complete_pending_merge(
         self, branch_name: str, resolution_strategy: str = "auto"
     ) -> dict[str, Any]:

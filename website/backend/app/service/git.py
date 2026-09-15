@@ -1,5 +1,4 @@
 import re
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -278,17 +277,6 @@ class GitService:
             instance_id,
         )
 
-    async def _sync_elan_files_with_db(
-        self, project_path: Path, db: AsyncSession, user_id: int, project_name: str
-    ) -> None:
-        """Parse all .eaf files in the project and update the database."""
-        elan_service = ElanService(db)
-        elan_files = list((project_path / "elan_files").glob("*.eaf"))
-        for elan_file in elan_files:
-            await elan_service.process_single_file(
-                str(elan_file), user_id, project_name
-            )
-
     async def rebuild_project_database(
         self,
         project_name: str,
@@ -509,36 +497,6 @@ class GitService:
 
         except Exception as e:
             raise RuntimeError("Failed to get branches") from e
-
-    async def resolve_conflicts(
-        self,
-        project_name: str,
-        branch_name: str,
-        resolution_strategy: str,
-        db: AsyncSession,
-        user_id: int,
-    ) -> dict[str, Any]:
-        """Resolve conflicts and merge a branch, then sync ELAN files with DB."""
-        project_path = safe_project_path(self.base_path, project_name)
-
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-
-        try:
-            runner = GitCommandRunner(project_path)
-            result = runner.resolve_conflicts(branch_name, resolution_strategy)
-
-            # --- Sync DB with merged ELAN files ---
-            await self._sync_elan_files_with_db(project_path, db, user_id, project_name)
-
-            return {
-                "project_name": project_name,
-                **result,
-                "resolved_at": datetime.now().isoformat(),
-            }
-
-        except Exception as e:
-            raise RuntimeError("Failed to resolve conflicts") from e
 
     def _create_readme(self, project_name: str) -> str:
         """Generate README content for a new project."""
