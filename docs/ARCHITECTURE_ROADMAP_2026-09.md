@@ -100,6 +100,30 @@ must pin the version it uses.
 
 ### P0 — EAF projection completeness
 
+**Completed 15 September 2026:** revision manifests now store projection
+version 2, which gives every element type of the vendored EAF 3.0 schema a typed
+shape: licences, linked files, properties, linguistic types, locales, languages,
+constraints, controlled vocabularies with their descriptions and entries per
+language, lexicon references, external references, and reference-link sets with
+their cross and group links. Space-separated `IDREFS` attributes become lists.
+Each element keeps a map of any attribute without a dedicated field, so typed
+fields and that map together account for the whole source. A test using a
+fixture that exercises every element type checks that no attribute value or
+text is left out. Version 1 omitted lexicon references and stored the rest as
+serialized XML snippets. Manifest rows stay append-only;
+`revision_projection()` re-derives older rows from their stored bytes on read,
+and returns the stored projection if current validation would refuse a
+historical source.
+
+Building that fixture exposed two validator defects that refused valid ELAN
+files at upload: an annotation citing several external references, and
+`TIME_ALIGNABLE="1"`, which `xsd:boolean` defines as true.
+
+Queryable projections are stored per revision as JSON. Relational tables for
+this metadata are not yet warranted; they should follow the protocol rules that
+need to query it.
+
+
 The current typed parser preserves the source and captures important annotation
 relationships, but the searchable schema is still an incomplete projection of
 EAF 3.0. Add revision-scoped tables or typed JSON projections for time slots,

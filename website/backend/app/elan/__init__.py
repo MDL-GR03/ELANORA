@@ -12,7 +12,6 @@ from app.elan.domain import (
     EafDocument,
     EafHeader,
     EafTier,
-    ElementSnapshot,
     MediaDescriptor,
     ReferenceAnnotation,
 )
@@ -30,7 +29,6 @@ __all__ = [
     "EafHeader",
     "EafTier",
     "EafValidationError",
-    "ElementSnapshot",
     "MediaDescriptor",
     "PersistedEafFile",
     "ReferenceAnnotation",

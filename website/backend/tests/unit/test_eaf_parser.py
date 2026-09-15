@@ -30,7 +30,10 @@ def test_complete_eaf_runs_official_and_semantic_validation() -> None:
     assert (
         document.header.media_descriptors[0].relative_media_url == "./session-001.mp4"
     )
-    assert document.header.linked_file_descriptors[0].tag == "LINKED_FILE_DESCRIPTOR"
+    assert (
+        document.header.linked_file_descriptors[0].link_url
+        == "file:///notes/session-001.txt"
+    )
     assert len(document.header.properties) == 2
     assert len(document.linguistic_types) == 2
     assert len(document.languages) == 2
@@ -50,6 +53,40 @@ def test_complete_eaf_runs_official_and_semantic_validation() -> None:
     assert isinstance(reference, ReferenceAnnotation)
     assert reference.annotation_ref == alignable.annotation_id
     assert reference.value == "Bonjour"
+
+
+@pytest.mark.parametrize(
+    ("literal", "expected"),
+    [("true", True), ("1", True), ("false", False), ("0", False)],
+)
+def test_schema_booleans_accept_every_lexical_form(
+    literal: str, expected: bool
+) -> None:
+    """xsd:boolean admits 1 and 0, so reading only "true" would invert them."""
+    content = FIXTURE.read_bytes().replace(
+        b'TIME_ALIGNABLE="true"\n        GRAPHIC_REFERENCES="false"',
+        f'TIME_ALIGNABLE="true"\n        GRAPHIC_REFERENCES="{literal}"'.encode(),
+        1,
+    )
+
+    document = parse_eaf(content)
+
+    types = {item.linguistic_type_id: item for item in document.linguistic_types}
+    assert types["utterance-type"].graphic_references is expected
+
+
+def test_a_type_declared_time_alignable_with_1_accepts_aligned_annotations() -> None:
+    """The validator read TIME_ALIGNABLE="1" as false and refused the valid file."""
+    content = FIXTURE.read_bytes().replace(
+        b'LINGUISTIC_TYPE_ID="utterance-type" TIME_ALIGNABLE="true"',
+        b'LINGUISTIC_TYPE_ID="utterance-type" TIME_ALIGNABLE="1"',
+        1,
+    )
+
+    document = parse_eaf(content)
+
+    types = {item.linguistic_type_id: item for item in document.linguistic_types}
+    assert types["utterance-type"].time_alignable is True
 
 
 def test_parse_path_records_reproducibility_metadata() -> None:

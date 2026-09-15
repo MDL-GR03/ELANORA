@@ -9,6 +9,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.elan.projection import EAF_PROJECTION_VERSION
 from app.model.eaf_revision import EafRevision
 from app.model.elan_file import ElanFile
 from app.model.file_content import FileContent
@@ -167,9 +168,14 @@ async def test_revision_captures_exact_eaf_manifest(session: AsyncSession) -> No
     assert manifest.filename == "session.eaf"
     assert manifest.eaf_revision_id == eaf_revision_id
     assert manifest.sha256 == digest
-    assert manifest.parser_version == "1"
+    assert manifest.parser_version == EAF_PROJECTION_VERSION
     assert len(manifest.structured_projection["tiers"]) == 2
-    assert len(manifest.structured_projection["controlled_vocabularies"]) == 1
+    (vocabulary,) = manifest.structured_projection["controlled_vocabularies"]
+    # New revisions store the typed projection, not serialized XML snippets.
+    assert [value["lang_ref"] for value in vocabulary["entries"][0]["values"]] == [
+        "en",
+        "fr",
+    ]
     assert manifest_sha256 is not None
     await verify_project_revision_manifest(session, project_revision_id)
 

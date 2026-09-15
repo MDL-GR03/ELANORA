@@ -10,27 +10,34 @@ from lxml import etree
 
 from app.elan.domain import (
     AlignableAnnotation,
+    ControlledVocabulary,
+    ControlledVocabularyEntry,
+    ControlledVocabularyValue,
+    CrossReferenceLink,
     EafAnnotation,
+    EafConstraint,
     EafDocument,
     EafHeader,
+    EafLanguage,
+    EafLicense,
+    EafLocale,
+    EafProperty,
     EafTier,
-    ElementSnapshot,
+    ExternalReference,
+    GroupReferenceLink,
+    LexiconReference,
+    LinguisticType,
+    LinkedFileDescriptor,
     MediaDescriptor,
+    MultilingualText,
     ReferenceAnnotation,
+    ReferenceLinkSet,
+    StringMap,
     immutable_attributes,
+    parse_xsd_boolean,
+    split_references,
 )
 from app.elan.validation import validate_eaf
-
-
-def _snapshot(element: etree._Element) -> ElementSnapshot:
-    return ElementSnapshot(
-        tag=str(element.tag),
-        attributes=immutable_attributes(
-            {str(key): value for key, value in element.attrib.items()}
-        ),
-        text=element.text,
-        xml=etree.tostring(element, encoding="utf-8", with_tail=False),
-    )
 
 
 def _required(element: etree._Element, attribute: str) -> str:
@@ -42,6 +49,94 @@ def _required(element: etree._Element, attribute: str) -> str:
 
 def _parse_optional_int(value: str | None) -> int | None:
     return int(value) if value is not None else None
+
+
+def _attributes(element: etree._Element) -> StringMap:
+    return immutable_attributes(
+        {str(key): value for key, value in element.attrib.items()}
+    )
+
+
+def _parse_linguistic_type(element: etree._Element) -> LinguisticType:
+    return LinguisticType(
+        linguistic_type_id=_required(element, "LINGUISTIC_TYPE_ID"),
+        time_alignable=parse_xsd_boolean(element.get("TIME_ALIGNABLE")),
+        constraints=element.get("CONSTRAINTS"),
+        graphic_references=parse_xsd_boolean(element.get("GRAPHIC_REFERENCES")),
+        controlled_vocabulary_ref=element.get("CONTROLLED_VOCABULARY_REF"),
+        ext_ref=element.get("EXT_REF"),
+        lexicon_ref=element.get("LEXICON_REF"),
+        attributes=_attributes(element),
+    )
+
+
+def _parse_controlled_vocabulary(element: etree._Element) -> ControlledVocabulary:
+    return ControlledVocabulary(
+        cv_id=_required(element, "CV_ID"),
+        ext_ref=element.get("EXT_REF"),
+        descriptions=tuple(
+            MultilingualText(lang_ref=_required(item, "LANG_REF"), text=item.text or "")
+            for item in element.findall("DESCRIPTION")
+        ),
+        entries=tuple(
+            ControlledVocabularyEntry(
+                cve_id=_required(entry, "CVE_ID"),
+                ext_ref=entry.get("EXT_REF"),
+                values=tuple(
+                    ControlledVocabularyValue(
+                        lang_ref=_required(value, "LANG_REF"),
+                        value=value.text or "",
+                        description=value.get("DESCRIPTION"),
+                    )
+                    for value in entry.findall("CVE_VALUE")
+                ),
+                attributes=_attributes(entry),
+            )
+            for entry in element.findall("CV_ENTRY_ML")
+        ),
+        attributes=_attributes(element),
+    )
+
+
+def _parse_reference_link_set(element: etree._Element) -> ReferenceLinkSet:
+    return ReferenceLinkSet(
+        link_set_id=_required(element, "LINK_SET_ID"),
+        name=element.get("LINK_SET_NAME"),
+        ext_refs=split_references(element.get("EXT_REF")),
+        lang_ref=element.get("LANG_REF"),
+        cv_ref=element.get("CV_REF"),
+        cross_links=tuple(
+            CrossReferenceLink(
+                ref_link_id=_required(link, "REF_LINK_ID"),
+                name=link.get("REF_LINK_NAME"),
+                ref1=_required(link, "REF1"),
+                ref2=_required(link, "REF2"),
+                directionality=link.get("DIRECTIONALITY"),
+                ref_type=link.get("REF_TYPE"),
+                lang_ref=link.get("LANG_REF"),
+                cve_ref=link.get("CVE_REF"),
+                ext_refs=split_references(link.get("EXT_REF")),
+                text=link.text or "",
+                attributes=_attributes(link),
+            )
+            for link in element.findall("CROSS_REF_LINK")
+        ),
+        group_links=tuple(
+            GroupReferenceLink(
+                ref_link_id=_required(link, "REF_LINK_ID"),
+                name=link.get("REF_LINK_NAME"),
+                refs=split_references(_required(link, "REFS")),
+                ref_type=link.get("REF_TYPE"),
+                lang_ref=link.get("LANG_REF"),
+                cve_ref=link.get("CVE_REF"),
+                ext_refs=split_references(link.get("EXT_REF")),
+                text=link.text or "",
+                attributes=_attributes(link),
+            )
+            for link in element.findall("GROUP_REF_LINK")
+        ),
+        attributes=_attributes(element),
+    )
 
 
 def _annotation_value(element: etree._Element) -> str:
@@ -70,6 +165,7 @@ def _parse_annotation(
             svg_ref=element.get("SVG_REF"),
             cv_entry_ref=element.get("CVE_REF"),
             ext_ref=element.get("EXT_REF"),
+            lang_ref=element.get("LANG_REF"),
             attributes=attributes,
         )
     return ReferenceAnnotation(
@@ -79,6 +175,7 @@ def _parse_annotation(
         previous_annotation=element.get("PREVIOUS_ANNOTATION"),
         cv_entry_ref=element.get("CVE_REF"),
         ext_ref=element.get("EXT_REF"),
+        lang_ref=element.get("LANG_REF"),
         attributes=attributes,
     )
 
@@ -118,10 +215,23 @@ def parse_eaf(content: bytes, *, source_path: Path | None = None) -> EafDocument
         time_units=_required(header_element, "TIME_UNITS"),
         media_descriptors=media_descriptors,
         linked_file_descriptors=tuple(
-            _snapshot(item) for item in header_element.findall("LINKED_FILE_DESCRIPTOR")
+            LinkedFileDescriptor(
+                link_url=_required(item, "LINK_URL"),
+                relative_link_url=item.get("RELATIVE_LINK_URL"),
+                mime_type=_required(item, "MIME_TYPE"),
+                time_origin_ms=_parse_optional_int(item.get("TIME_ORIGIN")),
+                associated_with=item.get("ASSOCIATED_WITH"),
+                attributes=_attributes(item),
+            )
+            for item in header_element.findall("LINKED_FILE_DESCRIPTOR")
         ),
         properties=tuple(
-            _snapshot(item) for item in header_element.findall("PROPERTY")
+            EafProperty(
+                name=item.get("NAME"),
+                value=item.text or "",
+                attributes=_attributes(item),
+            )
+            for item in header_element.findall("PROPERTY")
         ),
         attributes=immutable_attributes(
             {str(key): value for key, value in header_element.attrib.items()}
@@ -163,20 +273,71 @@ def parse_eaf(content: bytes, *, source_path: Path | None = None) -> EafDocument
         time_values_ms=MappingProxyType(time_values),
         tiers=tuple(tiers),
         linguistic_types=tuple(
-            _snapshot(item) for item in root.findall("LINGUISTIC_TYPE")
+            _parse_linguistic_type(item) for item in root.findall("LINGUISTIC_TYPE")
         ),
-        locales=tuple(_snapshot(item) for item in root.findall("LOCALE")),
-        languages=tuple(_snapshot(item) for item in root.findall("LANGUAGE")),
-        constraints=tuple(_snapshot(item) for item in root.findall("CONSTRAINT")),
+        locales=tuple(
+            EafLocale(
+                language_code=_required(item, "LANGUAGE_CODE"),
+                country_code=item.get("COUNTRY_CODE"),
+                variant=item.get("VARIANT"),
+                attributes=_attributes(item),
+            )
+            for item in root.findall("LOCALE")
+        ),
+        languages=tuple(
+            EafLanguage(
+                lang_id=_required(item, "LANG_ID"),
+                lang_def=item.get("LANG_DEF"),
+                lang_label=item.get("LANG_LABEL"),
+                attributes=_attributes(item),
+            )
+            for item in root.findall("LANGUAGE")
+        ),
+        constraints=tuple(
+            EafConstraint(
+                stereotype=_required(item, "STEREOTYPE"),
+                description=item.get("DESCRIPTION"),
+                attributes=_attributes(item),
+            )
+            for item in root.findall("CONSTRAINT")
+        ),
         controlled_vocabularies=tuple(
-            _snapshot(item) for item in root.findall("CONTROLLED_VOCABULARY")
+            _parse_controlled_vocabulary(item)
+            for item in root.findall("CONTROLLED_VOCABULARY")
+        ),
+        lexicon_references=tuple(
+            LexiconReference(
+                lex_ref_id=_required(item, "LEX_REF_ID"),
+                name=_required(item, "NAME"),
+                type=_required(item, "TYPE"),
+                url=_required(item, "URL"),
+                lexicon_id=_required(item, "LEXICON_ID"),
+                lexicon_name=_required(item, "LEXICON_NAME"),
+                datcat_id=item.get("DATCAT_ID"),
+                datcat_name=item.get("DATCAT_NAME"),
+                attributes=_attributes(item),
+            )
+            for item in root.findall("LEXICON_REF")
         ),
         external_references=tuple(
-            _snapshot(item) for item in root.findall("EXTERNAL_REF")
+            ExternalReference(
+                ext_ref_id=_required(item, "EXT_REF_ID"),
+                type=_required(item, "TYPE"),
+                value=_required(item, "VALUE"),
+                attributes=_attributes(item),
+            )
+            for item in root.findall("EXTERNAL_REF")
         ),
-        licenses=tuple(_snapshot(item) for item in root.findall("LICENSE")),
+        licenses=tuple(
+            EafLicense(
+                url=item.get("LICENSE_URL"),
+                text=item.text or "",
+                attributes=_attributes(item),
+            )
+            for item in root.findall("LICENSE")
+        ),
         reference_link_sets=tuple(
-            _snapshot(item) for item in root.findall("REF_LINK_SET")
+            _parse_reference_link_set(item) for item in root.findall("REF_LINK_SET")
         ),
         raw_xml=content,
         sha256=hashlib.sha256(content).hexdigest(),

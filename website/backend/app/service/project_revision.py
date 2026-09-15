@@ -7,14 +7,19 @@ from typing import Literal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.centralized_logging import get_logger
+from app.core.error_diagnostics import safe_exception_type
 from app.elan.parser import parse_eaf
 from app.elan.projection import EAF_PROJECTION_VERSION, document_projection
+from app.elan.validation import EafValidationError
 from app.model.eaf_revision import EafRevision
 from app.model.elan_file import ElanFile
 from app.model.project import Project
 from app.model.project_revision import ProjectRevision, ProjectRevisionEaf
 
 RevisionSource = Literal["contribution", "restoration", "migration"]
+
+logger = get_logger()
 
 
 async def _current_eaf_manifest(
@@ -178,3 +183,29 @@ async def append_project_revision(
     project.current_revision_id = revision.revision_id
     await db.flush()
     return revision
+
+
+def revision_projection(entry: ProjectRevisionEaf) -> dict[str, object]:
+    """Return a manifest entry's EAF projection in the current version.
+
+    Manifest rows are immutable, so an entry written by an earlier projection
+    version keeps that version in storage. Its exact source bytes are stored in
+    the same row, so the current projection is derived from them on read.
+
+    If today's validation refuses a source that was accepted when the revision
+    was recorded, the stored projection is returned instead of raising. Its
+    projection_version tells the caller which shape it received. Accepted
+    history must stay readable whatever the current rules are.
+    """
+    if entry.parser_version == EAF_PROJECTION_VERSION:
+        return entry.structured_projection
+    try:
+        return document_projection(parse_eaf(entry.raw_xml))
+    except EafValidationError as error:
+        logger.warning(
+            "Could not re-derive a stored EAF projection; returning version %s; "
+            "error_type=%s",
+            entry.parser_version,
+            safe_exception_type(error),
+        )
+        return entry.structured_projection

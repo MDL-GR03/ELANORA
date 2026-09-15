@@ -9,6 +9,8 @@ from typing import Final, cast
 
 from lxml import etree
 
+from app.elan.domain import parse_xsd_boolean
+
 ROOT_TAG: Final = "ANNOTATION_DOCUMENT"
 SUPPORTED_FORMATS: Final = frozenset({"2.7", "2.8", "3.0"})
 SCHEMA_PATH: Final = Path(__file__).parent / "schemas" / "EAFv3.0.xsd"
@@ -302,7 +304,7 @@ def validate_eaf(content: bytes) -> etree._Element:
                     )
                 )
         alignable_by_linguistic_type[type_id] = (
-            linguistic_type.get("TIME_ALIGNABLE", "true").lower() == "true"
+            parse_xsd_boolean(linguistic_type.get("TIME_ALIGNABLE", "true")) is True
         )
 
     tier_ids: list[str] = []
