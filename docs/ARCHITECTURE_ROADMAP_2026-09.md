@@ -70,11 +70,12 @@ and an outbox job. Workers can then create derived projections and optional Git
 exports idempotently. Git should become a compatibility/export surface, not the
 transaction coordinator.
 
-The current raw XML stored in PostgreSQL is a valid safety improvement, but it
-will not scale to video and large institutional corpora. Introduce an
-`AssetStore` port with filesystem and S3-compatible implementations. Store
-object keys, checksums and retention state in PostgreSQL. Keep media out of Git
-and normal database rows.
+**Decided 16 September 2026:** ELANORA manages projects and EAF documents;
+researchers never upload video or audio into it, and media stays on
+institutional storage referenced by the EAF. Exact EAF bytes therefore remain
+in PostgreSQL, which suits small XML documents, protected by verified off-host
+backups. The earlier plan for a separate media object store is withdrawn; the
+existing asset storage remains for instance branding only.
 
 ### P0 — protocol and validation versions
 
@@ -200,16 +201,35 @@ origin metadata and immutable audit provenance belong in that protocol. Remote
 identities must never gain direct database access. Signed exchange packages can
 remain an offline or archival fallback, not the collaboration model itself.
 
+**Reviewed 16 September 2026:** every operational timestamp is now UTC
+`timestamptz`, enforced by guardrail tests. Lifecycle, uniqueness and
+non-negative interval constraints already exist for revisions, protocol
+versions, reviews, change sets, scans and sync operations. Ordering constraints
+between timestamps written by different clocks (the application server and
+PostgreSQL) were deliberately not added: ordinary clock skew would reject valid
+writes.
+
 Do not add constraints merely because PostgreSQL supports them. Overlap policy,
 for example, depends on ELAN tier type and protocol rules and must be modeled
 before a blanket exclusion constraint is introduced.
 
 ### P2 — operations and research governance
 
-Implement encrypted off-host database and object backups, point-in-time recovery,
-restore drills, metrics, structured audit export and storage-capacity alarms.
-Define institutional RPO/RTO, retention schedules, participant withdrawal and
-legal-hold procedures before identifiable corpora are admitted.
+**Decided 16 September 2026:**
+
+- *Classification:* each project records a data classification (public,
+  internal, confidential, sensitive personal data) and its legal basis or
+  consent reference; access, exports and logging follow the project's level.
+- *Retention:* deleting a project leaves a tombstone; its content is purged once
+  the project's retention period ends unless a legal hold is set. A participant
+  withdrawal purges that participant's files early, with an audit record.
+- *Recovery targets:* at most 24 hours of data loss and restoration within one
+  day, met by nightly encrypted off-host backups of the database and project
+  storage, with a scheduled restore drill.
+
+Implement encrypted off-host backups, restore drills, metrics, structured audit
+export and storage-capacity alarms to meet those targets before identifiable
+corpora are admitted.
 
 Existing-user invitations, account verification and password resets now use the
 transactional PostgreSQL outbox and a separate worker. Verification and reset
