@@ -1755,5 +1755,59 @@
       "standardsFailed": "Les règles de nommage du projet n'ont pas pu être chargées. L'upload est suspendu afin d'éviter une soumission non vérifiée."
     },
     "complianceWarning": "Certains fichiers ne respectent pas la norme de nommage. Veuillez vérifier les noms des fichiers et réessayer."
+  },
+  "reviewArchive": {
+    "eyebrow": "Archive des revues",
+    "title": "Revues de correction clôturées",
+    "archivedCount": "{count} archivée(s)",
+    "search": "Rechercher dans l’historique",
+    "searchPlaceholder": "Titre, fichier, contribution ou commentaire",
+    "outcome": "Issue",
+    "outcomeFilter": "Filtrer les revues archivées par issue",
+    "outcomes": {
+      "all": "Toutes les issues",
+      "closed": "Clôturée",
+      "resolved": "Résolue"
+    },
+    "empty": "Aucune revue archivée ne correspond à ces filtres.",
+    "generalReview": "Revue générale de la contribution",
+    "openedBy": "Ouverte par",
+    "formerMember": "Ancien membre",
+    "contribution": "Contribution",
+    "reviewLead": "Responsable de la revue",
+    "notAssigned": "Non attribuée",
+    "closedAt": "Clôturée le",
+    "openedAt": "Ouverte le",
+    "target": "Annotation visée",
+    "tier": "Tier",
+    "annotation": "Annotation",
+    "time": "Temps",
+    "suggestion": "Suggestion de texte",
+    "original": "Original",
+    "suggested": "Suggéré",
+    "notRecorded": "Non enregistré",
+    "requestedFiles": "Fichiers demandés ({count})",
+    "anyTier": "Tout tier",
+    "anyAnnotation": "Toute annotation",
+    "discussion": "Discussion ({count})",
+    "pages": "Pages des revues archivées",
+    "previous": "Précédente",
+    "next": "Suivante",
+    "pageOf": "Page {page} sur {count}",
+    "states": {
+      "approvedNoChanges": "Approuvée · aucun changement dans le projet",
+      "approved": "Approuvée",
+      "closed": "Clôturée"
+    },
+    "taskStatus": {
+      "requested": "Demandée",
+      "reopened": "Demandée à nouveau",
+      "addressed": "Marquée comme faite",
+      "accepted": "Approuvée"
+    },
+    "timeRange": "{start} – {end}",
+    "milliseconds": "{value} ms",
+    "startNotSet": "début non défini",
+    "endNotSet": "fin non définie"
   }
 }

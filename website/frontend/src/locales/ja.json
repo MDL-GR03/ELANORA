@@ -1692,5 +1692,59 @@
     "sectionRenamed": "セクション名を変更しました。",
     "sectionDeleted": "セクションを削除しました。",
     "groupMoved": "ELANファイルを移動しました。"
+  },
+  "reviewArchive": {
+    "eyebrow": "レビューのアーカイブ",
+    "title": "完了した修正レビュー",
+    "archivedCount": "アーカイブ {count} 件",
+    "search": "履歴を検索",
+    "searchPlaceholder": "タイトル、ファイル、貢献、コメント",
+    "outcome": "結果",
+    "outcomeFilter": "アーカイブ済みレビューを結果で絞り込む",
+    "outcomes": {
+      "all": "すべての結果",
+      "closed": "終了",
+      "resolved": "解決済み"
+    },
+    "empty": "この条件に一致するアーカイブ済みレビューはありません。",
+    "generalReview": "貢献全体のレビュー",
+    "openedBy": "作成者",
+    "formerMember": "元メンバー",
+    "contribution": "貢献",
+    "reviewLead": "レビュー担当者",
+    "notAssigned": "未割り当て",
+    "closedAt": "終了日時",
+    "openedAt": "作成日時",
+    "target": "対象の注釈",
+    "tier": "階層",
+    "annotation": "注釈",
+    "time": "時間",
+    "suggestion": "テキストの提案",
+    "original": "元のテキスト",
+    "suggested": "提案",
+    "notRecorded": "記録なし",
+    "requestedFiles": "依頼されたファイル（{count}）",
+    "anyTier": "任意の階層",
+    "anyAnnotation": "任意の注釈",
+    "discussion": "ディスカッション（{count}）",
+    "pages": "アーカイブ済みレビューのページ",
+    "previous": "前へ",
+    "next": "次へ",
+    "pageOf": "{page} / {count} ページ",
+    "states": {
+      "approvedNoChanges": "承認済み · プロジェクトの変更なし",
+      "approved": "承認済み",
+      "closed": "終了"
+    },
+    "taskStatus": {
+      "requested": "依頼中",
+      "reopened": "再依頼",
+      "addressed": "対応済み",
+      "accepted": "承認済み"
+    },
+    "timeRange": "{start} – {end}",
+    "milliseconds": "{value} ms",
+    "startNotSet": "開始未設定",
+    "endNotSet": "終了未設定"
   }
 }

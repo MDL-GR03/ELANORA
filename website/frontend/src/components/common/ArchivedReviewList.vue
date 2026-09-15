@@ -2,35 +2,37 @@
   <section id="review-archive" class="archive" aria-labelledby="archive-title">
     <div class="archive-heading">
       <div>
-        <span>Review archive</span>
-        <h5 id="archive-title">Closed correction reviews</h5>
+        <span>{{ t('reviewArchive.eyebrow') }}</span>
+        <h5 id="archive-title">{{ t('reviewArchive.title') }}</h5>
       </div>
-      <strong>{{ cases.length }} archived</strong>
+      <strong>{{
+        t('reviewArchive.archivedCount', { count: cases.length })
+      }}</strong>
     </div>
 
     <div class="archive-tools">
       <label>
-        <span>Search history</span>
+        <span>{{ t('reviewArchive.search') }}</span>
         <input
           v-model.trim="query"
           type="search"
-          placeholder="Title, file, contribution, or comment"
+          :placeholder="t('reviewArchive.searchPlaceholder')"
         />
       </label>
       <label for="archive-outcome-filter">
-        <span>Outcome</span>
+        <span>{{ t('reviewArchive.outcome') }}</span>
         <AppSelect
           id="archive-outcome-filter"
           v-model="stateFilter"
           size="small"
           :options="outcomeOptions"
-          aria-label="Filter archived reviews by outcome"
+          :aria-label="t('reviewArchive.outcomeFilter')"
         />
       </label>
     </div>
 
     <p v-if="!filteredCases.length" class="archive-empty">
-      No archived reviews match these filters.
+      {{ t('reviewArchive.empty') }}
     </p>
 
     <div v-else class="archive-list">
@@ -46,7 +48,7 @@
           <span class="archive-summary-main">
             <strong>{{ item.title }}</strong>
             <small>
-              {{ item.filename || 'General contribution review' }}
+              {{ item.filename || t('reviewArchive.generalReview') }}
             </small>
           </span>
           <span class="archive-summary-meta">
@@ -61,11 +63,13 @@
         <div class="archive-details">
           <dl>
             <div>
-              <dt>Opened by</dt>
-              <dd>{{ item.creator_name || 'Former member' }}</dd>
+              <dt>{{ t('reviewArchive.openedBy') }}</dt>
+              <dd>
+                {{ item.creator_name || t('reviewArchive.formerMember') }}
+              </dd>
             </div>
             <div>
-              <dt>Contribution</dt>
+              <dt>{{ t('reviewArchive.contribution') }}</dt>
               <dd>
                 #{{ item.upload_id }}
                 <template v-if="item.resubmitted_upload_id">
@@ -74,15 +78,17 @@
               </dd>
             </div>
             <div>
-              <dt>Review lead</dt>
-              <dd>{{ item.assignee_name || 'Not assigned' }}</dd>
+              <dt>{{ t('reviewArchive.reviewLead') }}</dt>
+              <dd>
+                {{ item.assignee_name || t('reviewArchive.notAssigned') }}
+              </dd>
             </div>
             <div>
-              <dt>Closed</dt>
+              <dt>{{ t('reviewArchive.closedAt') }}</dt>
               <dd>{{ formatDate(item.resolved_at || item.updated_at) }}</dd>
             </div>
             <div>
-              <dt>Opened</dt>
+              <dt>{{ t('reviewArchive.openedAt') }}</dt>
               <dd>{{ formatDate(item.created_at) }}</dd>
             </div>
           </dl>
@@ -96,16 +102,19 @@
             "
             class="archive-subsection"
           >
-            <h6>Annotation target</h6>
+            <h6>{{ t('reviewArchive.target') }}</h6>
             <div class="archive-target">
               <span v-if="item.tier_id"
-                ><strong>Tier</strong>{{ item.tier_id }}</span
+                ><strong>{{ t('reviewArchive.tier') }}</strong
+                >{{ item.tier_id }}</span
               >
               <span v-if="item.annotation_id">
-                <strong>Annotation</strong>{{ item.annotation_id }}
+                <strong>{{ t('reviewArchive.annotation') }}</strong
+                >{{ item.annotation_id }}
               </span>
               <span v-if="item.start_ms != null || item.end_ms != null">
-                <strong>Time</strong>{{ formatTimeRange(item) }}
+                <strong>{{ t('reviewArchive.time') }}</strong
+                >{{ formatTimeRange(item) }}
               </span>
             </div>
           </section>
@@ -114,22 +123,28 @@
             v-if="item.current_text || item.suggested_text"
             class="archive-subsection"
           >
-            <h6>Text suggestion</h6>
+            <h6>{{ t('reviewArchive.suggestion') }}</h6>
             <div class="archive-suggestion">
               <div>
-                <span>Original</span>
-                <p>{{ item.current_text || 'Not recorded' }}</p>
+                <span>{{ t('reviewArchive.original') }}</span>
+                <p>{{ item.current_text || t('reviewArchive.notRecorded') }}</p>
               </div>
               <font-awesome-icon icon="fa-solid fa-arrow-right" />
               <div>
-                <span>Suggested</span>
-                <p>{{ item.suggested_text || 'Not recorded' }}</p>
+                <span>{{ t('reviewArchive.suggested') }}</span>
+                <p>
+                  {{ item.suggested_text || t('reviewArchive.notRecorded') }}
+                </p>
               </div>
             </div>
           </section>
 
           <section v-if="item.tasks?.length" class="archive-subsection">
-            <h6>Requested files ({{ item.tasks.length }})</h6>
+            <h6>
+              {{
+                t('reviewArchive.requestedFiles', { count: item.tasks.length })
+              }}
+            </h6>
             <ul class="archive-tasks">
               <li v-for="task in item.tasks" :key="task.task_id">
                 <div>
@@ -138,23 +153,31 @@
                 </div>
                 <p>{{ task.instruction }}</p>
                 <small v-if="task.tier_id || task.annotation_id">
-                  {{ task.tier_id || 'Any tier' }} ·
-                  {{ task.annotation_id || 'Any annotation' }}
+                  {{ task.tier_id || t('reviewArchive.anyTier') }} ·
+                  {{ task.annotation_id || t('reviewArchive.anyAnnotation') }}
                 </small>
                 <div
                   v-if="task.current_text || task.suggested_text"
                   class="archive-task-suggestion"
                 >
-                  <span>{{ task.current_text || 'Not recorded' }}</span>
+                  <span>{{
+                    task.current_text || t('reviewArchive.notRecorded')
+                  }}</span>
                   <font-awesome-icon icon="fa-solid fa-arrow-right" />
-                  <span>{{ task.suggested_text || 'Not recorded' }}</span>
+                  <span>{{
+                    task.suggested_text || t('reviewArchive.notRecorded')
+                  }}</span>
                 </div>
               </li>
             </ul>
           </section>
 
           <section v-if="item.comments?.length" class="archive-subsection">
-            <h6>Discussion ({{ item.comments.length }})</h6>
+            <h6>
+              {{
+                t('reviewArchive.discussion', { count: item.comments.length })
+              }}
+            </h6>
             <ol class="archive-comments">
               <li v-for="comment in item.comments" :key="comment.comment_id">
                 <div>
@@ -174,14 +197,14 @@
     <nav
       v-if="pageCount > 1"
       class="archive-pagination"
-      aria-label="Archived review pages"
+      :aria-label="t('reviewArchive.pages')"
     >
       <button type="button" :disabled="page === 1" @click="page -= 1">
-        Previous
+        {{ t('reviewArchive.previous') }}
       </button>
-      <span>Page {{ page }} of {{ pageCount }}</span>
+      <span>{{ t('reviewArchive.pageOf', { page, count: pageCount }) }}</span>
       <button type="button" :disabled="page === pageCount" @click="page += 1">
-        Next
+        {{ t('reviewArchive.next') }}
       </button>
     </nav>
   </section>
@@ -189,13 +212,15 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import AppSelect from '@/components/common/AppSelect.vue';
 
-const outcomeOptions = [
-  { value: '', label: 'All outcomes' },
-  { value: 'closed', label: 'Closed' },
-  { value: 'resolved', label: 'Resolved' },
-];
+const { t, locale } = useI18n();
+const outcomeOptions = computed(() => [
+  { value: '', label: t('reviewArchive.outcomes.all') },
+  { value: 'closed', label: t('reviewArchive.outcomes.closed') },
+  { value: 'resolved', label: t('reviewArchive.outcomes.resolved') },
+]);
 
 const props = defineProps({
   cases: { type: Array, default: () => [] },
@@ -267,28 +292,34 @@ watch(
 
 const formatState = (item) => {
   if (item.resubmitted_upload_status === 'no_changes') {
-    return 'Approved · no project changes';
+    return t('reviewArchive.states.approvedNoChanges');
   }
-  return item.state === 'resolved' ? 'Approved' : 'Closed';
+  return item.state === 'resolved'
+    ? t('reviewArchive.states.approved')
+    : t('reviewArchive.states.closed');
 };
+const TASK_STATUSES = ['requested', 'reopened', 'addressed', 'accepted'];
 const formatTaskStatus = (status) =>
-  ({
-    requested: 'Requested',
-    reopened: 'Requested again',
-    addressed: 'Marked done',
-    accepted: 'Approved',
-  })[status] || status;
+  TASK_STATUSES.includes(status)
+    ? t(`reviewArchive.taskStatus.${status}`)
+    : status;
 const formatDate = (value) =>
   value
-    ? new Intl.DateTimeFormat(undefined, {
+    ? new Intl.DateTimeFormat(locale.value, {
         dateStyle: 'medium',
         timeStyle: 'short',
       }).format(new Date(value))
-    : 'Not recorded';
+    : t('reviewArchive.notRecorded');
 const formatTimeRange = (item) => {
-  const start = item.start_ms == null ? 'start not set' : item.start_ms + ' ms';
-  const end = item.end_ms == null ? 'end not set' : item.end_ms + ' ms';
-  return start + ' – ' + end;
+  const start =
+    item.start_ms == null
+      ? t('reviewArchive.startNotSet')
+      : t('reviewArchive.milliseconds', { value: item.start_ms });
+  const end =
+    item.end_ms == null
+      ? t('reviewArchive.endNotSet')
+      : t('reviewArchive.milliseconds', { value: item.end_ms });
+  return t('reviewArchive.timeRange', { start, end });
 };
 </script>
 

@@ -8,6 +8,7 @@ const protectedNamespaces = [
   'contributionDetails',
   'contributionResolution',
   'contributionWorkspace',
+  'reviewArchive',
   'researchScopes',
   'uploadPage',
 ];

@@ -1762,5 +1762,59 @@
       "standardsFailed": "The project's naming rules could not be loaded. Upload is paused to avoid an unchecked submission."
     },
     "complianceWarning": "Some files don't comply with the naming standard. Please verify the file names and try again."
+  },
+  "reviewArchive": {
+    "eyebrow": "Review archive",
+    "title": "Closed correction reviews",
+    "archivedCount": "{count} archived",
+    "search": "Search history",
+    "searchPlaceholder": "Title, file, contribution, or comment",
+    "outcome": "Outcome",
+    "outcomeFilter": "Filter archived reviews by outcome",
+    "outcomes": {
+      "all": "All outcomes",
+      "closed": "Closed",
+      "resolved": "Resolved"
+    },
+    "empty": "No archived reviews match these filters.",
+    "generalReview": "General contribution review",
+    "openedBy": "Opened by",
+    "formerMember": "Former member",
+    "contribution": "Contribution",
+    "reviewLead": "Review lead",
+    "notAssigned": "Not assigned",
+    "closedAt": "Closed",
+    "openedAt": "Opened",
+    "target": "Annotation target",
+    "tier": "Tier",
+    "annotation": "Annotation",
+    "time": "Time",
+    "suggestion": "Text suggestion",
+    "original": "Original",
+    "suggested": "Suggested",
+    "notRecorded": "Not recorded",
+    "requestedFiles": "Requested files ({count})",
+    "anyTier": "Any tier",
+    "anyAnnotation": "Any annotation",
+    "discussion": "Discussion ({count})",
+    "pages": "Archived review pages",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {count}",
+    "states": {
+      "approvedNoChanges": "Approved · no project changes",
+      "approved": "Approved",
+      "closed": "Closed"
+    },
+    "taskStatus": {
+      "requested": "Requested",
+      "reopened": "Requested again",
+      "addressed": "Marked done",
+      "accepted": "Approved"
+    },
+    "timeRange": "{start} – {end}",
+    "milliseconds": "{value} ms",
+    "startNotSet": "start not set",
+    "endNotSet": "end not set"
   }
 }

@@ -3,6 +3,10 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
+import { createI18n } from 'vue-i18n';
+
+import fr from '@/locales/fr.json';
+import { englishI18n } from '@/testing/i18n';
 import ArchivedReviewList from './ArchivedReviewList.vue';
 
 const archivedCase = (index) => ({
@@ -35,6 +39,7 @@ describe('ArchivedReviewList', () => {
         ),
       },
       global: {
+        plugins: [englishI18n()],
         stubs: { FontAwesomeIcon: true },
       },
     });
@@ -58,6 +63,7 @@ describe('ArchivedReviewList', () => {
         highlightedCaseId: 'case-10',
       },
       global: {
+        plugins: [englishI18n()],
         stubs: { FontAwesomeIcon: true },
       },
     });
@@ -78,11 +84,30 @@ describe('ArchivedReviewList', () => {
     item.resubmitted_upload_status = 'no_changes';
     const wrapper = mount(ArchivedReviewList, {
       props: { cases: [item] },
-      global: { stubs: { FontAwesomeIcon: true } },
+      global: { plugins: [englishI18n()], stubs: { FontAwesomeIcon: true } },
     });
 
     expect(wrapper.get('.archive-state').text()).toBe(
       'Approved · no project changes'
     );
+  });
+
+  it('speaks the reader’s language', () => {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'fr',
+      fallbackLocale: 'en',
+      messages: { fr },
+    });
+    const wrapper = mount(ArchivedReviewList, {
+      props: { cases: [archivedCase(2)] },
+      global: { plugins: [i18n], stubs: { FontAwesomeIcon: true } },
+    });
+
+    expect(wrapper.get('#archive-title').text()).toBe(
+      'Revues de correction clôturées'
+    );
+    expect(wrapper.get('.archive-state').text()).toBe('Approuvée');
+    expect(wrapper.text()).not.toContain('reviewArchive.');
   });
 });
