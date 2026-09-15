@@ -356,6 +356,12 @@ when its lock is removed. They found that suspending administrators could
 deadlock, and that the cross-process project write lock could leak until
 restart when acquire and release ran on different threads.
 
+A projected EAF is now identified by its filename within a project (migration
+0033). The inherited uniqueness on content made two distinct files with identical
+bytes, such as sessions started from one template, impossible to publish. The
+administrator branch-checkout endpoint was also removed, following the August
+audit's decision never to switch a shared checkout from an HTTP request.
+
 Remaining item 6 work is decomposing the contribution frontend by workflow and
 removing the remaining presentation and request orchestration from its page
 component.

@@ -13,6 +13,7 @@ from fastapi import UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.model.elan_file import ElanFile
 from app.model.enums import Status, UserRole
 from app.model.instance import Instance
 from app.model.pending_upload import PendingUpload
@@ -86,8 +87,8 @@ async def _domain(
 
     project_path = tmp_path / name
     (project_path / "elan_files").mkdir(parents=True)
-    # Distinct bytes on purpose: the projection currently refuses two files with
-    # identical content in one project, which is a separate question.
+    # Distinct bytes keep these tests about submission; identical content under
+    # different names has its own test below.
     (project_path / "elan_files" / "video-11.eaf").write_bytes(BASELINE)
     (project_path / "elan_files" / "session-12.eaf").write_bytes(
         _revised("Session twelve baseline")
@@ -280,3 +281,41 @@ async def test_a_failed_automatic_acceptance_still_reports_the_saved_contributio
     assert result["status"] == "pending_admin_approval"
     assert await _pending_count(session, project_id) == 1
     assert not (project_path / "elan_files" / "extra-13.eaf").exists()
+
+
+@pytest.mark.asyncio
+async def test_a_byte_identical_copy_under_a_new_name_can_be_published(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """Sessions started from one template can share bytes and remain distinct files."""
+    project, ada, _, project_path, runner = await _domain(session, tmp_path, "template")
+    project_id, project_name, ada_id = (
+        project.project_id,
+        project.project_name,
+        ada.user_id,
+    )
+    service = GitService(base_path=str(tmp_path))
+
+    submitted = await _submit(
+        service, session, project, ada, [_upload("session-15.eaf", BASELINE)]
+    )
+    await service.complete_pending_upload(
+        project_name, submitted["branch_name"], "auto", session, ada_id
+    )
+
+    accepted = runner.run(
+        ["ls-tree", "--name-only", "master", "elan_files/"], check=True
+    ).stdout.split()
+    assert {"elan_files/video-11.eaf", "elan_files/session-15.eaf"} <= set(accepted)
+    assert (project_path / "elan_files" / "session-15.eaf").read_bytes() == (
+        project_path / "elan_files" / "video-11.eaf"
+    ).read_bytes()
+    session.expire_all()
+    stored = set(
+        (
+            await session.scalars(
+                select(ElanFile.filename).where(ElanFile.project_id == project_id)
+            )
+        ).all()
+    )
+    assert {"video-11.eaf", "session-15.eaf"} <= stored

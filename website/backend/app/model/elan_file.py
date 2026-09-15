@@ -31,9 +31,12 @@ class ElanFile(Base):
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     last_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
-    # Add unique constraint for content within a project (same file can't be in project twice)
+    # A file is identified by its name within a project. Identical bytes under
+    # different names are distinct files, e.g. sessions started from a template.
     __table_args__ = (
-        UniqueConstraint("content_id", "project_id", name="uq_content_project"),
+        UniqueConstraint(
+            "project_id", "filename", name="uq_elan_file_project_filename"
+        ),
     )
 
     # Relationships
