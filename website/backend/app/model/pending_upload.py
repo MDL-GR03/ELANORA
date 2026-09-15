@@ -55,9 +55,11 @@ class PendingUpload(Base):
         SQLEnum(Status), nullable=False, default=Status.PENDING_ADMIN_APPROVAL
     )
     detected_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.current_timestamp()
+        DateTime(timezone=True), default=func.now()
     )
-    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     resolved_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("USER.user_id"), nullable=True
     )

@@ -2,7 +2,7 @@
 
 import shutil
 import tempfile
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -169,7 +169,7 @@ class ProjectLifecycleService:
             "path": str(project_path),
             "status": "initialized",
             "git_initialized": True,
-            "created_at": datetime.now().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "processed_files": processed_files,
             "skipped_files": skipped_files,
         }
@@ -263,7 +263,7 @@ class ProjectLifecycleService:
                 "path": str(project_path),
                 "status": "created",
                 "git_initialized": True,
-                "created_at": datetime.now().isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:

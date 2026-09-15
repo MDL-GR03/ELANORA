@@ -1,7 +1,7 @@
 """Publication of administrator-approved contribution revisions."""
 
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -120,5 +120,5 @@ class ContributionPublicationService:
             "project_name": project_name,
             **result,
             "accepted_commit": accepted_commit,
-            "resolved_at": datetime.now().isoformat(),
+            "resolved_at": datetime.now(UTC).isoformat(),
         }

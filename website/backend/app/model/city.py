@@ -23,10 +23,10 @@ class City(Base):
     )
     region_state: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.current_timestamp()
+        DateTime(timezone=True), default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp()
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
     )
 
     # Relationships

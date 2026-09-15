@@ -315,9 +315,7 @@ async def _resolve_approved_correction(
         runner = GitCommandRunner(Path(project.project_path), maintain_backup=False)
         if runner.get_tree_hash(resubmission.branch_name) == runner.get_tree_hash():
             resubmission.status = Status.NO_CHANGES
-            # PENDING_UPLOAD predates the timezone-aware review tables and its
-            # database column is intentionally TIMESTAMP WITHOUT TIME ZONE.
-            resubmission.resolved_at = now.replace(tzinfo=None)
+            resubmission.resolved_at = now
             resubmission.resolved_by = actor_id
             outcome = "no_project_changes"
             db.add(

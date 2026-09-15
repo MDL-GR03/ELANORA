@@ -1,6 +1,6 @@
 """Invitation use cases for local project collaboration."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -266,7 +266,7 @@ class InvitationService:
 
             if (
                 invitation.status != InvitationStatus.PENDING
-                or invitation.expires_at <= datetime.now()
+                or invitation.expires_at <= datetime.now(UTC)
             ):
                 logger.info("Invitation cannot be accepted in its current state")
                 return False

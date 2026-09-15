@@ -8,7 +8,7 @@ disagree with.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -156,7 +156,7 @@ class FileRenameService:
             success=True,
             committed=True,
             commit_hash=commit_hash,
-            renamed_at=datetime.now().isoformat(),
+            renamed_at=datetime.now(UTC).isoformat(),
             message=f"Successfully renamed {old_filename} to {new_filename}",
         )
 
@@ -286,7 +286,7 @@ class FileRenameService:
             results=succeeded + failed,
             committed=bool(succeeded),
             commit_hash=commit_hash,
-            renamed_at=datetime.now().isoformat(),
+            renamed_at=datetime.now(UTC).isoformat(),
             message=(f"Renamed {len(succeeded)}/{len(renames)} files successfully"),
             conflicts_count=conflicts,
             message_key=self._message_key(failed, conflicts),

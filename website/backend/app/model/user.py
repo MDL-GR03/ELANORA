@@ -66,12 +66,12 @@ class User(Base):
         SQLEnum(UserRole), nullable=False, default=UserRole.PUBLIC, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=func.current_timestamp()
+        DateTime(timezone=True), default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=func.current_timestamp(),
-        onupdate=func.current_timestamp(),
+        default=func.now(),
+        onupdate=func.now(),
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, index=True

@@ -30,10 +30,14 @@ class Invitation(Base):
         SQLEnum(InvitationStatus), nullable=False, default=InvitationStatus.PENDING
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.current_timestamp()
+        DateTime(timezone=True), default=func.now()
     )
-    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    responded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     sender: Mapped[int] = mapped_column(
         Integer, ForeignKey("USER.user_id"), nullable=False
     )

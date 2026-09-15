@@ -88,7 +88,7 @@ class ContactService:
         """
         try:
             email_service = EmailService()
-            current_year = datetime.datetime.now().year
+            current_year = datetime.datetime.now(datetime.UTC).year
 
             # Map request types to human-readable labels (bilingual)
             if language.lower() == "fr":
@@ -123,7 +123,9 @@ class ContactService:
                     sender_email=sender_email,
                     request_type=request_label,
                     message=message,
-                    date=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
+                    date=datetime.datetime.now(datetime.UTC).strftime(
+                        "%Y-%m-%d %H:%M:%S UTC"
+                    ),
                     year=current_year,
                 )
             except FileNotFoundError:
@@ -142,7 +144,7 @@ class ContactService:
                             <h2 style="margin-top: 0;">New Contact Message</h2>
                             <p><strong>From:</strong> {sender_email}</p>
                             <p><strong>Request Type:</strong> {request_label}</p>
-                            <p><strong>Date:</strong> {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
+                            <p><strong>Date:</strong> {datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
                         </div>
 
                         <div style="background-color: #ffffff; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">

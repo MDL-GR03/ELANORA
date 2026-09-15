@@ -165,6 +165,16 @@ async def test_a_revised_file_becomes_a_pending_review_without_touching_accepted
         runner.run(["branch", "--show-current"], check=True).stdout.strip() == "master"
     )
     assert (project_path / "elan_files" / "video-11.eaf").read_bytes() == BASELINE
+    # Instants carry their zone, so browsers do not read them as local time.
+    recorded = await session.scalar(
+        select(PendingUpload).where(PendingUpload.project_id == project_id)
+    )
+    assert recorded is not None
+    assert recorded.detected_at.utcoffset() is not None
+    assert datetime.fromisoformat(result["uploaded_at"]).utcoffset() is not None
+    details = recorded.git_details or {}
+    stored = details.get("upload_data", details)
+    assert datetime.fromisoformat(str(stored["pending_since"])).utcoffset() is not None
 
 
 @pytest.mark.asyncio

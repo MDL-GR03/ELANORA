@@ -29,7 +29,9 @@ class ElanFile(Base):
     )
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
-    last_modified: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    last_modified: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
 
     # A file is identified by its name within a project. Identical bytes under
     # different names are distinct files, e.g. sessions started from a template.

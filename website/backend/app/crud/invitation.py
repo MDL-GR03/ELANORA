@@ -1,7 +1,7 @@
 """Invitation CRUD operations - Pure database access layer."""
 
 import secrets
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import cast
 
 from passlib.context import CryptContext
@@ -52,7 +52,7 @@ async def create_invitation(
         Tuple[Invitation, str]: The created invitation and the raw code for email
 
     """
-    expires_at = datetime.now() + timedelta(days=expires_in_days)
+    expires_at = datetime.now(UTC) + timedelta(days=expires_in_days)
 
     # Generate a secure random code (independent of invitation_id)
     raw_code = secrets.token_urlsafe(32)  # 32 bytes = 256 bits of entropy
@@ -104,7 +104,7 @@ async def get_pending_invitations_by_email(
         select(Invitation)
         .filter(Invitation.receiver_email == email)
         .filter(Invitation.status == InvitationStatus.PENDING)
-        .filter(Invitation.expires_at > datetime.now())
+        .filter(Invitation.expires_at > datetime.now(UTC))
     )
     if project_id is not None:
         query = query.filter(Invitation.project_id == project_id)
@@ -126,7 +126,7 @@ async def update_invitation_status(
         return False
 
     invitation.status = status
-    invitation.responded_at = datetime.now()
+    invitation.responded_at = datetime.now(UTC)
     if receiver_id:
         invitation.receiver = receiver_id
 
@@ -145,7 +145,7 @@ async def check_invitation_exists_and_valid(
     return (
         invitation is not None
         and invitation.status == InvitationStatus.PENDING
-        and invitation.expires_at > datetime.now()
+        and invitation.expires_at > datetime.now(UTC)
     )
 
 
@@ -172,7 +172,7 @@ async def expire_old_invitations(db: AsyncSession) -> int:
     result = await db.execute(
         select(Invitation)
         .filter(Invitation.status == InvitationStatus.PENDING)
-        .filter(Invitation.expires_at <= datetime.now())
+        .filter(Invitation.expires_at <= datetime.now(UTC))
     )
     expired_invitations = list(result.scalars().all())
     if not expired_invitations:
@@ -203,7 +203,7 @@ async def get_invitation_by_code(db: AsyncSession, raw_code: str) -> Invitation 
     result = await db.execute(
         select(Invitation)
         .filter(Invitation.status == InvitationStatus.PENDING)
-        .filter(Invitation.expires_at > datetime.now())
+        .filter(Invitation.expires_at > datetime.now(UTC))
     )
     invitations = list(result.scalars().all())
 

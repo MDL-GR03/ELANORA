@@ -33,10 +33,10 @@ class NotificationPreference(Base):
     )
     email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=func.now()
+        DateTime(timezone=True), nullable=False, default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         default=func.now(),
         onupdate=func.now(),

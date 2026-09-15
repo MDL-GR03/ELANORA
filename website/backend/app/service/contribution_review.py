@@ -1,6 +1,6 @@
 """Administrator decisions about pending researcher contributions."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -166,7 +166,7 @@ class ContributionReviewService:
             )
 
         upload.status = Status.DISMISSED
-        upload.resolved_at = datetime.now()
+        upload.resolved_at = datetime.now(UTC)
         upload.resolved_by = user_id
         db.add(
             AuditEvent(
@@ -229,7 +229,7 @@ class ContributionReviewService:
         decline_reason = reason.strip()
         if len(decline_reason) < MIN_DECLINE_REASON_LENGTH:
             raise ValueError("A decline reason is required")
-        now = datetime.now()
+        now = datetime.now(UTC)
         upload.status = Status.DISMISSED
         upload.resolved_at = now
         upload.resolved_by = user_id

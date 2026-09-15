@@ -1,7 +1,7 @@
 """Contribution intake helpers independent from review and publication."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -124,7 +124,7 @@ class ContributionIntakeService:
         try:
             runner.run(["branch", "-m", branch_name, approval_branch], check=True)
             renamed = True
-            now = datetime.now().isoformat()
+            now = datetime.now(UTC).isoformat()
             upload_info: dict[str, Any] = {
                 "status": "pending_admin_approval",
                 "has_conflicts": False,
@@ -259,7 +259,7 @@ class ContributionIntakeService:
                 "original_branch": upload_info.get("original_branch"),
                 "next_steps": "Upload saved for admin approval. Admin needs to test merge and resolve any conflicts.",
             },
-            "uploaded_at": datetime.now().isoformat(),
+            "uploaded_at": datetime.now(UTC).isoformat(),
             "message": upload_info.get(
                 "message", "Upload completed and saved for admin approval"
             ),

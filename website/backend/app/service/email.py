@@ -76,7 +76,7 @@ class EmailService:
             bool: True if the email was sent successfully, False otherwise
 
         """
-        current_year = datetime.datetime.now().year
+        current_year = datetime.datetime.now(datetime.UTC).year
         contact_url = f"{config.FRONTEND_HOST}/contact"
 
         # Determine email template and subject based on language
@@ -166,7 +166,7 @@ class EmailService:
             bool: True if the email was sent successfully, False otherwise
 
         """
-        current_year = datetime.datetime.now().year
+        current_year = datetime.datetime.now(datetime.UTC).year
         contact_url = f"{config.FRONTEND_HOST}/contact"
         register_url = f"{config.FRONTEND_HOST}/register?invitation={invitation_code}"
 
@@ -287,7 +287,7 @@ class EmailService:
             bool: True if the email was sent successfully, False otherwise
 
         """
-        current_year = datetime.datetime.now().year
+        current_year = datetime.datetime.now(datetime.UTC).year
         contact_url = f"{config.FRONTEND_HOST}/contact"
 
         # Determine email template and subject based on language
@@ -381,7 +381,7 @@ class EmailService:
             bool: True if the email was sent successfully, False otherwise
 
         """
-        current_year = datetime.datetime.now().year
+        current_year = datetime.datetime.now(datetime.UTC).year
         contact_url = f"{config.FRONTEND_HOST}/contact"
         accept_url = f"{config.FRONTEND_HOST}/invitation/accept/{invitation_id}"
         reject_url = f"{config.FRONTEND_HOST}/invitation/reject/{invitation_id}"
@@ -506,7 +506,7 @@ class EmailService:
             bool: True if the email was sent successfully, False otherwise
 
         """
-        current_year = datetime.datetime.now().year
+        current_year = datetime.datetime.now(datetime.UTC).year
         contact_url = f"{config.FRONTEND_HOST}/contact"
         project_url = f"{config.FRONTEND_HOST}/projects"
 

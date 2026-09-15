@@ -1,7 +1,7 @@
 """Typed EAF parser built on the validation boundary."""
 
 import hashlib
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from types import MappingProxyType
 from typing import cast
@@ -342,7 +342,7 @@ def parse_eaf(content: bytes, *, source_path: Path | None = None) -> EafDocument
         sha256=hashlib.sha256(content).hexdigest(),
         source_path=path,
         source_size=len(content),
-        source_modified_at=datetime.fromtimestamp(stat.st_mtime)
+        source_modified_at=datetime.fromtimestamp(stat.st_mtime, UTC)
         if stat is not None
         else None,
     )

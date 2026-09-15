@@ -1,7 +1,7 @@
 """File Content CRUD operations for normalized file storage."""
 
 import hashlib
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,7 +57,7 @@ async def create_file_content(
         file_size=file_size,
         content_hash=content_hash,
         user_id=user_id,
-        created_at=datetime.now(),
+        created_at=datetime.now(UTC),
     )
 
     file_content = await DatabaseUtils.create(db, file_content)

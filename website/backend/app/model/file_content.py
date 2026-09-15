@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String
@@ -26,7 +26,7 @@ class FileContent(Base):
         Integer, ForeignKey("USER.user_id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.now
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
 
     # Relationships

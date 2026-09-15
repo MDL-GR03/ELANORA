@@ -1,6 +1,6 @@
 """Read-only semantic and Git compatibility inspection for contributions."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -304,5 +304,5 @@ class ContributionInspectionService:
             "conflicted_files": readiness.conflicted_files,
             "conflicts_count": len(readiness.conflicted_files),
             "can_auto_merge": readiness.can_merge,
-            "tested_at": datetime.now().isoformat(),
+            "tested_at": datetime.now(UTC).isoformat(),
         }

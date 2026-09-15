@@ -1,7 +1,7 @@
 """File processing utilities for ELAN files."""
 
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -90,7 +90,7 @@ class ElanFileProcessor:
     def get_file_info(file_path_obj: Path) -> dict:
         """Extract basic file information."""
         last_modified_timestamp = os.path.getmtime(file_path_obj)
-        last_modified = datetime.fromtimestamp(last_modified_timestamp)
+        last_modified = datetime.fromtimestamp(last_modified_timestamp, UTC)
 
         # Convert absolute path to relative path for storage
         absolute_path = str(file_path_obj.absolute())

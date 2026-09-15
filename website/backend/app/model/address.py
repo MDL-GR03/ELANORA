@@ -27,10 +27,10 @@ class Address(Base):
     postal_code: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     address_line_2: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.current_timestamp()
+        DateTime(timezone=True), default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=func.current_timestamp(), onupdate=func.current_timestamp()
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
     )
 
     # Relationships

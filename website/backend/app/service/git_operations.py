@@ -6,7 +6,7 @@ import stat
 import subprocess
 import tempfile
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -67,7 +67,7 @@ class GitBranchManager:
         so a random token keeps names distinct. The user name arrives from a
         form field and is reduced to characters that are always valid in a ref.
         """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         safe_user = re.sub(r"[^A-Za-z0-9_-]+", "-", user_name).strip("-")[:40]
         branch_name = (
             f"upload_batch_{safe_user or 'contributor'}_{timestamp}_"

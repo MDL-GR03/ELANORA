@@ -10,7 +10,7 @@ is shown as an error item rather than failing the request, because one bad
 submission must never hide every other contribution from the administrator.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -141,7 +141,7 @@ class ContributionQueueService:
                         readiness.status,
                         conflicted_files=readiness.conflicted_files,
                         conflicted_files_count=len(readiness.conflicted_files),
-                        tested_at=datetime.now().isoformat(),
+                        tested_at=datetime.now(UTC).isoformat(),
                     )
                 )
             except Exception as error:

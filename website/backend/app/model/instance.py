@@ -89,12 +89,12 @@ class Instance(Base):
     max_users: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=func.current_timestamp()
+        DateTime(timezone=True), default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=func.current_timestamp(),
-        onupdate=func.current_timestamp(),
+        default=func.now(),
+        onupdate=func.now(),
     )
 
     # Relationships
