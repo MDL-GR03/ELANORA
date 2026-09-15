@@ -269,6 +269,9 @@ async def create_protocol(
     )
     db.add(protocol)
     await db.flush()
+    # Responses read each version's archive; loading it now keeps serialization
+    # from lazy-loading outside the async context.
+    await db.refresh(protocol.versions[0], attribute_names=["archive"])
     return protocol
 
 
@@ -323,6 +326,7 @@ async def create_protocol_version(
     )
     db.add(version)
     await db.flush()
+    await db.refresh(version, attribute_names=["archive"])
     return version
 
 
