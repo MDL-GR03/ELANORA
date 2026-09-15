@@ -543,6 +543,10 @@ class FileUploadProcessor:
                 raise RuntimeError("Failed to commit uploaded files") from e
 
 
+class WorkingTreeOffAcceptedBranchError(RuntimeError):
+    """The canonical working tree is off its accepted branch with local changes."""
+
+
 class GitCommandRunner:
     """Runs generic git commands and returns results."""
 
@@ -697,6 +701,38 @@ class GitCommandRunner:
 
     def checkout(self, branch: str):
         self.run(["checkout", branch], check=True)
+
+    def canonical_head(self) -> str:
+        """Return the accepted branch's commit, whatever is checked out.
+
+        Provenance must name the accepted branch. HEAD only coincides with it
+        while the working tree happens to be on that branch.
+        """
+        return self.run(
+            ["rev-parse", self.canonical_branch()], check=True
+        ).stdout.strip()
+
+    def ensure_canonical_checkout(self) -> None:
+        """Put the working tree back on the accepted branch before mutating it.
+
+        A crashed upload or a manual checkout can leave the canonical tree on
+        another branch, and later commits would then land there. A clean tree is
+        switched back. A tree with uncommitted changes is refused rather than
+        carried across, because those changes belong to whatever was interrupted.
+        """
+        branch = self.canonical_branch()
+        current = self.run(
+            ["rev-parse", "--abbrev-ref", "HEAD"], check=True
+        ).stdout.strip()
+        if current == branch:
+            return
+        if self.run(["status", "--porcelain"], check=True).stdout.strip():
+            raise WorkingTreeOffAcceptedBranchError(
+                "The project working tree is on another branch with uncommitted "
+                "changes; discard or synchronize them before continuing"
+            )
+        logger.warning("Returning a project working tree to its accepted branch")
+        self.checkout(branch)
 
     def add_all(self) -> None:
         self.run(["add", "."], check=True)

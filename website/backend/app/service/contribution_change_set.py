@@ -64,7 +64,7 @@ class ContributionChangeSetCoordinator:
                 )
                 existing.expected_commit = GitCommandRunner(
                     project_path, maintain_backup=False
-                ).get_commit_hash()
+                ).canonical_head()
                 existing.requested_by = requested_by
                 existing.resolution_strategy = resolution_strategy
                 existing.state = "queued"
@@ -80,9 +80,10 @@ class ContributionChangeSetCoordinator:
             raise ValueError("Contribution is no longer awaiting publication")
 
         project_path = safe_project_path(self.git_service.base_path, project_name)
+        # Guard the accepted branch itself, not whatever happens to be checked out.
         expected_commit = GitCommandRunner(
             project_path, maintain_backup=False
-        ).get_commit_hash()
+        ).canonical_head()
         change_set = ContributionChangeSet(
             project_id=project.project_id,
             upload_id=upload.upload_id,
@@ -156,7 +157,7 @@ class ContributionChangeSetCoordinator:
         )
         current_commit = GitCommandRunner(
             project_path, maintain_backup=False
-        ).get_commit_hash()
+        ).canonical_head()
         if current_commit != change_set.expected_commit:
             contribution_already_published = (
                 GitCommandRunner(project_path, maintain_backup=False)

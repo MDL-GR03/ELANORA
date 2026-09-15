@@ -125,7 +125,7 @@ class ProjectIntegrityService:
             raise FileNotFoundError("Project not found")
         project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
-        git_commit = runner.get_commit_hash()
+        git_commit = runner.canonical_head()
         revision = (
             await db.get(ProjectRevision, project.current_revision_id)
             if project.current_revision_id is not None
@@ -403,6 +403,9 @@ class ProjectIntegrityService:
 
         project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
+        # Re-anchoring resets the checked-out branch, so it must be the accepted
+        # one. Otherwise a stray branch is rewound and the accepted one is left.
+        runner.ensure_canonical_checkout()
         previous_git_head = runner.get_commit_hash()
         manifest = await verify_project_revision_manifest(db, revision.revision_id)
         for entry in manifest:

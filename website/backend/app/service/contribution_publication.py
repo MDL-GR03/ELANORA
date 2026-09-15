@@ -46,9 +46,12 @@ class ContributionPublicationService:
         )
         project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
-        parent_commit = expected_parent_commit or runner.get_commit_hash()
+        # The projection is rebuilt from the working tree and the ledger records
+        # commits, so both must refer to the accepted branch, not a stray checkout.
+        runner.ensure_canonical_checkout()
+        parent_commit = expected_parent_commit or runner.canonical_head()
         result = runner.complete_pending_merge(branch_name, resolution_strategy)
-        accepted_commit = runner.get_commit_hash()
+        accepted_commit = runner.canonical_head()
         try:
             await rebuild_projection(project_name, db, user_id)
             await mark_upload_processed(

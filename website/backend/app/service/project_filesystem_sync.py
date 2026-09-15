@@ -55,6 +55,10 @@ class ProjectFilesystemSyncService:
 
         logger.info("Starting project synchronization")
 
+        # Server edits are committed to the checked-out branch, which must be the
+        # accepted one. Edits on a stray branch are refused, not committed there.
+        runner.ensure_canonical_checkout()
+
         # Inspect first. Nothing is staged until every changed EAF passes preflight.
         elan_files_dir = project_path / "elan_files"
         files_status, processed_files = self._analyze_changes(runner, elan_files_dir)
@@ -270,15 +274,22 @@ class ProjectFilesystemSyncService:
         ).model_dump()
 
     def discard_local_changes(self, project_name: str) -> str:
+        """Discard server edits and leave the accepted repository version checked out.
+
+        Uncommitted work is dropped where it is, then the tree returns to the
+        accepted branch. Only that branch is ever reset, so no other branch, such
+        as one left by an interrupted upload, is rewritten.
+        """
         project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
-        remotes = runner.run(["remote", "-v"]).stdout.strip()
-        if "origin" in remotes:
+        runner.reset_hard()
+        runner.clean(force=True, directories=True)
+        runner.ensure_canonical_checkout()
+        if "origin" in runner.run(["remote", "-v"]).stdout.strip():
             logger.info("Found a configured project Git remote")
             runner.run(["fetch", "origin"], check=True)
-            runner.reset_hard("origin/master")
+            runner.reset_hard(f"origin/{runner.canonical_branch()}")
+            runner.clean(force=True, directories=True)
         else:
             logger.warning("No project Git remote is configured")
-            runner.reset_hard()
-        runner.clean(force=True, directories=True)
         return "Local changes discarded and folder reset to match the latest remote master."

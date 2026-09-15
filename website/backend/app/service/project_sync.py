@@ -42,7 +42,7 @@ class ProjectSyncCoordinator:
             initiated_by=user_id,
             state="preparing",
             changes=changes,
-            starting_commit=runner.get_commit_hash(),
+            starting_commit=runner.canonical_head(),
         )
         db.add(operation)
         await db.commit()
@@ -61,7 +61,7 @@ class ProjectSyncCoordinator:
             await self.git.synchronize_project(
                 project_name, db, user_id, operation_id=str(operation.operation_id)
             )
-            operation.resulting_commit = runner.get_commit_hash()
+            operation.resulting_commit = runner.canonical_head()
             await append_project_revision(
                 db,
                 project_id=project.project_id,
@@ -86,7 +86,7 @@ class ProjectSyncCoordinator:
                 ProjectSyncOperation, operation.operation_id
             )
             if refreshed_operation is not None:
-                head = runner.get_commit_hash()
+                head = runner.canonical_head()
                 refreshed_operation.state = (
                     "recovery_required"
                     if head != operation.starting_commit
@@ -131,7 +131,7 @@ class ProjectSyncCoordinator:
                 changed = True
             elif operation.state == "committing":
                 runner = self.git.command_runner(project_name)
-                head = runner.get_commit_hash()
+                head = runner.canonical_head()
                 operation.state = (
                     "recovery_required"
                     if head != operation.starting_commit
@@ -171,8 +171,10 @@ class ProjectSyncCoordinator:
         if operation.state != "recovery_required":
             raise ValueError("Only recovery-required operations can be recovered")
         runner = self.git.command_runner(project_name)
-        head = runner.get_commit_hash()
-        commit_message = runner.run(["log", "-1", "--format=%B"], check=True).stdout
+        head = runner.canonical_head()
+        commit_message = runner.run(
+            ["log", "-1", "--format=%B", runner.canonical_branch()], check=True
+        ).stdout
         if (
             operation.resulting_commit != head
             and str(operation.operation_id) not in commit_message
@@ -215,7 +217,7 @@ class ProjectSyncCoordinator:
             initiated_by=user_id,
             state="preparing",
             changes=changes,
-            starting_commit=runner.get_commit_hash(),
+            starting_commit=runner.canonical_head(),
         )
         db.add(operation)
         await db.commit()

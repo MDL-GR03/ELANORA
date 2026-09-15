@@ -892,3 +892,154 @@ async def test_one_uninspectable_contribution_does_not_hide_the_review_queue(
     assert queue["total_pending"] == 2
     assert by_id[healthy.upload_id]["merge_status"] == "ready_to_merge"
     assert by_id[broken.upload_id]["merge_status"] == "error"
+
+
+def _strand_on_stray_branch(runner: GitCommandRunner, project_path: Path) -> str:
+    """Leave the canonical tree off the accepted branch, as a crashed upload does."""
+    runner.run(["checkout", "master"], check=True)
+    runner.run(["checkout", "-b", "upload_crashed_midway"], check=True)
+    (project_path / "elan_files" / "half-uploaded.eaf").write_bytes(
+        EAF_FIXTURE.read_bytes()
+    )
+    runner.run(["add", "elan_files"], check=True)
+    runner.run(["commit", "-m", "interrupted upload"], check=True)
+    return runner.run(["rev-parse", "HEAD"], check=True).stdout.strip()
+
+
+@pytest.mark.asyncio
+async def test_publication_records_the_accepted_parent_whatever_is_checked_out(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """The immutable ledger must name the accepted parent, never a stray branch."""
+    project, admin, researcher, _, project_path, runner = await _domain(
+        session, tmp_path, "stray-parent"
+    )
+    _branch_with_changes(
+        runner,
+        project_path,
+        "reviewed-change",
+        {
+            "video-11.eaf": (
+                b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>",
+                b"<ANNOTATION_VALUE>Reviewed</ANNOTATION_VALUE>",
+            )
+        },
+    )
+    upload = await _pending(
+        session, project, researcher, runner, "reviewed-change", ["video-11.eaf"]
+    )
+    accepted_parent = runner.run(["rev-parse", "master"], check=True).stdout.strip()
+    stray_head = _strand_on_stray_branch(runner, project_path)
+
+    await GitService(base_path=str(tmp_path)).complete_pending_upload(
+        project.project_name, upload.branch_name, "auto", session, admin.user_id
+    )
+
+    revision = await session.scalar(
+        select(ProjectRevision)
+        .where(ProjectRevision.project_id == project.project_id)
+        .order_by(ProjectRevision.ordinal.desc())
+        .limit(1)
+    )
+    assert revision is not None
+    assert revision.parent_git_commit != stray_head
+    assert revision.parent_git_commit == accepted_parent
+    assert (
+        revision.git_commit
+        == runner.run(["rev-parse", "master"], check=True).stdout.strip()
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_publication_request_guards_the_accepted_branch_not_the_checkout(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    project, admin, researcher, _, project_path, runner = await _domain(
+        session, tmp_path, "stray-request"
+    )
+    _branch_with_changes(
+        runner,
+        project_path,
+        "queued-change",
+        {
+            "video-11.eaf": (
+                b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>",
+                b"<ANNOTATION_VALUE>Queued</ANNOTATION_VALUE>",
+            )
+        },
+    )
+    await _pending(
+        session, project, researcher, runner, "queued-change", ["video-11.eaf"]
+    )
+    accepted_head = runner.run(["rev-parse", "master"], check=True).stdout.strip()
+    _strand_on_stray_branch(runner, project_path)
+
+    change_set = await ContributionChangeSetCoordinator(
+        GitService(base_path=str(tmp_path))
+    ).request(
+        session,
+        project_name=project.project_name,
+        branch_name="queued-change",
+        resolution_strategy="auto",
+        requested_by=admin.user_id,
+    )
+
+    assert change_set.expected_commit == accepted_head
+
+
+@pytest.mark.asyncio
+async def test_integrity_recovery_repairs_the_accepted_branch_not_a_stray_checkout(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """Recovery must re-anchor the accepted branch, and leave other branches alone.
+
+    Resetting whatever is checked out would rewind a stray branch, possibly the
+    only reference to an interrupted upload, while the accepted branch stayed
+    unrepaired and the health check still reported success.
+    """
+    project, admin, researcher, _, project_path, runner = await _domain(
+        session, tmp_path, "stray-recovery"
+    )
+    _branch_with_changes(
+        runner,
+        project_path,
+        "accepted-change",
+        {
+            "video-11.eaf": (
+                b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>",
+                b"<ANNOTATION_VALUE>Accepted before the crash</ANNOTATION_VALUE>",
+            )
+        },
+    )
+    upload = await _pending(
+        session, project, researcher, runner, "accepted-change", ["video-11.eaf"]
+    )
+    service = GitService(base_path=str(tmp_path))
+    await service.complete_pending_upload(
+        project.project_name, upload.branch_name, "auto", session, admin.user_id
+    )
+    project_name, admin_id = project.project_name, admin.user_id
+    await session.refresh(project)
+    revision_id = project.current_revision_id
+    revision = await session.get(ProjectRevision, revision_id)
+    assert revision is not None
+    accepted_commit = revision.git_commit
+    stray_head = _strand_on_stray_branch(runner, project_path)
+
+    recovered = await service.recover_current_revision_from_manifest(
+        project_name,
+        revision_id,
+        session,
+        admin_id,
+        reason="Working tree left on an interrupted upload branch",
+        confirmation=f"RECOVER {project_name}",
+    )
+
+    assert recovered["status"] == "recovered"
+    branch = runner.run(["rev-parse", "--abbrev-ref", "HEAD"], check=True)
+    assert branch.stdout.strip() == "master"
+    assert runner.canonical_head() == accepted_commit
+    stray = runner.run(["rev-parse", "upload_crashed_midway"], check=True)
+    assert stray.stdout.strip() == stray_head
+    healthy = await service.get_current_revision_health(project_name, session)
+    assert healthy["status"] == "healthy"

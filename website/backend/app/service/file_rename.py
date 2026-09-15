@@ -68,6 +68,11 @@ class FileRenameService:
         project_path = safe_project_path(self.base_path, project_name)
         if not project_path.exists():
             raise FileNotFoundError(f"Project '{project_name}' not found")
+        # The database records accepted filenames, so the rename must be made
+        # on, and committed to, the accepted branch.
+        GitCommandRunner(
+            project_path, maintain_backup=False
+        ).ensure_canonical_checkout()
         return project_path
 
     async def _conflicting_elan_id(

@@ -16,7 +16,10 @@ from app.model.file_content import FileContent
 from app.model.instance import Instance
 from app.model.project import Project
 from app.model.user import User
-from app.service.git_operations import GitCommandRunner
+from app.service.git_operations import (
+    GitCommandRunner,
+    WorkingTreeOffAcceptedBranchError,
+)
 from app.service.project_filesystem_sync import ProjectFilesystemSyncService
 
 EAF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
@@ -229,3 +232,62 @@ async def test_a_missing_changed_file_is_refused(
                 }
             ],
         )
+
+
+@pytest.mark.asyncio
+async def test_synchronizing_never_commits_server_edits_onto_a_stray_branch(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """Refuse to synchronize edits made while the tree was stranded.
+
+    They cannot be attributed to the accepted branch, so they are refused rather
+    than committed to another branch.
+    """
+    project, project_path, curator_id = await _project(
+        session, tmp_path, ["video-11.eaf"]
+    )
+    runner = GitCommandRunner(project_path, maintain_backup=False)
+    runner.run(["checkout", "-b", "upload_crashed_midway"], check=True)
+    stray_head = runner.get_commit_hash()
+    (project_path / "elan_files" / "session-12.eaf").write_bytes(
+        EAF_FIXTURE.read_bytes()
+    )
+
+    with pytest.raises(WorkingTreeOffAcceptedBranchError):
+        await _service(tmp_path).synchronize(PROJECT_NAME, session, curator_id, None)
+
+    await session.rollback()
+    assert (
+        runner.run(["rev-parse", "upload_crashed_midway"], check=True).stdout.strip()
+        == stray_head
+    )
+    assert "session-12.eaf" not in await _stored_filenames(session, project.project_id)
+
+
+@pytest.mark.asyncio
+async def test_keeping_the_repository_version_returns_to_the_accepted_branch(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """Leave the accepted state checked out after discarding server edits.
+
+    No other branch may be rewritten in the process.
+    """
+    _, project_path, _curator_id = await _project(session, tmp_path, ["video-11.eaf"])
+    runner = GitCommandRunner(project_path, maintain_backup=False)
+    runner.run(["checkout", "-b", "upload_crashed_midway"], check=True)
+    (project_path / "elan_files" / "interrupted.eaf").write_text("half written")
+    runner.run(["add", "elan_files"], check=True)
+    runner.run(["commit", "-m", "interrupted upload"], check=True)
+    stray_head = runner.get_commit_hash()
+    (project_path / "elan_files" / "video-11.eaf").write_text("stray server edit")
+
+    _service(tmp_path).discard_local_changes(PROJECT_NAME)
+
+    current = runner.run(["rev-parse", "--abbrev-ref", "HEAD"], check=True)
+    assert current.stdout.strip() == "master"
+    assert runner.run(["status", "--porcelain"], check=True).stdout.strip() == ""
+    assert (
+        runner.run(["rev-parse", "upload_crashed_midway"], check=True).stdout.strip()
+        == stray_head
+    )
+    assert not (project_path / "elan_files" / "interrupted.eaf").exists()

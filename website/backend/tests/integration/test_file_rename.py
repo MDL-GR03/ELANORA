@@ -282,3 +282,28 @@ async def test_a_batch_with_no_usable_entries_commits_nothing(
     assert await get_elan_file_name_by_id(session, ids["video-11.eaf"]) == (
         "video-11.eaf"
     )
+
+
+@pytest.mark.asyncio
+async def test_a_rename_lands_on_the_accepted_branch_not_a_stray_checkout(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """The database records accepted filenames, so the rename commit belongs there."""
+    _, project_path, ids = await _project(session, tmp_path, ["video-11.eaf"])
+    runner = GitCommandRunner(project_path, maintain_backup=False)
+    runner.run(["checkout", "-b", "upload_crashed_midway"], check=True)
+    stray_head = runner.get_commit_hash()
+
+    await _service(tmp_path).rename_one(
+        session, PROJECT_NAME, ids["video-11.eaf"], "session-01.eaf"
+    )
+
+    branch = runner.run(["rev-parse", "upload_crashed_midway"], check=True)
+    assert branch.stdout.strip() == stray_head
+    accepted = runner.run(
+        ["ls-tree", "--name-only", "master", "elan_files/"], check=True
+    ).stdout.split()
+    assert "elan_files/session-01.eaf" in accepted
+    assert await get_elan_file_name_by_id(session, ids["video-11.eaf"]) == (
+        "session-01.eaf"
+    )
