@@ -1346,7 +1346,11 @@
       "statusDecision": "Décision sur le sujet requise",
       "statusMissing": "Contexte manquant"
     },
-    "collision": { "title": "La même annotation a été modifiée ailleurs" }
+    "collision": { "title": "La même annotation a été modifiée ailleurs" },
+    "protocolWarnings": {
+      "summary": "{count} avertissement du protocole | {count} avertissements du protocole",
+      "intro": "Le protocole du projet traite ces règles comme des avertissements. Les fichiers peuvent être acceptés, mais ne respectent pas entièrement le protocole."
+    }
   },
   "contributionDetails": {
     "overview": {

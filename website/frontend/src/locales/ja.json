@@ -1451,7 +1451,11 @@
       "statusDecision": "トピックの判断が必要",
       "statusMissing": "コンテキストなし"
     },
-    "collision": { "title": "同じ注釈が別の場所でも編集されています" }
+    "collision": { "title": "同じ注釈が別の場所でも編集されています" },
+    "protocolWarnings": {
+      "summary": "プロトコル警告 {count} 件",
+      "intro": "プロジェクトのプロトコルでは、これらのルールは警告として扱われます。ファイルは承認できますが、プロトコルに完全には準拠していません。"
+    }
   },
   "contributionDetails": {
     "overview": {

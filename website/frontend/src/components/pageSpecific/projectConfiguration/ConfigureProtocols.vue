@@ -274,6 +274,7 @@ import reviewService from '@/api/service/reviewService';
 import AppSelect from '@/components/common/AppSelect.vue';
 import CorpusProtocolSuggestion from './CorpusProtocolSuggestion.vue';
 import ProtocolRuleBuilder from './ProtocolRuleBuilder.vue';
+import { countRules, emptyRules, normalizeRules } from '@/utils/protocolRules';
 const scanFilterOptions = [
   { value: 'all', label: 'All files' },
   { value: 'failed', label: 'Needs attention' },
@@ -351,25 +352,7 @@ const visibleFiles = computed(
       (file) => filter.value === 'all' || file.outcome === filter.value
     ) || []
 );
-const form = reactive({
-  name: '',
-  rules: {
-    required_tiers: [],
-    tier_parents: {},
-    tier_linguistic_types: {},
-    required_controlled_vocabularies: [],
-    media_required: false,
-    allowed_media_mime_types: [],
-  },
-});
-const emptyRules = () => ({
-  required_tiers: [],
-  tier_parents: {},
-  tier_linguistic_types: {},
-  required_controlled_vocabularies: [],
-  media_required: false,
-  allowed_media_mime_types: [],
-});
+const form = reactive({ name: '', rules: emptyRules() });
 const reasonText = (reason) =>
   reason.response?.data?.detail || reason.message || 'Unexpected error';
 const notify = (message, type = 'success') =>
@@ -384,10 +367,7 @@ const resetForm = () => {
   editedVersionId.value = null;
 };
 const fillRules = (rules) => {
-  form.rules = {
-    ...emptyRules(),
-    ...structuredClone(rules),
-  };
+  form.rules = normalizeRules(rules);
 };
 const toggleCreateForm = () => {
   if (showForm.value) {
@@ -620,14 +600,12 @@ const openCorrection = async (file, issue) => {
   }
 };
 const summarizeRules = (rules) => {
-  const count =
-    (rules.required_tiers?.length || 0) +
-    Object.keys(rules.tier_parents || {}).length +
-    Object.keys(rules.tier_linguistic_types || {}).length +
-    (rules.required_controlled_vocabularies?.length || 0) +
-    (rules.media_required ? 1 : 0) +
-    (rules.allowed_media_mime_types?.length || 0);
-  return `${count} configured rule${count === 1 ? '' : 's'}`;
+  const count = countRules(rules);
+  const warnings = Object.keys(rules.severities || {}).length;
+  const summary = `${count} configured rule${count === 1 ? '' : 's'}`;
+  return warnings
+    ? `${summary}, ${warnings} enforced as warning${warnings === 1 ? '' : 's'}`
+    : summary;
 };
 const friendlyLocation = (location) =>
   location === '/ANNOTATION_DOCUMENT'

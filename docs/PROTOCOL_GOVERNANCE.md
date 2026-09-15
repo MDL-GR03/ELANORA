@@ -87,7 +87,11 @@ All three decisions use one definition, `blocking_findings` in
 `app/service/protocol_evaluation.py`.
 
 The project configuration page now includes a **Versioned Protocol** editor for
-creating, publishing, and pinning these snapshots. The same API is exposed
+creating, publishing, and pinning these snapshots. It covers every rule
+family above, with an enforcement section offering error or warning for each
+configured rule. Removing a tier or vocabulary removes the rules that name it,
+so drafts stay valid. Reviewers see an upload's recorded warnings on its
+contribution card. The same API is exposed
 below `/api/v1/projects/{project_id}` and documented at `/docs` in development.
 
 ## Validation evidence

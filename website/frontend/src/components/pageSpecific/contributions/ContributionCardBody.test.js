@@ -6,7 +6,9 @@ import { describe, expect, it, vi } from 'vitest';
 import ContributionCardBody from './ContributionCardBody.vue';
 
 vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key) => key }),
+  useI18n: () => ({
+    t: (key, count) => (typeof count === 'number' ? `${key}:${count}` : key),
+  }),
 }));
 
 const global = {
@@ -93,5 +95,41 @@ describe('ContributionCardBody', () => {
     expect(wrapper.findAll('.duplicate-notice')).toHaveLength(2);
     expect(wrapper.get('.conflict-file').text()).toBe('elan_files/session.eaf');
     expect(wrapper.get('.quality-check.passed').exists()).toBe(true);
+  });
+
+  it('lists protocol warnings for the reviewer', () => {
+    const wrapper = mount(ContributionCardBody, {
+      props: {
+        upload: {
+          quality_checks: { protocol: 'passed' },
+          protocol_warnings: [
+            {
+              filename: 'session-12.eaf',
+              code: 'protocol.empty_annotation_values',
+              message: "Tier 'gloss' has 2 annotations without a value",
+              location: null,
+              rule_key: 'non_empty_tiers',
+            },
+          ],
+        },
+      },
+      global,
+    });
+
+    const warnings = wrapper.get('.protocol-warnings');
+    expect(warnings.get('summary').text()).toBe(
+      'contributionWorkspace.protocolWarnings.summary:1'
+    );
+    expect(warnings.text()).toContain('session-12.eaf');
+    expect(warnings.text()).toContain('2 annotations without a value');
+  });
+
+  it('shows no warning panel when the contribution has none', () => {
+    const wrapper = mount(ContributionCardBody, {
+      props: { upload: { quality_checks: { protocol: 'passed' } } },
+      global,
+    });
+
+    expect(wrapper.find('.protocol-warnings').exists()).toBe(false);
   });
 });

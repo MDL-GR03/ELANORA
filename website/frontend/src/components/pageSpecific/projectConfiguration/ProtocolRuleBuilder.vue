@@ -100,18 +100,33 @@
           <p>Require the shared vocabularies used by this research project.</p>
         </div>
       </header>
-      <div class="chips" aria-label="Required controlled vocabularies">
-        <span v-for="vocabulary in vocabularies" :key="vocabulary">
-          {{ vocabulary }}
+      <ul
+        v-if="vocabularies.length"
+        class="vocabulary-list"
+        aria-label="Required controlled vocabularies"
+      >
+        <li v-for="vocabulary in vocabularies" :key="vocabulary">
+          <strong>{{ vocabulary }}</strong>
+          <label>
+            Values required in languages
+            <input
+              :value="
+                (modelValue.vocabulary_languages?.[vocabulary] || []).join(', ')
+              "
+              placeholder="Any, or for example: en, fr"
+              @change="setVocabularyLanguages(vocabulary, $event.target.value)"
+            />
+          </label>
           <button
+            class="remove-button"
             type="button"
             :aria-label="`Remove ${vocabulary}`"
             @click="removeVocabulary(vocabulary)"
           >
-            ×
+            Remove
           </button>
-        </span>
-      </div>
+        </li>
+      </ul>
       <div class="inline-add">
         <input
           v-model.trim="newVocabulary"
@@ -186,13 +201,72 @@
         </button>
       </div>
     </section>
+
+    <section class="builder-section">
+      <header>
+        <div>
+          <span class="step">4 · Annotation quality</span>
+          <h5>Checks on each required tier</h5>
+          <p>
+            Require tier metadata and complete annotations. Vocabulary checks
+            use the vocabulary named by the tier’s linguistic type.
+          </p>
+        </div>
+      </header>
+      <ProtocolTierChecks
+        :model-value="modelValue"
+        @update:model-value="emit('update:modelValue', $event)"
+      />
+    </section>
+
+    <section class="builder-section">
+      <header>
+        <div>
+          <span class="step">5 · Linguistic types</span>
+          <h5>Constraint stereotypes</h5>
+          <p>
+            Require how annotations of a linguistic type relate to a parent.
+          </p>
+        </div>
+      </header>
+      <ProtocolTypeConstraints
+        :model-value="modelValue"
+        @update:model-value="emit('update:modelValue', $event)"
+      />
+    </section>
+
+    <section class="builder-section">
+      <header>
+        <div>
+          <span class="step">6 · Enforcement</span>
+          <h5>What happens when a rule is not met</h5>
+          <p>
+            Refused files never enter the project. Warnings let the file through
+            and are shown to reviewers.
+          </p>
+        </div>
+      </header>
+      <ProtocolRuleSeverities
+        :model-value="modelValue"
+        @update:model-value="emit('update:modelValue', $event)"
+      />
+    </section>
   </div>
 </template>
 
 <script setup>
 import { computed, reactive, ref } from 'vue';
 import AppSelect from '@/components/common/AppSelect.vue';
+import {
+  parseLanguages,
+  withMappingValue,
+  withoutTier,
+  withoutVocabulary,
+} from '@/utils/protocolRules';
+import ProtocolRuleSeverities from './ProtocolRuleSeverities.vue';
+import ProtocolTierChecks from './ProtocolTierChecks.vue';
 import ProtocolTierTree from './ProtocolTierTree.vue';
+import ProtocolTypeConstraints from './ProtocolTypeConstraints.vue';
 
 const props = defineProps({
   modelValue: {
@@ -299,23 +373,7 @@ const addTier = () => {
   });
   Object.assign(newTier, { name: '', parent: '', type: '' });
 };
-const removeTier = (name) => {
-  const requiredTiers = props.modelValue.required_tiers.filter(
-    (tier) => tier !== name
-  );
-  const parents = { ...(props.modelValue.tier_parents || {}) };
-  const types = { ...(props.modelValue.tier_linguistic_types || {}) };
-  delete parents[name];
-  delete types[name];
-  Object.entries(parents).forEach(([tier, parent]) => {
-    if (parent === name) delete parents[tier];
-  });
-  update({
-    required_tiers: requiredTiers,
-    tier_parents: parents,
-    tier_linguistic_types: types,
-  });
-};
+const removeTier = (name) => update(withoutTier(props.modelValue, name));
 const addVocabulary = () => {
   const value = newVocabulary.value.trim();
   if (!value || vocabularies.value.includes(value)) return;
@@ -325,11 +383,16 @@ const addVocabulary = () => {
   newVocabulary.value = '';
 };
 const removeVocabulary = (value) =>
-  update({
-    required_controlled_vocabularies: vocabularies.value.filter(
-      (item) => item !== value
-    ),
-  });
+  update(withoutVocabulary(props.modelValue, value));
+const setVocabularyLanguages = (vocabulary, text) =>
+  update(
+    withMappingValue(
+      props.modelValue,
+      'vocabulary_languages',
+      vocabulary,
+      parseLanguages(text)
+    )
+  );
 const setMediaRequired = (required) => update({ media_required: required });
 const toggleMediaType = (mimeType, checked) =>
   update({
@@ -554,6 +617,31 @@ button:disabled {
   color: inherit;
 }
 
+.vocabulary-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vocabulary-list li {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 1.4fr) auto;
+  align-items: end;
+  gap: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.7rem;
+  background: #fbfdff;
+}
+
+.vocabulary-list strong {
+  align-self: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .inline-add {
   display: grid;
   grid-template-columns: minmax(12rem, 24rem) auto;
@@ -632,6 +720,7 @@ fieldset label small {
 
 @media (width <= 640px) {
   .builder-section > header,
+  .vocabulary-list li,
   .tier-table article,
   .add-tier {
     grid-template-columns: 1fr;

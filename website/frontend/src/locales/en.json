@@ -1353,7 +1353,11 @@
       "statusDecision": "Topic decision needed",
       "statusMissing": "Context missing"
     },
-    "collision": { "title": "Same annotation edited elsewhere" }
+    "collision": { "title": "Same annotation edited elsewhere" },
+    "protocolWarnings": {
+      "summary": "{count} protocol warning | {count} protocol warnings",
+      "intro": "The project protocol treats these rules as warnings. The files may still be accepted, but they do not fully follow the protocol."
+    }
   },
   "contributionDetails": {
     "overview": {

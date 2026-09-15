@@ -101,6 +101,28 @@
       </span>
     </div>
 
+    <details v-if="protocolWarnings.length" class="protocol-warnings">
+      <summary>
+        <font-awesome-icon icon="fa-solid fa-triangle-exclamation" />
+        {{
+          t(
+            'contributionWorkspace.protocolWarnings.summary',
+            protocolWarnings.length
+          )
+        }}
+      </summary>
+      <p>{{ t('contributionWorkspace.protocolWarnings.intro') }}</p>
+      <ul>
+        <li
+          v-for="(warning, index) in protocolWarnings"
+          :key="`${warning.filename}-${warning.code}-${index}`"
+        >
+          <strong>{{ warning.filename }}</strong>
+          <span>{{ warning.message }}</span>
+        </li>
+      </ul>
+    </details>
+
     <div class="file-counts">
       <span v-if="upload.file_counts?.new > 0" class="file-count new">
         +{{ upload.file_counts.new }} {{ t('pendingUploads.fileTypes.new') }}
@@ -189,6 +211,7 @@ defineEmits(['show-contribution', 'discussion', 'view-version']);
 const { t } = useI18n();
 const collisionCount = computed(() => countAnnotationCollisions(props.upload));
 const protocolOutcome = computed(() => props.upload.quality_checks?.protocol);
+const protocolWarnings = computed(() => props.upload.protocol_warnings || []);
 const protocolCheckClass = computed(() => {
   if (protocolOutcome.value === 'passed') return 'passed';
   if (protocolOutcome.value === 'recheck_required') return 'recheck-required';
