@@ -1,4 +1,3 @@
-import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -10,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
-from app.core.error_diagnostics import safe_exception_type
 from app.crud import elan_file_media as elan_media_crud
 from app.crud.elan_file import (
     get_elan_files_by_project,
@@ -51,10 +49,8 @@ from app.service.project_lifecycle import ProjectLifecycleService
 from app.storage.paths import safe_project_path
 from app.utils.project_backup import (
     remove_project_backup,
-    rename_project_backup_folder,
     restore_project_backup,
 )
-from app.utils.project_setup_utils import update_project_githooks
 
 logger = get_logger()
 EXPECTED_LOG_FIELDS = 4
@@ -680,27 +676,8 @@ class GitService:
         self.filesystem_sync.validate_changes(project_name, changes)
 
     async def delete_project(self, project_name: str, db: AsyncSession) -> None:
-        """Delete a project by its ID."""
-        logger.info("Starting project deletion")
-        # Remove all DB artifacts (project, files, annotations, etc.)
-        try:
-            await delete_project_db(db, project_name)
-            logger.info("Deleted project database records")
-            await db.commit()
-        except Exception as db_exc:
-            await db.rollback()
-            logger.error(
-                "Failed to delete project database records; error_type=%s",
-                safe_exception_type(db_exc),
-            )
-            raise
-
-        # Remove the project folder from disk
-        if not project_name:
-            logger.error("Project deletion was requested without a project name")
-            raise ValueError("Project name is required")
-        project_path = safe_project_path(self.base_path, project_name)
-        delete_project_folder(project_path)
+        """Retain the project record as deleted, then remove its working folder."""
+        await self.project_lifecycle.delete_project(db, project_name)
 
     async def edit_project(
         self,
@@ -709,67 +686,10 @@ class GitService:
         new_project_description: str | None,
         db: AsyncSession,
     ) -> dict[str, str | None]:
-        """Edit an existing project both in the filesystem and in the database.
-
-        Args:
-            old_project_name (str): The current name of the project.
-            new_project_name (str): The new name to assign to the project.
-            new_project_description (str | None): The new description.
-            db (AsyncSession): The database session.
-
-        Returns:
-            dict: A dictionary containing the new project name and description.
-
-        Raises:
-            ValueError: If the old project is not found in the database.
-            FileNotFoundError: If the old project folder does not exist.
-            FileExistsError: If the target project folder already exists.
-            Exception: If renaming the folder fails.
-
-        """
-        logger.info("Starting project metadata update")
-        project = await get_project_by_name(db, old_project_name)
-        if not project:
-            logger.error("Project metadata update target was not found")
-            raise ValueError("Project not found in database")
-
-        old_path = safe_project_path(self.base_path, old_project_name)
-
-        # Only rename if the name is actually changed
-        if new_project_name != old_project_name:
-            new_path = safe_project_path(self.base_path, new_project_name)
-            if not old_path.exists():
-                logger.error("Project directory was not found during rename")
-                raise FileNotFoundError("Project directory not found")
-            if new_path.exists():
-                logger.error("Target project directory already exists")
-                raise FileExistsError("Target project directory already exists")
-            try:
-                os.rename(old_path, new_path)
-                logger.info("Renamed the project directory")
-            except Exception as e:
-                logger.error(
-                    "Failed to rename the project directory; error_type=%s",
-                    safe_exception_type(e),
-                )
-                raise
-
-            project.project_name = new_project_name
-            project.project_path = str(new_path)
-            rename_project_backup_folder(old_project_name, project.project_name)
-            update_project_githooks(new_path, project.project_name)
-        else:
-            # Name unchanged, just update description
-            logger.info("Project name unchanged, only updating description.")
-
-        project.description = new_project_description
-        await db.commit()
-        logger.info("Updated project metadata in the database")
-        logger.info("Updated the project description")
-        return {
-            "new_project_name": new_project_name,
-            "new_project_description": new_project_description,
-        }
+        """Rename a project and update its description as one change."""
+        return await self.project_lifecycle.rename_project(
+            db, old_project_name, new_project_name, new_project_description
+        )
 
     def synchronize_project_check(self, project_name: str) -> dict[str, Any]:
         """Check for changes in a Git-managed project and analyze file status."""

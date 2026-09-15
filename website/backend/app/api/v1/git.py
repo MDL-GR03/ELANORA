@@ -76,6 +76,7 @@ from app.service.eaf_review import (
     comparison_payload,
 )
 from app.service.git import GitService
+from app.service.project_lifecycle import ProjectNameUnavailableError
 from app.service.project_sync import ProjectSyncCoordinator, operation_payload
 from app.service.research_topics import (
     SimilarResearchTopicError,
@@ -99,6 +100,12 @@ INVALID_PROJECT_STATE = "Invalid project state"
 
 git_service = GitService()
 contribution_change_sets = ContributionChangeSetCoordinator(git_service)
+
+# Deleted projects stay restorable by name, so their names remain reserved.
+PROJECT_NAME_UNAVAILABLE = (
+    "This name is already used by another project, including a deleted project "
+    "that can still be restored. Choose a different name."
+)
 sync_coordinator = ProjectSyncCoordinator(git_service)
 logger = get_logger()
 
@@ -666,6 +673,8 @@ async def edit_project(
         return ProjectEditResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail="Project or file not found") from e
+    except ProjectNameUnavailableError as e:
+        raise HTTPException(status_code=409, detail=PROJECT_NAME_UNAVAILABLE) from e
     except FileExistsError as e:
         raise HTTPException(status_code=409, detail="Project state conflict") from e
     except Exception as e:

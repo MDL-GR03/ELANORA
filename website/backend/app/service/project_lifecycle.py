@@ -1,29 +1,50 @@
-"""Project repository creation and import lifecycle operations."""
+"""Project repository creation, import, rename and deletion lifecycle."""
 
+import shutil
 import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from fastapi import UploadFile
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
-from app.crud.project import create_project_db, project_exists_by_name
+from app.crud.project import (
+    create_project_db,
+    delete_project_db,
+    get_project_by_name,
+    project_exists_by_name,
+)
+from app.model.project import Project
 from app.service.elan import ElanService
 from app.service.git_operations import GitCommandRunner, delete_project_folder
 from app.service.project_revision import append_project_revision
 from app.storage.paths import safe_project_path
-from app.utils.project_backup import remove_project_backup, update_backup
+from app.utils.project_backup import (
+    create_hidden_folder_in_root,
+    remove_project_backup,
+    update_backup,
+)
 from app.utils.project_setup_utils import (
     copy_githooks,
     create_gitignore,
     create_project_structure,
     create_readme,
+    update_project_githooks,
 )
 
 logger = get_logger()
+
+
+class ProjectNameUnavailableError(FileExistsError):
+    """The name belongs to another project, including a retained deleted one.
+
+    A deleted project keeps its record and recovery cache so it can be restored
+    by name, and restoring it writes to the folder of that name.
+    """
 
 
 class ProjectLifecycleService:
@@ -261,3 +282,135 @@ class ProjectLifecycleService:
             except Exception:
                 logger.error("Unable to clean up failed project creation")
             raise RuntimeError("Project creation failed") from e
+
+    async def _name_is_held_by_another_project(
+        self, db: AsyncSession, project: Project, name: str, path: Path
+    ) -> bool:
+        holder = await db.scalar(
+            select(Project.project_id)
+            .where(
+                Project.project_id != project.project_id,
+                or_(Project.project_name == name, Project.project_path == str(path)),
+            )
+            .limit(1)
+        )
+        return holder is not None
+
+    @staticmethod
+    def _restore_moves(moved: list[tuple[Path, Path]]) -> None:
+        """Put moved folders back, newest first, reporting any that cannot be."""
+        for current, original in reversed(moved):
+            try:
+                shutil.move(str(current), str(original))
+            except Exception as error:
+                logger.error(
+                    "Could not restore a folder moved by a failed project rename; "
+                    "error_type=%s",
+                    safe_exception_type(error),
+                )
+
+    async def rename_project(
+        self,
+        db: AsyncSession,
+        old_project_name: str,
+        new_project_name: str,
+        new_project_description: str | None,
+    ) -> dict[str, str | None]:
+        """Rename a project's folder, recovery backup and record as one change.
+
+        Every precondition is checked, and the record is flushed, before anything
+        on disk moves. If a later step fails, the database is rolled back and each
+        moved folder is put back, so no store is left under a different name.
+        """
+        project = await get_project_by_name(db, old_project_name)
+        if not project:
+            raise ValueError("Project not found in database")
+
+        if new_project_name == old_project_name:
+            project.description = new_project_description
+            await db.commit()
+            return {
+                "new_project_name": new_project_name,
+                "new_project_description": new_project_description,
+            }
+
+        old_path = safe_project_path(self.base_path, old_project_name)
+        new_path = safe_project_path(self.base_path, new_project_name)
+        if not old_path.exists():
+            raise FileNotFoundError("Project directory not found")
+        if new_path.exists():
+            raise FileExistsError("Target project directory already exists")
+        if await self._name_is_held_by_another_project(
+            db, project, new_project_name, new_path
+        ):
+            raise ProjectNameUnavailableError(
+                "The requested name belongs to another project"
+            )
+
+        backup_root = create_hidden_folder_in_root()
+        old_backup = safe_project_path(backup_root, old_project_name)
+        new_backup = safe_project_path(backup_root, new_project_name)
+        if new_backup.exists():
+            raise ProjectNameUnavailableError(
+                "A recovery backup already exists under the requested name"
+            )
+
+        project.project_name = new_project_name
+        project.project_path = str(new_path)
+        project.description = new_project_description
+        # Surface constraint violations while nothing on disk has changed.
+        try:
+            await db.flush()
+        except Exception:
+            await db.rollback()
+            raise
+
+        moved: list[tuple[Path, Path]] = []
+        try:
+            shutil.move(str(old_path), str(new_path))
+            moved.append((new_path, old_path))
+            # A project that has no recovery cache yet has nothing to move.
+            if old_backup.exists():
+                shutil.move(str(old_backup), str(new_backup))
+                moved.append((new_backup, old_backup))
+            update_project_githooks(new_path, new_project_name)
+            await db.commit()
+        except Exception as error:
+            logger.error(
+                "Project rename failed and is being reversed; error_type=%s",
+                safe_exception_type(error),
+            )
+            await db.rollback()
+            self._restore_moves(moved)
+            if moved:
+                try:
+                    update_project_githooks(old_path, old_project_name)
+                except Exception as hook_error:
+                    logger.warning(
+                        "Could not restore project Git hooks after a failed rename; "
+                        "error_type=%s",
+                        safe_exception_type(hook_error),
+                    )
+            raise
+
+        logger.info("Renamed a project folder, backup and record together")
+        return {
+            "new_project_name": new_project_name,
+            "new_project_description": new_project_description,
+        }
+
+    async def delete_project(self, db: AsyncSession, project_name: str) -> None:
+        """Retain the project record as deleted, then remove its working folder."""
+        if not project_name:
+            raise ValueError("Project name is required")
+        try:
+            await delete_project_db(db, project_name)
+            await db.commit()
+        except Exception as error:
+            await db.rollback()
+            logger.error(
+                "Failed to delete project database records; error_type=%s",
+                safe_exception_type(error),
+            )
+            raise
+        delete_project_folder(safe_project_path(self.base_path, project_name))

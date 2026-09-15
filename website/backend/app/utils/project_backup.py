@@ -17,7 +17,7 @@ def make_writable(path: Path):
             os.chmod(os.path.join(root, f), 0o600)
 
 
-def create_hidden_folder_in_root():
+def create_hidden_folder_in_root() -> Path:
     """Create and return the configured same-host recovery cache directory."""
     hidden_folder = Path(ELAN_BACKUPS_BASE_PATH).resolve()
     hidden_folder.mkdir(parents=True, exist_ok=True)
