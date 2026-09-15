@@ -9,6 +9,7 @@ import app.api.v1.user as user_api
 from app.schema.requests.user import AccountStatusRequest
 from app.service.user import (
     AccountNotFoundError,
+    AdministratorNoLongerActiveError,
     LastAdministratorError,
     RedundantAccountStatusError,
     SelfAccountStatusError,
@@ -21,6 +22,11 @@ SENSITIVE_VALUE = "curator@example.org row 4711 internal-detail"
     ("raised", "expected_status", "expected_detail"),
     [
         (AccountNotFoundError, 404, user_api.ACCOUNT_NOT_FOUND),
+        (
+            AdministratorNoLongerActiveError,
+            403,
+            user_api.ADMINISTRATOR_NO_LONGER_ACTIVE,
+        ),
         (SelfAccountStatusError, 409, user_api.SELF_STATUS_CHANGE_REFUSED),
         (LastAdministratorError, 409, user_api.LAST_ADMINISTRATOR_REFUSED),
         (RedundantAccountStatusError, 409, user_api.REDUNDANT_ACCOUNT_STATUS),

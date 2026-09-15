@@ -25,6 +25,7 @@ from app.schema.responses.user import (
 from app.service.address import AddressService
 from app.service.user import (
     AccountNotFoundError,
+    AdministratorNoLongerActiveError,
     LastAdministratorError,
     RedundantAccountStatusError,
     SelfAccountStatusError,
@@ -40,6 +41,7 @@ ACCOUNT_NOT_FOUND = "Account not found in this institution"
 SELF_STATUS_CHANGE_REFUSED = "Administrators cannot change their own account status"
 LAST_ADMINISTRATOR_REFUSED = "The institution must retain an active administrator"
 REDUNDANT_ACCOUNT_STATUS = "The account already has the requested status"
+ADMINISTRATOR_NO_LONGER_ACTIVE = "Your administrator access is no longer active"
 
 
 @router.get("/me", response_model=UserResponse)
@@ -275,6 +277,11 @@ async def set_institution_account_status(
             is_active=request.is_active,
             reason=request.reason,
         )
+    except AdministratorNoLongerActiveError as error:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=ADMINISTRATOR_NO_LONGER_ACTIVE,
+        ) from error
     except AccountNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=ACCOUNT_NOT_FOUND

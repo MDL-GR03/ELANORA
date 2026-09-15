@@ -66,6 +66,10 @@ class RedundantAccountStatusError(AccountStatusConflictError):
     """The account already has the requested status."""
 
 
+class AdministratorNoLongerActiveError(PermissionError):
+    """The acting administrator was suspended before their request completed."""
+
+
 class UserService:
     """Service for user-related business logic."""
 
@@ -80,6 +84,32 @@ class UserService:
         reason: str,
     ) -> User:
         """Suspend or restore an institution account with safety invariants."""
+        # Lock the institution's active administrators before anything else, in
+        # a fixed order. Every status change takes these locks in the same
+        # sequence, so two administrators acting on each other at once queue
+        # behind one another instead of deadlocking, and each sees the other's
+        # committed decision.
+        active_admin_ids = set(
+            (
+                await db.execute(
+                    select(User.user_id)
+                    .where(
+                        User.instance_id == actor.instance_id,
+                        User.role == UserRole.ADMIN,
+                        User.is_active.is_(True),
+                    )
+                    .order_by(User.user_id)
+                    .with_for_update()
+                )
+            ).scalars()
+        )
+        # The request was authorized when it began. If this administrator was
+        # suspended while it was in flight, it must not complete.
+        if actor.user_id not in active_admin_ids:
+            raise AdministratorNoLongerActiveError(
+                "The acting administrator is no longer active"
+            )
+
         target = await db.scalar(
             select(User)
             .where(
@@ -98,24 +128,14 @@ class UserService:
             state = "active" if is_active else "suspended"
             raise RedundantAccountStatusError(f"Account is already {state}")
 
-        if not is_active and target.role == UserRole.ADMIN:
-            active_admin_ids = list(
-                (
-                    await db.execute(
-                        select(User.user_id)
-                        .where(
-                            User.instance_id == actor.instance_id,
-                            User.role == UserRole.ADMIN,
-                            User.is_active.is_(True),
-                        )
-                        .with_for_update()
-                    )
-                ).scalars()
+        # Backstop. An active actor who cannot target themselves already implies
+        # a second active administrator survives, but the invariant is too
+        # important to rest on that reasoning if either rule above changes.
+        remaining = active_admin_ids - {target.user_id}
+        if not is_active and target.role == UserRole.ADMIN and not remaining:
+            raise LastAdministratorError(
+                "The institution must retain an active administrator"
             )
-            if len(active_admin_ids) <= 1:
-                raise LastAdministratorError(
-                    "The institution must retain an active administrator"
-                )
 
         target.is_active = is_active
         target.updated_at = datetime.now(UTC)

@@ -17,7 +17,7 @@ from app.schema.common.token import TokenData
 from app.service.refresh_session import create_refresh_session
 from app.service.user import (
     AccountNotFoundError,
-    LastAdministratorError,
+    AdministratorNoLongerActiveError,
     RedundantAccountStatusError,
     SelfAccountStatusError,
     UserService,
@@ -220,30 +220,64 @@ async def test_administrators_cannot_suspend_themselves(session: AsyncSession) -
 
 
 @pytest.mark.asyncio
-async def test_the_last_active_administrator_cannot_be_suspended(
+async def test_an_administrator_suspended_mid_request_cannot_complete_it(
     session: AsyncSession,
 ) -> None:
-    institution, admin, _ = await _seed(session)
-    second_admin = _user(institution, username="deputy", role=UserRole.ADMIN)
-    session.add(second_admin)
+    """Authorization is checked when a request starts; suspension can land later.
+
+    The deputy's request was authorized while they were still active. It must
+    not complete once another administrator has suspended them in the meantime.
+    """
+    institution, admin, researcher = await _seed(session)
+    deputy = _user(institution, username="deputy", role=UserRole.ADMIN)
+    session.add(deputy)
     await session.commit()
 
     await UserService.set_account_active(
         session,
         actor=admin,
-        target_user_id=second_admin.user_id,
+        target_user_id=deputy.user_id,
         is_active=False,
         reason="Role handover",
     )
 
-    with pytest.raises(LastAdministratorError):
+    # `deputy` is the object the request guard loaded before the suspension.
+    with pytest.raises(AdministratorNoLongerActiveError):
         await UserService.set_account_active(
             session,
-            actor=second_admin,
-            target_user_id=admin.user_id,
+            actor=deputy,
+            target_user_id=researcher.user_id,
             is_active=False,
-            reason="Would leave nobody in charge",
+            reason="Issued by a suspended administrator",
         )
+
+    await session.refresh(researcher)
+    assert researcher.is_active is True
+
+
+@pytest.mark.asyncio
+async def test_the_institution_keeps_an_administrator_after_any_suspension(
+    session: AsyncSession,
+) -> None:
+    institution, admin, _ = await _seed(session)
+    deputy = _user(institution, username="deputy", role=UserRole.ADMIN)
+    session.add(deputy)
+    await session.commit()
+
+    await UserService.set_account_active(
+        session,
+        actor=admin,
+        target_user_id=deputy.user_id,
+        is_active=False,
+        reason="Role handover",
+    )
+
+    active_admins = [
+        account
+        for account in await get_all_active_users(session, institution.instance_id)
+        if account.role == UserRole.ADMIN
+    ]
+    assert [account.user_id for account in active_admins] == [admin.user_id]
 
 
 @pytest.mark.asyncio
