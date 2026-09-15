@@ -39,7 +39,12 @@ async def acquire_project_write_lock(
     lock_root = projects_root.resolve() / ".locks"
     ensure_lock_root(lock_root)
     lock_name = hashlib.sha256(str(project_id).encode()).hexdigest()
-    lock = FileLock(lock_root / f"{lock_name}.lock")
+    # Acquire and release each run through asyncio.to_thread, which may hand
+    # them to different executor threads. FileLock is thread-local by default,
+    # so a release on another thread silently does nothing: the descriptor
+    # leaks and the project stays locked until the process restarts. This lock
+    # object is used by exactly one coroutine, so sharing its state is safe.
+    lock = FileLock(lock_root / f"{lock_name}.lock", thread_local=False)
     try:
         await asyncio.to_thread(lock.acquire, timeout=LOCK_TIMEOUT_SECONDS)
     except Timeout as exc:
