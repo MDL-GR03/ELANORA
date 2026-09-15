@@ -13,12 +13,6 @@ class ProjectCreateRequest(CustomBaseModel):
     description: str | None = None
 
 
-class ProjectCheckoutRequest(CustomBaseModel):
-    """Schema for project branch checkout request."""
-
-    branch_name: str
-
-
 class ProjectEditRequest(CustomBaseModel):
     """Schema for project edit request."""
 

@@ -536,23 +536,6 @@ class GitService:
                 )
         return commits
 
-    def checkout_branch(self, project_name: str, branch_name: str) -> dict[str, str]:
-        """Switch to a different branch in the given project."""
-        project_path = safe_project_path(self.base_path, project_name)
-        if not project_path.exists():
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-        try:
-            runner = GitCommandRunner(project_path)
-            runner.checkout(branch_name)
-            return {
-                "project_name": project_name,
-                "branch_name": branch_name,
-                "status": "checked_out",
-                "message": f"Switched to branch '{branch_name}' in project '{project_name}'.",
-            }
-        except Exception as e:
-            raise RuntimeError("Failed to checkout branch") from e
-
     async def list_project_files(
         self, project_name: str, db: AsyncSession, include_media: bool = False
     ) -> dict[str, Any]:

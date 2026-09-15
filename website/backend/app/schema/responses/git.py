@@ -156,15 +156,6 @@ class BatchFileUploadResponse(CustomBaseModel):
     message: str | None = None
 
 
-class ProjectCheckoutResponse(CustomBaseModel):
-    """Schema for project branch checkout response."""
-
-    project_name: str
-    branch_name: str
-    status: str
-    message: str | None = None
-
-
 class ProjectInfo(CustomBaseModel):
     project_id: int
     project_name: str

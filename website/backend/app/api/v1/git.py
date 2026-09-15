@@ -37,7 +37,6 @@ from app.schema.requests.git import (
     ContributionResearchTopicRequest,
     PendingUploadDeclineRequest,
     PendingUploadMergeRequest,
-    ProjectCheckoutRequest,
     ProjectCreateRequest,
     ProjectEditRequest,
     ProjectRevisionRecoveryRequest,
@@ -52,7 +51,6 @@ from app.schema.responses.git import (
     FileRenameResponse,
     GitStatusResponse,
     PendingUploadsResponse,
-    ProjectCheckoutResponse,
     ProjectCreateResponse,
     ProjectEditResponse,
     ProjectFilesResponse,
@@ -516,26 +514,6 @@ async def get_project_branches(
     try:
         result = git_service.get_branches(project_name)
         return result
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail="Project or file not found") from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-
-@router.post(
-    "/projects/{project_name}/checkout",
-    response_model=ProjectCheckoutResponse,
-    dependencies=[project_lock_dep],
-)
-async def checkout_project_branch(
-    project_name: str,
-    checkout_data: ProjectCheckoutRequest,
-    user: User = get_admin_dep,
-) -> ProjectCheckoutResponse:
-    """Switch to a different branch in the given project."""
-    try:
-        result = git_service.checkout_branch(project_name, checkout_data.branch_name)
-        return ProjectCheckoutResponse(**result)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail="Project or file not found") from e
     except Exception as e:
