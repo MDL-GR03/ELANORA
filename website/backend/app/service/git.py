@@ -17,7 +17,6 @@ from app.crud.elan_file import (
 )
 from app.crud.project import (
     delete_project_db,
-    get_project_by_id,
     get_project_by_name,
     list_projects_by_instance,
     list_projects_by_user,
@@ -33,28 +32,22 @@ from app.schema.responses.git import (
 )
 from app.service.contribution_inspection import ContributionInspectionService
 from app.service.contribution_intake import (
-    ContributionAlreadyCurrentError,
     ContributionIntakeService,
-    DuplicatePendingContributionError,
-    SubmissionContext,
 )
 from app.service.contribution_publication import ContributionPublicationService
 from app.service.contribution_queue import ContributionQueueService
 from app.service.contribution_review import ContributionReviewService
+from app.service.contribution_submission import ContributionSubmissionService
 from app.service.elan import ElanService
 from app.service.file_rename import FileRenameService
 from app.service.git_operations import (
-    FileUploadProcessor,
-    GitBranchManager,
     GitCommandRunner,
-    GitDiffAnalyzer,
     delete_project_folder,
 )
 from app.service.project_filesystem_sync import ProjectFilesystemSyncService
 from app.service.project_history import ProjectHistoryService, ProjectRestoreCommand
 from app.service.project_integrity import ProjectIntegrityService
 from app.service.project_lifecycle import ProjectLifecycleService
-from app.service.upload_naming_compliance import enforce_upload_naming_standard
 from app.storage.paths import safe_project_path
 from app.utils.project_backup import (
     remove_project_backup,
@@ -100,6 +93,11 @@ class GitService:
         )
         self.contribution_queue = ContributionQueueService(
             self.base_path, self.contribution_inspection
+        )
+        self.contribution_submission = ContributionSubmissionService(
+            self.base_path,
+            self.contribution_intake,
+            accept=self._accept_automatically,
         )
         self.file_rename = FileRenameService(self.base_path)
         self.filesystem_sync = ProjectFilesystemSyncService(self.base_path)
@@ -191,127 +189,16 @@ class GitService:
         allow_current_tree: bool = False,
     ) -> dict[str, Any]:
         """Add multiple ELAN files to the project with branch-based workflow."""
-        # Fetch project details by ID
-        project = await get_project_by_id(db, project_id)
-        if not project:
-            logger.error("Project was not found in the database")
-            raise ValueError(f"Project with ID '{project_id}' not found")
-        logger.info(
-            f"Fetched project: project_id={project.project_id}, project_name={project.project_name}"
+        return await self.contribution_submission.submit(
+            project_id,
+            files,
+            db,
+            user_id,
+            user_name,
+            protocol_validation,
+            research_context=research_context,
+            allow_current_tree=allow_current_tree,
         )
-
-        project_path = safe_project_path(self.base_path, project.project_name)
-        logger.info(
-            f"Starting add_elan_files for project ID: {project_id}, user: {user_name}, files: {[f.filename for f in files]}"
-        )
-
-        await enforce_upload_naming_standard(
-            db, project_id, [file.filename for file in files]
-        )
-
-        # Proceed with the rest of the method
-        self.contribution_intake.validate_request(project_path, files)
-        logger.info("Upload request validated successfully")
-
-        branch_name: str | None = None
-        contribution_recorded = False
-        try:
-            # Setup Git environment
-            self.contribution_intake.configure_git_user(project_path, user_name)
-            existing_files = self.contribution_intake.existing_files(
-                project_path, files
-            )
-
-            # Initialize managers
-            branch_manager = GitBranchManager(project_path)
-            file_processor = FileUploadProcessor(project_path)
-            diff_analyzer = GitDiffAnalyzer(project_path)
-
-            # Create branch and process files
-            branch_manager.switch_to_master()
-            base_commit = GitCommandRunner(
-                project_path, maintain_backup=False
-            ).get_commit_hash()
-            branch_name = branch_manager.create_upload_branch(user_name, len(files))
-            uploaded_files, failed_files = await file_processor.process_files(
-                files, existing_files
-            )
-
-            if not uploaded_files:
-                raise RuntimeError("No files were successfully uploaded")
-
-            # Commit
-            file_processor.commit_files(uploaded_files, user_name)
-            upload_info = await self.contribution_intake.record_pending_submission(
-                branch_manager,
-                diff_analyzer,
-                branch_name,
-                db=db,
-                context=SubmissionContext(
-                    username=user_name,
-                    user_id=user_id,
-                    base_commit=base_commit,
-                    protocol_validation=protocol_validation,
-                    research_context=research_context or {},
-                ),
-                project_path=project_path,
-                allow_current_tree=allow_current_tree,
-            )
-            contribution_recorded = True
-            auto_accepted = False
-            if (
-                project.auto_accept_new_files
-                and not upload_info["modified_files"]
-                and not upload_info["deleted_files"]
-                and not failed_files
-            ):
-                try:
-                    await self.complete_pending_upload(
-                        project.project_name,
-                        upload_info["branch_name"],
-                        "auto",
-                        db,
-                        user_id,
-                    )
-                    auto_accepted = True
-                    upload_info["status"] = "accepted_automatically"
-                    upload_info["message"] = (
-                        "The valid new files were accepted automatically by project policy."
-                    )
-                except Exception as error:
-                    logger.error(
-                        "Automatic acceptance failed; contribution remains pending; "
-                        "error_type=%s",
-                        safe_exception_type(error),
-                    )
-            upload_info["auto_accepted"] = auto_accepted
-
-            # Build response
-            logger.info("Successfully processed a project upload")
-            return self.contribution_intake.build_response(
-                project.project_name,
-                uploaded_files,
-                failed_files,
-                existing_files,
-                upload_info,
-            )
-
-        except (DuplicatePendingContributionError, ContributionAlreadyCurrentError):
-            if branch_name and not contribution_recorded:
-                self.contribution_intake.discard_failed_submission(
-                    project_path, branch_name
-                )
-            raise
-        except Exception as e:
-            if branch_name and not contribution_recorded:
-                self.contribution_intake.discard_failed_submission(
-                    project_path, branch_name
-                )
-            logger.error(
-                "Batch ELAN file operation failed; error_type=%s",
-                safe_exception_type(e),
-            )
-            raise RuntimeError("Failed to add ELAN files") from e
 
     async def list_projects(
         self, db: AsyncSession, instance_id: int
@@ -537,6 +424,14 @@ class GitService:
         """Resolve a contribution's topic while retaining its declared evidence."""
         return await self.contribution_review.assign_research_topic(
             project_name, upload_id, topic_id, new_topic_name, db
+        )
+
+    async def _accept_automatically(
+        self, project_name: str, branch_name: str, db: AsyncSession, user_id: int
+    ) -> None:
+        """Publish a contribution accepted by project policy rather than a person."""
+        await self.complete_pending_upload(
+            project_name, branch_name, "auto", db, user_id
         )
 
     async def complete_pending_upload(

@@ -225,9 +225,11 @@ class ContributionIntakeService:
         project_name: str,
         uploaded_files: list[FileUploadResult],
         failed_files: list[FileUploadResult],
-        existing_files: list[str],
         upload_info: dict[str, Any],
     ) -> dict[str, Any]:
+        # Counted from what was actually written, so a requested file that failed
+        # is neither an update nor an addition.
+        updated = sum(1 for item in uploaded_files if item.existed)
         return {
             "project_name": project_name,
             "upload_id": upload_info.get("upload_id"),
@@ -236,8 +238,8 @@ class ContributionIntakeService:
             "failed_files": [cls._result_dict(item) for item in failed_files],
             "total_uploaded": len(uploaded_files),
             "total_failed": len(failed_files),
-            "existing_files_updated": len(existing_files),
-            "new_files_added": len(uploaded_files) - len(existing_files),
+            "existing_files_updated": updated,
+            "new_files_added": len(uploaded_files) - updated,
             "status": upload_info["status"],
             "requires_approval": upload_info.get("requires_approval", True),
             "has_differences": upload_info.get("has_differences", False),
