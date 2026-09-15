@@ -11,10 +11,11 @@ administration, may change freely.
 import hashlib
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from lxml import etree
 
+from app.core.filename_standard import filename_matches
 from app.elan.validation import SCHEMA_PATH, validate_eaf
 from app.model.enums import ValidationSeverity
 from app.model.protocol import ProtocolVersion
@@ -23,8 +24,9 @@ from app.schema.protocol import ProtocolRules
 VALIDATOR_NAME = "elanora-eaf"
 # 2: EXT_REF lists and xsd:boolean "1"/"0" were rejected by semantic validation
 #    under release 1, although the EAF 3.0 schema allows both.
-# 3: vocabulary, tier metadata, completeness and linguistic-type constraint
-#    rules. Snapshots without them evaluate exactly as under release 2.
+# 3: vocabulary, tier metadata, completeness, linguistic-type constraint and
+#    filename standard rules. Snapshots without them evaluate exactly as under
+#    release 2.
 VALIDATOR_VERSION = "3"
 
 _APP_ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +34,7 @@ VALIDATOR_SOURCES: tuple[Path, ...] = (
     SCHEMA_PATH,
     _APP_ROOT / "elan" / "validation.py",
     _APP_ROOT / "elan" / "xsd_types.py",
+    _APP_ROOT / "core" / "filename_standard.py",
     Path(__file__).resolve(),
 )
 
@@ -62,9 +65,12 @@ class ProtocolFinding:
 class _Evaluation:
     """One document under one snapshot, collecting findings in rule order."""
 
-    def __init__(self, root: etree._Element, rules: ProtocolRules) -> None:
+    def __init__(
+        self, root: etree._Element, rules: ProtocolRules, filename: str
+    ) -> None:
         self.root = root
         self.rules = rules
+        self.filename = filename
         self.findings: list[ProtocolFinding] = []
         self.tiers = _by_id(root.findall("TIER"), "TIER_ID")
         self.types = _by_id(root.findall("LINGUISTIC_TYPE"), "LINGUISTIC_TYPE_ID")
@@ -112,10 +118,10 @@ class _Evaluation:
 
 
 def evaluate_protocol_rules(
-    root: etree._Element, rules: ProtocolRules
+    root: etree._Element, rules: ProtocolRules, *, filename: str
 ) -> tuple[ProtocolFinding, ...]:
-    """Evaluate a validated EAF document against immutable protocol rules."""
-    evaluation = _Evaluation(root, rules)
+    """Evaluate a validated EAF document and its filename against a snapshot."""
+    evaluation = _Evaluation(root, rules, filename)
     for family in (
         _structure_rules,
         _media_rules,
@@ -123,6 +129,7 @@ def evaluate_protocol_rules(
         _tier_metadata_rules,
         _completeness_rules,
         _constraint_rules,
+        _filename_rules,
     ):
         family(evaluation)
     return tuple(evaluation.findings)
@@ -319,12 +326,30 @@ def _constraint_rules(ev: _Evaluation) -> None:
             )
 
 
+def _filename_rules(ev: _Evaluation) -> None:
+    standard = ev.rules.filename_standard
+    if standard is None:
+        return
+    if not filename_matches(
+        standard.pattern, standard.matcher_components(), ev.filename
+    ):
+        ev.report(
+            "protocol.filename_not_compliant",
+            "filename",
+            f"Filename {PurePosixPath(ev.filename).name!r} does not follow the "
+            f"naming standard {standard.name!r} ({standard.pattern})",
+            "filename_standard",
+        )
+
+
 def validate_content_against_protocol(
-    content: bytes, version: ProtocolVersion
+    content: bytes, version: ProtocolVersion, *, filename: str
 ) -> tuple[ProtocolFinding, ...]:
     """Validate EAF structure and apply one published protocol snapshot."""
     root = validate_eaf(content)
-    return evaluate_protocol_rules(root, ProtocolRules.model_validate(version.rules))
+    return evaluate_protocol_rules(
+        root, ProtocolRules.model_validate(version.rules), filename=filename
+    )
 
 
 def blocking_findings(

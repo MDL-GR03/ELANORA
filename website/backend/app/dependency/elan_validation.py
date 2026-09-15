@@ -237,7 +237,7 @@ async def validate_and_record_elan_files(
                 protocol_findings = ()
             else:
                 protocol_findings = validate_content_against_protocol(
-                    content, protocol_version
+                    content, protocol_version, filename=file.filename or ""
                 )
             blocking = blocking_findings(protocol_findings)
             if blocking:

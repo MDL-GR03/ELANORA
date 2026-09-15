@@ -147,4 +147,24 @@ describe('ProtocolRuleBuilder', () => {
       non_empty_tiers: 'warning',
     });
   });
+
+  it('shows a frozen filename standard and can remove it', async () => {
+    const wrapper = render({
+      filename_standard: {
+        name: 'Session files',
+        pattern: 'session-{number}',
+        components: [
+          { name: 'number', regex: '[0-9]{3}', accepted_values: ['001-099'] },
+        ],
+      },
+    });
+
+    const panel = wrapper.get('.filename-standard');
+    expect(panel.text()).toContain('session-{number}');
+    expect(panel.text()).toContain('Accepted: 001-099');
+
+    await panel.get('.remove-button').trigger('click');
+
+    expect(lastUpdate(wrapper).filename_standard).toBeNull();
+  });
 });

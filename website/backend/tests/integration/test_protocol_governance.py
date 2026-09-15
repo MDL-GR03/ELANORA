@@ -697,3 +697,70 @@ async def test_new_rule_families_survive_publication_and_fail_a_run(
         ("annotator_tiers", ValidationSeverity.WARNING),
         ("linguistic_type_constraints", ValidationSeverity.ERROR),
     ]
+
+
+SESSION_NAMES = ProtocolRules(
+    filename_standard={
+        "name": "Session files",
+        "pattern": "session-{number}",
+        "components": [{"name": "number", "regex": "[0-9]{3}"}],
+    }
+)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("filename", "accepted"), [("session-001.eaf", True), ("notes.eaf", False)]
+)
+async def test_a_pinned_filename_standard_judges_uploads(
+    session: AsyncSession, filename: str, accepted: bool
+) -> None:
+    project, admin, researcher, _ = await _project_state(session)
+    await _pinned(session, project, admin, SESSION_NAMES)
+    await session.commit()
+    upload = UploadFile(
+        file=BytesIO(FIXTURE.read_bytes()),
+        filename=filename,
+        size=FIXTURE.stat().st_size,
+    )
+    arguments = {
+        "db": session,
+        "instance_id": project.instance_id,
+        "project_id": project.project_id,
+        "requested_project_name": project.project_name,
+        "submitted_by": researcher.user_id,
+    }
+
+    if accepted:
+        batch = await validate_and_record_elan_files([upload], **arguments)
+        assert batch.files == [upload]
+        return
+    with pytest.raises(HTTPException) as rejected:
+        await validate_and_record_elan_files([upload], **arguments)
+    (issue,) = rejected.value.detail["rejected_files"][0]["issues"]
+    assert issue["code"] == "protocol.filename_not_compliant"
+
+
+@pytest.mark.asyncio
+async def test_a_validation_run_judges_the_stored_filename(
+    session: AsyncSession,
+) -> None:
+    project, admin, _, elan_file = await _project_state(session)
+    await _pinned(session, project, admin, SESSION_NAMES)
+    document = parse_eaf(FIXTURE.read_bytes())
+    revision = await append_eaf_revision(
+        session,
+        elan_id=elan_file.elan_id,
+        sha256=document.sha256,
+        raw_xml=document.raw_xml,
+        created_by=admin.user_id,
+    )
+
+    run = await validate_revision(
+        session, project=project, revision_id=revision.revision_id
+    )
+
+    assert run.outcome == ValidationOutcome.FAILED
+    (issue,) = run.issues
+    assert issue.code == "protocol.filename_not_compliant"
+    assert FIXTURE.name in issue.message

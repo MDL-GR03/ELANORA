@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.core.filename_standard import FilenameComponent, compile_standard
 from app.model.enums import (
     ProtocolVersionStatus,
     ValidationOutcome,
@@ -19,6 +20,43 @@ ConstraintStereotype = Literal[
     "Symbolic_Subdivision",
     "Symbolic_Association",
 ]
+
+
+class FilenameComponentRule(BaseModel):
+    """One component of a frozen filename standard."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=100)
+    # Empty means any non-empty text.
+    regex: str = Field(default="", max_length=255)
+    accepted_values: list[str] = Field(default_factory=list, max_length=500)
+
+
+class FilenameStandardRule(BaseModel):
+    """A naming standard copied into a protocol, independent of later edits."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=100)
+    pattern: str = Field(min_length=1, max_length=255)
+    components: list[FilenameComponentRule] = Field(default_factory=list, max_length=50)
+
+    def matcher_components(self) -> tuple[FilenameComponent, ...]:
+        return tuple(
+            FilenameComponent(
+                name=component.name,
+                regex=component.regex,
+                accepted_values=tuple(component.accepted_values),
+            )
+            for component in self.components
+        )
+
+    @model_validator(mode="after")
+    def standard_is_usable(self) -> "FilenameStandardRule":
+        """Refuse a standard that could not judge any filename."""
+        compile_standard(self.pattern, self.matcher_components())
+        return self
 
 
 class ProtocolRules(BaseModel):
@@ -50,6 +88,7 @@ class ProtocolRules(BaseModel):
     linguistic_type_constraints: dict[str, ConstraintStereotype] = Field(
         default_factory=dict
     )
+    filename_standard: FilenameStandardRule | None = None
     # Rules absent here are errors, which keeps every protocol published before
     # severities existed behaving exactly as it did.
     severities: dict[str, ValidationSeverity] = Field(default_factory=dict)

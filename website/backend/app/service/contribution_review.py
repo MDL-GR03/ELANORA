@@ -355,7 +355,11 @@ class ContributionReviewService:
             (filename, finding)
             for filename, content in submitted_eafs.items()
             for finding in (
-                blocking_findings(validate_content_against_protocol(content, protocol))
+                blocking_findings(
+                    validate_content_against_protocol(
+                        content, protocol, filename=filename
+                    )
+                )
                 if protocol is not None
                 else ()
             )

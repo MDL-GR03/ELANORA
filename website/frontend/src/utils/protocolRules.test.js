@@ -18,6 +18,7 @@ import {
 const BACKEND_RULE_KEYS = [
   'allowed_media_mime_types',
   'annotator_tiers',
+  'filename_standard',
   'linguistic_type_constraints',
   'media_required',
   'non_empty_tiers',
@@ -116,5 +117,19 @@ describe('protocol rules', () => {
   it('parses typed language lists', () => {
     expect(parseLanguages(' fr, en  en,,')).toEqual(['en', 'fr']);
     expect(parseLanguages('')).toEqual([]);
+  });
+
+  it('counts a filename standard as one rule', () => {
+    const rules = {
+      ...emptyRules(),
+      filename_standard: {
+        name: 'Sessions',
+        pattern: 'session-{number}_{signer}',
+        components: [{ name: 'number' }, { name: 'signer' }],
+      },
+    };
+
+    expect(countRules(rules)).toBe(1);
+    expect(configuredRuleKeys(rules)).toEqual(['filename_standard']);
   });
 });

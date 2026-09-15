@@ -15,6 +15,7 @@ from app.core.effective_naming_standard_locations import get_location_id_by_name
 from app.core.error_diagnostics import safe_exception_type
 from app.crud.effective_naming_standard import get_effective_standards_for_project
 from app.crud.project_naming_standard import get_standard_with_components_full
+from app.schema.protocol import ProtocolRules
 from app.utils.validation import ValidationUtils
 
 logger = get_logger()
@@ -83,9 +84,22 @@ def assert_filenames_comply(
 
 
 async def enforce_upload_naming_standard(
-    db: AsyncSession, project_id: int, filenames: list[str | None]
+    db: AsyncSession,
+    project_id: int,
+    filenames: list[str | None],
+    *,
+    protocol_rules: ProtocolRules | None,
 ) -> None:
-    """Refuse an upload whose filenames do not match the project's standard."""
+    """Refuse an upload whose filenames do not match the project's standard.
+
+    Once the project's pinned protocol carries a filename standard, that frozen
+    copy decides during protocol validation and the mutable legacy setting no
+    longer applies. A pinned protocol without one leaves the legacy check in
+    place, so pinning a content-only protocol never silently drops it.
+    """
+    if protocol_rules is not None and protocol_rules.filename_standard is not None:
+        logger.info("The pinned protocol's filename standard applies to this upload")
+        return
     try:
         standard = await resolve_upload_naming_standard(db, project_id)
     except Exception as error:

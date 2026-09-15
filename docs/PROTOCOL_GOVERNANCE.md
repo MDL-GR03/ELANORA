@@ -39,6 +39,20 @@ MIME types. Validator release 3 adds four further families:
 | Completeness | `non_empty_tiers` | an annotation on the tier has an empty or blank value |
 | Completeness | `time_aligned_tiers` | an annotation on the tier is not aligned to media time at both ends (reference annotations never are) |
 | Constraints | `linguistic_type_constraints` | the linguistic type is missing, or its constraint stereotype differs (`none` requires an unconstrained type) |
+| Filenames | `filename_standard` | the file's name, ignoring directories and its last extension, does not follow the frozen pattern and components |
+
+A `filename_standard` is a copy of a naming standard, not a reference to one:
+its `name`, `pattern` and `components` (each with a `name`, optional `regex`
+and `accepted_values`) are stored in the snapshot, so later edits to the
+project's naming settings cannot change what a published version meant.
+Accepted values follow the upload page: exact text, a zero-padded range such as
+`001-099`, or a `/pattern/flags` literal. Each component placeholder must appear
+exactly once and every expression must compile.
+
+While a project's pinned protocol carries a filename standard, it decides
+filenames during protocol validation and the legacy upload naming setting is not
+consulted. Without one, including when the pinned protocol predates this rule,
+the legacy setting keeps applying.
 
 Annotation-level rules report one finding per tier, with the number of
 offending annotations and the location of the first, so a large file produces a

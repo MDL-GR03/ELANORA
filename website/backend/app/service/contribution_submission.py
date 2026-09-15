@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
 from app.crud.project import get_project_by_id
+from app.schema.protocol import ProtocolRules
 from app.service.contribution_intake import (
     ContributionAlreadyCurrentError,
     ContributionIntakeService,
@@ -29,6 +30,7 @@ from app.service.git_operations import (
     GitCommandRunner,
     GitDiffAnalyzer,
 )
+from app.service.protocol import get_pinned_protocol_version
 from app.service.upload_naming_compliance import enforce_upload_naming_standard
 from app.storage.paths import safe_project_path
 
@@ -72,8 +74,16 @@ class ContributionSubmissionService:
         auto_accept_new_files = bool(project.auto_accept_new_files)
 
         project_path = safe_project_path(self.base_path, project_name)
+        protocol_version = await get_pinned_protocol_version(db, project)
         await enforce_upload_naming_standard(
-            db, project_id, [file.filename for file in files]
+            db,
+            project_id,
+            [file.filename for file in files],
+            protocol_rules=(
+                None
+                if protocol_version is None
+                else ProtocolRules.model_validate(protocol_version.rules)
+            ),
         )
         self.intake.validate_request(project_path, files)
 

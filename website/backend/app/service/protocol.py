@@ -713,16 +713,19 @@ async def validate_revision_against_version(
     )
     if version.status != ProtocolVersionStatus.PUBLISHED:
         raise ProtocolConflictError("Pinned protocol version is not published")
-    revision = await db.scalar(
-        select(EafRevision)
-        .join(ElanFile, ElanFile.elan_id == EafRevision.elan_id)
-        .where(
-            EafRevision.revision_id == revision_id,
-            ElanFile.project_id == project.project_id,
+    located = (
+        await db.execute(
+            select(EafRevision, ElanFile.filename)
+            .join(ElanFile, ElanFile.elan_id == EafRevision.elan_id)
+            .where(
+                EafRevision.revision_id == revision_id,
+                ElanFile.project_id == project.project_id,
+            )
         )
-    )
-    if revision is None:
+    ).first()
+    if located is None:
         raise ProtocolNotFoundError("EAF revision not found")
+    revision, filename = located
     validator = await _validator_release(db)
     existing = await db.scalar(
         select(ValidationRun)
@@ -761,7 +764,7 @@ async def validate_revision_against_version(
                 finding.rule_key,
             )
             for finding in evaluate_protocol_rules(
-                root, ProtocolRules.model_validate(version.rules)
+                root, ProtocolRules.model_validate(version.rules), filename=filename
             )
         )
 

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 import app.service.upload_naming_compliance as compliance
+from app.schema.protocol import ProtocolRules
 from app.service.upload_naming_compliance import (
     FilenameNotCompliantError,
     assert_filenames_comply,
@@ -119,7 +120,9 @@ async def test_an_unconfigured_project_accepts_any_filename(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _patch_lookup(monkeypatch, effective=[])
-    await enforce_upload_naming_standard(Mock(), 1, ["anything at all.eaf"])
+    await enforce_upload_naming_standard(
+        Mock(), 1, ["anything at all.eaf"], protocol_rules=None
+    )
 
 
 @pytest.mark.asyncio
@@ -135,7 +138,9 @@ async def test_a_configuration_failure_is_reported_as_a_data_issue(
     )
 
     with pytest.raises(ValueError, match="data issue") as refused:
-        await enforce_upload_naming_standard(Mock(), 1, ["subject-01.eaf"])
+        await enforce_upload_naming_standard(
+            Mock(), 1, ["subject-01.eaf"], protocol_rules=None
+        )
 
     assert not isinstance(refused.value, FilenameNotCompliantError)
 
@@ -155,7 +160,51 @@ async def test_a_non_compliant_upload_is_not_reported_as_a_data_issue(
     )
 
     with pytest.raises(FilenameNotCompliantError) as refused:
-        await enforce_upload_naming_standard(Mock(), 1, ["wrong name.eaf"])
+        await enforce_upload_naming_standard(
+            Mock(), 1, ["wrong name.eaf"], protocol_rules=None
+        )
 
     assert refused.value.filename == "wrong name.eaf"
     assert "data issue" not in str(refused.value)
+
+
+def _refusing_legacy_standard(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_lookup(
+        monkeypatch,
+        effective=[Mock(naming_standard_id=7)],
+        full=STANDARD,
+    )
+    monkeypatch.setattr(
+        compliance.ValidationUtils, "is_filename_compliant", lambda _s, _f: False
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_pinned_filename_standard_replaces_the_legacy_setting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _refusing_legacy_standard(monkeypatch)
+    rules = ProtocolRules(
+        filename_standard={
+            "name": "Any",
+            "pattern": "{name}",
+            "components": [{"name": "name"}],
+        }
+    )
+
+    await enforce_upload_naming_standard(
+        Mock(), 1, ["wrong name.eaf"], protocol_rules=rules
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_pinned_protocol_without_filename_rules_keeps_the_legacy_check(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Pinning a content-only protocol must not silently drop filename checks."""
+    _refusing_legacy_standard(monkeypatch)
+
+    with pytest.raises(FilenameNotCompliantError):
+        await enforce_upload_naming_standard(
+            Mock(), 1, ["wrong name.eaf"], protocol_rules=ProtocolRules()
+        )

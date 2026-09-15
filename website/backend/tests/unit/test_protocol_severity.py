@@ -23,7 +23,9 @@ def test_rules_published_before_severities_existed_are_all_errors() -> None:
     rules = ProtocolRules.model_validate({"required_tiers": ["missing-tier"]})
 
     assert rules.severity_of("required_tiers") == ValidationSeverity.ERROR
-    (finding,) = evaluate_protocol_rules(validate_eaf(FIXTURE), rules)
+    (finding,) = evaluate_protocol_rules(
+        validate_eaf(FIXTURE), rules, filename="session.eaf"
+    )
     assert finding.severity == ValidationSeverity.ERROR
     assert blocking_findings([finding]) == (finding,)
 
@@ -34,7 +36,9 @@ def test_a_rule_marked_as_warning_is_reported_but_not_blocking() -> None:
         severities={"required_tiers": ValidationSeverity.WARNING},
     )
 
-    (finding,) = evaluate_protocol_rules(validate_eaf(FIXTURE), rules)
+    (finding,) = evaluate_protocol_rules(
+        validate_eaf(FIXTURE), rules, filename="session.eaf"
+    )
 
     assert finding.severity == ValidationSeverity.WARNING
     assert finding.rule_key == "required_tiers"
@@ -48,7 +52,9 @@ def test_warnings_and_errors_are_separated_within_one_protocol() -> None:
         severities={"required_tiers": ValidationSeverity.WARNING},
     )
 
-    findings = evaluate_protocol_rules(validate_eaf(FIXTURE), rules)
+    findings = evaluate_protocol_rules(
+        validate_eaf(FIXTURE), rules, filename="session.eaf"
+    )
     blocking = blocking_findings(findings)
 
     assert {finding.rule_key for finding in findings} == {

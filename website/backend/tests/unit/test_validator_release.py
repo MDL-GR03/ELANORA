@@ -19,6 +19,7 @@ def test_the_fingerprint_covers_every_source_that_decides_an_outcome() -> None:
         SCHEMA_PATH,
         APP_ROOT / "elan" / "validation.py",
         APP_ROOT / "elan" / "xsd_types.py",
+        APP_ROOT / "core" / "filename_standard.py",
         APP_ROOT / "service" / "protocol_evaluation.py",
     }
     assert all(source.is_file() for source in VALIDATOR_SOURCES)

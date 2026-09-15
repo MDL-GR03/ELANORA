@@ -22,7 +22,9 @@ BOTH_TIERS = ["translation", "utterance"]
 
 def _findings(content: bytes, **rules: object) -> tuple[ProtocolFinding, ...]:
     return evaluate_protocol_rules(
-        validate_eaf(content), ProtocolRules.model_validate(rules)
+        validate_eaf(content),
+        ProtocolRules.model_validate(rules),
+        filename="session.eaf",
     )
 
 
@@ -266,6 +268,8 @@ def test_every_new_family_accepts_a_warning_severity() -> None:
         severities={"non_empty_tiers": ValidationSeverity.WARNING},
     )
 
-    (finding,) = evaluate_protocol_rules(validate_eaf(_second_utterance(b"")), rules)
+    (finding,) = evaluate_protocol_rules(
+        validate_eaf(_second_utterance(b"")), rules, filename="session.eaf"
+    )
 
     assert finding.severity == ValidationSeverity.WARNING

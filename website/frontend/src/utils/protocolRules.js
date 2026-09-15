@@ -38,6 +38,7 @@ export const RULE_LABELS = {
   non_empty_tiers: 'No empty values',
   time_aligned_tiers: 'Time-aligned tiers',
   linguistic_type_constraints: 'Linguistic type constraints',
+  filename_standard: 'Filename standard',
 };
 
 export const emptyRules = () => ({
@@ -55,6 +56,7 @@ export const emptyRules = () => ({
   non_empty_tiers: [],
   time_aligned_tiers: [],
   linguistic_type_constraints: {},
+  filename_standard: null,
   severities: {},
 });
 
@@ -66,6 +68,8 @@ export const normalizeRules = (rules) => ({
 
 const ruleSize = (rules, key) => {
   const value = rules[key];
+  // A filename standard is one rule, however many components it has.
+  if (key === 'filename_standard') return value ? 1 : 0;
   if (typeof value === 'boolean') return value ? 1 : 0;
   if (Array.isArray(value)) return value.length;
   return Object.keys(value || {}).length;

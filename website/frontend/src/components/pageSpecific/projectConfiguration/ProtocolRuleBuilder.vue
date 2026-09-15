@@ -238,7 +238,48 @@
     <section class="builder-section">
       <header>
         <div>
-          <span class="step">6 · Enforcement</span>
+          <span class="step">6 · Filenames</span>
+          <h5>Filename standard</h5>
+          <p>
+            A frozen copy of a naming standard. Later changes to the project’s
+            naming settings do not alter it.
+          </p>
+        </div>
+      </header>
+      <div v-if="filenameStandard" class="filename-standard">
+        <div>
+          <strong>{{ filenameStandard.name }}</strong>
+          <code>{{ filenameStandard.pattern }}</code>
+        </div>
+        <ul aria-label="Filename components">
+          <li
+            v-for="component in filenameStandard.components"
+            :key="component.name"
+          >
+            <code>{{ placeholder(component.name) }}</code>
+            <span>{{ component.regex || 'Any text' }}</span>
+            <small v-if="component.accepted_values?.length">
+              Accepted: {{ component.accepted_values.join(', ') }}
+            </small>
+          </li>
+        </ul>
+        <button
+          class="remove-button"
+          type="button"
+          @click="update({ filename_standard: null })"
+        >
+          Remove filename standard
+        </button>
+      </div>
+      <p v-else class="empty-builder">
+        No filename standard. Uploads follow the project’s naming settings.
+      </p>
+    </section>
+
+    <section class="builder-section">
+      <header>
+        <div>
+          <span class="step">7 · Enforcement</span>
           <h5>What happens when a rule is not met</h5>
           <p>
             Refused files never enter the project. Warnings let the file through
@@ -292,6 +333,8 @@ const tiers = computed(() =>
 const vocabularies = computed(
   () => props.modelValue.required_controlled_vocabularies || []
 );
+const filenameStandard = computed(() => props.modelValue.filename_standard);
+const placeholder = (name) => `{${name}}`;
 const mediaTypes = computed(
   () => props.modelValue.allowed_media_mime_types || []
 );
@@ -640,6 +683,35 @@ button:disabled {
   align-self: center;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.filename-standard {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+}
+
+.filename-standard > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.filename-standard ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.filename-standard li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: #475569;
+  font-size: 0.84rem;
 }
 
 .inline-add {
