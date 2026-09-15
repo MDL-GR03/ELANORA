@@ -362,9 +362,32 @@ bytes, such as sessions started from one template, impossible to publish. The
 administrator branch-checkout endpoint was also removed, following the August
 audit's decision never to switch a shared checkout from an HTTP request.
 
-Remaining item 6 work is decomposing the contribution frontend by workflow and
-removing the remaining presentation and request orchestration from its page
-component.
+**Contribution frontend, 15 September 2026:** `PendingUploadPage` now only
+composes components and handles events; its script fell from 414 to 250 lines.
+Queue grouping and filtering live in `useContributionQueueView`, polling in
+`useContributionQueueRefresh`, URL-driven workspace state in
+`useContributionWorkspace`, the decline dialog in `ContributionDeclineDialog`,
+and the conflict decision in `useResolutionDecision`. The page, the resolution
+view and the annotation comparison previously had no tests. Writing them found:
+
+- a workspace whose contribution was accepted elsewhere left the page without
+  its tabs;
+- the corrections card counted a different set than its filter showed;
+- automatic refresh reloaded contributions but not the review cases their status
+  comes from;
+- the resolution confirmation omitted that other files, deletions included, are
+  applied either way, stated an annotation impact counted only from files
+  already opened, and could carry an acknowledged decision to another
+  contribution;
+- a slow comparison response could be shown, and recorded by that decision, as
+  another file's comparison.
+
+The decline dialog, workspace and resolution views are translated, with
+`contributionResolution` added to the parity check.
+
+Item 6 is otherwise complete. The remaining contribution-area work is
+translation: `ReviewCasePanel`, `AcceptedProjectHistory`, `ConflictMergeView`
+and `ArchivedReviewList` still render roughly 190 English strings.
 
 The contribution workspace tab navigation; queue summary, filtering, search and
 ordering controls; contribution card header and permission-aware actions; and
