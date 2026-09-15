@@ -324,10 +324,40 @@ previewing a synchronization also each carried their own copy of the same Git
 status reading, so an approved preview could drift from the batch that ran;
 both now share one reading.
 
-The next item 6 slices are `add_elan_files` upload orchestration and the
-pending-upload queue presentation, which are the two largest remaining blocks
-in `GitService`, followed by decomposing the contribution frontend by workflow
-and removing the remaining presentation and request orchestration from its page
+Later the same day the review queue moved to `ContributionQueueService`,
+researcher submission to `ContributionSubmissionService`, project rename and
+delete into `ProjectLifecycleService`, and missing-storage recovery to
+`ProjectRecoveryService`. An unused merge path that bypassed the revision ledger
+was removed. `GitService` is now about 685 lines, and what remains is largely
+read-only listing and delegates. Each extraction added the tests its path had
+been missing, and each surfaced real defects:
+
+- One unreadable contribution failed the whole review queue, hiding every
+  other contribution from administrators.
+- A failed automatic acceptance reported a saved contribution as a failed
+  upload.
+- A project rename moved its folder before its record and could not undo it;
+  reusing a deleted project's name also moved live files into the folder a
+  restore of that project writes to.
+- Restoring a live project with missing storage always failed, restoring over
+  intact storage rolled back accepted history, and deleting such a project
+  removed its last backup before recording the deletion.
+- Code throughout assumed the working tree is on the accepted branch. After an
+  interrupted upload, publication wrote the wrong parent into the immutable
+  ledger, renames and synchronization committed onto a stray branch, and
+  integrity recovery reset the stray branch while reporting success.
+  `GitCommandRunner.canonical_head()` and `ensure_canonical_checkout()` now
+  enforce the invariant on every write and provenance read.
+
+**Concurrency, 15 September 2026:** the row locks protecting research data now
+have tests that force real contention against PostgreSQL. A blocker holds the
+contended lock until every worker is confirmed waiting on it. Each test fails
+when its lock is removed. They found that suspending administrators could
+deadlock, and that the cross-process project write lock could leak until
+restart when acquire and release ran on different threads.
+
+Remaining item 6 work is decomposing the contribution frontend by workflow and
+removing the remaining presentation and request orchestration from its page
 component.
 
 The contribution workspace tab navigation; queue summary, filtering, search and
