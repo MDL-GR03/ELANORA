@@ -1,159 +1,138 @@
 <template>
   <div class="upload-resolution">
     <div class="resolution-header">
-      <h3>Reviewing submitted differences</h3>
+      <h3>{{ t('contributionResolution.title') }}</h3>
       <p class="resolution-summary">
-        {{ upload.conflicted_files?.length || 0 }} file(s) overlap with accepted
-        the current project version and need a decision.
+        {{
+          t(
+            'contributionResolution.summary',
+            decision.conflictedFiles.value.length
+          )
+        }}
       </p>
     </div>
 
-    <div v-if="loading" class="loading">
-      <div class="loading-spinner"></div>
-      <p>Loading conflict details...</p>
-    </div>
-
-    <div v-else class="resolution-content">
+    <div class="resolution-content">
       <ReviewCasePanel
         v-if="showCorrectionWorkflow"
         ref="reviewPanel"
         :project-id="projectId"
         :project-name="projectName"
         :upload-id="upload.upload_id"
-        :filenames="upload.conflicted_files || []"
+        :filenames="decision.conflictedFiles.value"
       />
       <section
-        v-if="upload.conflicted_files?.length > 0"
+        v-if="decision.conflictedFiles.value.length > 0"
         class="conflicted-files"
-        aria-labelledby="conflicted-files-title"
+        :aria-labelledby="conflictedTitleId"
       >
         <div class="section-heading">
           <div>
-            <span class="step-label">Step 1</span>
-            <h4 id="conflicted-files-title">Inspect overlapping files</h4>
-            <p>
-              Compare the current project and submitted annotations before
-              choosing an outcome.
-            </p>
+            <span class="step-label">{{
+              t('contributionResolution.inspect.step')
+            }}</span>
+            <h4 :id="conflictedTitleId">
+              {{ t('contributionResolution.inspect.title') }}
+            </h4>
+            <p>{{ t('contributionResolution.inspect.description') }}</p>
           </div>
         </div>
         <div class="files-list">
           <div
-            v-for="file in upload.conflicted_files"
+            v-for="file in decision.conflictedFiles.value"
             :key="file"
             class="conflict-file-item"
           >
             <div class="file-info">
               <span class="file-name">{{ file }}</span>
-              <span class="file-status">Both versions changed this file</span>
+              <span class="file-status">{{
+                t('contributionResolution.inspect.bothChanged')
+              }}</span>
             </div>
             <button
               type="button"
               class="action-btn view-btn"
-              :aria-expanded="selectedConflictFile === file"
-              @click="toggleFileComparison(file)"
+              :aria-expanded="decision.selectedFile.value === file"
+              @click="decision.toggleFile(file)"
             >
               {{
-                selectedConflictFile === file
-                  ? 'Hide comparison'
-                  : 'Compare annotations'
+                decision.selectedFile.value === file
+                  ? t('contributionResolution.inspect.hide')
+                  : t('contributionResolution.inspect.compare')
               }}
             </button>
           </div>
         </div>
 
         <section
-          v-if="selectedConflictFile"
+          v-if="decision.selectedFile.value"
           class="inline-comparison"
           aria-live="polite"
         >
           <header>
             <div>
-              <span class="step-label">Annotation comparison</span>
-              <h4>{{ selectedConflictFile }}</h4>
+              <span class="step-label">{{
+                t('contributionResolution.inspect.comparisonLabel')
+              }}</span>
+              <h4>{{ decision.selectedFile.value }}</h4>
             </div>
             <button
               type="button"
               class="close-inline"
-              @click="closeFileConflict"
+              @click="decision.toggleFile(decision.selectedFile.value)"
             >
-              Close comparison
+              {{ t('contributionResolution.inspect.closeComparison') }}
             </button>
           </header>
           <ConflictMergeView
             :project-name="projectName"
             :branch-name="upload.branch_name"
-            :filename="selectedConflictFile"
+            :filename="decision.selectedFile.value"
             allow-open-review
             @open-review="openTargetedReview"
-            @loaded="recordComparison"
+            @loaded="decision.recordComparison"
           />
         </section>
       </section>
 
-      <!-- Strategy Selection -->
       <div class="strategy-section">
-        <span class="step-label">Step 2</span>
-        <h4>Choose what contribution #{{ upload.upload_id }} should do</h4>
-        <div class="strategy-options">
+        <span class="step-label">{{
+          t('contributionResolution.choose.step')
+        }}</span>
+        <h4>
+          {{
+            t('contributionResolution.choose.title', { id: upload.upload_id })
+          }}
+        </h4>
+        <div class="strategy-options" role="radiogroup">
           <button
+            v-for="option in strategyOptions"
+            :key="option.value"
             type="button"
             class="strategy-option"
             role="radio"
-            :aria-checked="resolutionStrategy === 'accept_incoming'"
-            @click="toggleStrategy('accept_incoming')"
+            :aria-checked="decision.strategy.value === option.value"
+            @click="decision.choose(option.value)"
           >
             <span class="decision-indicator" aria-hidden="true">
               <font-awesome-icon
-                v-if="resolutionStrategy === 'accept_incoming'"
+                v-if="decision.strategy.value === option.value"
                 icon="fa-solid fa-check"
               />
             </span>
             <div class="strategy-content">
-              <strong
-                >Replace current project files with the submitted
-                versions</strong
-              >
-              <p>
-                The submitted file replaces the file in the current project,
-                including annotations not changed intentionally by the
-                contributor.
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            class="strategy-option"
-            role="radio"
-            :aria-checked="resolutionStrategy === 'accept_current'"
-            @click="toggleStrategy('accept_current')"
-          >
-            <span class="decision-indicator" aria-hidden="true">
-              <font-awesome-icon
-                v-if="resolutionStrategy === 'accept_current'"
-                icon="fa-solid fa-check"
-              />
-            </span>
-            <div class="strategy-content">
-              <strong
-                >Keep current project files and discard overlapping
-                changes</strong
-              >
-              <p>
-                The current project file remains. Only additional,
-                non-overlapping files from this contribution are merged.
-              </p>
+              <strong>{{ t(option.titleKey) }}</strong>
+              <p>{{ t(option.descriptionKey) }}</p>
             </div>
           </button>
 
           <aside class="correction-path">
             <div class="strategy-content">
-              <strong>Need a mixed or corrected version?</strong>
+              <strong>{{
+                t('contributionResolution.choose.correctionTitle')
+              }}</strong>
               <p>
-                Neither whole-file outcome is suitable. Ask the contributor to
-                combine the intended annotations in ELAN and submit a new
-                revision.
+                {{ t('contributionResolution.choose.correctionDescription') }}
               </p>
             </div>
             <button
@@ -161,293 +140,283 @@
               class="correction-button"
               @click="openCorrectionComposer"
             >
-              Request a corrected version
+              {{ t('contributionResolution.choose.correctionAction') }}
             </button>
           </aside>
         </div>
       </div>
 
-      <!-- File Changes Preview -->
-      <div v-if="nonOverlappingCount" class="changes-preview">
-        <h4>Additional files included</h4>
+      <div v-if="decision.otherFileCount.value" class="changes-preview">
+        <h4>{{ t('contributionResolution.additional.title') }}</h4>
         <div class="changes-grid">
-          <div v-if="otherFiles.new.length" class="change-group">
-            <h5>New files ({{ otherFiles.new.length }})</h5>
-            <ul class="change-list">
-              <li v-for="file in otherFiles.new.slice(0, 5)" :key="file">
-                {{ file }}
-              </li>
-              <li v-if="otherFiles.new.length > 5" class="more-files">
-                ... and {{ otherFiles.new.length - 5 }} more
-              </li>
-            </ul>
-          </div>
-
-          <div v-if="otherFiles.modified.length" class="change-group">
-            <h5>Modified files ({{ otherFiles.modified.length }})</h5>
-            <ul class="change-list">
-              <li v-for="file in otherFiles.modified.slice(0, 5)" :key="file">
-                {{ file }}
-              </li>
-              <li v-if="otherFiles.modified.length > 5" class="more-files">
-                ... and {{ otherFiles.modified.length - 5 }} more
-              </li>
-            </ul>
-          </div>
-
-          <div v-if="otherFiles.deleted.length" class="change-group">
-            <h5>Deleted files ({{ otherFiles.deleted.length }})</h5>
-            <ul class="change-list">
-              <li v-for="file in otherFiles.deleted.slice(0, 5)" :key="file">
-                {{ file }}
-              </li>
-              <li v-if="otherFiles.deleted.length > 5" class="more-files">
-                ... and {{ otherFiles.deleted.length - 5 }} more
-              </li>
-            </ul>
-          </div>
+          <template v-for="group in otherFileGroups" :key="group.kind">
+            <div v-if="group.files.length" class="change-group">
+              <h5>
+                {{ t(group.labelKey, { count: group.files.length }) }}
+              </h5>
+              <ul class="change-list">
+                <li v-for="file in group.files.slice(0, 5)" :key="file">
+                  {{ file }}
+                </li>
+                <li v-if="group.files.length > 5" class="more-files">
+                  {{
+                    t('contributionResolution.additional.more', {
+                      count: group.files.length - 5,
+                    })
+                  }}
+                </li>
+              </ul>
+            </div>
+          </template>
         </div>
       </div>
 
-      <!-- Resolution Actions -->
       <div class="resolution-actions">
-        <div v-if="resolutionStrategy" class="decision-confirmation">
+        <div v-if="decision.strategy.value" class="decision-confirmation">
           <header>
             <div>
-              <span class="step-label">Step 3 · Confirm</span>
-              <h4>{{ decisionTitle }}</h4>
+              <span class="step-label">{{
+                t('contributionResolution.confirm.step')
+              }}</span>
+              <h4>{{ t(chosen.titleKey) }}</h4>
             </div>
             <button
               type="button"
               class="clear-decision"
-              @click="toggleStrategy(resolutionStrategy)"
+              @click="decision.clear()"
             >
-              Clear choice
+              {{ t('contributionResolution.confirm.clear') }}
             </button>
           </header>
-          <p class="decision-consequence">{{ decisionConsequence }}</p>
-          <p v-if="semanticEffect" class="decision-impact">
-            <strong>Annotation impact:</strong> {{ semanticEffect }}.
+          <p class="decision-consequence">{{ t(chosen.consequenceKey) }}</p>
+          <p
+            v-if="decision.otherFileCount.value"
+            class="decision-consequence other-files-consequence"
+          >
+            {{
+              t(
+                'contributionResolution.confirm.otherFiles',
+                decision.otherFileCount.value
+              )
+            }}
+            <strong v-if="decision.otherFiles.value.deleted.length">
+              {{
+                t(
+                  'contributionResolution.confirm.otherDeletions',
+                  decision.otherFiles.value.deleted.length
+                )
+              }}
+            </strong>
           </p>
-          <p class="completion-note">
-            After this action, contribution #{{ upload.upload_id }} is closed
-            and removed from
-            <router-link :to="incomingWorkRoute">Incoming work</router-link>.
+          <p v-if="impactSummary" class="decision-impact">
+            <strong>{{
+              t('contributionResolution.confirm.impactLabel')
+            }}</strong>
+            {{ t(chosen.impactKey, { summary: impactSummary }) }}
           </p>
+          <p
+            v-else-if="decision.conflictedFiles.value.length"
+            class="decision-impact partial-impact"
+          >
+            {{
+              t('contributionResolution.confirm.impactPartial', {
+                compared: decision.comparedCount.value,
+                total: decision.conflictedFiles.value.length,
+              })
+            }}
+          </p>
+          <i18n-t
+            keypath="contributionResolution.confirm.completion"
+            tag="p"
+            class="completion-note"
+          >
+            <template #id>{{ upload.upload_id }}</template>
+            <template #link>
+              <router-link :to="incomingWorkRoute">{{
+                t('contributionResolution.confirm.incomingWork')
+              }}</router-link>
+            </template>
+          </i18n-t>
           <label>
-            <input v-model="decisionAcknowledged" type="checkbox" />
-            {{ decisionAcknowledgement }}
+            <input v-model="decision.acknowledged.value" type="checkbox" />
+            {{ t(chosen.acknowledgementKey) }}
           </label>
         </div>
         <button
+          type="button"
           class="action-btn resolve-btn"
-          :disabled="!resolutionStrategy || !decisionAcknowledged || resolving"
+          :disabled="!decision.canApply.value || resolving"
           @click="applyResolution"
         >
-          {{ resolving ? 'Completing contribution…' : finalActionLabel }}
+          {{
+            resolving
+              ? t('contributionResolution.actions.working')
+              : t(chosen.actionKey, { id: upload.upload_id })
+          }}
         </button>
 
-        <button class="action-btn cancel-btn" @click="$emit('cancelled')">
-          Cancel
+        <button
+          type="button"
+          class="action-btn cancel-btn"
+          @click="$emit('cancelled')"
+        >
+          {{ t('contributionResolution.actions.cancel') }}
         </button>
       </div>
 
-      <!-- Progress -->
-      <div v-if="resolving" class="resolution-progress">
-        <div class="progress-bar">
-          <div
-            class="progress-fill"
-            :style="`width: ${resolutionProgress}%`"
-          ></div>
-        </div>
-        <p class="progress-text">{{ resolutionMessage }}</p>
+      <div v-if="resolving" class="resolution-progress" role="status">
+        <p class="progress-text">
+          {{ t('contributionResolution.actions.working') }}
+        </p>
       </div>
     </div>
 
-    <!-- Error Display -->
-    <div v-if="error" class="error-message">
+    <div v-if="error" class="error-message" role="alert">
       {{ error }}
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, toRef, useId } from 'vue';
+import { useI18n } from 'vue-i18n';
 import gitService from '@/api/service/gitService';
 import ConflictMergeView from '@/components/common/ConflictMergeView.vue';
 import ReviewCasePanel from '@/components/common/ReviewCasePanel.vue';
+import {
+  RESOLUTION_STRATEGIES,
+  useResolutionDecision,
+} from '@/composables/useResolutionDecision';
 import { reportClientError } from '@/utils/errorDiagnostics';
 
 const props = defineProps({
-  projectId: {
-    type: Number,
-    required: true,
-  },
-  projectName: {
-    type: String,
-    required: true,
-  },
-  upload: {
-    type: Object,
-    required: true,
-  },
+  projectId: { type: Number, required: true },
+  projectName: { type: String, required: true },
+  upload: { type: Object, required: true },
 });
 
 const emit = defineEmits(['resolved', 'cancelled']);
 
-// State
-const loading = ref(false);
-const resolving = ref(false);
-const resolutionProgress = ref(0);
-const resolutionMessage = ref('');
-const resolutionStrategy = ref('');
-const error = ref('');
+const KNOWN_IMPACT_KINDS = new Set([
+  'added',
+  'removed',
+  'value_changed',
+  'tier_changed',
+  'timing_changed',
+]);
 
-const selectedConflictFile = ref(null);
-const decisionAcknowledged = ref(false);
+const { t, locale } = useI18n();
+const decision = useResolutionDecision(toRef(props, 'upload'));
+const resolving = ref(false);
+const error = ref('');
 const showCorrectionWorkflow = ref(false);
 const reviewPanel = ref(null);
-const comparisons = ref({});
+const conflictedTitleId = `conflicted-files-title-${useId()}`;
 
-const otherFiles = computed(() => {
-  const conflicts = new Set(props.upload.conflicted_files || []);
-  return {
-    new: (props.upload.files?.new || []).filter((file) => !conflicts.has(file)),
-    modified: (props.upload.files?.modified || []).filter(
-      (file) => !conflicts.has(file)
-    ),
-    deleted: (props.upload.files?.deleted || []).filter(
-      (file) => !conflicts.has(file)
-    ),
-  };
-});
-const nonOverlappingCount = computed(() => {
-  return Object.values(otherFiles.value).reduce(
-    (total, files) => total + files.length,
-    0
-  );
-});
+const strategyOptions = [
+  {
+    value: RESOLUTION_STRATEGIES.incoming,
+    titleKey: 'contributionResolution.choose.incomingTitle',
+    descriptionKey: 'contributionResolution.choose.incomingDescription',
+  },
+  {
+    value: RESOLUTION_STRATEGIES.current,
+    titleKey: 'contributionResolution.choose.currentTitle',
+    descriptionKey: 'contributionResolution.choose.currentDescription',
+  },
+];
+
+const chosen = computed(() =>
+  decision.strategy.value === RESOLUTION_STRATEGIES.incoming
+    ? {
+        titleKey: 'contributionResolution.confirm.incomingTitle',
+        consequenceKey: 'contributionResolution.confirm.incomingConsequence',
+        acknowledgementKey:
+          'contributionResolution.confirm.acknowledgeIncoming',
+        impactKey: 'contributionResolution.confirm.impactApply',
+        actionKey: 'contributionResolution.actions.merge',
+      }
+    : {
+        titleKey: 'contributionResolution.confirm.currentTitle',
+        consequenceKey: 'contributionResolution.confirm.currentConsequence',
+        acknowledgementKey: 'contributionResolution.confirm.acknowledgeCurrent',
+        impactKey: 'contributionResolution.confirm.impactDiscard',
+        actionKey: 'contributionResolution.actions.keepCurrent',
+      }
+);
+
+const otherFileGroups = computed(() => [
+  {
+    kind: 'new',
+    labelKey: 'contributionResolution.additional.new',
+    files: decision.otherFiles.value.new,
+  },
+  {
+    kind: 'modified',
+    labelKey: 'contributionResolution.additional.modified',
+    files: decision.otherFiles.value.modified,
+  },
+  {
+    kind: 'deleted',
+    labelKey: 'contributionResolution.additional.deleted',
+    files: decision.otherFiles.value.deleted,
+  },
+]);
+
 const incomingWorkRoute = computed(() => ({
   path: '/contribution',
   query: { project: props.projectId, view: 'queue' },
 }));
-const decisionTitle = computed(() =>
-  resolutionStrategy.value === 'accept_incoming'
-    ? 'Merge the submitted file into the project'
-    : 'Close without merging the overlapping file'
-);
-const decisionConsequence = computed(() =>
-  resolutionStrategy.value === 'accept_incoming'
-    ? "The contributor's complete file will replace the current project file."
-    : 'The current project file stays unchanged. Its submitted replacement is discarded.'
-);
-const finalActionLabel = computed(() =>
-  resolutionStrategy.value === 'accept_incoming'
-    ? 'Merge #' + props.upload.upload_id + ' into project'
-    : 'Close #' + props.upload.upload_id + ' without merging file'
-);
-const decisionAcknowledgement = computed(() =>
-  resolutionStrategy.value === 'accept_incoming'
-    ? 'I reviewed the comparison and want to replace the current project file.'
-    : 'I reviewed the comparison and want to discard the overlapping submitted file.'
-);
-const semanticEffect = computed(() => {
-  const changes = Object.values(comparisons.value).flatMap(
-    (review) => review?.changes || []
-  );
-  if (!changes.length) return '';
-  const counts = {};
-  for (const change of changes) {
-    for (const kind of change.kinds) counts[kind] = (counts[kind] || 0) + 1;
-  }
-  const labels = {
-    added: ['addition', 'additions'],
-    removed: ['removal', 'removals'],
-    value_changed: ['value change', 'value changes'],
-    tier_changed: ['tier change', 'tier changes'],
-    timing_changed: ['timing change', 'timing changes'],
-  };
-  const parts = Object.entries(counts).map(([kind, count]) => {
-    const forms = labels[kind] || [
-      kind.replaceAll('_', ' '),
-      kind.replaceAll('_', ' '),
-    ];
-    return `${count} ${forms[count === 1 ? 0 : 1]}`;
-  });
-  const summary =
-    parts.length > 1
-      ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`
-      : parts[0];
-  return resolutionStrategy.value === 'accept_incoming'
-    ? 'Apply ' + summary
-    : 'Discard ' + summary;
-});
 
-watch(resolutionStrategy, () => {
-  decisionAcknowledged.value = false;
+const impactSummary = computed(() => {
+  const counts = new Map();
+  for (const { kind, count } of decision.impact.value) {
+    const key = KNOWN_IMPACT_KINDS.has(kind) ? kind : 'other';
+    counts.set(key, (counts.get(key) || 0) + count);
+  }
+  if (!counts.size) return '';
+  const parts = [...counts].map(([kind, count]) =>
+    t(`contributionResolution.impactKinds.${kind}`, count)
+  );
+  return new Intl.ListFormat(locale.value, {
+    style: 'long',
+    type: 'conjunction',
+  }).format(parts);
 });
 
 async function applyResolution() {
-  if (!resolutionStrategy.value) {
-    error.value = 'Please select a resolution strategy';
+  if (!decision.canApply.value) {
+    error.value = t('contributionResolution.errors.chooseOutcome');
     return;
   }
-
+  resolving.value = true;
+  error.value = '';
   try {
-    resolving.value = true;
-    resolutionProgress.value = 10;
-    resolutionMessage.value = 'Starting resolution...';
-    error.value = '';
-
-    resolutionProgress.value = 30;
-    resolutionMessage.value = 'Applying resolution strategy...';
-
     const result = await gitService.adminCompleteMerge(
       props.projectName,
       props.upload.branch_name,
-      resolutionStrategy.value
+      decision.strategy.value
     );
-
-    resolutionProgress.value = 100;
-    resolutionMessage.value = 'Resolution complete!';
     emit('resolved', result);
-  } catch (e) {
-    error.value = e?.response?.data?.detail || 'Failed to resolve upload';
-    reportClientError('Resolution error', e);
+  } catch (requestError) {
+    error.value =
+      requestError?.response?.data?.detail ||
+      t('contributionResolution.errors.failed');
+    reportClientError('Resolution error', requestError);
   } finally {
     resolving.value = false;
-    resolutionProgress.value = 0;
-    resolutionMessage.value = '';
   }
-}
-
-function toggleFileComparison(filename) {
-  selectedConflictFile.value =
-    selectedConflictFile.value === filename ? null : filename;
-}
-
-function closeFileConflict() {
-  selectedConflictFile.value = null;
 }
 
 function openTargetedReview(target) {
   reviewPanel.value?.openComposer(target);
 }
 
-function recordComparison({ filename, review }) {
-  comparisons.value = { ...comparisons.value, [filename]: review };
-}
-
 async function openCorrectionComposer() {
-  resolutionStrategy.value = '';
+  decision.clear();
   showCorrectionWorkflow.value = true;
   await nextTick();
   reviewPanel.value?.openComposer();
-}
-
-function toggleStrategy(strategy) {
-  resolutionStrategy.value =
-    resolutionStrategy.value === strategy ? '' : strategy;
 }
 </script>
 

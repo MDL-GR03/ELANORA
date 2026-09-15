@@ -1200,6 +1200,74 @@
     }
   },
 
+  "contributionResolution": {
+    "title": "Reviewing submitted differences",
+    "summary": "{count} file overlaps with the current accepted project version and needs a decision. | {count} files overlap with the current accepted project version and need a decision.",
+    "inspect": {
+      "step": "Step 1",
+      "title": "Inspect overlapping files",
+      "description": "Compare the current project and submitted annotations before choosing an outcome.",
+      "bothChanged": "Both versions changed this file",
+      "compare": "Compare annotations",
+      "hide": "Hide comparison",
+      "comparisonLabel": "Annotation comparison",
+      "closeComparison": "Close comparison"
+    },
+    "choose": {
+      "step": "Step 2",
+      "title": "Choose what contribution #{id} should do",
+      "incomingTitle": "Replace current project files with the submitted versions",
+      "incomingDescription": "The submitted file replaces the file in the current project, including annotations the contributor did not intend to change.",
+      "currentTitle": "Keep current project files and discard overlapping changes",
+      "currentDescription": "The current project file remains. Only additional, non-overlapping files from this contribution are applied.",
+      "correctionTitle": "Need a mixed or corrected version?",
+      "correctionDescription": "Neither whole-file outcome is suitable. Ask the contributor to combine the intended annotations in ELAN and submit a new revision.",
+      "correctionAction": "Request a corrected version"
+    },
+    "additional": {
+      "title": "Additional files included",
+      "new": "New files ({count})",
+      "modified": "Modified files ({count})",
+      "deleted": "Deleted files ({count})",
+      "more": "… and {count} more"
+    },
+    "confirm": {
+      "step": "Step 3 · Confirm",
+      "clear": "Clear choice",
+      "incomingTitle": "Merge the submitted files into the project",
+      "incomingConsequence": "The contributor's complete version of each overlapping file replaces the current project file.",
+      "currentTitle": "Keep the current overlapping files",
+      "currentConsequence": "Each overlapping project file stays unchanged, and its submitted replacement is discarded.",
+      "otherFiles": "Either way, {count} other file change from this contribution is applied. | Either way, {count} other file changes from this contribution are applied.",
+      "otherDeletions": "This includes deleting {count} file from the project. | This includes deleting {count} files from the project.",
+      "impactLabel": "Annotation impact:",
+      "impactApply": "Apply {summary}.",
+      "impactDiscard": "Discard {summary}.",
+      "impactPartial": "Compared {compared} of {total} overlapping files. Compare every file to see the full annotation impact.",
+      "completion": "After this action, contribution #{id} is closed and removed from {link}.",
+      "incomingWork": "Incoming work",
+      "acknowledgeIncoming": "I reviewed the comparison and want to replace the current project files.",
+      "acknowledgeCurrent": "I reviewed the comparison and want to discard the overlapping submitted files."
+    },
+    "impactKinds": {
+      "added": "{count} addition | {count} additions",
+      "removed": "{count} removal | {count} removals",
+      "value_changed": "{count} value change | {count} value changes",
+      "tier_changed": "{count} tier change | {count} tier changes",
+      "timing_changed": "{count} timing change | {count} timing changes",
+      "other": "{count} other change | {count} other changes"
+    },
+    "actions": {
+      "merge": "Merge #{id} into project",
+      "keepCurrent": "Complete #{id}, keeping current files",
+      "working": "Completing contribution…",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "chooseOutcome": "Choose an outcome first.",
+      "failed": "The contribution could not be completed."
+    }
+  },
   "contributionWorkspace": {
     "modes": {
       "default": {

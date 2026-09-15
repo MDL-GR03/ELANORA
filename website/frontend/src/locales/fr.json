@@ -1190,6 +1190,74 @@
     }
   },
 
+  "contributionResolution": {
+    "title": "Examen des différences soumises",
+    "summary": "{count} fichier chevauche la version acceptée actuelle du projet et nécessite une décision. | {count} fichiers chevauchent la version acceptée actuelle du projet et nécessitent une décision.",
+    "inspect": {
+      "step": "Étape 1",
+      "title": "Examiner les fichiers en chevauchement",
+      "description": "Comparez les annotations du projet actuel et celles soumises avant de choisir une issue.",
+      "bothChanged": "Les deux versions ont modifié ce fichier",
+      "compare": "Comparer les annotations",
+      "hide": "Masquer la comparaison",
+      "comparisonLabel": "Comparaison des annotations",
+      "closeComparison": "Fermer la comparaison"
+    },
+    "choose": {
+      "step": "Étape 2",
+      "title": "Choisir l'issue de la contribution n° {id}",
+      "incomingTitle": "Remplacer les fichiers actuels du projet par les versions soumises",
+      "incomingDescription": "Le fichier soumis remplace celui du projet actuel, y compris les annotations que le contributeur n'avait pas l'intention de modifier.",
+      "currentTitle": "Conserver les fichiers actuels du projet et écarter les modifications en chevauchement",
+      "currentDescription": "Le fichier actuel du projet est conservé. Seuls les fichiers supplémentaires, sans chevauchement, de cette contribution sont appliqués.",
+      "correctionTitle": "Besoin d'une version combinée ou corrigée ?",
+      "correctionDescription": "Aucune des deux issues par fichier entier ne convient. Demandez au contributeur de combiner les annotations voulues dans ELAN et de soumettre une nouvelle révision.",
+      "correctionAction": "Demander une version corrigée"
+    },
+    "additional": {
+      "title": "Fichiers supplémentaires inclus",
+      "new": "Nouveaux fichiers ({count})",
+      "modified": "Fichiers modifiés ({count})",
+      "deleted": "Fichiers supprimés ({count})",
+      "more": "… et {count} de plus"
+    },
+    "confirm": {
+      "step": "Étape 3 · Confirmer",
+      "clear": "Effacer le choix",
+      "incomingTitle": "Fusionner les fichiers soumis dans le projet",
+      "incomingConsequence": "La version complète de chaque fichier en chevauchement fournie par le contributeur remplace le fichier actuel du projet.",
+      "currentTitle": "Conserver les fichiers actuels en chevauchement",
+      "currentConsequence": "Chaque fichier du projet en chevauchement reste inchangé, et son remplacement soumis est écarté.",
+      "otherFiles": "Dans les deux cas, {count} autre modification de fichier de cette contribution est appliquée. | Dans les deux cas, {count} autres modifications de fichiers de cette contribution sont appliquées.",
+      "otherDeletions": "Cela inclut la suppression de {count} fichier du projet. | Cela inclut la suppression de {count} fichiers du projet.",
+      "impactLabel": "Effet sur les annotations :",
+      "impactApply": "Appliquer {summary}.",
+      "impactDiscard": "Écarter {summary}.",
+      "impactPartial": "{compared} fichier(s) sur {total} en chevauchement comparé(s). Comparez chaque fichier pour voir l'effet complet sur les annotations.",
+      "completion": "Après cette action, la contribution n° {id} est close et retirée de {link}.",
+      "incomingWork": "Travail reçu",
+      "acknowledgeIncoming": "J'ai examiné la comparaison et je veux remplacer les fichiers actuels du projet.",
+      "acknowledgeCurrent": "J'ai examiné la comparaison et je veux écarter les fichiers soumis en chevauchement."
+    },
+    "impactKinds": {
+      "added": "{count} ajout | {count} ajouts",
+      "removed": "{count} suppression | {count} suppressions",
+      "value_changed": "{count} modification de valeur | {count} modifications de valeur",
+      "tier_changed": "{count} changement de tier | {count} changements de tier",
+      "timing_changed": "{count} changement de minutage | {count} changements de minutage",
+      "other": "{count} autre modification | {count} autres modifications"
+    },
+    "actions": {
+      "merge": "Fusionner la n° {id} dans le projet",
+      "keepCurrent": "Terminer la n° {id} en conservant les fichiers actuels",
+      "working": "Finalisation de la contribution…",
+      "cancel": "Annuler"
+    },
+    "errors": {
+      "chooseOutcome": "Choisissez d'abord une issue.",
+      "failed": "La contribution n'a pas pu être finalisée."
+    }
+  },
   "contributionWorkspace": {
     "modes": {
       "default": {

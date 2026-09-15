@@ -1298,6 +1298,74 @@
       "standardsFailed": "命名規則を読み込めないため、未検証の提出を防ぐ目的でアップロードを停止しました。"
     }
   },
+  "contributionResolution": {
+    "title": "提出された差分を確認中",
+    "summary": "{count} 件のファイルが現在承認されているプロジェクトのバージョンと重なっており、判断が必要です。",
+    "inspect": {
+      "step": "ステップ 1",
+      "title": "重なっているファイルを確認",
+      "description": "結果を選ぶ前に、現在のプロジェクトと提出された注釈を比較してください。",
+      "bothChanged": "両方のバージョンがこのファイルを変更しました",
+      "compare": "注釈を比較",
+      "hide": "比較を隠す",
+      "comparisonLabel": "注釈の比較",
+      "closeComparison": "比較を閉じる"
+    },
+    "choose": {
+      "step": "ステップ 2",
+      "title": "貢献 #{id} の扱いを選択",
+      "incomingTitle": "現在のプロジェクトファイルを提出版に置き換える",
+      "incomingDescription": "提出されたファイルが現在のプロジェクトのファイルを置き換えます。貢献者が変更するつもりのなかった注釈も含まれます。",
+      "currentTitle": "現在のプロジェクトファイルを保持し、重なる変更を破棄する",
+      "currentDescription": "現在のプロジェクトファイルはそのまま残ります。この貢献のうち、重ならない追加ファイルだけが適用されます。",
+      "correctionTitle": "組み合わせた版や修正版が必要ですか？",
+      "correctionDescription": "ファイル全体を選ぶどちらの結果も適切ではありません。貢献者に ELAN で意図した注釈を組み合わせ、新しいリビジョンを提出するよう依頼してください。",
+      "correctionAction": "修正版を依頼"
+    },
+    "additional": {
+      "title": "含まれる追加ファイル",
+      "new": "新しいファイル（{count}）",
+      "modified": "変更されたファイル（{count}）",
+      "deleted": "削除されたファイル（{count}）",
+      "more": "… ほか {count} 件"
+    },
+    "confirm": {
+      "step": "ステップ 3 · 確認",
+      "clear": "選択を解除",
+      "incomingTitle": "提出されたファイルをプロジェクトに統合",
+      "incomingConsequence": "重なっている各ファイルについて、貢献者の完全な版が現在のプロジェクトファイルを置き換えます。",
+      "currentTitle": "現在の重なっているファイルを保持",
+      "currentConsequence": "重なっている各プロジェクトファイルは変更されず、提出された置き換えは破棄されます。",
+      "otherFiles": "どちらを選んでも、この貢献の他の {count} 件のファイル変更が適用されます。",
+      "otherDeletions": "これにはプロジェクトから {count} 件のファイルを削除することが含まれます。",
+      "impactLabel": "注釈への影響：",
+      "impactApply": "{summary}を適用します。",
+      "impactDiscard": "{summary}を破棄します。",
+      "impactPartial": "重なっている {total} 件のファイルのうち {compared} 件を比較しました。注釈への影響をすべて確認するには、すべてのファイルを比較してください。",
+      "completion": "この操作の後、貢献 #{id} は終了し、{link}から削除されます。",
+      "incomingWork": "受信した作業",
+      "acknowledgeIncoming": "比較を確認し、現在のプロジェクトファイルを置き換えることに同意します。",
+      "acknowledgeCurrent": "比較を確認し、重なっている提出ファイルを破棄することに同意します。"
+    },
+    "impactKinds": {
+      "added": "追加 {count} 件",
+      "removed": "削除 {count} 件",
+      "value_changed": "値の変更 {count} 件",
+      "tier_changed": "層の変更 {count} 件",
+      "timing_changed": "タイミングの変更 {count} 件",
+      "other": "その他の変更 {count} 件"
+    },
+    "actions": {
+      "merge": "#{id} をプロジェクトに統合",
+      "keepCurrent": "現在のファイルを保持して #{id} を完了",
+      "working": "貢献を完了しています…",
+      "cancel": "キャンセル"
+    },
+    "errors": {
+      "chooseOutcome": "先に結果を選択してください。",
+      "failed": "貢献を完了できませんでした。"
+    }
+  },
   "contributionWorkspace": {
     "modes": {
       "default": {
