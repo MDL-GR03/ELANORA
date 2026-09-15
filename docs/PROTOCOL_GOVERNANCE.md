@@ -28,9 +28,27 @@ may list the institution's available protocol versions.
 The typed rule snapshot currently supports required tier IDs, required parent
 relationships, required tier-to-linguistic-type assignments, required
 controlled-vocabulary IDs, mandatory linked media, and an allow-list of media
-MIME types. Empty identifiers, relationship rules for non-required tiers, and
-unknown fields are rejected. New rule families must receive typed validation
-and deterministic tests rather than being stored as uninterpreted settings.
+MIME types. Validator release 3 adds four further families:
+
+| Family | Rule | A document fails when |
+| --- | --- | --- |
+| Vocabulary | `vocabulary_tiers` | an annotation on the tier is not an entry of the controlled vocabulary named by the tier's linguistic type, or the type names none |
+| Vocabulary | `vocabulary_languages` | an entry of the vocabulary lacks a non-empty value in a listed language |
+| Tier metadata | `participant_tiers`, `annotator_tiers` | the tier's `PARTICIPANT` or `ANNOTATOR` is missing or blank |
+| Tier metadata | `tier_languages` | the tier's `LANG_REF` differs from the required language |
+| Completeness | `non_empty_tiers` | an annotation on the tier has an empty or blank value |
+| Completeness | `time_aligned_tiers` | an annotation on the tier is not aligned to media time at both ends (reference annotations never are) |
+| Constraints | `linguistic_type_constraints` | the linguistic type is missing, or its constraint stereotype differs (`none` requires an unconstrained type) |
+
+Annotation-level rules report one finding per tier, with the number of
+offending annotations and the location of the first, so a large file produces a
+readable report rather than thousands of issues.
+
+Empty identifiers, rules on tiers that are not required, language rules on
+vocabularies that are not required, unknown stereotypes and unknown fields are
+rejected: a rule on an optional tier would otherwise pass silently whenever the
+tier is absent. New rule families must receive typed validation and
+deterministic tests rather than being stored as uninterpreted settings.
 
 Example request body:
 
@@ -93,7 +111,11 @@ to it would have halted validation, while the semantic validator, which does
 change outcomes, was not covered. Release 2 corrects the scope and records two
 semantic fixes: annotations citing several external references, and
 `xsd:boolean` values written as `1` or `0`, both of which release 1 wrongly
-rejected. Runs recorded under release 1 keep their original release. PostgreSQL triggers prevent updates or deletion of validator releases,
+rejected. Release 3 adds the rule families above; snapshots that use none of
+them evaluate exactly as under release 2. Runs keep the release they were
+recorded under.
+
+PostgreSQL triggers prevent updates or deletion of validator releases,
 validation runs, validation issues, and published protocol versions.
 
 The exact EAF revision bytes remain authoritative and are never rewritten by

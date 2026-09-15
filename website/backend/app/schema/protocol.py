@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -10,6 +11,14 @@ from app.model.enums import (
     ValidationOutcome,
     ValidationSeverity,
 )
+
+ConstraintStereotype = Literal[
+    "none",
+    "Time_Subdivision",
+    "Included_In",
+    "Symbolic_Subdivision",
+    "Symbolic_Association",
+]
 
 
 class ProtocolRules(BaseModel):
@@ -25,6 +34,22 @@ class ProtocolRules(BaseModel):
     )
     media_required: bool = False
     allowed_media_mime_types: list[str] = Field(default_factory=list, max_length=100)
+    # Vocabulary: annotations on these tiers must use an entry of the controlled
+    # vocabulary named by the tier's linguistic type.
+    vocabulary_tiers: list[str] = Field(default_factory=list, max_length=500)
+    # Vocabulary: every entry needs a value in each listed language.
+    vocabulary_languages: dict[str, list[str]] = Field(default_factory=dict)
+    # Tier metadata.
+    participant_tiers: list[str] = Field(default_factory=list, max_length=500)
+    annotator_tiers: list[str] = Field(default_factory=list, max_length=500)
+    tier_languages: dict[str, str] = Field(default_factory=dict)
+    # Completeness.
+    non_empty_tiers: list[str] = Field(default_factory=list, max_length=500)
+    time_aligned_tiers: list[str] = Field(default_factory=list, max_length=500)
+    # Linguistic-type constraint stereotypes; "none" means an unconstrained type.
+    linguistic_type_constraints: dict[str, ConstraintStereotype] = Field(
+        default_factory=dict
+    )
     # Rules absent here are errors, which keeps every protocol published before
     # severities existed behaving exactly as it did.
     severities: dict[str, ValidationSeverity] = Field(default_factory=dict)
@@ -42,6 +67,11 @@ class ProtocolRules(BaseModel):
         "required_tiers",
         "required_controlled_vocabularies",
         "allowed_media_mime_types",
+        "vocabulary_tiers",
+        "participant_tiers",
+        "annotator_tiers",
+        "non_empty_tiers",
+        "time_aligned_tiers",
     )
     @classmethod
     def normalize_required_tiers(cls, values: list[str]) -> list[str]:
@@ -51,7 +81,34 @@ class ProtocolRules(BaseModel):
             raise ValueError("required tier identifiers cannot be empty")
         return sorted(set(normalized))
 
-    @field_validator("tier_parents", "tier_linguistic_types")
+    @field_validator("vocabulary_languages")
+    @classmethod
+    def normalize_vocabulary_languages(
+        cls, values: dict[str, list[str]]
+    ) -> dict[str, list[str]]:
+        """Canonical ordering; every vocabulary names at least one language."""
+        normalized: dict[str, list[str]] = {}
+        for vocabulary_id, languages in values.items():
+            cleaned = sorted({language.strip() for language in languages})
+            if not vocabulary_id.strip() or not cleaned or "" in cleaned:
+                raise ValueError(
+                    "vocabulary languages need a vocabulary and non-empty languages"
+                )
+            normalized[vocabulary_id.strip()] = cleaned
+        return dict(sorted(normalized.items()))
+
+    @field_validator("linguistic_type_constraints")
+    @classmethod
+    def normalize_type_constraints(
+        cls, values: dict[str, ConstraintStereotype]
+    ) -> dict[str, ConstraintStereotype]:
+        """Reject empty linguistic type identifiers."""
+        normalized = {key.strip(): value for key, value in values.items()}
+        if any(not key for key in normalized):
+            raise ValueError("linguistic type identifiers cannot be empty")
+        return dict(sorted(normalized.items()))
+
+    @field_validator("tier_parents", "tier_linguistic_types", "tier_languages")
     @classmethod
     def normalize_tier_mappings(cls, values: dict[str, str]) -> dict[str, str]:
         """Normalize tier requirements while preserving explicit relationships."""
@@ -76,12 +133,30 @@ class ProtocolRules(BaseModel):
     @model_validator(mode="after")
     def mapped_tiers_are_required(self) -> "ProtocolRules":
         """Make every tier carrying a relationship rule explicitly required."""
-        mapped = set(self.tier_parents) | set(self.tier_linguistic_types)
+        # A rule on an optional tier would pass silently whenever it is absent.
+        mapped = (
+            set(self.tier_parents)
+            | set(self.tier_linguistic_types)
+            | set(self.tier_languages)
+            | set(self.vocabulary_tiers)
+            | set(self.participant_tiers)
+            | set(self.annotator_tiers)
+            | set(self.non_empty_tiers)
+            | set(self.time_aligned_tiers)
+        )
         missing = mapped - set(self.required_tiers)
         if missing:
             raise ValueError(
-                "tiers with parent or linguistic-type rules must also be required: "
+                "tiers with tier rules must also be required: "
                 + ", ".join(sorted(missing))
+            )
+        vocabularies = set(self.vocabulary_languages) - set(
+            self.required_controlled_vocabularies
+        )
+        if vocabularies:
+            raise ValueError(
+                "vocabularies with language rules must also be required: "
+                + ", ".join(sorted(vocabularies))
             )
         required = set(self.required_tiers)
         unknown_parents = set(self.tier_parents.values()) - required

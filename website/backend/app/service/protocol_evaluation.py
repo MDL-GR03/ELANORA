@@ -9,7 +9,7 @@ administration, may change freely.
 """
 
 import hashlib
-from collections.abc import Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -23,7 +23,9 @@ from app.schema.protocol import ProtocolRules
 VALIDATOR_NAME = "elanora-eaf"
 # 2: EXT_REF lists and xsd:boolean "1"/"0" were rejected by semantic validation
 #    under release 1, although the EAF 3.0 schema allows both.
-VALIDATOR_VERSION = "2"
+# 3: vocabulary, tier metadata, completeness and linguistic-type constraint
+#    rules. Snapshots without them evaluate exactly as under release 2.
+VALIDATOR_VERSION = "3"
 
 _APP_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR_SOURCES: tuple[Path, ...] = (
@@ -57,88 +59,264 @@ class ProtocolFinding:
     rule_key: str
 
 
-def evaluate_protocol_rules(
-    root: etree._Element, rules: ProtocolRules
-) -> tuple[ProtocolFinding, ...]:
-    """Evaluate a validated EAF document against immutable protocol rules."""
-    findings: list[ProtocolFinding] = []
+class _Evaluation:
+    """One document under one snapshot, collecting findings in rule order."""
 
-    def error(code: str, location: str, message: str, rule_key: str) -> None:
-        findings.append(
+    def __init__(self, root: etree._Element, rules: ProtocolRules) -> None:
+        self.root = root
+        self.rules = rules
+        self.findings: list[ProtocolFinding] = []
+        self.tiers = _by_id(root.findall("TIER"), "TIER_ID")
+        self.types = _by_id(root.findall("LINGUISTIC_TYPE"), "LINGUISTIC_TYPE_ID")
+        self.vocabularies = _by_id(root.findall("CONTROLLED_VOCABULARY"), "CV_ID")
+
+    def report(self, code: str, location: str, message: str, rule_key: str) -> None:
+        self.findings.append(
             ProtocolFinding(
                 code=code,
-                severity=rules.severity_of(rule_key),
+                severity=self.rules.severity_of(rule_key),
                 location=location,
                 message=message,
                 rule_key=rule_key,
             )
         )
 
-    tiers = {
-        tier_id: tier
-        for tier in root.findall("TIER")
-        if (tier_id := tier.get("TIER_ID")) is not None
-    }
-    tier_ids = set(tiers)
+    def present_tiers(
+        self, tier_ids: Iterable[str]
+    ) -> Iterator[tuple[str, etree._Element]]:
+        """Listed tiers found in the document; absent ones are required_tiers' job."""
+        for tier_id in tier_ids:
+            tier = self.tiers.get(tier_id)
+            if tier is not None:
+                yield tier_id, tier
+
+    def per_tier(
+        self,
+        tier_ids: Iterable[str],
+        offending: Callable[[etree._Element], bool],
+        code: str,
+        problem: str,
+        rule_key: str,
+    ) -> None:
+        """One finding per tier, counting offenders and locating the first."""
+        for tier_id, tier in self.present_tiers(tier_ids):
+            failures = [item for item in _annotations(tier) if offending(item)]
+            if failures:
+                self.report(
+                    code,
+                    _annotation_path(tier_id, failures[0]),
+                    f"Tier {tier_id!r} has {_count(len(failures), 'annotation')} "
+                    + problem,
+                    rule_key,
+                )
+
+
+def evaluate_protocol_rules(
+    root: etree._Element, rules: ProtocolRules
+) -> tuple[ProtocolFinding, ...]:
+    """Evaluate a validated EAF document against immutable protocol rules."""
+    evaluation = _Evaluation(root, rules)
+    for family in (
+        _structure_rules,
+        _media_rules,
+        _vocabulary_rules,
+        _tier_metadata_rules,
+        _completeness_rules,
+        _constraint_rules,
+    ):
+        family(evaluation)
+    return tuple(evaluation.findings)
+
+
+def _structure_rules(ev: _Evaluation) -> None:
+    rules = ev.rules
     for tier_id in rules.required_tiers:
-        if tier_id not in tier_ids:
-            error(
+        if tier_id not in ev.tiers:
+            ev.report(
                 "protocol.required_tier_missing",
                 "/ANNOTATION_DOCUMENT",
                 f"Required tier {tier_id!r} is missing",
                 "required_tiers",
             )
-    for tier_id, required_parent in rules.tier_parents.items():
-        tier = tiers.get(tier_id)
-        if tier is not None and tier.get("PARENT_REF") != required_parent:
-            error(
+    for tier_id, tier in ev.present_tiers(rules.tier_parents):
+        required_parent = rules.tier_parents[tier_id]
+        if tier.get("PARENT_REF") != required_parent:
+            ev.report(
                 "protocol.tier_parent_mismatch",
-                f"/ANNOTATION_DOCUMENT/TIER[@TIER_ID='{tier_id}']",
+                _tier_path(tier_id),
                 f"Tier {tier_id!r} must have parent {required_parent!r}",
                 "tier_parents",
             )
-    for tier_id, required_type in rules.tier_linguistic_types.items():
-        tier = tiers.get(tier_id)
-        if tier is not None and tier.get("LINGUISTIC_TYPE_REF") != required_type:
-            error(
+    for tier_id, tier in ev.present_tiers(rules.tier_linguistic_types):
+        required_type = rules.tier_linguistic_types[tier_id]
+        if tier.get("LINGUISTIC_TYPE_REF") != required_type:
+            ev.report(
                 "protocol.tier_linguistic_type_mismatch",
-                f"/ANNOTATION_DOCUMENT/TIER[@TIER_ID='{tier_id}']",
+                _tier_path(tier_id),
                 f"Tier {tier_id!r} must use linguistic type {required_type!r}",
                 "tier_linguistic_types",
             )
-    vocabulary_ids = {
-        item.get("CV_ID")
-        for item in root.findall("CONTROLLED_VOCABULARY")
-        if item.get("CV_ID")
-    }
     for vocabulary_id in rules.required_controlled_vocabularies:
-        if vocabulary_id not in vocabulary_ids:
-            error(
+        if vocabulary_id not in ev.vocabularies:
+            ev.report(
                 "protocol.required_vocabulary_missing",
                 "/ANNOTATION_DOCUMENT",
                 f"Required controlled vocabulary {vocabulary_id!r} is missing",
                 "required_controlled_vocabularies",
             )
-    media = root.findall("HEADER/MEDIA_DESCRIPTOR")
-    if rules.media_required and not media:
-        error(
+
+
+def _media_rules(ev: _Evaluation) -> None:
+    media = ev.root.findall("HEADER/MEDIA_DESCRIPTOR")
+    if ev.rules.media_required and not media:
+        ev.report(
             "protocol.media_required",
             "/ANNOTATION_DOCUMENT/HEADER",
             "At least one media descriptor is required",
             "media_required",
         )
-    allowed_mime_types = set(rules.allowed_media_mime_types)
-    if allowed_mime_types:
-        for descriptor in media:
-            mime_type = descriptor.get("MIME_TYPE", "")
-            if mime_type not in allowed_mime_types:
-                error(
-                    "protocol.media_mime_type_forbidden",
-                    root.getroottree().getpath(descriptor),
-                    f"Media MIME type {mime_type!r} is not permitted",
-                    "allowed_media_mime_types",
+    allowed_mime_types = set(ev.rules.allowed_media_mime_types)
+    if not allowed_mime_types:
+        return
+    for descriptor in media:
+        mime_type = descriptor.get("MIME_TYPE", "")
+        if mime_type not in allowed_mime_types:
+            ev.report(
+                "protocol.media_mime_type_forbidden",
+                ev.root.getroottree().getpath(descriptor),
+                f"Media MIME type {mime_type!r} is not permitted",
+                "allowed_media_mime_types",
+            )
+
+
+def _vocabulary_rules(ev: _Evaluation) -> None:
+    for tier_id, tier in ev.present_tiers(ev.rules.vocabulary_tiers):
+        type_id = tier.get("LINGUISTIC_TYPE_REF", "")
+        linguistic_type = ev.types.get(type_id)
+        cv_id = (
+            None
+            if linguistic_type is None
+            else linguistic_type.get("CONTROLLED_VOCABULARY_REF")
+        )
+        vocabulary = ev.vocabularies.get(cv_id or "")
+        if vocabulary is None:
+            ev.report(
+                "protocol.tier_without_vocabulary",
+                _tier_path(tier_id),
+                f"Tier {tier_id!r} must use a controlled vocabulary, but its "
+                f"linguistic type {type_id!r} has none",
+                "vocabulary_tiers",
+            )
+            continue
+        entry_ids = {entry.get("CVE_ID") for entry in vocabulary.iter("CV_ENTRY_ML")}
+        values = {value.text or "" for value in vocabulary.iter("CVE_VALUE")}
+        ev.per_tier(
+            [tier_id],
+            lambda item, entry_ids=entry_ids, values=values: (
+                item.get("CVE_REF") not in entry_ids
+                if item.get("CVE_REF") is not None
+                else _value(item) not in values
+            ),
+            "protocol.annotation_outside_vocabulary",
+            f"not taken from controlled vocabulary {cv_id!r}",
+            "vocabulary_tiers",
+        )
+    for cv_id, languages in ev.rules.vocabulary_languages.items():
+        vocabulary = ev.vocabularies.get(cv_id)
+        if vocabulary is None:
+            continue
+        entries = vocabulary.findall("CV_ENTRY_ML")
+        for language in languages:
+            lacking = [
+                entry
+                for entry in entries
+                if not any(
+                    value.get("LANG_REF") == language and (value.text or "").strip()
+                    for value in entry.findall("CVE_VALUE")
                 )
-    return tuple(findings)
+            ]
+            if lacking:
+                ev.report(
+                    "protocol.vocabulary_value_language_missing",
+                    f"/ANNOTATION_DOCUMENT/CONTROLLED_VOCABULARY[@CV_ID='{cv_id}']"
+                    f"/CV_ENTRY_ML[@CVE_ID='{lacking[0].get('CVE_ID')}']",
+                    f"Controlled vocabulary {cv_id!r} has "
+                    f"{_count(len(lacking), 'entry', 'entries')} without a value "
+                    f"in language {language!r}",
+                    "vocabulary_languages",
+                )
+
+
+def _tier_metadata_rules(ev: _Evaluation) -> None:
+    for rule_key, tier_ids, attribute, label in (
+        ("participant_tiers", ev.rules.participant_tiers, "PARTICIPANT", "participant"),
+        ("annotator_tiers", ev.rules.annotator_tiers, "ANNOTATOR", "annotator"),
+    ):
+        for tier_id, tier in ev.present_tiers(tier_ids):
+            if not (tier.get(attribute) or "").strip():
+                ev.report(
+                    f"protocol.tier_{label}_missing",
+                    _tier_path(tier_id),
+                    f"Tier {tier_id!r} must name its {label}",
+                    rule_key,
+                )
+    for tier_id, tier in ev.present_tiers(ev.rules.tier_languages):
+        language = ev.rules.tier_languages[tier_id]
+        if tier.get("LANG_REF") != language:
+            ev.report(
+                "protocol.tier_language_mismatch",
+                _tier_path(tier_id),
+                f"Tier {tier_id!r} must declare content language {language!r}",
+                "tier_languages",
+            )
+
+
+def _completeness_rules(ev: _Evaluation) -> None:
+    ev.per_tier(
+        ev.rules.non_empty_tiers,
+        lambda item: not _value(item).strip(),
+        "protocol.empty_annotation_values",
+        "without a value",
+        "non_empty_tiers",
+    )
+    time_values = {
+        slot.get("TIME_SLOT_ID"): slot.get("TIME_VALUE")
+        for slot in ev.root.findall("TIME_ORDER/TIME_SLOT")
+    }
+    ev.per_tier(
+        ev.rules.time_aligned_tiers,
+        # Reference annotations have no time slots of their own, so they count too.
+        lambda item: (
+            time_values.get(item.get("TIME_SLOT_REF1")) is None
+            or time_values.get(item.get("TIME_SLOT_REF2")) is None
+        ),
+        "protocol.unaligned_annotations",
+        "not aligned to media time",
+        "time_aligned_tiers",
+    )
+
+
+def _constraint_rules(ev: _Evaluation) -> None:
+    for type_id, stereotype in ev.rules.linguistic_type_constraints.items():
+        linguistic_type = ev.types.get(type_id)
+        if linguistic_type is None:
+            ev.report(
+                "protocol.linguistic_type_missing",
+                "/ANNOTATION_DOCUMENT",
+                f"Linguistic type {type_id!r} is missing",
+                "linguistic_type_constraints",
+            )
+            continue
+        actual = linguistic_type.get("CONSTRAINTS") or "none"
+        if actual != stereotype:
+            ev.report(
+                "protocol.linguistic_type_constraint_mismatch",
+                "/ANNOTATION_DOCUMENT/LINGUISTIC_TYPE"
+                f"[@LINGUISTIC_TYPE_ID='{type_id}']",
+                f"Linguistic type {type_id!r} must have {_constraint(stereotype)}, "
+                f"not {_constraint(actual)}",
+                "linguistic_type_constraints",
+            )
 
 
 def validate_content_against_protocol(
@@ -161,3 +339,42 @@ def blocking_findings(
     return tuple(
         finding for finding in findings if finding.severity == ValidationSeverity.ERROR
     )
+
+
+def _by_id(
+    elements: Iterable[etree._Element], attribute: str
+) -> dict[str, etree._Element]:
+    return {
+        identifier: element
+        for element in elements
+        if (identifier := element.get(attribute)) is not None
+    }
+
+
+def _annotations(tier: etree._Element) -> list[etree._Element]:
+    """The alignable or reference element of each annotation, in document order."""
+    return [child for annotation in tier.findall("ANNOTATION") for child in annotation]
+
+
+def _tier_path(tier_id: str) -> str:
+    return f"/ANNOTATION_DOCUMENT/TIER[@TIER_ID='{tier_id}']"
+
+
+def _annotation_path(tier_id: str, annotation: etree._Element) -> str:
+    return (
+        f"{_tier_path(tier_id)}/ANNOTATION/{annotation.tag}"
+        f"[@ANNOTATION_ID='{annotation.get('ANNOTATION_ID')}']"
+    )
+
+
+def _value(annotation: etree._Element) -> str:
+    value = annotation.find("ANNOTATION_VALUE")
+    return "" if value is None else value.text or ""
+
+
+def _count(count: int, singular: str, plural: str | None = None) -> str:
+    return f"{count} {singular if count == 1 else plural or singular + 's'}"
+
+
+def _constraint(stereotype: str) -> str:
+    return "no constraint" if stereotype == "none" else repr(stereotype)

@@ -56,4 +56,4 @@ def test_semantic_validation_is_covered_because_it_changes_outcomes() -> None:
     records them, and the semantic validator is now fingerprinted.
     """
     assert APP_ROOT / "elan" / "validation.py" in VALIDATOR_SOURCES
-    assert VALIDATOR_VERSION == "2"
+    assert int(VALIDATOR_VERSION) >= 2

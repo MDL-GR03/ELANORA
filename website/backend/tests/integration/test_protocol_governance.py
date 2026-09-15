@@ -660,3 +660,40 @@ async def test_a_run_with_only_warnings_passes_and_keeps_them_as_evidence(
     (issue,) = run.issues
     assert issue.severity == ValidationSeverity.WARNING
     assert issue.rule_key == "required_tiers"
+
+
+@pytest.mark.asyncio
+async def test_new_rule_families_survive_publication_and_fail_a_run(
+    session: AsyncSession,
+) -> None:
+    """Rules round-trip through the stored snapshot, not only the in-memory model."""
+    project, admin, _, elan_file = await _project_state(session)
+    rules = ProtocolRules(
+        required_tiers=["translation", "utterance"],
+        vocabulary_tiers=["translation"],
+        annotator_tiers=["utterance"],
+        linguistic_type_constraints={"translation-type": "Symbolic_Subdivision"},
+        severities={"annotator_tiers": ValidationSeverity.WARNING},
+    )
+    published = await _pinned(session, project, admin, rules)
+    assert ProtocolRules.model_validate(published.rules) == rules
+    content = FIXTURE.read_bytes().replace(b' ANNOTATOR="A01"', b"", 1)
+    document = parse_eaf(content)
+    revision = await append_eaf_revision(
+        session,
+        elan_id=elan_file.elan_id,
+        sha256=document.sha256,
+        raw_xml=document.raw_xml,
+        created_by=admin.user_id,
+    )
+
+    run = await validate_revision(
+        session, project=project, revision_id=revision.revision_id
+    )
+
+    assert run.outcome == ValidationOutcome.FAILED
+    assert [(issue.rule_key, issue.severity) for issue in run.issues] == [
+        ("vocabulary_tiers", ValidationSeverity.ERROR),
+        ("annotator_tiers", ValidationSeverity.WARNING),
+        ("linguistic_type_constraints", ValidationSeverity.ERROR),
+    ]
