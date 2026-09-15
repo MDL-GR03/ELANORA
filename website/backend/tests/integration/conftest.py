@@ -2,11 +2,17 @@
 
 import os
 from collections.abc import AsyncIterator
+from dataclasses import dataclass
+from pathlib import Path
 
+import pytest
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+# Register every table, so truncation never depends on what a test imported.
+import app.model  # noqa: F401
 from app.db.database import Base
 
 DEFAULT_TEST_DATABASE_URL = (
@@ -57,3 +63,127 @@ async def session_factory(
         yield async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
     finally:
         await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def api_client(
+    session: AsyncSession,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> AsyncIterator[AsyncClient]:
+    """Drive the real application, middleware included, over HTTP.
+
+    Every request gets its own database session, as in production, so commits
+    and rollbacks behave as they do behind a browser. Project storage and
+    recovery copies live under a temporary directory. Cookies follow their
+    paths, just as a browser would send them.
+    """
+    import app.api.v1.git as git_api  # noqa: PLC0415 - imports the whole app
+    from app.core.limiter import limiter  # noqa: PLC0415
+    from app.db.database import get_db  # noqa: PLC0415
+    from app.main import app  # noqa: PLC0415
+    from app.service.contribution_change_set import (  # noqa: PLC0415
+        ContributionChangeSetCoordinator,
+    )
+    from app.service.git import GitService  # noqa: PLC0415
+    from app.service.project_sync import ProjectSyncCoordinator  # noqa: PLC0415
+    from app.utils import file_processing, project_backup  # noqa: PLC0415
+
+    projects_root = tmp_path / "projects"
+    monkeypatch.setattr(file_processing, "ELAN_PROJECTS_BASE_PATH", str(projects_root))
+    monkeypatch.setattr(
+        project_backup, "ELAN_BACKUPS_BASE_PATH", str(tmp_path / "recovery")
+    )
+    git_service = GitService(base_path=str(projects_root))
+    monkeypatch.setattr(git_api, "git_service", git_service)
+    monkeypatch.setattr(
+        git_api,
+        "contribution_change_sets",
+        ContributionChangeSetCoordinator(git_service),
+    )
+    monkeypatch.setattr(
+        git_api, "sync_coordinator", ProjectSyncCoordinator(git_service)
+    )
+
+    engine = create_async_engine(_database_url(), pool_pre_ping=True)
+    factory = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
+
+    async def request_session() -> AsyncIterator[AsyncSession]:
+        async with factory() as request_db:
+            try:
+                yield request_db
+            except BaseException:
+                await request_db.rollback()
+                raise
+
+    app.dependency_overrides[get_db] = request_session
+    limiter.reset()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://localhost"
+        ) as client:
+            yield client
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        await engine.dispose()
+
+
+ACCOUNT_PASSWORD = "Correct-horse-battery-7"  # noqa: S105 - test-only credential
+
+
+@dataclass(frozen=True)
+class InstitutionAccounts:
+    """Verified accounts in one institution, all using ``ACCOUNT_PASSWORD``."""
+
+    instance_id: int
+    admin_id: int
+    admin_login: str
+    researcher_id: int
+    researcher_login: str
+    outsider_id: int
+    outsider_login: str
+
+
+@pytest_asyncio.fixture
+async def institution_accounts(session: AsyncSession) -> InstitutionAccounts:
+    """An administrator, a researcher and a researcher outside every project."""
+    from app.model.enums import UserRole  # noqa: PLC0415
+    from app.model.instance import Instance  # noqa: PLC0415
+    from app.model.user import User  # noqa: PLC0415
+    from app.service.user import UserService  # noqa: PLC0415
+
+    instance = Instance(
+        instance_name="HTTP Lab",
+        institution_name="HTTP Institute",
+        contact_email="admin@http.example",
+        domain="http.example",
+        timezone="UTC",
+    )
+    hashed = UserService.hash_password(ACCOUNT_PASSWORD)
+    users = {
+        name: User(
+            username=name,
+            email=f"{name}@http.example",
+            hashed_password=hashed,
+            first_name=name.title(),
+            last_name="Tester",
+            affiliation="HTTP Institute",
+            department="Linguistics",
+            activation_code="fixture",
+            is_verified_account=True,
+            role=UserRole.ADMIN if name == "admin" else UserRole.PUBLIC,
+            instance=instance,
+        )
+        for name in ("admin", "researcher", "outsider")
+    }
+    session.add_all([instance, *users.values()])
+    await session.commit()
+    return InstitutionAccounts(
+        instance_id=instance.instance_id,
+        admin_id=users["admin"].user_id,
+        admin_login="admin",
+        researcher_id=users["researcher"].user_id,
+        researcher_login="researcher",
+        outsider_id=users["outsider"].user_id,
+        outsider_login="outsider",
+    )

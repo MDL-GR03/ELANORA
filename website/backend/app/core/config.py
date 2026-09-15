@@ -42,7 +42,11 @@ REFRESH_TOKEN_EXPIRE_DAYS = settings.refresh_token_expire_days
 # Cookie name constants
 ACCESS_TOKEN_COOKIE_NAME = "elanora_session"  # noqa: S105
 REFRESH_TOKEN_COOKIE_NAME = "elanora_refresh"  # noqa: S105
-REFRESH_TOKEN_PATH = "/api/v1/auth/refresh"  # noqa: S105
+# Sign-out must receive the refresh cookie to revoke its session, so the cookie
+# covers every authentication route rather than the refresh endpoint alone.
+REFRESH_TOKEN_PATH = "/api/v1/auth"  # noqa: S105
+# Browsers may still hold refresh cookies issued under the old, narrower path.
+LEGACY_REFRESH_TOKEN_PATH = "/api/v1/auth/refresh"  # noqa: S105
 CSRF_TOKEN_NAME = "elanora_csrf"  # noqa: S105
 
 # ELAN Projects configuration

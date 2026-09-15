@@ -10,6 +10,7 @@ from app.core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     COOKIE_SECURE,
     CSRF_TOKEN_NAME,
+    LEGACY_REFRESH_TOKEN_PATH,
     REFRESH_TOKEN_COOKIE_NAME,
     REFRESH_TOKEN_EXPIRE_DAYS,
     REFRESH_TOKEN_PATH,
@@ -46,6 +47,7 @@ def _clear_auth_cookies(response: Response) -> None:
     """Expire every browser credential using its original cookie path."""
     response.delete_cookie(ACCESS_TOKEN_COOKIE_NAME)
     response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME, path=REFRESH_TOKEN_PATH)
+    response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME, path=LEGACY_REFRESH_TOKEN_PATH)
     response.delete_cookie(CSRF_TOKEN_NAME)
 
 
