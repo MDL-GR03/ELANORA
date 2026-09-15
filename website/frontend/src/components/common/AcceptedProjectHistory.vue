@@ -2,12 +2,9 @@
   <section class="accepted-history" aria-labelledby="accepted-history-title">
     <header class="history-heading">
       <div>
-        <span class="eyebrow">ADMINISTRATION</span>
-        <h2 id="accepted-history-title">Project version history</h2>
-        <p>
-          Browse canonical project states. Restoring creates a new version; it
-          never erases or rewrites this history.
-        </p>
+        <span class="eyebrow">{{ t('acceptedHistory.eyebrow') }}</span>
+        <h2 id="accepted-history-title">{{ t('acceptedHistory.title') }}</h2>
+        <p>{{ t('acceptedHistory.intro') }}</p>
       </div>
     </header>
 
@@ -18,18 +15,11 @@
     >
       <font-awesome-icon icon="fa-solid fa-triangle-exclamation" />
       <div class="recovery-content">
-        <h3 id="recovery-title">Accepted project data needs repair</h3>
+        <h3 id="recovery-title">{{ t('acceptedHistory.repairTitle') }}</h3>
         <p v-if="health.recoverable">
-          ELANORA found differences between the accepted revision, its EAF
-          files, and the searchable database. Review the affected filenames
-          below, then recover the exact accepted state from the immutable
-          ledger.
+          {{ t('acceptedHistory.repairRecoverable') }}
         </p>
-        <p v-else>
-          The recovery manifest is unavailable or failed its integrity checks.
-          Do not modify the project; an administrator must investigate the
-          revision ledger.
-        </p>
+        <p v-else>{{ t('acceptedHistory.repairUnrecoverable') }}</p>
         <p v-if="health.detail" class="recovery-detail">{{ health.detail }}</p>
         <ul v-if="healthIssues.length" class="health-issues">
           <li v-for="issue in healthIssues" :key="issue.label">
@@ -40,15 +30,19 @@
         <template v-if="health.recoverable">
           <div class="confirmation-grid">
             <label>
-              Recovery reason
+              {{ t('acceptedHistory.recoveryReason') }}
               <textarea
                 v-model="recoveryReason"
                 rows="2"
-                placeholder="Explain why this accepted state must be repaired"
+                :placeholder="t('acceptedHistory.recoveryReasonPlaceholder')"
               ></textarea>
             </label>
             <label>
-              Type <strong>RECOVER {{ projectName }}</strong>
+              <i18n-t keypath="acceptedHistory.typeToConfirm" tag="span">
+                <template #phrase>
+                  <strong>RECOVER {{ projectName }}</strong>
+                </template>
+              </i18n-t>
               <input
                 v-model="recoveryConfirmation"
                 :placeholder="`RECOVER ${projectName}`"
@@ -61,13 +55,15 @@
             :disabled="!canRecover || busy"
             @click="recover"
           >
-            Recover accepted project data
+            {{ t('acceptedHistory.recover') }}
           </button>
         </template>
       </div>
     </aside>
 
-    <div v-if="loading" class="history-state">Loading project history…</div>
+    <div v-if="loading" class="history-state">
+      {{ t('acceptedHistory.loading') }}
+    </div>
     <div v-else-if="error" class="history-state error-state">{{ error }}</div>
     <ol v-else class="version-list">
       <li
@@ -79,13 +75,13 @@
         <article :class="['version-card', { current: version.is_current }]">
           <div class="version-summary">
             <div>
-              <span v-if="version.is_current" class="current-badge"
-                >Current project version</span
-              >
+              <span v-if="version.is_current" class="current-badge">{{
+                t('acceptedHistory.current')
+              }}</span>
               <span
                 v-else-if="version.action === 'project.version.restored'"
                 class="restore-badge"
-                >Restoration</span
+                >{{ t('acceptedHistory.restoration') }}</span
               >
               <h3>{{ version.message }}</h3>
               <p>
@@ -93,11 +89,16 @@
                 <span>· {{ formatDate(version.committed_at) }}</span>
                 <span>· {{ version.author }}</span>
                 <span v-if="version.contribution_id"
-                  >· Contribution #{{ version.contribution_id }}</span
+                  >·
+                  {{
+                    t('acceptedHistory.contribution', {
+                      id: version.contribution_id,
+                    })
+                  }}</span
                 >
               </p>
               <p v-if="version.reason" class="version-reason">
-                Reason: {{ version.reason }}
+                {{ t('acceptedHistory.reason', { reason: version.reason }) }}
               </p>
             </div>
             <button
@@ -107,7 +108,7 @@
               :disabled="busy"
               @click="preview(version)"
             >
-              Preview restore
+              {{ t('acceptedHistory.previewRestore') }}
             </button>
           </div>
 
@@ -117,15 +118,24 @@
           >
             <div class="preview-title">
               <div>
-                <h4>Preview: make this state current again</h4>
+                <h4>{{ t('acceptedHistory.previewTitle') }}</h4>
                 <p>
-                  {{ previewData.files.length }} file change(s),
-                  {{ previewData.semantic_summary.annotations }} annotation
-                  change(s).
+                  {{
+                    t('acceptedHistory.previewSummary', {
+                      files: t(
+                        'acceptedHistory.fileChanges',
+                        previewData.files.length
+                      ),
+                      annotations: t(
+                        'acceptedHistory.annotationChanges',
+                        previewData.semantic_summary.annotations
+                      ),
+                    })
+                  }}
                 </p>
               </div>
               <button type="button" class="text-button" @click="closePreview">
-                Close
+                {{ t('acceptedHistory.close') }}
               </button>
             </div>
 
@@ -134,7 +144,7 @@
                 v-for="file in previewData.files"
                 :key="`${file.status}-${file.filename}`"
               >
-                <span>{{ file.status }}</span
+                <span>{{ fileStatus(file.status) }}</span
                 ><code>{{ file.filename }}</code>
               </li>
             </ul>
@@ -142,33 +152,28 @@
             <div class="impact-warning">
               <font-awesome-icon icon="fa-solid fa-triangle-exclamation" />
               <div>
-                <strong>Open work is preserved, then re-evaluated.</strong>
-                <p>
-                  {{ previewData.affected_pending_contributions }} open
-                  submission version(s)
-                  <template
-                    v-if="previewData.affected_pending_upload_ids.length"
-                  >
-                    (#{{ previewData.affected_pending_upload_ids.join(', #') }})
-                  </template>
-                  and {{ previewData.active_review_cases }} active correction
-                  case(s) may change compatibility. Their branches, discussions,
-                  and base versions remain intact.
-                </p>
+                <strong>{{ t('acceptedHistory.openWorkTitle') }}</strong>
+                <p>{{ openWorkSummary }}</p>
               </div>
             </div>
 
             <div class="confirmation-grid">
               <label>
-                Administrative reason
+                {{ t('acceptedHistory.administrativeReason') }}
                 <textarea
                   v-model="reason"
                   rows="3"
-                  placeholder="Explain why this project version must be restored"
+                  :placeholder="
+                    t('acceptedHistory.administrativeReasonPlaceholder')
+                  "
                 ></textarea>
               </label>
               <label>
-                Type <strong>RESTORE {{ projectName }}</strong>
+                <i18n-t keypath="acceptedHistory.typeToConfirm" tag="span">
+                  <template #phrase>
+                    <strong>RESTORE {{ projectName }}</strong>
+                  </template>
+                </i18n-t>
                 <input
                   v-model="confirmation"
                   :placeholder="`RESTORE ${projectName}`"
@@ -176,17 +181,14 @@
               </label>
             </div>
             <div class="restore-actions">
-              <p>
-                This creates a new commit. You can later restore this current
-                state again.
-              </p>
+              <p>{{ t('acceptedHistory.restoreNote') }}</p>
               <button
                 type="button"
                 class="danger-button"
                 :disabled="!canRestore || busy"
                 @click="restore"
               >
-                Restore as new project version
+                {{ t('acceptedHistory.restore') }}
               </button>
             </div>
           </div>
@@ -198,12 +200,14 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import gitService from '@/api/service/gitService.js';
 import { useEventMessageStore } from '@/stores/eventMessage.js';
 
 const props = defineProps({ projectName: { type: String, required: true } });
 const emit = defineEmits(['restored']);
 const eventMessages = useEventMessageStore();
+const { t, locale } = useI18n();
 const history = ref({ current_commit: '', versions: [] });
 const health = ref(null);
 const selected = ref(null);
@@ -228,26 +232,51 @@ const canRecover = computed(
 const healthIssues = computed(() => {
   if (!health.value) return [];
   return [
-    ['Missing EAF files', health.value.missing_files],
-    ['Unexpected EAF files', health.value.unexpected_files],
-    ['Changed EAF contents', health.value.checksum_mismatches],
-    ['Missing database records', health.value.database_missing_files],
-    ['Unexpected database records', health.value.database_unexpected_files],
-    ['Database content mismatches', health.value.database_checksum_mismatches],
+    ['missingFiles', health.value.missing_files],
+    ['unexpectedFiles', health.value.unexpected_files],
+    ['changedContents', health.value.checksum_mismatches],
+    ['missingRecords', health.value.database_missing_files],
+    ['unexpectedRecords', health.value.database_unexpected_files],
+    ['recordMismatches', health.value.database_checksum_mismatches],
   ]
     .filter(([, files]) => files?.length)
-    .map(([label, files]) => ({ label, files }));
+    .map(([key, files]) => ({
+      label: t(`acceptedHistory.issues.${key}`),
+      files,
+    }));
 });
+const openWorkSummary = computed(() => {
+  const data = previewData.value;
+  if (!data) return '';
+  const ids = data.affected_pending_upload_ids.length
+    ? ` (#${data.affected_pending_upload_ids.join(', #')})`
+    : '';
+  return t('acceptedHistory.openWork', {
+    submissions: t(
+      'acceptedHistory.openSubmissions',
+      data.affected_pending_contributions
+    ),
+    ids,
+    cases: t('acceptedHistory.activeCases', data.active_review_cases),
+  });
+});
+// Git reports a status letter, sometimes followed by a similarity score.
+function fileStatus(status) {
+  const letter = String(status).charAt(0);
+  return ['A', 'M', 'D', 'R', 'C'].includes(letter)
+    ? t(`acceptedHistory.fileStatus.${letter}`)
+    : status;
+}
 
 function apiError(value) {
   return (
     value?.response?.data?.detail ||
     value?.message ||
-    'The request could not be completed.'
+    t('acceptedHistory.requestFailed')
   );
 }
 function formatDate(value) {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(locale.value, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
@@ -311,10 +340,7 @@ async function restore() {
       reason: reason.value.trim(),
       confirmation: confirmation.value,
     });
-    eventMessages.addMessage(
-      'Project restored as a new current version. Open work was preserved and re-evaluated.',
-      'success'
-    );
+    eventMessages.addMessage(t('acceptedHistory.restored'), 'success');
     await loadHistory();
     emit('restored');
   } catch (value) {
@@ -336,7 +362,7 @@ async function recover() {
     });
     recoveryReason.value = '';
     recoveryConfirmation.value = '';
-    eventMessages.addMessage('Accepted project data recovered.', 'success');
+    eventMessages.addMessage(t('acceptedHistory.recovered'), 'success');
     await loadAll();
     emit('restored');
   } catch (value) {

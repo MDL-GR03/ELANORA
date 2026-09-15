@@ -5,11 +5,12 @@ const path = require('node:path');
 const localeDirectory = path.resolve(__dirname, '../src/locales');
 const languages = ['en', 'fr', 'ja'];
 const protectedNamespaces = [
+  'acceptedHistory',
   'contributionDetails',
   'contributionResolution',
   'contributionWorkspace',
-  'reviewArchive',
   'researchScopes',
+  'reviewArchive',
   'uploadPage',
 ];
 const locales = Object.fromEntries(
