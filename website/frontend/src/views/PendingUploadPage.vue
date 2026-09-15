@@ -224,7 +224,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
+import { ref, computed } from 'vue';
 import '@/assets/css/pending-uploads-page.css';
 import UploadDetailsView from '@/components/common/UploadDetailsView.vue';
 import UploadResolutionView from '@/components/common/UploadResolutionView.vue';
@@ -243,13 +243,11 @@ import { useRoute, useRouter } from 'vue-router';
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import { useContributionMutations } from '@/composables/useContributionMutations';
 import { useContributionQueueData } from '@/composables/useContributionQueueData';
+import { useContributionQueueRefresh } from '@/composables/useContributionQueueRefresh';
+import { useContributionQueueView } from '@/composables/useContributionQueueView';
 import { useContributionWorkspace } from '@/composables/useContributionWorkspace';
 import { useUserConfirm } from '@/composables/useUserConfirm';
 import { hasProjectPermission } from '@/utils/authorization';
-import {
-  groupContributionThreads,
-  sortContributionThreads,
-} from '@/utils/contributionThreads';
 import { useEventMessageStore } from '@/stores/eventMessage.js';
 
 // State
@@ -264,10 +262,6 @@ const expandedTopicDecision = ref(null);
 
 // Kept apart from selectedUpload, which follows the workspace in the URL.
 const declineTarget = ref(null);
-
-const queueFilter = ref('all');
-const queueQuery = ref('');
-const queueSort = ref('oldest');
 
 // Project store
 const projectStore = useProjectStore();
@@ -367,57 +361,17 @@ const selectedUploadFilenames = computed(() => {
   ];
 });
 
-// Upload computed properties
-const contributionThreads = computed(() =>
-  groupContributionThreads(pendingUploads.value, reviewCases.value)
-);
-const totalPending = computed(() => contributionThreads.value.length);
-const readyCount = computed(
-  () =>
-    contributionThreads.value.filter((u) => u.merge_status === 'ready_to_merge')
-      .length
-);
-const awaitingCorrectionsCount = computed(
-  () =>
-    contributionThreads.value.filter(
-      (upload) => upload.merge_status === 'changes_requested'
-    ).length
-);
-const filteredContributionThreads = computed(() => {
-  const needle = queueQuery.value.toLocaleLowerCase();
-  const matching = contributionThreads.value.filter((upload) => {
-    const statusMatches =
-      queueFilter.value === 'all' ||
-      (queueFilter.value === 'ready' &&
-        upload.merge_status === 'ready_to_merge') ||
-      (queueFilter.value === 'corrections' &&
-        ['under_review', 'changes_requested', 'review_required'].includes(
-          upload.merge_status
-        )) ||
-      (queueFilter.value === 'resolution' &&
-        upload.merge_status === 'needs_resolution');
-    const searchable = [
-      upload.upload_id,
-      `#${upload.upload_id}`,
-      `contribution ${upload.upload_id}`,
-      upload.uploaded_by,
-      upload.review_case?.title,
-      ...Object.values(upload.files || {}).flat(),
-      ...Object.entries(upload.semantic_summary || {}).flat(),
-    ]
-      .filter((value) => value != null)
-      .join(' ')
-      .toLocaleLowerCase();
-    return statusMatches && (!needle || searchable.includes(needle));
-  });
-  return sortContributionThreads(matching, queueSort.value);
-});
-const conflictsCount = computed(
-  () =>
-    contributionThreads.value.filter(
-      (u) => u.merge_status === 'needs_resolution'
-    ).length
-);
+const {
+  queueFilter,
+  queueQuery,
+  queueSort,
+  contributionThreads,
+  totalPending,
+  readyCount,
+  awaitingCorrectionsCount,
+  conflictsCount,
+  filteredContributionThreads,
+} = useContributionQueueView({ pendingUploads, reviewCases });
 
 function toggleTopicDecision(uploadId) {
   expandedTopicDecision.value =
@@ -430,53 +384,16 @@ function scrollToContribution(uploadId) {
     ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-// Auto-refresh interval
-let refreshInterval = null;
-
-// Watch for project changes
-watch(
-  () => [route.query.project, projectStore.projects.length],
-  ([projectId]) => {
-    if (!projectId) return;
-    const requested = projectStore.projects.find(
-      (project) => project.project_id === Number(projectId)
-    );
-    if (requested) projectStore.setCurrentProject(requested);
+useContributionQueueRefresh({
+  route,
+  projectStore,
+  currentProject,
+  queue: {
+    clear: clearQueueData,
+    fetchPendingUploads,
+    fetchReviewCount,
+    loadResearchTopics,
   },
-  { immediate: true }
-);
-
-watch(
-  () => currentProject.value?.project_id,
-  async (newProjectId, oldProjectId) => {
-    if (newProjectId === oldProjectId) return;
-    clearQueueData();
-    if (newProjectId) {
-      await Promise.all([
-        fetchPendingUploads(),
-        fetchReviewCount(),
-        loadResearchTopics(),
-      ]);
-    }
-  },
-  { immediate: true }
-);
-
-onMounted(async () => {
-  // Set up auto-refresh every 30 seconds
-  refreshInterval = setInterval(() => {
-    if (currentProject.value && document.visibilityState === 'visible') {
-      fetchPendingUploads(false);
-    }
-  }, 30000);
-  projectStore.initBroadcastChannel();
-});
-
-// Cleanup interval on unmount
-onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-  }
 });
 
 async function assignResearchTopic(upload) {
