@@ -85,6 +85,16 @@ release checksums, immutable validation runs/issues, audit events, a delegated
 implemented. See [`PROTOCOL_GOVERNANCE.md`](PROTOCOL_GOVERNANCE.md). The
 remaining work in this section is expansion and migration of the rule catalog.
 
+**Rule catalog completed 15 September 2026:** every rule takes an error or
+warning severity (warnings are recorded and shown to reviewers but never
+block); vocabulary, tier metadata, completeness, linguistic-type constraint and
+frozen filename-standard rules are evaluated under validator release 3; the
+protocol editor covers every family; and `elanora-copy-naming-standards` copies
+each project's upload naming standard into a draft for review. While a pinned
+protocol carries a filename standard, the legacy upload naming setting is not
+consulted. Overlaps are already refused by semantic EAF validation for every
+file. Running the copy command on production data is an operator step.
+
 Filename standards and accepted values are currently mutable configuration.
 That makes it impossible to prove which exact rules accepted an old revision.
 Introduce immutable `protocol_version`, `rule_definition`, `validator_release`
