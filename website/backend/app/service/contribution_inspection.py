@@ -190,6 +190,9 @@ class ContributionInspectionService:
                 "naming": "passed",
                 "protocol": protocol_outcome,
             },
+            "protocol_warnings": list(
+                (upload_data.get("protocol_validation") or {}).get("warnings") or []
+            ),
             "semantic_summary": semantic_summary,
             "research_context": research_context,
             "protocol_version_id": recorded_protocol_id,

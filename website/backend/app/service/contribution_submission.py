@@ -58,7 +58,7 @@ class ContributionSubmissionService:
         db: AsyncSession,
         user_id: int,
         user_name: str,
-        protocol_validation: dict[str, str | None],
+        protocol_validation: dict[str, object],
         research_context: dict[str, Any] | None = None,
         allow_current_tree: bool = False,
     ) -> dict[str, Any]:

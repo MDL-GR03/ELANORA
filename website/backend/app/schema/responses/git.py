@@ -216,6 +216,8 @@ class PendingUploadInfo(CustomBaseModel):
     research_context: dict[str, Any] = Field(default_factory=dict)
     annotation_collisions: list[dict[str, Any]] = Field(default_factory=list)
     quality_checks: dict[str, str] = Field(default_factory=dict)
+    # Non-blocking protocol findings recorded when the contribution was submitted.
+    protocol_warnings: list[dict[str, str | None]] = Field(default_factory=list)
     protocol_version_id: str | None = None
     duplicate_of_upload_id: int | None = None
     superseded_by_upload_id: int | None = None

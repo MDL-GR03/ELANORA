@@ -29,7 +29,7 @@ class SubmissionContext:
     username: str
     user_id: int
     base_commit: str
-    protocol_validation: dict[str, str | None]
+    protocol_validation: dict[str, object]
     research_context: dict[str, Any]
 
 

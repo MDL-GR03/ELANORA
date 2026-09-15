@@ -23,6 +23,7 @@ from app.model.enums import (
     ProtocolVersionStatus,
     UserRole,
     ValidationOutcome,
+    ValidationSeverity,
 )
 from app.model.file_content import FileContent
 from app.model.instance import Instance
@@ -566,3 +567,96 @@ async def test_unused_archived_version_and_preview_can_be_purged(
     )
     assert tombstone is not None
     assert tombstone.details["rules_sha256"] is not None
+
+
+async def _pinned(
+    session: AsyncSession, project: Project, admin: User, rules: ProtocolRules
+) -> ProtocolVersion:
+    protocol = await create_protocol(
+        session,
+        project=project,
+        name="Severity protocol",
+        description=None,
+        rules=rules,
+        actor_user_id=admin.user_id,
+    )
+    published = await publish_protocol_version(
+        session,
+        project=project,
+        protocol_version_id=protocol.versions[0].protocol_version_id,
+        actor_user_id=admin.user_id,
+    )
+    await pin_protocol_version(
+        session,
+        project=project,
+        protocol_version_id=published.protocol_version_id,
+        actor_user_id=admin.user_id,
+    )
+    return published
+
+
+WARN_ON_MISSING_TIER = ProtocolRules(
+    required_tiers=["tier-still-being-annotated"],
+    severities={"required_tiers": ValidationSeverity.WARNING},
+)
+
+
+@pytest.mark.asyncio
+async def test_a_warning_rule_lets_the_upload_through_and_records_the_warning(
+    session: AsyncSession,
+) -> None:
+    project, admin, researcher, _ = await _project_state(session)
+    await _pinned(session, project, admin, WARN_ON_MISSING_TIER)
+    await session.commit()
+    upload = UploadFile(
+        file=BytesIO(FIXTURE.read_bytes()),
+        filename="in-progress.eaf",
+        size=FIXTURE.stat().st_size,
+    )
+
+    batch = await validate_and_record_elan_files(
+        [upload],
+        db=session,
+        instance_id=project.instance_id,
+        project_id=project.project_id,
+        requested_project_name=project.project_name,
+        submitted_by=researcher.user_id,
+    )
+
+    assert batch.files == [upload]
+    assert batch.protocol_outcome == "passed"
+    assert [warning["code"] for warning in batch.protocol_warnings] == [
+        "protocol.required_tier_missing"
+    ]
+    assert batch.protocol_warnings[0]["filename"] == "in-progress.eaf"
+    rejected = await session.scalar(
+        select(EafIngestionAttempt).where(
+            EafIngestionAttempt.project_id == project.project_id
+        )
+    )
+    assert rejected is None
+
+
+@pytest.mark.asyncio
+async def test_a_run_with_only_warnings_passes_and_keeps_them_as_evidence(
+    session: AsyncSession,
+) -> None:
+    project, admin, _, elan_file = await _project_state(session)
+    await _pinned(session, project, admin, WARN_ON_MISSING_TIER)
+    document = parse_eaf(FIXTURE.read_bytes())
+    revision = await append_eaf_revision(
+        session,
+        elan_id=elan_file.elan_id,
+        sha256=document.sha256,
+        raw_xml=document.raw_xml,
+        created_by=admin.user_id,
+    )
+
+    run = await validate_revision(
+        session, project=project, revision_id=revision.revision_id
+    )
+
+    assert run.outcome == ValidationOutcome.PASSED
+    (issue,) = run.issues
+    assert issue.severity == ValidationSeverity.WARNING
+    assert issue.rule_key == "required_tiers"

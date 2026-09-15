@@ -25,6 +25,18 @@ class ProtocolRules(BaseModel):
     )
     media_required: bool = False
     allowed_media_mime_types: list[str] = Field(default_factory=list, max_length=100)
+    # Rules absent here are errors, which keeps every protocol published before
+    # severities existed behaving exactly as it did.
+    severities: dict[str, ValidationSeverity] = Field(default_factory=dict)
+
+    @classmethod
+    def rule_keys(cls) -> frozenset[str]:
+        """Names of the rule families that a severity can be attached to."""
+        return frozenset(cls.model_fields) - {"severities"}
+
+    def severity_of(self, rule_key: str) -> ValidationSeverity:
+        """Severity of a rule's findings; errors unless marked as a warning."""
+        return self.severities.get(rule_key, ValidationSeverity.ERROR)
 
     @field_validator(
         "required_tiers",
@@ -47,6 +59,19 @@ class ProtocolRules(BaseModel):
         if any(not key or not value for key, value in normalized.items()):
             raise ValueError("tier identifiers and required values cannot be empty")
         return dict(sorted(normalized.items()))
+
+    @field_validator("severities")
+    @classmethod
+    def severities_name_known_rules(
+        cls, values: dict[str, ValidationSeverity]
+    ) -> dict[str, ValidationSeverity]:
+        """Reject severities for rules that do not exist."""
+        unknown = set(values) - cls.rule_keys()
+        if unknown:
+            raise ValueError(
+                "severities refer to unknown rules: " + ", ".join(sorted(unknown))
+            )
+        return dict(sorted(values.items()))
 
     @model_validator(mode="after")
     def mapped_tiers_are_required(self) -> "ProtocolRules":

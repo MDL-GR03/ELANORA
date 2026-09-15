@@ -769,7 +769,11 @@ async def validate_revision_against_version(
         revision_id=revision_id,
         protocol_version_id=version.protocol_version_id,
         validator_release_id=validator.validator_release_id,
-        outcome=(ValidationOutcome.FAILED if findings else ValidationOutcome.PASSED),
+        outcome=(
+            ValidationOutcome.FAILED
+            if any(severity == ValidationSeverity.ERROR for _, severity, *_ in findings)
+            else ValidationOutcome.PASSED
+        ),
     )
     run.issues.extend(
         ProtocolValidationIssue(

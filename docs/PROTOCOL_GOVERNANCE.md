@@ -52,6 +52,22 @@ Example request body:
 }
 ```
 
+### Rule severity
+
+Every rule is an `error` unless the snapshot's `severities` map says otherwise,
+so versions published before severities existed keep their meaning. For
+example, `"severities": {"required_tiers": "warning"}` turns a missing required
+tier into a warning. Keys must name a rule the snapshot supports.
+
+- An **error** refuses the upload, fails the validation run and prevents a
+  contribution from being accepted.
+- A **warning** lets the upload through and the run pass. Warnings are kept as
+  validation issues with severity `warning`, stored with the contribution (at
+  most 200 per upload) and shown to reviewers in the pending queue.
+
+All three decisions use one definition, `blocking_findings` in
+`app/service/protocol_evaluation.py`.
+
 The project configuration page now includes a **Versioned Protocol** editor for
 creating, publishing, and pinning these snapshots. The same API is exposed
 below `/api/v1/projects/{project_id}` and documented at `/docs` in development.

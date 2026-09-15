@@ -19,10 +19,14 @@ from app.service.protocol import (
     ProtocolConflictError,
     get_pinned_protocol_version,
 )
-from app.service.protocol_evaluation import validate_content_against_protocol
+from app.service.protocol_evaluation import (
+    blocking_findings,
+    validate_content_against_protocol,
+)
 
 logger = get_logger()
 MAX_RETURNED_ISSUES = 20
+MAX_RECORDED_WARNINGS = 200
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,6 +37,8 @@ class ValidatedEafBatch:
     protocol_version_id: uuid.UUID | None
     protocol_rules_sha256: str | None
     protocol_outcome: str
+    # Non-blocking protocol findings, kept with the contribution for reviewers.
+    protocol_warnings: list[dict[str, str | None]]
 
 
 async def _pinned_protocol(
@@ -214,6 +220,7 @@ async def validate_and_record_elan_files(
 
     validated: list[UploadFile] = []
     rejected: list[RejectedEafFileResponse] = []
+    warnings: list[dict[str, str | None]] = []
     actual_size = 0
     for file in files:
         validate_elan_file(file)
@@ -232,7 +239,8 @@ async def validate_and_record_elan_files(
                 protocol_findings = validate_content_against_protocol(
                     content, protocol_version
                 )
-            if protocol_findings:
+            blocking = blocking_findings(protocol_findings)
+            if blocking:
                 raise EafValidationError(
                     tuple(
                         ValidationIssue(
@@ -240,9 +248,20 @@ async def validate_and_record_elan_files(
                             message=finding.message,
                             location=finding.location,
                         )
-                        for finding in protocol_findings
+                        for finding in blocking
                     )
                 )
+            warnings.extend(
+                {
+                    "filename": file.filename,
+                    "code": finding.code,
+                    "message": finding.message,
+                    "location": finding.location,
+                    "rule_key": finding.rule_key,
+                }
+                for finding in protocol_findings
+                if finding not in blocking
+            )
         except EafValidationError as error:
             filename = file.filename or "unnamed.eaf"
             attempt = record_rejected_eaf(
@@ -293,4 +312,5 @@ async def validate_and_record_elan_files(
             protocol_version.rules_sha256 if protocol_version else None
         ),
         protocol_outcome="passed" if protocol_version else "not_configured",
+        protocol_warnings=warnings[:MAX_RECORDED_WARNINGS],
     )

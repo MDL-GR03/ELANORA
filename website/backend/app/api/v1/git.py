@@ -454,6 +454,7 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
                     else None
                 ),
                 "rules_sha256": validated_batch.protocol_rules_sha256,
+                "warnings": validated_batch.protocol_warnings,
             },
             research_context=research_context,
             allow_current_tree=allow_current_tree,

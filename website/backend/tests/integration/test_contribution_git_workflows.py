@@ -12,18 +12,24 @@ from app.crud.elan_file import get_elan_files_by_project
 from app.crud.pending_upload import get_pending_uploads, save_pending_upload
 from app.model.audit_event import AuditEvent
 from app.model.contribution_change_set import ContributionChangeSet
-from app.model.enums import Status, UserRole
+from app.model.enums import Status, UserRole, ValidationSeverity
 from app.model.instance import Instance
 from app.model.notification import Notification
 from app.model.project import Project
 from app.model.project_integrity import ProjectIntegrityStatus
 from app.model.project_revision import ProjectRevision
 from app.model.user import User
+from app.schema.protocol import ProtocolRules
 from app.service.contribution_change_set import ContributionChangeSetCoordinator
 from app.service.elan import ElanService
 from app.service.git import GitService
 from app.service.git_operations import GitCommandRunner
 from app.service.project_revision import verify_project_revision_manifest
+from app.service.protocol import (
+    create_protocol,
+    pin_protocol_version,
+    publish_protocol_version,
+)
 
 EAF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
 
@@ -1043,3 +1049,70 @@ async def test_integrity_recovery_repairs_the_accepted_branch_not_a_stray_checko
     assert stray.stdout.strip() == stray_head
     healthy = await service.get_current_revision_health(project_name, session)
     assert healthy["status"] == "healthy"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("severity", "accepted"),
+    [(ValidationSeverity.WARNING, True), (ValidationSeverity.ERROR, False)],
+)
+async def test_only_error_rules_prevent_accepting_a_contribution(
+    session: AsyncSession,
+    tmp_path: Path,
+    severity: ValidationSeverity,
+    accepted: bool,
+) -> None:
+    project, admin, researcher, _, project_path, runner = await _domain(
+        session, tmp_path, f"severity-{severity.value}"
+    )
+    protocol = await create_protocol(
+        session,
+        project=project,
+        name="Annotation completeness",
+        description=None,
+        rules=ProtocolRules(
+            required_tiers=["tier-not-yet-annotated"],
+            severities={"required_tiers": severity},
+        ),
+        actor_user_id=admin.user_id,
+    )
+    published = await publish_protocol_version(
+        session,
+        project=project,
+        protocol_version_id=protocol.versions[0].protocol_version_id,
+        actor_user_id=admin.user_id,
+    )
+    await pin_protocol_version(
+        session,
+        project=project,
+        protocol_version_id=published.protocol_version_id,
+        actor_user_id=admin.user_id,
+    )
+    await session.commit()
+    _branch_with_changes(
+        runner,
+        project_path,
+        "annotated-change",
+        {
+            "video-11.eaf": (
+                b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>",
+                b"<ANNOTATION_VALUE>Annotated</ANNOTATION_VALUE>",
+            )
+        },
+    )
+    upload = await _pending(
+        session, project, researcher, runner, "annotated-change", ["video-11.eaf"]
+    )
+    service = GitService(base_path=str(tmp_path))
+
+    if accepted:
+        await service.complete_pending_upload(
+            project.project_name, upload.branch_name, "auto", session, admin.user_id
+        )
+        await session.refresh(upload)
+        assert upload.status == Status.RESOLVED
+    else:
+        with pytest.raises(ValueError, match="tier-not-yet-annotated"):
+            await service.complete_pending_upload(
+                project.project_name, upload.branch_name, "auto", session, admin.user_id
+            )

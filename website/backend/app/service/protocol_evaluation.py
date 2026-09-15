@@ -67,7 +67,7 @@ def evaluate_protocol_rules(
         findings.append(
             ProtocolFinding(
                 code=code,
-                severity=ValidationSeverity.ERROR,
+                severity=rules.severity_of(rule_key),
                 location=location,
                 message=message,
                 rule_key=rule_key,
@@ -147,3 +147,17 @@ def validate_content_against_protocol(
     """Validate EAF structure and apply one published protocol snapshot."""
     root = validate_eaf(content)
     return evaluate_protocol_rules(root, ProtocolRules.model_validate(version.rules))
+
+
+def blocking_findings(
+    findings: Sequence[ProtocolFinding],
+) -> tuple[ProtocolFinding, ...]:
+    """Findings that refuse an upload, fail a run or prevent acceptance.
+
+    Warnings are recorded and shown to reviewers but never block. Every place
+    that turns findings into a decision must use this, so a warning cannot
+    block in one path while passing in another.
+    """
+    return tuple(
+        finding for finding in findings if finding.severity == ValidationSeverity.ERROR
+    )
