@@ -1,4 +1,6 @@
 import os
+import re
+import secrets
 import shutil
 import stat
 import subprocess
@@ -59,9 +61,18 @@ class GitBranchManager:
         self.commandRunner = GitCommandRunner(project_path)
 
     def create_upload_branch(self, user_name: str, file_count: int) -> str:
-        """Create a unique branch for file uploads."""
+        """Create a unique branch for file uploads.
+
+        A timestamp alone repeats when one person uploads twice within a second,
+        so a random token keeps names distinct. The user name arrives from a
+        form field and is reduced to characters that are always valid in a ref.
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        branch_name = f"upload_batch_{user_name}_{timestamp}_{file_count}_files"
+        safe_user = re.sub(r"[^A-Za-z0-9_-]+", "-", user_name).strip("-")[:40]
+        branch_name = (
+            f"upload_batch_{safe_user or 'contributor'}_{timestamp}_"
+            f"{secrets.token_hex(4)}_{file_count}_files"
+        )
 
         subprocess.run(
             ["git", "checkout", "-b", branch_name],

@@ -80,8 +80,9 @@ class ContributionIntakeService:
         runner = GitCommandRunner(project_path, maintain_backup=False)
         try:
             runner.checkout(runner.canonical_branch())
+            # Only the branch this submission created. An approval branch of the
+            # same name would belong to someone else's recorded contribution.
             runner.delete_branch_localy(branch_name)
-            runner.delete_branch_localy(f"{branch_name}_pending_approval")
         except Exception as error:
             logger.error(
                 "Unable to clean up a failed contribution; error_type=%s",
@@ -119,8 +120,10 @@ class ContributionIntakeService:
         branch_manager.switch_to_master()
         analysis = diff_analyzer.analyze_merge_differences(branch_name)
         approval_branch = f"{branch_name}_pending_approval"
+        renamed = False
         try:
             runner.run(["branch", "-m", branch_name, approval_branch], check=True)
+            renamed = True
             now = datetime.now().isoformat()
             upload_info: dict[str, Any] = {
                 "status": "pending_admin_approval",
@@ -151,7 +154,8 @@ class ContributionIntakeService:
             )
             return upload_info
         except Exception as exc:
-            runner.run(["branch", "-D", approval_branch], check=False)
+            if renamed:
+                runner.run(["branch", "-D", approval_branch], check=False)
             raise RuntimeError("Failed to save upload for approval") from exc
 
     @staticmethod

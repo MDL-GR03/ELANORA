@@ -6,6 +6,7 @@ PostgreSQL.
 """
 
 import io
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -319,3 +320,90 @@ async def test_a_byte_identical_copy_under_a_new_name_can_be_published(
         ).all()
     )
     assert {"video-11.eaf", "session-15.eaf"} <= stored
+
+
+@pytest.mark.asyncio
+async def test_two_uploads_in_the_same_second_are_both_kept(
+    session: AsyncSession, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Branch names used to be unique only to the second.
+
+    The second upload then failed to rename its branch onto the first one's,
+    and the failure cleanup deleted the first contribution's branch.
+    """
+    project, ada, _, _, runner = await _domain(session, tmp_path, "same-second")
+    project_id = project.project_id
+    frozen = datetime(2026, 9, 16, 9, 30, 0)
+
+    class FrozenClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return frozen
+
+    monkeypatch.setattr("app.service.git_operations.datetime", FrozenClock)
+    service = GitService(base_path=str(tmp_path))
+
+    first = await _submit(
+        service, session, project, ada, [_upload("video-11.eaf", _revised("First"))]
+    )
+    second = await _submit(
+        service, session, project, ada, [_upload("video-11.eaf", _revised("Second"))]
+    )
+
+    assert first["branch_name"] != second["branch_name"]
+    assert {first["branch_name"], second["branch_name"]} <= _branches(runner)
+    assert await _pending_count(session, project_id) == 2
+
+
+@pytest.mark.asyncio
+async def test_a_submitted_user_name_cannot_shape_the_branch_name(
+    session: AsyncSession, tmp_path: Path
+) -> None:
+    """The name comes from a form field; Git refs must stay well-formed."""
+    project, ada, _, _, runner = await _domain(session, tmp_path, "odd-name")
+
+    result = await GitService(base_path=str(tmp_path)).add_elan_files(
+        project.project_id,
+        [_upload("video-11.eaf", _revised("Odd name"))],
+        session,
+        ada.user_id,
+        "../main odd~name",
+        protocol_validation=PROTOCOL,
+    )
+
+    assert result["branch_name"] in _branches(runner)
+    assert ".." not in result["branch_name"] and " " not in result["branch_name"]
+
+
+@pytest.mark.asyncio
+async def test_a_colliding_submission_never_deletes_the_earlier_contribution(
+    session: AsyncSession, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Should a name ever repeat, only the failing submission is cleaned up."""
+    project, ada, _, _, runner = await _domain(session, tmp_path, "collision")
+    project_id = project.project_id
+    frozen = datetime(2026, 9, 16, 9, 30, 0)
+
+    class FrozenClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return frozen
+
+    monkeypatch.setattr("app.service.git_operations.datetime", FrozenClock)
+    monkeypatch.setattr("app.service.git_operations.secrets.token_hex", lambda _n: "00")
+    service = GitService(base_path=str(tmp_path))
+    first = await _submit(
+        service, session, project, ada, [_upload("video-11.eaf", _revised("First"))]
+    )
+
+    with pytest.raises(RuntimeError):
+        await _submit(
+            service,
+            session,
+            project,
+            ada,
+            [_upload("video-11.eaf", _revised("Second"))],
+        )
+
+    assert first["branch_name"] in _branches(runner)
+    assert await _pending_count(session, project_id) == 1
