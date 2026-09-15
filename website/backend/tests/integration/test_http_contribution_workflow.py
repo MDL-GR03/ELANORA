@@ -9,7 +9,7 @@ CSRF checks and permission guards a browser meets.
 from pathlib import Path
 
 import pytest
-from conftest import ACCOUNT_PASSWORD, InstitutionAccounts
+from conftest import GIT, PROJECT, Browser, InstitutionAccounts, project_with_member
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,62 +18,6 @@ from app.model.eaf_revision import EafRevision
 from app.model.elan_file import ElanFile
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
-GIT = "/api/v1/git"
-PROJECT = "http-corpus"
-
-
-class Browser:
-    """One signed-in browser tab: cookies plus the CSRF header it echoes."""
-
-    def __init__(self, client: AsyncClient) -> None:
-        self.client = client
-        self.csrf = ""
-
-    async def sign_in(self, login: str) -> None:
-        self.client.cookies.clear()
-        response = await self.client.post(
-            "/api/v1/auth/login", json={"login": login, "password": ACCOUNT_PASSWORD}
-        )
-        assert response.status_code == 200, response.text
-        self.csrf = response.json()["csrf_token"]
-
-    async def get(self, url: str):
-        return await self.client.get(url)
-
-    async def post(self, url: str, **kwargs):
-        return await self.client.post(
-            url, headers={"X-CSRF-Token": self.csrf}, **kwargs
-        )
-
-    async def put(self, url: str, **kwargs):
-        return await self.client.put(url, headers={"X-CSRF-Token": self.csrf}, **kwargs)
-
-    async def upload(self, project_id: int, filename: str, content: bytes):
-        return await self.post(
-            f"{GIT}/projects/{project_id}/upload",
-            data={
-                "user_name": "researcher",
-                "contribution_summary": "Session one annotations",
-            },
-            files=[("files", (filename, content, "application/xml"))],
-        )
-
-
-async def _project_with_member(browser: Browser, accounts: InstitutionAccounts) -> int:
-    await browser.sign_in(accounts.admin_login)
-    created = await browser.post(
-        f"{GIT}/projects/create",
-        json={"project_name": PROJECT, "description": "HTTP workflow"},
-    )
-    assert created.status_code == 200, created.text
-    listed = await browser.get(f"{GIT}/projects")
-    (project,) = listed.json()["projects"]
-    added = await browser.post(
-        f"/api/v1/project-associations/projects/{project['project_id']}/users",
-        json={"user_id": accounts.researcher_id, "permission": "write"},
-    )
-    assert added.status_code == 200, added.text
-    return project["project_id"]
 
 
 @pytest.mark.asyncio
@@ -83,7 +27,7 @@ async def test_a_contribution_goes_from_upload_to_accepted_and_validated(
     session: AsyncSession,
 ) -> None:
     browser = Browser(api_client)
-    project_id = await _project_with_member(browser, institution_accounts)
+    project_id = await project_with_member(browser, institution_accounts)
 
     await browser.sign_in(institution_accounts.researcher_login)
     uploaded = await browser.upload(project_id, "session-001.eaf", FIXTURE.read_bytes())
@@ -163,7 +107,7 @@ async def test_an_invalid_eaf_is_refused_with_its_findings(
     api_client: AsyncClient, institution_accounts: InstitutionAccounts
 ) -> None:
     browser = Browser(api_client)
-    project_id = await _project_with_member(browser, institution_accounts)
+    project_id = await project_with_member(browser, institution_accounts)
     await browser.sign_in(institution_accounts.researcher_login)
     broken = FIXTURE.read_bytes().replace(
         b'ANNOTATION_REF="a1"', b'ANNOTATION_REF="missing"', 1
@@ -184,7 +128,7 @@ async def test_people_outside_the_project_cannot_upload(
     api_client: AsyncClient, institution_accounts: InstitutionAccounts
 ) -> None:
     browser = Browser(api_client)
-    project_id = await _project_with_member(browser, institution_accounts)
+    project_id = await project_with_member(browser, institution_accounts)
 
     await browser.sign_in(institution_accounts.outsider_login)
     outsider = await browser.upload(project_id, "session-003.eaf", FIXTURE.read_bytes())

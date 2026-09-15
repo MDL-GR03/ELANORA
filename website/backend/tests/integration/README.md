@@ -31,3 +31,16 @@ make test-db-down
 The shared fixture truncates all application tables and resets sequences before
 each test. Tests should construct only the domain state they require and use
 public services or repositories rather than loading an opaque database dump.
+
+## HTTP tests
+
+`api_client` drives the real application from `app.main`, middleware included,
+through httpx. Each request opens its own database session, as in production,
+project storage and recovery copies live in a temporary directory, and cookies
+follow their paths like a browser's. `institution_accounts` provides a verified
+administrator, researcher and outsider sharing `ACCOUNT_PASSWORD`, and
+`Browser` signs in and echoes the CSRF token on state-changing requests.
+
+Prefer these for behaviour a person meets through the interface: sign-in,
+permissions, uploads, reviews and protocol administration. Serialization,
+cookie and transaction mistakes only show up at this level.
