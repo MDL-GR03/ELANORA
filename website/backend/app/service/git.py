@@ -15,7 +15,6 @@ from app.crud import elan_file_media as elan_media_crud
 from app.crud.elan_file import (
     get_elan_files_by_project,
 )
-from app.crud.pending_upload import get_pending_uploads
 from app.crud.project import (
     delete_project_db,
     get_project_by_id,
@@ -27,9 +26,6 @@ from app.crud.project import (
 from app.elan.validation import validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
 from app.model.enums import ProjectPermission
-from app.model.research_topic import (
-    ProjectBaselineTier,
-)
 from app.schema.responses.git import (
     BulkRenameResponse,
     FileRenameResponse,
@@ -43,6 +39,7 @@ from app.service.contribution_intake import (
     SubmissionContext,
 )
 from app.service.contribution_publication import ContributionPublicationService
+from app.service.contribution_queue import ContributionQueueService
 from app.service.contribution_review import ContributionReviewService
 from app.service.elan import ElanService
 from app.service.file_rename import FileRenameService
@@ -100,6 +97,9 @@ class GitService:
         )
         self.contribution_publication = ContributionPublicationService(
             self.base_path, self.contribution_review
+        )
+        self.contribution_queue = ContributionQueueService(
+            self.base_path, self.contribution_inspection
         )
         self.file_rename = FileRenameService(self.base_path)
         self.filesystem_sync = ProjectFilesystemSyncService(self.base_path)
@@ -516,140 +516,7 @@ class GitService:
         self, project_name: str, db: AsyncSession
     ) -> dict[str, Any]:
         """Get pending uploads and compute their merge readiness in real-time."""
-        project_path = safe_project_path(self.base_path, project_name)
-        runner = GitCommandRunner(project_path)
-
-        # Get pending uploads from DB
-        project = await get_project_by_name(db, project_name)
-        if project is None:
-            raise FileNotFoundError(f"Project '{project_name}' not found")
-        pending_uploads = await get_pending_uploads(db, project.project_id)
-        configured_baseline_tiers = set(
-            (
-                await db.scalars(
-                    select(ProjectBaselineTier.tier_name).where(
-                        ProjectBaselineTier.project_id == project.project_id
-                    )
-                )
-            ).all()
-        )
-
-        duplicate_of = self.contribution_inspection.duplicate_map(
-            pending_uploads, runner
-        )
-        collision_candidate_ids = {
-            upload.upload_id
-            for upload in pending_uploads
-            if upload.superseded_by_upload_id is None
-            and upload.upload_id not in duplicate_of
-        }
-
-        upload_status = []
-        semantic_targets_by_upload: dict[
-            int, dict[str, dict[str, tuple[Any, ...]]]
-        ] = {}
-        ready_count = 0
-        conflicts_count = 0
-
-        for upload in pending_uploads:
-            branch_name = upload.branch_name
-            git_details = upload.git_details or {}
-            raw_upload_data = git_details.get("upload_data", git_details)
-            upload_data = (
-                dict(raw_upload_data) if isinstance(raw_upload_data, dict) else {}
-            )
-            (
-                semantic_summary,
-                semantic_targets,
-                research_context,
-                protocol_outcome,
-                recorded_protocol_id,
-            ) = self.contribution_inspection.research_scope(
-                project_name, project, upload, configured_baseline_tiers
-            )
-            semantic_targets_by_upload[upload.upload_id] = semantic_targets
-
-            if upload.superseded_by_upload_id is not None:
-                upload_status.append(
-                    self.contribution_inspection.queue_item(
-                        upload,
-                        upload_data,
-                        semantic_summary,
-                        research_context,
-                        protocol_outcome,
-                        recorded_protocol_id,
-                        "superseded",
-                        superseded_by_upload_id=upload.superseded_by_upload_id,
-                    )
-                )
-                continue
-
-            if upload.upload_id in duplicate_of:
-                upload_status.append(
-                    self.contribution_inspection.queue_item(
-                        upload,
-                        upload_data,
-                        semantic_summary,
-                        research_context,
-                        protocol_outcome,
-                        recorded_protocol_id,
-                        "duplicate",
-                        duplicate_of_upload_id=duplicate_of[upload.upload_id],
-                    )
-                )
-                continue
-
-            # Test merge in real-time to check status
-            try:
-                if not branch_name:
-                    raise ValueError("Pending contribution has no branch")
-                readiness = runner.preview_merge(branch_name)
-                status = readiness.status
-                conflicts = readiness.conflicted_files
-                if readiness.can_merge:
-                    ready_count += 1
-                else:
-                    conflicts_count += 1
-
-                upload_status.append(
-                    self.contribution_inspection.queue_item(
-                        upload,
-                        upload_data,
-                        semantic_summary,
-                        research_context,
-                        protocol_outcome,
-                        recorded_protocol_id,
-                        status,
-                        conflicted_files=conflicts,
-                        conflicted_files_count=len(conflicts),
-                        tested_at=datetime.now().isoformat(),
-                    )
-                )
-
-            except Exception:
-                upload_status.append(
-                    self.contribution_inspection.inspection_error_item(
-                        upload, upload_data
-                    )
-                )
-
-        for item in upload_status:
-            upload_id = int(item["upload_id"])
-            item["annotation_collisions"] = (
-                self.contribution_inspection.annotation_collisions(
-                    upload_id,
-                    semantic_targets_by_upload,
-                    collision_candidate_ids,
-                )
-            )
-
-        return {
-            "project_name": project_name,
-            "pending_uploads": upload_status,
-            "total_pending": len(upload_status),
-            "ready_count": ready_count,
-            "conflicts_count": conflicts_count,
-        }
+        return await self.contribution_queue.review_queue(project_name, db)
 
     def test_pending_upload(
         self, project_name: str, branch_name: str

@@ -845,3 +845,50 @@ async def test_worker_reconciles_a_git_merge_completed_before_database_commit(
     assert upload.status == Status.RESOLVED
     assert revision is not None
     assert revision.parent_git_commit == change_set.expected_commit
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("corruption", ["missing_branch", "malformed_details"])
+async def test_one_uninspectable_contribution_does_not_hide_the_review_queue(
+    session: AsyncSession, tmp_path: Path, corruption: str
+) -> None:
+    """A single unreadable contribution must not lock administrators out of review.
+
+    Queue items already isolated merge-preview failures, but the research-scope
+    evaluation ran outside that isolation, so one bad record failed the whole
+    request and every other contribution disappeared from view.
+    """
+    project, _admin, researcher_a, researcher_b, project_path, runner = await _domain(
+        session, tmp_path, f"resilient-{corruption.replace('_', '-')}"
+    )
+    _branch_with_changes(
+        runner,
+        project_path,
+        "healthy-change",
+        {
+            "video-11.eaf": (
+                b"<ANNOTATION_VALUE>Hello</ANNOTATION_VALUE>",
+                b"<ANNOTATION_VALUE>Healthy contribution</ANNOTATION_VALUE>",
+            )
+        },
+    )
+    healthy = await _pending(
+        session, project, researcher_a, runner, "healthy-change", ["video-11.eaf"]
+    )
+    broken = await _pending(
+        session, project, researcher_b, runner, "broken-change", ["session-12.eaf"]
+    )
+    if corruption == "missing_branch":
+        broken.branch_name = None
+    else:
+        broken.git_details = {"upload_data": ["not", "a", "mapping"]}
+    await session.commit()
+
+    queue = await GitService(base_path=str(tmp_path)).get_pending_uploads_with_status(
+        project.project_name, session
+    )
+
+    by_id = {item["upload_id"]: item for item in queue["pending_uploads"]}
+    assert queue["total_pending"] == 2
+    assert by_id[healthy.upload_id]["merge_status"] == "ready_to_merge"
+    assert by_id[broken.upload_id]["merge_status"] == "error"
