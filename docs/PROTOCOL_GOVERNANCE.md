@@ -54,6 +54,26 @@ filenames during protocol validation and the legacy upload naming setting is not
 consulted. Without one, including when the pinned protocol predates this rule,
 the legacy setting keeps applying.
 
+### Copying naming standards into drafts
+
+`poetry run elanora-copy-naming-standards` copies the naming standard that
+currently governs each project's uploads into a protocol draft. Add `--dry-run`
+to see the report without writing anything.
+
+- A project with a pinned protocol gets that protocol's next draft, with the
+  pinned rules kept and the filename standard added.
+- Any other project gets a new protocol named after the project, holding only
+  the filename standard.
+
+Nothing is published or pinned, legacy settings and historical data are left
+alone, and each copy is recorded as a `protocol.naming_standard.copied` audit
+event. Every project keeps its current behaviour until an administrator
+reviews, publishes and pins the draft. Running the command again copies nothing
+twice. The report names every project with a standard that was not copied and
+why: `unusable_standard` (a placeholder missing, repeated, or an invalid
+expression), `protocol_has_filename_standard`, `already_copied`,
+`protocol_name_taken`, `pinned_protocol_unavailable` or `standard_not_found`.
+
 Annotation-level rules report one finding per tier, with the number of
 offending annotations and the location of the first, so a large file produces a
 readable report rather than thousands of issues.

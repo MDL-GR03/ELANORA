@@ -250,7 +250,7 @@ async def create_protocol(
     name: str,
     description: str | None,
     rules: ProtocolRules,
-    actor_user_id: int,
+    actor_user_id: int | None,
 ) -> Protocol:
     """Create an institution protocol and its first mutable draft."""
     protocol = Protocol(
@@ -296,7 +296,7 @@ async def create_protocol_version(
     project: Project,
     protocol_id: uuid.UUID,
     rules: ProtocolRules,
-    actor_user_id: int,
+    actor_user_id: int | None,
 ) -> ProtocolVersion:
     """Append the next draft version while serializing version allocation."""
     protocol = await db.scalar(
