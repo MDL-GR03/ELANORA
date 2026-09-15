@@ -63,7 +63,7 @@ class ValidationUtils:
 
         Args:
             standard: Dict containing 'pattern' and 'components'.
-            filename: The filename to check (without extension).
+            filename: The filename to check; its last extension is ignored.
 
         Returns:
             True if compliant, False otherwise.
@@ -80,7 +80,8 @@ class ValidationUtils:
             )
             return True
 
-        name_without_ext = filename.replace(".eaf", "")
+        # Matches the upload page's check in frontend/src/utils/filenameCompliance.js.
+        name_without_ext = re.sub(r"\.[^/.]+$", "", filename)
         components = standard["components"]
         pattern = standard["pattern"]
         logger.debug(f"Components: {components}, Pattern: {pattern}")
@@ -91,7 +92,7 @@ class ValidationUtils:
         if not top_rx:
             return False
 
-        match = top_rx.match(name_without_ext)
+        match = top_rx.fullmatch(name_without_ext)
         if not match:
             return False
 
@@ -134,30 +135,18 @@ class ValidationUtils:
         return normalized
 
     @staticmethod
-    def _build_pattern(pattern: str, components: list[dict]) -> str | None:
-        """Build the final regex pattern by replacing component placeholders."""
-        logger.debug(
-            f"_build_pattern called with pattern: {pattern}, components: {components}"
-        )
-        try:
-            for i, comp in enumerate(components):
-                logger.debug(f"Processing component {i} for pattern: {comp}")
-                name = comp["name"]
-                regex = comp["regex"]
-                # Escape backslashes in the regex for use in re.sub replacement
-                escaped_regex = regex.replace("\\", "\\\\")
-                replacement = f"({escaped_regex})"
-                logger.debug(f"Replacing {{{name}}} with {replacement}")
-                pattern = re.sub(f"{{{name}}}", replacement, pattern)
-                logger.debug(f"Pattern after replacement for '{name}': {pattern}")
-            logger.debug(f"Final pattern: {pattern}")
-            return pattern
-        except re.error as e:
-            logger.error(
-                "Naming pattern replacement failed; error_type=%s",
-                safe_exception_type(e),
+    def _build_pattern(pattern: str, components: list[dict]) -> str:
+        """Replace each ``{name}`` placeholder with its component's group.
+
+        Placeholders are replaced as plain text. The ``regex`` module reads
+        ``{name}`` as its own syntax, so substituting with a regex refused every
+        filename.
+        """
+        for comp in components:
+            pattern = pattern.replace(
+                "{" + comp["name"] + "}", f"({comp['regex'] or '.+'})"
             )
-            return None
+        return pattern
 
     @staticmethod
     def _compile_regex(pattern: str) -> re.Pattern | None:
@@ -210,8 +199,7 @@ class ValidationUtils:
         if not regex:
             return True
         try:
-            rx = re.compile(regex)  # Removed re.UNICODE
-            return rx.match(value) is not None
+            return re.fullmatch(regex, value) is not None
         except re.error:
             return False
 
@@ -252,11 +240,7 @@ class ValidationUtils:
             return False
         min_val, max_val = int(range_match.group(1)), int(range_match.group(2))
         width = len(range_match.group(1))
-        try:
-            num = int(value)
-            return len(value) == width and min_val <= num <= max_val
-        except ValueError:
-            return False
+        return ValidationUtils._within_padded_range(value, min_val, max_val, width)
 
     @staticmethod
     def _check_numeric_range_dict(numeric_range: dict, value: str) -> bool:
@@ -295,11 +279,24 @@ class ValidationUtils:
 
     @staticmethod
     def _check_regex_literal(av_str: str, value: str) -> bool:
-        """Check regex literal accepted value."""
+        """Check a ``/pattern/flags`` accepted value the way the browser does.
+
+        JavaScript's ``test`` searches anywhere in the value; ``g``, ``u`` and
+        ``y`` do not change whether it matches.
+        """
+        parts = re.match(r"^/(.*)/([gimsuy]*)$", av_str)
+        if parts is None:
+            return False
+        flags = 0
+        for letter, flag in (
+            ("i", re.IGNORECASE),
+            ("m", re.MULTILINE),
+            ("s", re.DOTALL),
+        ):
+            if letter in parts.group(2):
+                flags |= flag
         try:
-            parts = re.match(r"^/(.*)/([gimsuy]*)$", av_str)
-            rx = re.compile(parts.group(1), parts.group(2))
-            return rx.match(value) is not None
+            return re.search(parts.group(1), value, flags) is not None
         except re.error:
             return False
 
@@ -307,12 +304,18 @@ class ValidationUtils:
     def _check_range_value(range_match: re.Match, value: str) -> bool:
         """Check range accepted value."""
         min_val, max_val = int(range_match.group(1)), int(range_match.group(2))
-        width = len(range_match.group(1))
-        try:
-            num = int(value)
-            return len(value) == width and min_val <= num <= max_val
-        except ValueError:
+        return ValidationUtils._within_padded_range(
+            value, min_val, max_val, len(range_match.group(1))
+        )
+
+    @staticmethod
+    def _within_padded_range(
+        value: str, minimum: int, maximum: int, width: int
+    ) -> bool:
+        """Digits only, written at exactly the range's width, within its bounds."""
+        if len(value) != width or re.fullmatch(r"[0-9]+", value) is None:
             return False
+        return minimum <= int(value) <= maximum
 
 
 logger.debug(f"Using re module: {re.__name__}")
