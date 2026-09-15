@@ -114,3 +114,12 @@ class ReviewCaseState(StrEnum):
     RESUBMITTED = "resubmitted"
     RESOLVED = "resolved"
     CLOSED = "closed"
+
+
+class DataClassification(StrEnum):
+    """How sensitive a project's research data is."""
+
+    PUBLIC = "public"
+    INTERNAL = "internal"
+    CONFIDENTIAL = "confidential"
+    SENSITIVE_PERSONAL = "sensitive_personal"

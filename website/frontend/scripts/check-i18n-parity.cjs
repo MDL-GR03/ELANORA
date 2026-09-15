@@ -10,6 +10,7 @@ const protectedNamespaces = [
   'contributionDetails',
   'contributionResolution',
   'contributionWorkspace',
+  'dataGovernance',
   'researchScopes',
   'reviewArchive',
   'reviewCases',

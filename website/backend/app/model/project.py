@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -37,6 +38,25 @@ class Project(Base):
             ondelete="RESTRICT",
             use_alter=True,
         ),
+        CheckConstraint(
+            "data_classification IS NULL OR data_classification IN "
+            "('public', 'internal', 'confidential', 'sensitive_personal')",
+            name="ck_project_data_classification",
+        ),
+        # Personal data needs a recorded lawful basis or consent reference.
+        CheckConstraint(
+            "data_classification IS DISTINCT FROM 'sensitive_personal' "
+            "OR btrim(coalesce(legal_basis, '')) <> ''",
+            name="ck_project_sensitive_legal_basis",
+        ),
+        CheckConstraint(
+            "retention_days IS NULL OR retention_days >= 30",
+            name="ck_project_retention_days",
+        ),
+        CheckConstraint(
+            "NOT legal_hold OR btrim(coalesce(legal_hold_reason, '')) <> ''",
+            name="ck_project_legal_hold_reason",
+        ),
     )
 
     project_id: Mapped[int] = mapped_column(
@@ -64,6 +84,22 @@ class Project(Base):
     )
     auto_accept_new_files: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    # Data governance. An unclassified project has no classification yet; a
+    # project without a retention period is kept until someone decides.
+    data_classification: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    legal_basis: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Days a deleted project's content is kept before it may be purged.
+    retention_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    legal_hold: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    legal_hold_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    governance_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    governance_updated_by: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("USER.user_id", ondelete="SET NULL"), nullable=True
     )
 
     # Relationships - use string references

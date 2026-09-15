@@ -19,6 +19,7 @@ from app.api.v1.location import router as location_router
 from app.api.v1.notification import router as notification_router
 from app.api.v1.operations import router as operations_router
 from app.api.v1.project_associations import router as project_associations_router
+from app.api.v1.project_governance import router as project_governance_router
 from app.api.v1.project_location_file_type import (
     router as project_location_file_type_router,
 )
@@ -145,6 +146,9 @@ app.include_router(
     tags=["PROJECT NAMING STANDARD"],
 )
 app.include_router(protocol_router, prefix=API_V1_PREFIX, tags=["PROTOCOL"])
+app.include_router(
+    project_governance_router, prefix=API_V1_PREFIX, tags=["DATA GOVERNANCE"]
+)
 app.include_router(setup_router, prefix=f"{API_V1_PREFIX}/setup", tags=["SETUP"])
 app.include_router(
     file_type_router, prefix=f"{API_V1_PREFIX}/file-type", tags=["FILE TYPE"]

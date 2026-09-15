@@ -2155,5 +2155,54 @@
       "emptyActive": "Aucune demande de correction active pour ce projet.",
       "emptyProject": "Aucune demande de correction n’a été ouverte pour ce projet."
     }
+  },
+  "dataGovernance": {
+    "section": "Gouvernance des données",
+    "group": "Gouvernance",
+    "sectionDescription": "Classez les données de recherche de ce projet et décidez de leur durée de conservation.",
+    "loading": "Chargement de la gouvernance des données…",
+    "loadFailed": "Impossible de charger la gouvernance des données.",
+    "saveFailed": "Impossible d’enregistrer la gouvernance des données. Vérifiez les champs signalés.",
+    "saved": "Gouvernance des données enregistrée.",
+    "classification": {
+      "title": "Classification des données",
+      "help": "Choisissez le niveau correspondant aux données les plus sensibles du projet.",
+      "unclassified": "Pas encore classées",
+      "levels": {
+        "public": "Publiques",
+        "internal": "Internes",
+        "confidential": "Confidentielles",
+        "sensitive_personal": "Données personnelles sensibles"
+      },
+      "descriptions": {
+        "public": "Peuvent être partagées librement.",
+        "internal": "Réservées aux chercheurs de l’institution.",
+        "confidential": "Réservées aux membres du projet.",
+        "sensitive_personal": "Permettent d’identifier des personnes, par exemple par le visage, la voix ou la signation ; une base légale est requise."
+      }
+    },
+    "legalBasis": {
+      "label": "Base légale ou référence de consentement",
+      "help": "Par exemple la série de formulaires de consentement ou l’avis éthique couvrant ces données.",
+      "required": "Obligatoire pour les données personnelles sensibles."
+    },
+    "retention": {
+      "title": "Conservation après suppression",
+      "help": "Lorsque le projet est supprimé, son contenu est conservé pendant cette durée puis purgé, sauf en cas de gel juridique.",
+      "keepIndefinitely": "Conserver jusqu’à décision d’un administrateur",
+      "days": "Jours de conservation après suppression",
+      "minimum": "Au moins {days} jours."
+    },
+    "legalHold": {
+      "title": "Gel juridique",
+      "label": "Placer ce projet sous gel juridique",
+      "help": "Aucun contenu d’un projet sous gel juridique n’est purgé, quelle que soit sa durée de conservation.",
+      "reason": "Motif du gel juridique",
+      "required": "Un gel juridique nécessite un motif."
+    },
+    "lastUpdated": "Dernière modification {date}",
+    "save": "Enregistrer la gouvernance des données",
+    "saving": "Enregistrement…",
+    "readOnly": "Seuls les administrateurs du projet peuvent modifier ces paramètres."
   }
 }

@@ -151,6 +151,12 @@ const ConfigureProtocols = defineAsyncComponent(
       '@components/pageSpecific/projectConfiguration/ConfigureProtocols.vue'
     )
 );
+const ConfigureDataGovernance = defineAsyncComponent(
+  () =>
+    import(
+      '@components/pageSpecific/projectConfiguration/ConfigureDataGovernance.vue'
+    )
+);
 const ConfigureContributionAutomation = defineAsyncComponent(
   () =>
     import(
@@ -229,6 +235,19 @@ const allSectionGroups = [
     ],
   },
   {
+    key: 'governance',
+    titleKey: 'dataGovernance.group',
+    sections: [
+      {
+        key: 'dataGovernance',
+        titleKey: 'dataGovernance.section',
+        component: ConfigureDataGovernance,
+        icon: 'fa-solid fa-shield-halved',
+        description: t('dataGovernance.sectionDescription'),
+      },
+    ],
+  },
+  {
     key: 'collaborators',
     titleKey: 'projectSettings.sectionNames.sections.collaborators',
     sections: [
@@ -270,6 +289,7 @@ const sectionGroups = computed(() => {
   }
   if (hasProjectPermission(userStore.user, project, 'admin')) {
     groups.push(allSectionGroups.find((group) => group.key === 'workflow'));
+    groups.push(allSectionGroups.find((group) => group.key === 'governance'));
     groups.push({
       key: 'collaborators',
       titleKey: 'projectSettings.sectionNames.sections.collaborators',

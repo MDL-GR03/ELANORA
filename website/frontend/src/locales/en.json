@@ -2162,5 +2162,54 @@
       "emptyActive": "There are no active correction requests for this project.",
       "emptyProject": "No correction requests have been opened for this project."
     }
+  },
+  "dataGovernance": {
+    "section": "Data Governance",
+    "group": "Governance",
+    "sectionDescription": "Classify this project's research data and decide how long it is kept.",
+    "loading": "Loading data governance…",
+    "loadFailed": "Data governance could not be loaded.",
+    "saveFailed": "Data governance could not be saved. Check the highlighted fields.",
+    "saved": "Data governance saved.",
+    "classification": {
+      "title": "Data classification",
+      "help": "Choose the level that fits the most sensitive data in this project.",
+      "unclassified": "Not classified yet",
+      "levels": {
+        "public": "Public",
+        "internal": "Internal",
+        "confidential": "Confidential",
+        "sensitive_personal": "Sensitive personal data"
+      },
+      "descriptions": {
+        "public": "May be shared openly.",
+        "internal": "For the institution's researchers only.",
+        "confidential": "Restricted to project members.",
+        "sensitive_personal": "Identifies people, for example through faces, voices or signing; requires a legal basis."
+      }
+    },
+    "legalBasis": {
+      "label": "Legal basis or consent reference",
+      "help": "For example the consent form series or ethics approval covering this data.",
+      "required": "Required for sensitive personal data."
+    },
+    "retention": {
+      "title": "Retention after deletion",
+      "help": "When the project is deleted, its content is kept for this period and then purged, unless a legal hold is set.",
+      "keepIndefinitely": "Keep until an administrator decides",
+      "days": "Days to keep after deletion",
+      "minimum": "At least {days} days."
+    },
+    "legalHold": {
+      "title": "Legal hold",
+      "label": "Place this project under legal hold",
+      "help": "Nothing in a project under legal hold is purged, whatever its retention period.",
+      "reason": "Reason for the legal hold",
+      "required": "A legal hold needs a reason."
+    },
+    "lastUpdated": "Last changed {date}",
+    "save": "Save data governance",
+    "saving": "Saving…",
+    "readOnly": "Only project administrators can change these settings."
   }
 }
