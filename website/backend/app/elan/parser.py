@@ -34,10 +34,9 @@ from app.elan.domain import (
     ReferenceLinkSet,
     StringMap,
     immutable_attributes,
-    parse_xsd_boolean,
-    split_references,
 )
 from app.elan.validation import validate_eaf
+from app.elan.xsd_types import parse_xsd_boolean, split_references
 
 
 def _required(element: etree._Element, attribute: str) -> str:

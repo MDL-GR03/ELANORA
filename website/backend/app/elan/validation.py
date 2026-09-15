@@ -9,7 +9,7 @@ from typing import Final, cast
 
 from lxml import etree
 
-from app.elan.domain import parse_xsd_boolean
+from app.elan.xsd_types import parse_xsd_boolean
 
 ROOT_TAG: Final = "ANNOTATION_DOCUMENT"
 SUPPORTED_FORMATS: Final = frozenset({"2.7", "2.8", "3.0"})

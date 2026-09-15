@@ -22,8 +22,8 @@ from app.service.eaf_review import validate_repository_eafs
 from app.service.git_operations import GitCommandRunner
 from app.service.protocol import (
     get_pinned_protocol_version,
-    validate_content_against_protocol,
 )
+from app.service.protocol_evaluation import validate_content_against_protocol
 from app.service.research_topics import require_distinct_topic_name
 from app.storage.paths import safe_project_path
 

@@ -19,8 +19,8 @@ from app.elan.domain import (
     EafDocument,
     ReferenceLinkSet,
     StringMap,
-    split_references,
 )
+from app.elan.xsd_types import split_references
 
 EAF_PROJECTION_VERSION = "2"
 

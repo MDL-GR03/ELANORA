@@ -18,8 +18,8 @@ from app.schema.responses.git import (
 from app.service.protocol import (
     ProtocolConflictError,
     get_pinned_protocol_version,
-    validate_content_against_protocol,
 )
+from app.service.protocol_evaluation import validate_content_against_protocol
 
 logger = get_logger()
 MAX_RETURNED_ISSUES = 20

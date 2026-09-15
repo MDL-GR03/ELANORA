@@ -13,24 +13,14 @@ from decimal import Decimal
 from pathlib import Path
 from types import MappingProxyType
 
+from app.elan.xsd_types import split_references
+
 type StringMap = Mapping[str, str]
 
 
 def immutable_attributes(values: dict[str, str]) -> StringMap:
     """Return a read-only copy of XML attributes."""
     return MappingProxyType(dict(values))
-
-
-def parse_xsd_boolean(value: str | None) -> bool | None:
-    """Read an xsd:boolean, which admits "1" and "0" as well as "true"/"false"."""
-    if value is None:
-        return None
-    return value.strip() in {"true", "1"}
-
-
-def split_references(value: str | None) -> tuple[str, ...]:
-    """Split an xsd:IDREFS attribute into its individual references."""
-    return tuple((value or "").split())
 
 
 @dataclass(frozen=True, slots=True)

@@ -64,10 +64,20 @@ same run. Each run records a `passed` or `failed` outcome and ordered issues
 with a stable code, severity, XML location, message, and optional protocol rule
 key.
 
-The validator release checksum covers the vendored EAF XSD and deterministic
-protocol-validation implementation. Changing either without incrementing the
-release version stops validation rather than silently changing historical
-meaning. PostgreSQL triggers prevent updates or deletion of validator releases,
+The validator release checksum covers exactly the sources that decide an
+outcome, listed in `VALIDATOR_SOURCES` in `app/service/protocol_evaluation.py`:
+the vendored EAF XSD, the semantic EAF validator, the XML Schema datatype
+readers, and the protocol rule evaluator. Changing any of them without
+incrementing `VALIDATOR_VERSION` stops validation rather than silently changing
+historical meaning. Protocol administration, compliance scans and corpus
+suggestions live elsewhere and can change without a new release.
+
+Release 1 fingerprinted the whole protocol service instead. Any unrelated edit
+to it would have halted validation, while the semantic validator, which does
+change outcomes, was not covered. Release 2 corrects the scope and records two
+semantic fixes: annotations citing several external references, and
+`xsd:boolean` values written as `1` or `0`, both of which release 1 wrongly
+rejected. Runs recorded under release 1 keep their original release. PostgreSQL triggers prevent updates or deletion of validator releases,
 validation runs, validation issues, and published protocol versions.
 
 The exact EAF revision bytes remain authoritative and are never rewritten by

@@ -5,16 +5,13 @@ import hashlib
 import json
 import uuid
 from collections import Counter, defaultdict
-from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
 
-from lxml import etree
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.elan.validation import SCHEMA_PATH, EafValidationError, validate_eaf
+from app.elan.validation import EafValidationError, validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
 from app.model.audit_event import AuditEvent
 from app.model.eaf_revision import EafRevision
@@ -46,9 +43,13 @@ from app.schema.protocol import (
     ProtocolVocabularySuggestion,
     ValidationIssueResponse,
 )
+from app.service.protocol_evaluation import (
+    VALIDATOR_NAME,
+    VALIDATOR_VERSION,
+    evaluate_protocol_rules,
+    validator_checksum,
+)
 
-VALIDATOR_NAME = "elanora-eaf"
-VALIDATOR_VERSION = "1"
 FULL_COVERAGE_PERCENT = 100.0
 
 
@@ -58,101 +59,6 @@ class ProtocolConflictError(ValueError):
 
 class ProtocolNotFoundError(LookupError):
     """Raised when protocol state is outside the authorized project scope."""
-
-
-@dataclass(frozen=True, slots=True)
-class ProtocolFinding:
-    """One deterministic researcher-facing finding from a protocol snapshot."""
-
-    code: str
-    severity: ValidationSeverity
-    location: str
-    message: str
-    rule_key: str
-
-
-def evaluate_protocol_rules(
-    root: etree._Element, rules: ProtocolRules
-) -> tuple[ProtocolFinding, ...]:
-    """Evaluate a validated EAF document against immutable protocol rules."""
-    findings: list[ProtocolFinding] = []
-
-    def error(code: str, location: str, message: str, rule_key: str) -> None:
-        findings.append(
-            ProtocolFinding(
-                code=code,
-                severity=ValidationSeverity.ERROR,
-                location=location,
-                message=message,
-                rule_key=rule_key,
-            )
-        )
-
-    tiers = {
-        tier_id: tier
-        for tier in root.findall("TIER")
-        if (tier_id := tier.get("TIER_ID")) is not None
-    }
-    tier_ids = set(tiers)
-    for tier_id in rules.required_tiers:
-        if tier_id not in tier_ids:
-            error(
-                "protocol.required_tier_missing",
-                "/ANNOTATION_DOCUMENT",
-                f"Required tier {tier_id!r} is missing",
-                "required_tiers",
-            )
-    for tier_id, required_parent in rules.tier_parents.items():
-        tier = tiers.get(tier_id)
-        if tier is not None and tier.get("PARENT_REF") != required_parent:
-            error(
-                "protocol.tier_parent_mismatch",
-                f"/ANNOTATION_DOCUMENT/TIER[@TIER_ID='{tier_id}']",
-                f"Tier {tier_id!r} must have parent {required_parent!r}",
-                "tier_parents",
-            )
-    for tier_id, required_type in rules.tier_linguistic_types.items():
-        tier = tiers.get(tier_id)
-        if tier is not None and tier.get("LINGUISTIC_TYPE_REF") != required_type:
-            error(
-                "protocol.tier_linguistic_type_mismatch",
-                f"/ANNOTATION_DOCUMENT/TIER[@TIER_ID='{tier_id}']",
-                f"Tier {tier_id!r} must use linguistic type {required_type!r}",
-                "tier_linguistic_types",
-            )
-    vocabulary_ids = {
-        item.get("CV_ID")
-        for item in root.findall("CONTROLLED_VOCABULARY")
-        if item.get("CV_ID")
-    }
-    for vocabulary_id in rules.required_controlled_vocabularies:
-        if vocabulary_id not in vocabulary_ids:
-            error(
-                "protocol.required_vocabulary_missing",
-                "/ANNOTATION_DOCUMENT",
-                f"Required controlled vocabulary {vocabulary_id!r} is missing",
-                "required_controlled_vocabularies",
-            )
-    media = root.findall("HEADER/MEDIA_DESCRIPTOR")
-    if rules.media_required and not media:
-        error(
-            "protocol.media_required",
-            "/ANNOTATION_DOCUMENT/HEADER",
-            "At least one media descriptor is required",
-            "media_required",
-        )
-    allowed_mime_types = set(rules.allowed_media_mime_types)
-    if allowed_mime_types:
-        for descriptor in media:
-            mime_type = descriptor.get("MIME_TYPE", "")
-            if mime_type not in allowed_mime_types:
-                error(
-                    "protocol.media_mime_type_forbidden",
-                    root.getroottree().getpath(descriptor),
-                    f"Media MIME type {mime_type!r} is not permitted",
-                    "allowed_media_mime_types",
-                )
-    return tuple(findings)
 
 
 async def get_pinned_protocol_version(
@@ -172,14 +78,6 @@ async def get_pinned_protocol_version(
             "The project's pinned protocol is unavailable or unpublished"
         )
     return version
-
-
-def validate_content_against_protocol(
-    content: bytes, version: ProtocolVersion
-) -> tuple[ProtocolFinding, ...]:
-    """Validate EAF structure and apply one published protocol snapshot."""
-    root = validate_eaf(content)
-    return evaluate_protocol_rules(root, ProtocolRules.model_validate(version.rules))
 
 
 def _rules_dict(rules: ProtocolRules) -> dict[str, object]:
@@ -1074,13 +972,7 @@ async def _scoped_version(
 
 
 async def _validator_release(db: AsyncSession) -> ValidatorRelease:
-    checksum = hashlib.sha256(
-        SCHEMA_PATH.read_bytes()
-        + b"\0"
-        + Path(__file__).read_bytes()
-        + b"\0"
-        + VALIDATOR_VERSION.encode("ascii")
-    ).hexdigest()
+    checksum = validator_checksum()
     release = await db.scalar(
         select(ValidatorRelease).where(
             ValidatorRelease.name == VALIDATOR_NAME,
