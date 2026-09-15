@@ -6,6 +6,7 @@ const localeDirectory = path.resolve(__dirname, '../src/locales');
 const languages = ['en', 'fr', 'ja'];
 const protectedNamespaces = [
   'acceptedHistory',
+  'annotationComparison',
   'contributionDetails',
   'contributionResolution',
   'contributionWorkspace',

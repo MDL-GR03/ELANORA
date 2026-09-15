@@ -4,6 +4,10 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { defineComponent } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createI18n } from 'vue-i18n';
+
+import ja from '@/locales/ja.json';
+import { englishI18n } from '@/testing/i18n';
 import ConflictMergeView from './ConflictMergeView.vue';
 
 const getEafReview = vi.fn();
@@ -36,7 +40,10 @@ function reviewWith(count, prefix, tier = `${prefix}-tier`) {
 function mountView(filename = 'a.eaf') {
   return mount(ConflictMergeView, {
     props: { projectName: 'corpus', branchName: 'contribution', filename },
-    global: { stubs: { 'font-awesome-icon': true } },
+    global: {
+      plugins: [englishI18n()],
+      stubs: { 'font-awesome-icon': true },
+    },
     attachTo: document.body,
   });
 }
@@ -119,7 +126,10 @@ describe('ConflictMergeView', () => {
         </div>`,
     });
     const wrapper = mount(Page, {
-      global: { stubs: { 'font-awesome-icon': true } },
+      global: {
+        plugins: [englishI18n()],
+        stubs: { 'font-awesome-icon': true },
+      },
       attachTo: document.body,
     });
     await flushPromises();
@@ -132,5 +142,39 @@ describe('ConflictMergeView', () => {
       expect(document.querySelectorAll(`[id="${id}"]`)).toHaveLength(1);
     }
     wrapper.unmount();
+  });
+
+  it('names change kinds in words, in the reader’s language', async () => {
+    const review = reviewWith(2, 'K');
+    review.changes[1].kinds = ['timing_changed', 'tier_changed'];
+    getEafReview.mockResolvedValue(review);
+    const render = async (i18n) => {
+      const wrapper = mount(ConflictMergeView, {
+        props: { projectName: 'corpus', branchName: 'b', filename: 'k.eaf' },
+        global: { plugins: [i18n], stubs: { 'font-awesome-icon': true } },
+      });
+      await flushPromises();
+      return wrapper;
+    };
+
+    const english = await render(englishI18n());
+    expect(english.get('.count').text()).toBe('2 changes');
+    expect(english.findAll('.badge').map((badge) => badge.text())).toEqual([
+      'Value changed',
+      'Timing changed',
+      'Tier changed',
+    ]);
+
+    const japanese = await render(
+      createI18n({
+        legacy: false,
+        locale: 'ja',
+        fallbackLocale: 'en',
+        messages: { ja },
+      })
+    );
+    expect(japanese.get('.count').text()).toBe('変更 2 件');
+    expect(japanese.findAll('.badge')[1].text()).toBe('タイミングの変更');
+    expect(japanese.text()).not.toContain('annotationComparison.');
   });
 });

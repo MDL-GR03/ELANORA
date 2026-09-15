@@ -1795,5 +1795,62 @@
     "requestFailed": "リクエストを完了できませんでした。",
     "restored": "プロジェクトを新しい現在のバージョンとして復元しました。進行中の作業は保持され、再評価されました。",
     "recovered": "承認済みのプロジェクトデータを復旧しました。"
+  },
+  "annotationComparison": {
+    "eyebrow": "ELAN 注釈の比較",
+    "intro": "注釈の内容とタイミングを確認します。修正は ELAN で行い、新しいリビジョンとして提出します。",
+    "changeCount": "変更 {count} 件",
+    "loading": "注釈のプレビューを準備しています…",
+    "unavailable": "プレビューを表示できません",
+    "loadFailed": "現在のプロジェクトと提出されたファイルを比較できませんでした。",
+    "newFile": {
+      "title": "新しい EAF ファイル",
+      "description": "プロジェクトにはまだ現在のバージョンがありません。以下の注釈はすべてこの貢献で新たに追加されたものです。"
+    },
+    "removedFile": {
+      "title": "EAF ファイルの削除",
+      "description": "提出された貢献はこのファイルを削除します。以下の注釈は現在のプロジェクトバージョンのものです。"
+    },
+    "linkedMedia": "リンクされたメディア",
+    "mediaAdded": "追加",
+    "mediaRemoved": "削除",
+    "mediaUnchanged": "変更なし",
+    "search": "変更を検索",
+    "searchPlaceholder": "注釈 ID、階層、テキスト",
+    "tier": "階層",
+    "tierFilter": "注釈の変更を階層で絞り込む",
+    "allTiers": "すべての階層",
+    "change": "変更",
+    "kindFilter": "注釈の変更を種類で絞り込む",
+    "allChanges": "すべての変更",
+    "kinds": {
+      "added": "追加",
+      "removed": "削除",
+      "value_changed": "値の変更",
+      "timing_changed": "タイミングの変更",
+      "tier_changed": "階層の変更",
+      "reference_changed": "参照の変更"
+    },
+    "showing": "一致する変更 {count} 件中 {start}–{end} 件を表示",
+    "unknownTier": "不明な階層",
+    "currentVersion": "現在のプロジェクトバージョン",
+    "submittedVersion": "提出されたバージョン",
+    "notPresent": "注釈がありません",
+    "removedAnnotation": "削除された注釈",
+    "tierOf": "階層：{tier}",
+    "emptyAnnotation": "空の注釈",
+    "openReview": "この注釈のレビューを作成",
+    "addedToRequest": "修正依頼に追加済み",
+    "reviewTitle": "注釈 {id} のレビュー",
+    "pages": "変更のページ",
+    "previous": "前へ",
+    "next": "次へ",
+    "pageOf": "{page} / {count} ページ",
+    "noMatches": "この条件に一致する変更はありません。",
+    "identicalTitle": "修正は共有プロジェクトと一致しています",
+    "identicalDescription": "提出されたファイルは共有プロジェクトのファイルと同じ注釈を含んでいます。承認すると依頼した修正が行われたことを確認しますが、プロジェクトの内容は変わりません。",
+    "nextTitle": "次のステップ",
+    "nextWithChanges": "プレビューを閉じてレビューを続けてください。修正が混在している場合は、ELAN でファイルを修正し新しいリビジョンをアップロードするよう貢献者に依頼してください。",
+    "nextWithoutChanges": "依頼が満たされていれば、レビューに戻って修正を承認してください。承認するとこの修正レビューは終了しますが、共有プロジェクトは変更されず、関連する貢献の判断も行われません。"
   }
 }

@@ -1858,5 +1858,62 @@
     "requestFailed": "La requête n’a pas pu aboutir.",
     "restored": "Projet restauré comme nouvelle version actuelle. Le travail en cours a été conservé et réévalué.",
     "recovered": "Données acceptées du projet récupérées."
+  },
+  "annotationComparison": {
+    "eyebrow": "Comparaison des annotations ELAN",
+    "intro": "Examinez le sens et l’alignement temporel des annotations. Les corrections se font dans ELAN et sont soumises comme nouvelle révision.",
+    "changeCount": "{count} modification | {count} modifications",
+    "loading": "Préparation de l’aperçu des annotations…",
+    "unavailable": "Aperçu indisponible",
+    "loadFailed": "Impossible de comparer le projet actuel et les fichiers soumis.",
+    "newFile": {
+      "title": "Nouveau fichier EAF",
+      "description": "Il n’existe pas encore de version actuelle dans le projet. Toutes les annotations ci-dessous sont nouvelles dans cette contribution."
+    },
+    "removedFile": {
+      "title": "Fichier EAF supprimé",
+      "description": "La contribution soumise supprime ce fichier. Les annotations ci-dessous appartiennent à la version actuelle du projet."
+    },
+    "linkedMedia": "Médias liés",
+    "mediaAdded": "Ajoutés",
+    "mediaRemoved": "Retirés",
+    "mediaUnchanged": "Inchangés",
+    "search": "Rechercher dans les modifications",
+    "searchPlaceholder": "Identifiant d’annotation, tier ou texte",
+    "tier": "Tier",
+    "tierFilter": "Filtrer les modifications d’annotations par tier",
+    "allTiers": "Tous les tiers",
+    "change": "Modification",
+    "kindFilter": "Filtrer les modifications d’annotations par type",
+    "allChanges": "Toutes les modifications",
+    "kinds": {
+      "added": "Ajoutée",
+      "removed": "Supprimée",
+      "value_changed": "Valeur modifiée",
+      "timing_changed": "Alignement modifié",
+      "tier_changed": "Tier modifié",
+      "reference_changed": "Référence modifiée"
+    },
+    "showing": "Affichage de {start} à {end} sur {count} modifications correspondantes",
+    "unknownTier": "Tier inconnu",
+    "currentVersion": "Version actuelle du projet",
+    "submittedVersion": "Version soumise",
+    "notPresent": "Annotation absente",
+    "removedAnnotation": "Annotation supprimée",
+    "tierOf": "Tier : {tier}",
+    "emptyAnnotation": "Annotation vide",
+    "openReview": "Ouvrir une revue pour cette annotation",
+    "addedToRequest": "Ajoutée à la demande de correction",
+    "reviewTitle": "Revoir l’annotation {id}",
+    "pages": "Pages des modifications",
+    "previous": "Précédente",
+    "next": "Suivante",
+    "pageOf": "Page {page} sur {count}",
+    "noMatches": "Aucune modification ne correspond à ces filtres.",
+    "identicalTitle": "La correction correspond au projet partagé",
+    "identicalDescription": "Le fichier soumis contient les mêmes annotations que le fichier du projet partagé. L’approbation confirme que la correction demandée a été faite ; elle ne modifiera pas le contenu du projet.",
+    "nextTitle": "Et ensuite ?",
+    "nextWithChanges": "Fermez l’aperçu pour poursuivre la revue. Pour des corrections mêlées, demandez au contributeur de corriger le fichier dans ELAN et d’envoyer une nouvelle révision.",
+    "nextWithoutChanges": "Revenez à la revue et approuvez la correction si la demande est satisfaite. L’approbation clôt cette revue de correction ; elle ne modifie pas le projet partagé et ne tranche pas la contribution liée."
   }
 }

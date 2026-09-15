@@ -1865,5 +1865,62 @@
     "requestFailed": "The request could not be completed.",
     "restored": "Project restored as a new current version. Open work was preserved and re-evaluated.",
     "recovered": "Accepted project data recovered."
+  },
+  "annotationComparison": {
+    "eyebrow": "ELAN annotation comparison",
+    "intro": "Review annotation meaning and timing. Corrections remain in ELAN and are submitted as a new revision.",
+    "changeCount": "{count} change | {count} changes",
+    "loading": "Preparing the annotation preview…",
+    "unavailable": "Preview unavailable",
+    "loadFailed": "The current project and submitted files could not be compared.",
+    "newFile": {
+      "title": "New EAF file",
+      "description": "There is no current project version yet. Every annotation below is new in this contribution."
+    },
+    "removedFile": {
+      "title": "EAF file removed",
+      "description": "The submitted contribution removes this file. The annotations below belong to the current project version."
+    },
+    "linkedMedia": "Linked media",
+    "mediaAdded": "Added",
+    "mediaRemoved": "Removed",
+    "mediaUnchanged": "Unchanged",
+    "search": "Search changes",
+    "searchPlaceholder": "Annotation ID, tier, or text",
+    "tier": "Tier",
+    "tierFilter": "Filter annotation changes by tier",
+    "allTiers": "All tiers",
+    "change": "Change",
+    "kindFilter": "Filter annotation changes by type",
+    "allChanges": "All changes",
+    "kinds": {
+      "added": "Added",
+      "removed": "Removed",
+      "value_changed": "Value changed",
+      "timing_changed": "Timing changed",
+      "tier_changed": "Tier changed",
+      "reference_changed": "Reference changed"
+    },
+    "showing": "Showing {start}–{end} of {count} matching changes",
+    "unknownTier": "Unknown tier",
+    "currentVersion": "Current project version",
+    "submittedVersion": "Submitted version",
+    "notPresent": "Annotation not present",
+    "removedAnnotation": "Annotation removed",
+    "tierOf": "Tier: {tier}",
+    "emptyAnnotation": "Empty annotation",
+    "openReview": "Open a review case for this annotation",
+    "addedToRequest": "Added to correction request",
+    "reviewTitle": "Review annotation {id}",
+    "pages": "Change pages",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {count}",
+    "noMatches": "No changes match these filters.",
+    "identicalTitle": "Correction matches the shared project",
+    "identicalDescription": "The submitted file contains the same annotations as the file in the shared project. Approving confirms the requested correction was made; it will not change the project content.",
+    "nextTitle": "What happens next?",
+    "nextWithChanges": "Close the preview to keep reviewing. For mixed corrections, ask the contributor to correct the file in ELAN and upload a new revision.",
+    "nextWithoutChanges": "Return to the review and approve the correction if the request has been satisfied. Approval closes this correction review; it does not change the shared project or decide the linked contribution."
   }
 }

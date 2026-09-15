@@ -2,27 +2,23 @@
   <section class="eaf-review" aria-labelledby="eaf-review-title">
     <header v-if="!compact" class="review-heading">
       <div>
-        <span class="eyebrow">ELAN annotation comparison</span>
+        <span class="eyebrow">{{ t('annotationComparison.eyebrow') }}</span>
         <h3 id="eaf-review-title">{{ filename }}</h3>
-        <p>
-          Review annotation meaning and timing. Corrections remain in ELAN and
-          are submitted as a new revision.
-        </p>
+        <p>{{ t('annotationComparison.intro') }}</p>
       </div>
       <span v-if="review" class="count">
-        {{ review.changes.length }}
-        {{ review.changes.length === 1 ? 'change' : 'changes' }}
+        {{ t('annotationComparison.changeCount', review.changes.length) }}
       </span>
     </header>
 
     <div v-if="loading" class="state" role="status">
       <span class="spinner" aria-hidden="true"></span>
-      Preparing the annotation preview…
+      {{ t('annotationComparison.loading') }}
     </div>
     <div v-else-if="error" class="state error" role="alert">
       <font-awesome-icon icon="fa-solid fa-circle-xmark" />
       <div>
-        <strong>Preview unavailable</strong>
+        <strong>{{ t('annotationComparison.unavailable') }}</strong>
         <p>{{ error }}</p>
       </div>
     </div>
@@ -38,7 +34,7 @@
       <div v-if="mediaReferences.length" class="state info">
         <font-awesome-icon icon="fa-solid fa-circle-info" />
         <div>
-          <strong>Linked media</strong>
+          <strong>{{ t('annotationComparison.linkedMedia') }}</strong>
           <ul v-if="!mediaChanged" class="media-filenames">
             <li v-for="mediaName in mediaReferences" :key="mediaName">
               {{ mediaName }}
@@ -49,7 +45,7 @@
               v-if="addedMedia.length"
               class="media-change-group media-added"
             >
-              <span>Added</span>
+              <span>{{ t('annotationComparison.mediaAdded') }}</span>
               <ul class="media-filenames">
                 <li v-for="mediaName in addedMedia" :key="mediaName">
                   {{ mediaName }}
@@ -60,7 +56,7 @@
               v-if="removedMedia.length"
               class="media-change-group media-removed"
             >
-              <span>Removed</span>
+              <span>{{ t('annotationComparison.mediaRemoved') }}</span>
               <ul class="media-filenames">
                 <li v-for="mediaName in removedMedia" :key="mediaName">
                   {{ mediaName }}
@@ -71,7 +67,7 @@
               v-if="unchangedMedia.length"
               class="media-change-group media-unchanged"
             >
-              <span>Unchanged</span>
+              <span>{{ t('annotationComparison.mediaUnchanged') }}</span>
               <ul class="media-filenames">
                 <li v-for="mediaName in unchangedMedia" :key="mediaName">
                   {{ mediaName }}
@@ -84,37 +80,42 @@
 
       <div v-if="review.changes.length" class="review-tools">
         <label class="change-search">
-          <span>Search changes</span>
+          <span>{{ t('annotationComparison.search') }}</span>
           <input
             v-model.trim="query"
             type="search"
-            placeholder="Annotation ID, tier, or text"
+            :placeholder="t('annotationComparison.searchPlaceholder')"
           />
         </label>
         <label :for="tierFilterId">
-          <span>Tier</span>
+          <span>{{ t('annotationComparison.tier') }}</span>
           <AppSelect
             :id="tierFilterId"
             v-model="selectedTier"
             size="small"
             :options="tierOptions"
-            aria-label="Filter annotation changes by tier"
+            :aria-label="t('annotationComparison.tierFilter')"
           />
         </label>
         <label :for="kindFilterId">
-          <span>Change</span>
+          <span>{{ t('annotationComparison.change') }}</span>
           <AppSelect
             :id="kindFilterId"
             v-model="selectedKind"
             size="small"
             :options="kindOptions"
-            aria-label="Filter annotation changes by type"
+            :aria-label="t('annotationComparison.kindFilter')"
           />
         </label>
       </div>
       <div v-if="filteredChanges.length" class="result-summary">
-        Showing {{ rangeStart }}–{{ rangeEnd }} of
-        {{ filteredChanges.length }} matching changes
+        {{
+          t('annotationComparison.showing', {
+            start: rangeStart,
+            end: rangeEnd,
+            count: filteredChanges.length,
+          })
+        }}
       </div>
       <div v-if="filteredChanges.length" class="review-list">
         <article
@@ -143,23 +144,33 @@
 
           <div class="comparison">
             <div class="version accepted">
-              <span class="version-label">Current project version</span>
+              <span class="version-label">{{
+                t('annotationComparison.currentVersion')
+              }}</span>
               <p v-if="change.before">
                 {{ displayValue(change.before.value) }}
               </p>
-              <p v-else class="missing">Annotation not present</p>
-              <small v-if="change.before"
-                >Tier: {{ change.before.tier_id }}</small
-              >
+              <p v-else class="missing">
+                {{ t('annotationComparison.notPresent') }}
+              </p>
+              <small v-if="change.before">{{
+                t('annotationComparison.tierOf', {
+                  tier: change.before.tier_id,
+                })
+              }}</small>
             </div>
             <font-awesome-icon class="arrow" icon="fa-solid fa-chevron-right" />
             <div class="version submitted">
-              <span class="version-label">Submitted version</span>
+              <span class="version-label">{{
+                t('annotationComparison.submittedVersion')
+              }}</span>
               <p v-if="change.after">{{ displayValue(change.after.value) }}</p>
-              <p v-else class="missing">Annotation removed</p>
-              <small v-if="change.after"
-                >Tier: {{ change.after.tier_id }}</small
-              >
+              <p v-else class="missing">
+                {{ t('annotationComparison.removedAnnotation') }}
+              </p>
+              <small v-if="change.after">{{
+                t('annotationComparison.tierOf', { tier: change.after.tier_id })
+              }}</small>
             </div>
           </div>
           <button
@@ -179,8 +190,8 @@
             />
             {{
               isTargetSelected(change)
-                ? 'Added to correction request'
-                : reviewActionLabel
+                ? t('annotationComparison.addedToRequest')
+                : reviewActionLabel || t('annotationComparison.openReview')
             }}
           </button>
         </article>
@@ -188,14 +199,16 @@
       <nav
         v-if="pageCount > 1"
         class="change-pagination"
-        aria-label="Change pages"
+        :aria-label="t('annotationComparison.pages')"
       >
         <button type="button" :disabled="page === 1" @click="page--">
-          Previous
+          {{ t('annotationComparison.previous') }}
         </button>
-        <span>Page {{ page }} of {{ pageCount }}</span>
+        <span>{{
+          t('annotationComparison.pageOf', { page, count: pageCount })
+        }}</span>
         <button type="button" :disabled="page === pageCount" @click="page++">
-          Next
+          {{ t('annotationComparison.next') }}
         </button>
       </nav>
       <div
@@ -203,32 +216,23 @@
         class="state"
       >
         <font-awesome-icon icon="fa-solid fa-filter-circle-xmark" />
-        No changes match these filters.
+        {{ t('annotationComparison.noMatches') }}
       </div>
       <div v-else-if="!review.changes.length" class="state">
         <font-awesome-icon icon="fa-solid fa-circle-check" />
         <div>
-          <strong>Correction matches the shared project</strong>
-          <p>
-            The submitted file contains the same annotations as the file in the
-            shared project. Approving confirms the requested correction was
-            made; it will not change the project content.
-          </p>
+          <strong>{{ t('annotationComparison.identicalTitle') }}</strong>
+          <p>{{ t('annotationComparison.identicalDescription') }}</p>
         </div>
       </div>
 
       <footer class="state guidance">
         <div>
-          <strong>What happens next?</strong>
+          <strong>{{ t('annotationComparison.nextTitle') }}</strong>
           <p v-if="review.changes.length">
-            Close the preview to keep reviewing. For mixed corrections, ask the
-            contributor to correct the file in ELAN and upload a new revision.
+            {{ t('annotationComparison.nextWithChanges') }}
           </p>
-          <p v-else>
-            Return to the review and approve the correction if the request has
-            been satisfied. Approval closes this correction review; it does not
-            change the shared project or decide the linked contribution.
-          </p>
+          <p v-else>{{ t('annotationComparison.nextWithoutChanges') }}</p>
         </div>
       </footer>
     </template>
@@ -237,6 +241,7 @@
 
 <script setup>
 import { computed, onMounted, ref, useId, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import gitService from '@/api/service/gitService';
 import AppSelect from '@/components/common/AppSelect.vue';
 
@@ -245,15 +250,14 @@ const props = defineProps({
   branchName: { type: String, required: true },
   filename: { type: String, required: true },
   allowOpenReview: { type: Boolean, default: false },
-  reviewActionLabel: {
-    type: String,
-    default: 'Open a review case for this annotation',
-  },
+  // Empty uses the translated default action.
+  reviewActionLabel: { type: String, default: '' },
   selectedAnnotationIds: { type: Array, default: () => [] },
   compact: { type: Boolean, default: false },
   fileChangeKind: { type: String, default: '' },
 });
 const emit = defineEmits(['open-review', 'loaded']);
+const { t } = useI18n();
 const loading = ref(true);
 const error = ref('');
 const review = ref(null);
@@ -297,9 +301,8 @@ const comparisonContext = computed(() => {
   ) {
     return {
       icon: 'fa-solid fa-file-circle-plus',
-      title: 'New EAF file',
-      description:
-        'There is no current project version yet. Every annotation below is new in this contribution.',
+      title: t('annotationComparison.newFile.title'),
+      description: t('annotationComparison.newFile.description'),
     };
   }
   if (
@@ -309,9 +312,8 @@ const comparisonContext = computed(() => {
   ) {
     return {
       icon: 'fa-solid fa-file-circle-minus',
-      title: 'EAF file removed',
-      description:
-        'The submitted contribution removes this file. The annotations below belong to the current project version.',
+      title: t('annotationComparison.removedFile.title'),
+      description: t('annotationComparison.removedFile.description'),
     };
   }
   return null;
@@ -325,11 +327,11 @@ const kinds = computed(() =>
   ].sort()
 );
 const tierOptions = computed(() => [
-  { value: '', label: 'All tiers' },
+  { value: '', label: t('annotationComparison.allTiers') },
   ...tiers.value.map((tier) => ({ value: tier, label: tier })),
 ]);
 const kindOptions = computed(() => [
-  { value: '', label: 'All changes' },
+  { value: '', label: t('annotationComparison.allChanges') },
   ...kinds.value.map((kind) => ({ value: kind, label: formatKind(kind) })),
 ]);
 const filteredChanges = computed(() => {
@@ -366,15 +368,27 @@ const rangeEnd = computed(() =>
   Math.min(page.value * PAGE_SIZE, filteredChanges.value.length)
 );
 
-const displayValue = (value) => value || 'Empty annotation';
+const displayValue = (value) =>
+  value || t('annotationComparison.emptyAnnotation');
 const isTargetSelected = (change) =>
   props.selectedAnnotationIds.includes(change.annotation_id);
-const formatKind = (kind) => kind.replaceAll('_', ' ');
+const KINDS = [
+  'added',
+  'removed',
+  'value_changed',
+  'timing_changed',
+  'tier_changed',
+  'reference_changed',
+];
+const formatKind = (kind) =>
+  KINDS.includes(kind)
+    ? t(`annotationComparison.kinds.${kind}`)
+    : kind.replaceAll('_', ' ');
 function tierLabel(change) {
   const before = change.before?.tier_id;
   const after = change.after?.tier_id;
   return before === after || !before || !after
-    ? before || after || 'Unknown tier'
+    ? before || after || t('annotationComparison.unknownTier')
     : `${before} → ${after}`;
 }
 function changeTiers(change) {
@@ -410,7 +424,7 @@ function reviewTarget(change) {
     annotation_id: change.annotation_id,
     start_ms: starts.length ? Math.min(...starts) : null,
     end_ms: ends.length ? Math.max(...ends) : null,
-    title: `Review annotation ${change.annotation_id}`,
+    title: t('annotationComparison.reviewTitle', { id: change.annotation_id }),
     current_text: change.before?.value || null,
     suggested_text: change.after?.value || null,
     change_kinds: change.kinds,
@@ -445,7 +459,7 @@ async function loadReview() {
     if (request !== loadSequence) return;
     error.value =
       requestError?.response?.data?.detail ||
-      'The current project and submitted files could not be compared.';
+      t('annotationComparison.loadFailed');
   } finally {
     if (request === loadSequence) loading.value = false;
   }
