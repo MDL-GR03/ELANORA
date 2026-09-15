@@ -82,6 +82,46 @@ def test_cross_reference_corruption_is_rejected(
     assert expected_code in {issue.code for issue in error.value.issues}
 
 
+def test_an_annotation_may_cite_several_external_references() -> None:
+    """EAF 3.0 declares an annotation's EXT_REF as IDREFS, a list of references.
+
+    The semantic check compared the whole list against known identifiers, so a
+    schema-valid file citing two references was refused at upload.
+    """
+    content = FIXTURE.read_bytes().replace(
+        b'EXT_REF="er-concept">',
+        b'EXT_REF="er-concept er-lexicon">',
+        1,
+    )
+    content = content.replace(
+        b"    <EXTERNAL_REF ",
+        b'    <EXTERNAL_REF EXT_REF_ID="er-lexicon" TYPE="lexen_id" VALUE="lex#1"/>\n'
+        b"    <EXTERNAL_REF ",
+        1,
+    )
+
+    document = parse_eaf(content)
+
+    assert document.tiers[0].annotations[0].ext_ref == "er-concept er-lexicon"
+
+
+def test_each_cited_external_reference_must_exist() -> None:
+    """Splitting the list must not let an unknown reference slip through."""
+    content = FIXTURE.read_bytes().replace(
+        b'EXT_REF="er-concept">',
+        b'EXT_REF="er-concept er-missing">',
+        1,
+    )
+
+    with pytest.raises(EafValidationError) as error:
+        parse_eaf(content)
+
+    issues = [i for i in error.value.issues if i.code == "unknown_external_ref"]
+    assert len(issues) == 1
+    assert "er-missing" in issues[0].message
+    assert "er-concept" not in issues[0].message.replace("er-missing", "")
+
+
 def test_overlapping_annotations_on_one_tier_are_rejected() -> None:
     """Reject an overlap that remains schema-valid but is not a valid ELAN tier."""
     content = FIXTURE.read_bytes().replace(

@@ -421,15 +421,17 @@ def validate_eaf(content: bytes) -> etree._Element:
                     )
                 )
 
-            ext_ref = annotation.get("EXT_REF")
-            if ext_ref and ext_ref not in external_ref_ids:
-                issues.append(
-                    _issue(
-                        "unknown_external_ref",
-                        f"annotation refers to unknown external reference {ext_ref!r}",
-                        annotation.getroottree().getpath(annotation),
+            # EXT_REF on an annotation is xsd:IDREFS: several space-separated
+            # references, each of which must exist.
+            for ext_ref in (annotation.get("EXT_REF") or "").split():
+                if ext_ref not in external_ref_ids:
+                    issues.append(
+                        _issue(
+                            "unknown_external_ref",
+                            f"annotation refers to unknown external reference {ext_ref!r}",
+                            annotation.getroottree().getpath(annotation),
+                        )
                     )
-                )
             cv_entry_ref = annotation.get("CVE_REF")
             if cv_entry_ref and type_ref:
                 cv_id = cv_by_linguistic_type.get(type_ref)
