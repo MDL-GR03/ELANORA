@@ -1191,6 +1191,15 @@
   },
 
   "contributionWorkspace": {
+    "decline": {
+      "eyebrow": "Contribution n° {id}",
+      "title": "Refuser la contribution",
+      "warning": "Cette action clôt définitivement la contribution et toute discussion de correction associée. Son historique d'audit est conservé, mais elle ne pourra plus être acceptée.",
+      "reasonLabel": "Motif communiqué au chercheur",
+      "reasonPlaceholder": "Expliquez pourquoi cette contribution ne sera pas acceptée",
+      "submit": "Refuser la contribution",
+      "submitting": "Refus en cours…"
+    },
     "tabs": {
       "label": "Vues des contributions",
       "incoming": "Travail reçu",

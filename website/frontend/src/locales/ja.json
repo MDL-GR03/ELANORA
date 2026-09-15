@@ -1299,6 +1299,15 @@
     }
   },
   "contributionWorkspace": {
+    "decline": {
+      "eyebrow": "貢献 #{id}",
+      "title": "貢献を却下",
+      "warning": "この操作により、この貢献と関連する修正の議論は完全に終了します。監査履歴は保持されますが、後から承認することはできません。",
+      "reasonLabel": "研究者への理由",
+      "reasonPlaceholder": "この貢献を承認しない理由を説明してください",
+      "submit": "貢献を却下",
+      "submitting": "却下しています…"
+    },
     "tabs": {
       "label": "貢献ビュー",
       "incoming": "受信した作業",

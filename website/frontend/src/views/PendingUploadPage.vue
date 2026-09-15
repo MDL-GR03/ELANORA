@@ -208,77 +208,12 @@
         @restored="fetchPendingUploads"
       />
 
-      <div
-        v-if="showDeclineModal"
-        class="modal-overlay"
-        role="presentation"
-        @click.self="closeDeclineModal"
-      >
-        <form
-          ref="declineDialog"
-          class="modal-content decline-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="decline-modal-title"
-          tabindex="-1"
-          @submit.prevent="declineUpload"
-          @click.stop
-        >
-          <div class="modal-header">
-            <div>
-              <span class="modal-eyebrow"
-                >Contribution #{{ selectedUpload?.upload_id }}</span
-              >
-              <h2 id="decline-modal-title">Decline contribution</h2>
-            </div>
-            <button
-              type="button"
-              class="close-btn"
-              :aria-label="t('common.close')"
-              @click="closeDeclineModal"
-            >
-              <font-awesome-icon icon="fa-solid fa-xmark" />
-            </button>
-          </div>
-          <div class="modal-body decline-modal-body">
-            <p>
-              This permanently closes the contribution and any linked correction
-              discussion. Its audit history is preserved, but it cannot later be
-              accepted.
-            </p>
-            <label for="decline-reason">Reason for the researcher</label>
-            <textarea
-              id="decline-reason"
-              v-model="declineReason"
-              rows="5"
-              maxlength="1000"
-              required
-              minlength="3"
-              placeholder="Explain why this contribution will not be accepted"
-            ></textarea>
-            <div class="decline-modal-actions">
-              <button
-                type="button"
-                class="action-btn view-btn"
-                @click="closeDeclineModal"
-              >
-                {{ t('common.cancel') }}
-              </button>
-              <button
-                type="submit"
-                class="action-btn decline-btn"
-                :disabled="declineReason.trim().length < 3 || actionBusy"
-              >
-                {{
-                  dismissing === selectedUpload?.upload_id
-                    ? 'Declining…'
-                    : 'Decline contribution'
-                }}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
+      <ContributionDeclineDialog
+        :upload="declineTarget"
+        :busy="declineTarget !== null && dismissing === declineTarget.upload_id"
+        @decline="declineUpload"
+        @close="closeDeclineModal"
+      />
 
       <!-- Error Messages -->
       <div v-if="error" class="error-message" role="alert">
@@ -297,6 +232,7 @@ import ReviewCasePanel from '@/components/common/ReviewCasePanel.vue';
 import AcceptedProjectHistory from '@/components/common/AcceptedProjectHistory.vue';
 import ContributionCardBody from '@/components/pageSpecific/contributions/ContributionCardBody.vue';
 import ContributionCardHeader from '@/components/pageSpecific/contributions/ContributionCardHeader.vue';
+import ContributionDeclineDialog from '@/components/pageSpecific/contributions/ContributionDeclineDialog.vue';
 import ContributionQueueControls from '@/components/pageSpecific/contributions/ContributionQueueControls.vue';
 import ContributionResearchContext from '@/components/pageSpecific/contributions/ContributionResearchContext.vue';
 import ContributionWorkspaceTabs from '@/components/pageSpecific/contributions/ContributionWorkspaceTabs.vue';
@@ -308,7 +244,6 @@ import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import { useContributionMutations } from '@/composables/useContributionMutations';
 import { useContributionQueueData } from '@/composables/useContributionQueueData';
 import { useUserConfirm } from '@/composables/useUserConfirm';
-import { useModalDialog } from '@/composables/useModalDialog';
 import { hasProjectPermission } from '@/utils/authorization';
 import {
   groupContributionThreads,
@@ -326,11 +261,9 @@ const eventMessages = useEventMessageStore();
 const topicDecisions = ref({});
 const expandedTopicDecision = ref(null);
 
-// Modal state
-const showDeclineModal = ref(false);
 const selectedUpload = ref(null);
-const declineReason = ref('');
-const declineDialog = ref(null);
+// Kept apart from selectedUpload, which follows the workspace in the URL.
+const declineTarget = ref(null);
 
 const queueFilter = ref('all');
 const queueQuery = ref('');
@@ -603,31 +536,17 @@ function openLinkedReview(reviewCase) {
 }
 
 function openDeclineModal(upload) {
-  selectedUpload.value = upload;
-  declineReason.value = '';
-  showDeclineModal.value = true;
+  declineTarget.value = upload;
 }
-
-useModalDialog(declineDialog, {
-  onClose: closeDeclineModal,
-  isOpen: showDeclineModal,
-  initialFocus: declineDialog,
-});
 
 function closeDeclineModal() {
   if (dismissing.value !== null) return;
-  showDeclineModal.value = false;
-  declineReason.value = '';
-  selectedUpload.value = null;
+  declineTarget.value = null;
 }
 
-async function declineUpload() {
-  const upload = selectedUpload.value;
-  const reason = declineReason.value.trim();
-  if (await performDecline(upload, reason)) {
-    showDeclineModal.value = false;
-    selectedUpload.value = null;
-    declineReason.value = '';
+async function declineUpload(reason) {
+  if (await performDecline(declineTarget.value, reason)) {
+    declineTarget.value = null;
   }
 }
 

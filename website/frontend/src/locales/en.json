@@ -1201,6 +1201,15 @@
   },
 
   "contributionWorkspace": {
+    "decline": {
+      "eyebrow": "Contribution #{id}",
+      "title": "Decline contribution",
+      "warning": "This permanently closes the contribution and any linked correction discussion. Its audit history is preserved, but it cannot later be accepted.",
+      "reasonLabel": "Reason for the researcher",
+      "reasonPlaceholder": "Explain why this contribution will not be accepted",
+      "submit": "Decline contribution",
+      "submitting": "Declining…"
+    },
     "tabs": {
       "label": "Contribution views",
       "incoming": "Incoming work",
