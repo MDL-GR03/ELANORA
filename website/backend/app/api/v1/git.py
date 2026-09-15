@@ -77,6 +77,7 @@ from app.service.eaf_review import (
 )
 from app.service.git import GitService
 from app.service.project_lifecycle import ProjectNameUnavailableError
+from app.service.project_recovery import ProjectStorageIntactError
 from app.service.project_sync import ProjectSyncCoordinator, operation_payload
 from app.service.research_topics import (
     SimilarResearchTopicError,
@@ -106,6 +107,12 @@ PROJECT_NAME_UNAVAILABLE = (
     "This name is already used by another project, including a deleted project "
     "that can still be restored. Choose a different name."
 )
+# Recovery only replaces or discards storage that is actually missing.
+PROJECT_STORAGE_INTACT = (
+    "This project's storage is intact, so there is nothing to recover. "
+    "Reopen the synchronization check to see its current state."
+)
+RECOVERY_BACKUP_NOT_FOUND = "No recovery backup exists for this project"
 sync_coordinator = ProjectSyncCoordinator(git_service)
 logger = get_logger()
 
@@ -785,6 +792,10 @@ async def restore_from_backup(
             project_name, db, user.user_id
         )
         return {"status": "success", "detail": result}
+    except ProjectStorageIntactError as e:
+        raise HTTPException(status_code=409, detail=PROJECT_STORAGE_INTACT) from e
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=RECOVERY_BACKUP_NOT_FOUND) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
@@ -798,6 +809,8 @@ async def decline_backup(
     """Decline restoration of the most recent backup for the project, delete it and erase all related data from the database."""
     try:
         await git_service.decline_project_backup(db, project_name)
+    except ProjectStorageIntactError as e:
+        raise HTTPException(status_code=409, detail=PROJECT_STORAGE_INTACT) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 

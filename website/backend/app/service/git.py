@@ -14,11 +14,9 @@ from app.crud.elan_file import (
     get_elan_files_by_project,
 )
 from app.crud.project import (
-    delete_project_db,
     get_project_by_name,
     list_projects_by_instance,
     list_projects_by_user,
-    restore_project_db,
 )
 from app.elan.validation import validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
@@ -40,17 +38,13 @@ from app.service.elan import ElanService
 from app.service.file_rename import FileRenameService
 from app.service.git_operations import (
     GitCommandRunner,
-    delete_project_folder,
 )
 from app.service.project_filesystem_sync import ProjectFilesystemSyncService
 from app.service.project_history import ProjectHistoryService, ProjectRestoreCommand
 from app.service.project_integrity import ProjectIntegrityService
 from app.service.project_lifecycle import ProjectLifecycleService
+from app.service.project_recovery import ProjectRecoveryService
 from app.storage.paths import safe_project_path
-from app.utils.project_backup import (
-    remove_project_backup,
-    restore_project_backup,
-)
 
 logger = get_logger()
 EXPECTED_LOG_FIELDS = 4
@@ -97,6 +91,9 @@ class GitService:
         )
         self.file_rename = FileRenameService(self.base_path)
         self.filesystem_sync = ProjectFilesystemSyncService(self.base_path)
+        self.project_recovery = ProjectRecoveryService(
+            self.base_path, self.filesystem_sync
+        )
 
     def check_git_availability(self) -> dict[str, Any]:
         """Check if Git is available on the system."""
@@ -702,36 +699,14 @@ class GitService:
     async def restore_project_from_backup(
         self, project_name: str, db: AsyncSession, user_id: int
     ) -> str:
-        """Restore the project folder from the most recent backup (including .git, elan_files, README.md).
-
-        and update the database to match the restored state.
-        """
-        restore_project_backup(project_name, self.base_path)
-        try:
-            await restore_project_db(db, project_name)
-            await self.synchronize_project(project_name, db, user_id)
-            await db.commit()
-        except Exception:
-            await db.rollback()
-            raise
-
-        return (
-            f"Project '{project_name}' restored from backup and database synchronized."
+        """Restore a project's missing storage from its recovery backup."""
+        return await self.project_recovery.restore_from_backup(
+            db, project_name, user_id
         )
 
     async def decline_project_backup(self, db: AsyncSession, project_name: str) -> None:
-        """Remove the backup folder for the project and delete all related data."""
-        # Remove backup
-        remove_project_backup(project_name)
-
-        # Determine if the project folder exists
-        project_path = safe_project_path(self.base_path, project_name)
-        if project_path.exists():
-            delete_project_folder(project_path)
-
-        # Remove all DB artifacts
-        await delete_project_db(db, project_name)
-        await db.commit()
+        """Delete a project with missing storage, together with its backup."""
+        await self.project_recovery.discard(db, project_name)
 
     async def rename_file(
         self, project_name: str, elan_id: int, new_filename: str, db: AsyncSession
