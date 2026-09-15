@@ -91,20 +91,20 @@
             placeholder="Annotation ID, tier, or text"
           />
         </label>
-        <label for="conflict-tier-filter">
+        <label :for="tierFilterId">
           <span>Tier</span>
           <AppSelect
-            id="conflict-tier-filter"
+            :id="tierFilterId"
             v-model="selectedTier"
             size="small"
             :options="tierOptions"
             aria-label="Filter annotation changes by tier"
           />
         </label>
-        <label for="conflict-kind-filter">
+        <label :for="kindFilterId">
           <span>Change</span>
           <AppSelect
-            id="conflict-kind-filter"
+            :id="kindFilterId"
             v-model="selectedKind"
             size="small"
             :options="kindOptions"
@@ -236,7 +236,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, useId, watch } from 'vue';
 import gitService from '@/api/service/gitService';
 import AppSelect from '@/components/common/AppSelect.vue';
 
@@ -262,6 +262,10 @@ const selectedTier = ref('');
 const selectedKind = ref('');
 const page = ref(1);
 const PAGE_SIZE = 25;
+// Per instance: several comparisons can be on one page at once.
+const instanceId = useId();
+const tierFilterId = `conflict-tier-filter-${instanceId}`;
+const kindFilterId = `conflict-kind-filter-${instanceId}`;
 const mediaFilename = (value) => value.replaceAll('\\', '/').split('/').pop();
 const beforeMedia = computed(() => [
   ...new Set((review.value?.before_media_urls || []).map(mediaFilename)),
@@ -412,29 +416,63 @@ function reviewTarget(change) {
     change_kinds: change.kinds,
   };
 }
+// Each load is numbered. A response is applied only if no newer load has
+// started, and is reported under the file it was requested for. Otherwise a
+// slow response for one file could be shown, and recorded by a resolution
+// decision, as the comparison of another.
+let loadSequence = 0;
+
 async function loadReview() {
+  const request = ++loadSequence;
+  const requested = {
+    projectName: props.projectName,
+    branchName: props.branchName,
+    filename: props.filename,
+  };
   loading.value = true;
   error.value = '';
   review.value = null;
   try {
-    review.value = await gitService.getEafReview(
-      props.projectName,
-      props.branchName,
-      props.filename
+    const result = await gitService.getEafReview(
+      requested.projectName,
+      requested.branchName,
+      requested.filename
     );
-    emit('loaded', { filename: props.filename, review: review.value });
+    if (request !== loadSequence) return;
+    review.value = result;
+    emit('loaded', { filename: requested.filename, review: result });
   } catch (requestError) {
+    if (request !== loadSequence) return;
     error.value =
       requestError?.response?.data?.detail ||
       'The current project and submitted files could not be compared.';
   } finally {
-    loading.value = false;
+    if (request === loadSequence) loading.value = false;
   }
 }
+
+// Page and filters describe one file. Tier identifiers differ between files,
+// and a page number from a longer file could point past the end of this one.
+function resetNavigation() {
+  query.value = '';
+  selectedTier.value = '';
+  selectedKind.value = '';
+  page.value = 1;
+}
+
 onMounted(loadReview);
-watch(() => [props.projectName, props.branchName, props.filename], loadReview);
+watch(
+  () => [props.projectName, props.branchName, props.filename],
+  () => {
+    resetNavigation();
+    void loadReview();
+  }
+);
 watch([query, selectedTier, selectedKind], () => {
   page.value = 1;
+});
+watch(pageCount, (count) => {
+  if (page.value > count) page.value = count;
 });
 </script>
 
