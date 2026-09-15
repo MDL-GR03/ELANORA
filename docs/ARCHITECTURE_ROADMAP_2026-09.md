@@ -295,6 +295,20 @@ checked compatibility export, and an administrator-confirmed recovery can
 re-materialize it from the authoritative manifest. The unused direct Git commit
 API was removed so it cannot bypass the revision ledger.
 
+**Item 1 completed, 16 September 2026:** HTTP tests drive the real
+application, middleware included, with a database session per request and
+cookies that follow their paths. They cover sign-in cookies and flags, uniform
+login failures, CSRF enforcement, refresh rotation and sign-out, a contribution
+from project creation through upload, acceptance and protocol validation,
+requested changes answered by a correction, declining, protocol administration
+and delegation, and uploads by outsiders and anonymous visitors. They found
+three defects, now fixed: sign-out never revoked the refresh session because
+the refresh cookie's path excluded the sign-out endpoint; creating a protocol
+or draft version returned a server error after saving it; and two uploads by
+one person within a second failed, with the cleanup deleting the earlier
+contribution's branch. Separately, the server's filename matcher refused every
+filename whenever a naming standard was set.
+
 The next delivery target is item 6: split the oversized backend services and
 frontend components by use case while preserving the tested public contracts.
 
@@ -419,9 +433,13 @@ view and the annotation comparison previously had no tests. Writing them found:
 The decline dialog, workspace and resolution views are translated, with
 `contributionResolution` added to the parity check.
 
-Item 6 is otherwise complete. The remaining contribution-area work is
-translation: `ReviewCasePanel`, `AcceptedProjectHistory`, `ConflictMergeView`
-and `ArchivedReviewList` still render roughly 190 English strings.
+Item 6 is otherwise complete. **Translation completed 16 September 2026:**
+`ReviewCasePanel` (with `ReviewQueueOverview` and the reviewer decision and
+transition composables), `AcceptedProjectHistory`, `ConflictMergeView` and
+`ArchivedReviewList` now render French and Japanese through the protected
+`reviewCases`, `acceptedHistory`, `annotationComparison` and `reviewArchive`
+namespaces. The i18n setup also passed an unknown `fallbackLanguage` option, so
+untranslated strings showed raw keys; it now uses `fallbackLocale`.
 
 The contribution workspace tab navigation; queue summary, filtering, search and
 ordering controls; contribution card header and permission-aware actions; and
