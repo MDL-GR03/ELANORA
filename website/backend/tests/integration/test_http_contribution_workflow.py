@@ -101,6 +101,23 @@ async def test_a_contribution_goes_from_upload_to_accepted_and_validated(
         "protocol.required_tier_missing"
     ]
 
+    # A file that satisfies every rule has no issues at all to report.
+    clean = await browser.post(
+        f"/api/v1/projects/{project_id}/protocols",
+        json={"name": "Satisfied", "rules": {"required_tiers": ["utterance"]}},
+    )
+    clean_version = clean.json()["versions"][0]["protocol_version_id"]
+    await browser.post(
+        f"/api/v1/projects/{project_id}/protocol-versions/{clean_version}/publish"
+    )
+    await browser.put(f"/api/v1/projects/{project_id}/protocol-version/{clean_version}")
+    passing = await browser.post(
+        f"/api/v1/projects/{project_id}/revisions/{revision_id}/validations"
+    )
+    assert passing.status_code == 200, passing.text
+    assert passing.json()["outcome"] == "passed"
+    assert passing.json()["issues"] == []
+
 
 @pytest.mark.asyncio
 async def test_an_invalid_eaf_is_refused_with_its_findings(

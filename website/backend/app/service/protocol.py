@@ -797,6 +797,9 @@ async def validate_revision_against_version(
     )
     db.add(run)
     await db.flush()
+    # A run without issues leaves the collection unloaded, which serialization
+    # cannot load from an async session.
+    await db.refresh(run, attribute_names=["issues"])
     return run
 
 

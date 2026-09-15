@@ -19,6 +19,7 @@ elanora-queue-test-emails = "app.cli.queue_test_account_emails:main"
 elanora-check-integrity = "app.cli.check_integrity:main"
 elanora-disaster-recovery = "app.cli.disaster_recovery:main"
 elanora-copy-naming-standards = "app.cli.copy_naming_standards:main"
+elanora-purge-expired-projects = "app.cli.purge_expired_projects:main"
 
 [tool.poetry]
 packages = [

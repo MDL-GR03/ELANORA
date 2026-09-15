@@ -3,6 +3,7 @@
 import uuid
 
 from fastapi import APIRouter, HTTPException, Response, status
+from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,6 +33,10 @@ router = APIRouter()
 
 
 def _domain_http_error(error: Exception) -> HTTPException:
+    # Pydantic's ValidationError is a ValueError. Serializing a response badly
+    # is a fault in ELANORA, not a conflicting request.
+    if isinstance(error, PydanticValidationError):
+        raise error
     if isinstance(error, protocol_service.ProtocolNotFoundError):
         return HTTPException(status_code=404, detail="Protocol not found")
     return HTTPException(status_code=409, detail="Protocol state conflict")

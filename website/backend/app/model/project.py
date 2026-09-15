@@ -95,6 +95,10 @@ class Project(Base):
         Boolean, nullable=False, default=False, server_default=text("false")
     )
     legal_hold_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Set once a deleted project's research content has been destroyed.
+    content_purged_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     governance_updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
