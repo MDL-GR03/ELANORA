@@ -5,7 +5,9 @@
         <span class="tier-icon" aria-hidden="true">T</span>
         <span>
           <strong>{{ node.name }}</strong>
-          <small>{{ node.type || 'Any linguistic type' }}</small>
+          <small>{{
+            node.type || t('protocolRules.tiers.any_linguistic_type')
+          }}</small>
         </span>
       </div>
       <ProtocolTierTree
@@ -18,6 +20,10 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
 defineProps({
   nodes: {
     type: Array,

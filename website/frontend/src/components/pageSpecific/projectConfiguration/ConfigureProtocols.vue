@@ -2,15 +2,12 @@
   <section class="protocol-workspace">
     <header class="section-intro">
       <div>
-        <span class="eyebrow">Research protocol</span>
-        <h3>Define rules, preview their impact, then activate them</h3>
-        <p>
-          Published versions are immutable. Impact scans inspect every latest
-          accepted ELAN revision without changing research data.
-        </p>
+        <span class="eyebrow">{{ t('protocols.eyebrow') }}</span>
+        <h3>{{ t('protocols.title') }}</h3>
+        <p>{{ t('protocols.introduction') }}</p>
       </div>
       <button class="secondary" type="button" @click="toggleCreateForm">
-        {{ showForm ? 'Close editor' : 'Create protocol' }}
+        {{ showForm ? t('protocols.close_editor') : t('protocols.create') }}
       </button>
     </header>
 
@@ -24,14 +21,15 @@
         <p>{{ editorHelp }}</p>
       </div>
       <label class="wide"
-        >Protocol name<input
+        >{{ t('protocols.name')
+        }}<input
           v-model.trim="form.name"
           required
           maxlength="150"
           :disabled="editorMode !== 'create-protocol'"
       /></label>
       <div v-if="suggesting" class="suggestion-loading wide">
-        Analyzing the latest accepted ELAN files for useful starting points…
+        {{ t('protocols.analyzing') }}
       </div>
       <CorpusProtocolSuggestion
         v-else-if="corpusSuggestion"
@@ -43,7 +41,7 @@
       <ProtocolRuleBuilder v-model="form.rules" class="wide" />
       <div class="form-actions wide">
         <button :disabled="saving">
-          {{ saving ? 'Saving…' : editorSubmitLabel }}
+          {{ saving ? t('protocols.saving') : editorSubmitLabel }}
         </button>
       </div>
     </form>
@@ -53,17 +51,22 @@
     <div class="protocol-list">
       <div v-if="archivedVersionCount" class="archive-toolbar">
         <span>
-          {{ archivedVersionCount }} archived version{{
-            archivedVersionCount === 1 ? '' : 's'
+          {{
+            showArchived
+              ? t('protocols.archived_shown', archivedVersionCount)
+              : t('protocols.archived_hidden', archivedVersionCount)
           }}
-          {{ showArchived ? 'shown' : 'hidden' }}
         </span>
         <button
           class="text-button"
           type="button"
           @click="showArchived = !showArchived"
         >
-          {{ showArchived ? 'Hide archived' : 'Show archived' }}
+          {{
+            showArchived
+              ? t('protocols.hide_archived')
+              : t('protocols.show_archived')
+          }}
         </button>
       </div>
       <article
@@ -72,9 +75,9 @@
         class="protocol-card"
       >
         <div class="protocol-title">
-          <span class="eyebrow">Protocol</span>
+          <span class="eyebrow">{{ t('protocols.protocol') }}</span>
           <h4>{{ protocol.name }}</h4>
-          <p>{{ protocol.description || 'No description provided.' }}</p>
+          <p>{{ protocol.description || t('protocols.no_description') }}</p>
         </div>
         <div
           v-for="version in protocol.versions"
@@ -83,21 +86,26 @@
         >
           <div class="version-info">
             <span
-              ><strong>Version {{ version.version_number }}</strong
+              ><strong>{{
+                t('protocols.version', { number: version.version_number })
+              }}</strong
               ><i
                 :class="[
                   'status',
                   version.archived_at ? 'archived' : version.status,
                 ]"
-                >{{ version.archived_at ? 'archived' : version.status }}</i
+                >{{
+                  t(
+                    `protocols.status.${version.archived_at ? 'archived' : version.status}`
+                  )
+                }}</i
               ></span
             ><small>{{ summarizeRules(version.rules) }}</small>
-            <small v-if="version.archive_reason"
-              >Reason: {{ version.archive_reason }}</small
-            >
+            <small v-if="version.archive_reason">{{
+              t('protocols.archive_reason', { reason: version.archive_reason })
+            }}</small>
             <small v-if="version.archived_at" class="archived-copy">
-              This version is withdrawn. It cannot be activated or used for a
-              new scan.
+              {{ t('protocols.withdrawn') }}
             </small>
           </div>
           <div class="row-actions">
@@ -107,20 +115,20 @@
                 type="button"
                 @click="editDraft(protocol, version)"
               >
-                Edit draft
+                {{ t('protocols.edit_draft') }}
               </button>
               <button
                 type="button"
                 @click="publish(version.protocol_version_id)"
               >
-                Publish
+                {{ t('protocols.publish') }}
               </button>
               <button
                 class="danger"
                 type="button"
                 @click="removeDraft(protocol, version)"
               >
-                Delete draft
+                {{ t('protocols.delete_draft') }}
               </button>
             </template>
             <template v-else>
@@ -129,7 +137,7 @@
                 type="button"
                 @click="createNextDraft(protocol, version)"
               >
-                New draft from this version
+                {{ t('protocols.new_draft_from_version') }}
               </button>
               <button
                 v-if="!version.archived_at"
@@ -138,7 +146,7 @@
                 :disabled="scanning"
                 @click="scan(version.protocol_version_id)"
               >
-                Preview impact
+                {{ t('protocols.preview_impact') }}
               </button>
               <button
                 v-if="version.archived_at"
@@ -146,14 +154,14 @@
                 type="button"
                 @click="purgeVersion(protocol, version)"
               >
-                Delete permanently
+                {{ t('protocols.delete_permanently') }}
               </button>
               <button
                 v-if="!version.archived_at"
                 type="button"
                 @click="pin(version.protocol_version_id)"
               >
-                Use for project
+                {{ t('protocols.use_for_project') }}
               </button>
               <button
                 v-if="!version.archived_at"
@@ -161,51 +169,49 @@
                 type="button"
                 @click="archiveVersion(protocol, version)"
               >
-                Archive
+                {{ t('protocols.archive') }}
               </button>
             </template>
           </div>
         </div>
       </article>
       <div v-if="!loading && !protocols.length" class="empty-state">
-        <strong>No research protocol yet</strong>
-        <p>
-          Create a draft when the project is ready to formalize its conventions.
-        </p>
+        <strong>{{ t('protocols.empty.title') }}</strong>
+        <p>{{ t('protocols.empty.description') }}</p>
       </div>
     </div>
 
     <section class="compliance-panel">
       <header>
         <div>
-          <span class="eyebrow">Corpus compliance</span>
-          <h3>Latest impact scan</h3>
+          <span class="eyebrow">{{ t('protocols.scan.eyebrow') }}</span>
+          <h3>{{ t('protocols.scan.title') }}</h3>
         </div>
         <AppSelect
           v-if="latestScan"
           id="protocol-scan-filter"
           v-model="filter"
           size="small"
-          aria-label="Filter scan files"
+          :aria-label="t('protocols.scan.filter')"
           :options="scanFilterOptions"
         />
       </header>
       <div v-if="scanning || loading" class="loading-state">
-        Checking accepted ELAN revisions…
+        {{ t('protocols.scan.checking') }}
       </div>
       <template v-else-if="latestScan">
         <div class="summary-grid">
           <div>
             <strong>{{ latestScan.total_files }}</strong
-            ><span>Files checked</span>
+            ><span>{{ t('protocols.scan.files_checked') }}</span>
           </div>
           <div class="passed">
             <strong>{{ latestScan.passed_files }}</strong
-            ><span>Passed</span>
+            ><span>{{ t('protocols.scan.passed') }}</span>
           </div>
           <div class="failed">
             <strong>{{ latestScan.failed_files }}</strong
-            ><span>Need attention</span>
+            ><span>{{ t('protocols.scan.need_attention') }}</span>
           </div>
           <div>
             <strong>v{{ latestScan.protocol_version_number }}</strong
@@ -214,7 +220,9 @@
         </div>
         <p class="scan-context">
           {{
-            latestScan.trigger === 'preview' ? 'Impact preview' : 'Project scan'
+            latestScan.trigger === 'preview'
+              ? t('protocols.scan.impact_preview')
+              : t('protocols.scan.project_scan')
           }}
           · {{ formatDate(latestScan.completed_at || latestScan.started_at) }}
         </p>
@@ -227,11 +235,11 @@
             <summary>
               <span
                 ><strong>{{ file.filename }}</strong
-                ><small>Latest accepted revision</small></span
+                ><small>{{ t('protocols.scan.latest_revision') }}</small></span
               ><i :class="['result', file.outcome]">{{
                 file.outcome === 'passed'
-                  ? 'Passed'
-                  : `${file.issues.length} finding(s)`
+                  ? t('protocols.scan.passed')
+                  : t('protocols.scan.findings', file.issues.length)
               }}</i>
             </summary>
             <div v-if="file.issues.length" class="findings">
@@ -245,27 +253,26 @@
                   type="button"
                   @click="openCorrection(file, issue)"
                 >
-                  Create correction
+                  {{ t('protocols.scan.create_correction') }}
                 </button>
               </article>
             </div>
             <p v-else class="passed-copy">
-              This file respects every rule in this protocol version.
+              {{ t('protocols.scan.file_passed') }}
             </p>
           </details>
         </div>
       </template>
       <div v-else class="empty-state compact">
-        <strong>No scan has been run</strong>
-        <p>
-          Publish a protocol version, then preview its effect on the corpus.
-        </p>
+        <strong>{{ t('protocols.scan.empty.title') }}</strong>
+        <p>{{ t('protocols.scan.empty.description') }}</p>
       </div>
     </section>
   </section>
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useUserConfirm } from '@/composables/useUserConfirm';
@@ -275,11 +282,13 @@ import AppSelect from '@/components/common/AppSelect.vue';
 import CorpusProtocolSuggestion from './CorpusProtocolSuggestion.vue';
 import ProtocolRuleBuilder from './ProtocolRuleBuilder.vue';
 import { countRules, emptyRules, normalizeRules } from '@/utils/protocolRules';
-const scanFilterOptions = [
-  { value: 'all', label: 'All files' },
-  { value: 'failed', label: 'Needs attention' },
-  { value: 'passed', label: 'Passed' },
-];
+
+const { t } = useI18n();
+const scanFilterOptions = computed(() => [
+  { value: 'all', label: t('protocols.scan.all_files') },
+  { value: 'failed', label: t('protocols.scan.need_attention') },
+  { value: 'passed', label: t('protocols.scan.passed') },
+]);
 import {
   archiveProtocolVersion,
   createProtocol,
@@ -331,19 +340,23 @@ const visibleProtocols = computed(() =>
     .filter((protocol) => protocol.versions.length)
 );
 const editorTitle = computed(() => {
-  if (editorMode.value === 'edit-draft') return 'Edit protocol draft';
-  if (editorMode.value === 'create-version') return 'New protocol version';
-  return 'New protocol draft';
+  if (editorMode.value === 'edit-draft')
+    return t('protocols.editor.edit_title');
+  if (editorMode.value === 'create-version')
+    return t('protocols.editor.version_title');
+  return t('protocols.editor.new_title');
 });
 const editorHelp = computed(() =>
   editorMode.value === 'edit-draft'
-    ? 'Correct this draft freely. Nothing is enforced until you publish and activate it.'
+    ? t('protocols.editor.edit_help')
     : editorMode.value === 'create-version'
-      ? 'The published version remains unchanged; your corrections become a new draft.'
-      : 'Start with the conventions that are meaningful for this corpus.'
+      ? t('protocols.editor.version_help')
+      : t('protocols.editor.new_help')
 );
 const editorSubmitLabel = computed(() =>
-  editorMode.value === 'edit-draft' ? 'Save draft' : 'Create draft'
+  editorMode.value === 'edit-draft'
+    ? t('protocols.editor.save_draft')
+    : t('protocols.editor.create_draft')
 );
 const latestScan = computed(() => scans.value[0] || null);
 const visibleFiles = computed(
@@ -354,7 +367,9 @@ const visibleFiles = computed(
 );
 const form = reactive({ name: '', rules: emptyRules() });
 const reasonText = (reason) =>
-  reason.response?.data?.detail || reason.message || 'Unexpected error';
+  reason.response?.data?.detail ||
+  reason.message ||
+  t('protocols.errors.unexpected');
 const notify = (message, type = 'success') =>
   eventMessageStore.addMessage(message, type, 5000);
 const resetForm = () => {
@@ -387,8 +402,8 @@ const analyzeCorpus = async () => {
     corpusSuggestion.value = data;
     notify(
       data.analyzed_files
-        ? `Analyzed ${data.analyzed_files} accepted ELAN file(s). Review the suggested rules.`
-        : 'No accepted ELAN revisions are available for protocol suggestions.',
+        ? t('protocols.messages.analyzed', data.analyzed_files)
+        : t('protocols.messages.nothing_to_analyze'),
       data.analyzed_files ? 'success' : 'warning'
     );
   } catch (reason) {
@@ -422,7 +437,7 @@ const applyCorpusSuggestion = (rules) => {
       ]),
     ],
   };
-  notify('Selected corpus suggestions added to the draft below.');
+  notify(t('protocols.messages.suggestions_added'));
 };
 const editDraft = (protocol, version) => {
   resetForm();
@@ -469,15 +484,15 @@ const submitProtocol = async () => {
       await updateProtocolDraft(projectId.value, editedVersionId.value, {
         rules,
       });
-      notify('Draft changes saved.');
+      notify(t('protocols.messages.draft_saved'));
     } else if (editorMode.value === 'create-version') {
       await createProtocolVersion(projectId.value, editedProtocolId.value, {
         rules,
       });
-      notify('New draft version created.');
+      notify(t('protocols.messages.version_created'));
     } else {
       await createProtocol(projectId.value, { name: form.name, rules });
-      notify('Protocol draft created.');
+      notify(t('protocols.messages.draft_created'));
     }
     showForm.value = false;
     resetForm();
@@ -491,7 +506,7 @@ const submitProtocol = async () => {
 const publish = async (id) => {
   try {
     await publishProtocolVersion(projectId.value, id);
-    notify('Version published and locked.');
+    notify(t('protocols.messages.published'));
     await load();
   } catch (reason) {
     error.value = reasonText(reason);
@@ -499,10 +514,13 @@ const publish = async (id) => {
 };
 const removeDraft = async (protocol, version) => {
   const confirmed = await userConfirm({
-    title: 'Delete protocol draft?',
-    message: `Version ${version.version_number} of ${protocol.name} has not been published. Deleting it is permanent.`,
-    confirmText: 'Delete draft',
-    cancelText: 'Keep draft',
+    title: t('protocols.confirm.delete_draft.title'),
+    message: t('protocols.confirm.delete_draft.message', {
+      number: version.version_number,
+      name: protocol.name,
+    }),
+    confirmText: t('protocols.delete_draft'),
+    cancelText: t('protocols.confirm.delete_draft.cancel'),
   });
   if (!confirmed) return;
   try {
@@ -511,7 +529,7 @@ const removeDraft = async (protocol, version) => {
       showForm.value = false;
       resetForm();
     }
-    notify('Draft deleted.');
+    notify(t('protocols.messages.draft_deleted'));
     await load();
   } catch (reason) {
     error.value = reasonText(reason);
@@ -519,10 +537,13 @@ const removeDraft = async (protocol, version) => {
 };
 const archiveVersion = async (protocol, version) => {
   const confirmed = await userConfirm({
-    title: 'Archive published version?',
-    message: `Version ${version.version_number} of ${protocol.name} will remain in the audit history but cannot be activated or used for new scans.`,
-    confirmText: 'Archive version',
-    cancelText: 'Keep version',
+    title: t('protocols.confirm.archive.title'),
+    message: t('protocols.confirm.archive.message', {
+      number: version.version_number,
+      name: protocol.name,
+    }),
+    confirmText: t('protocols.confirm.archive.confirm'),
+    cancelText: t('protocols.confirm.archive.cancel'),
   });
   if (!confirmed) return;
   try {
@@ -531,7 +552,7 @@ const archiveVersion = async (protocol, version) => {
       version.protocol_version_id,
       'Configuration withdrawn by protocol manager'
     );
-    notify('Published version archived.');
+    notify(t('protocols.messages.archived'));
     await load();
   } catch (reason) {
     error.value = reasonText(reason);
@@ -539,16 +560,19 @@ const archiveVersion = async (protocol, version) => {
 };
 const purgeVersion = async (protocol, version) => {
   const confirmed = await userConfirm({
-    title: 'Permanently delete this version?',
-    message: `Version ${version.version_number} of ${protocol.name} and its disposable preview results will be removed. This is allowed only if it was never activated or used for research validation.`,
-    confirmText: 'Delete permanently',
-    cancelText: 'Keep archived',
+    title: t('protocols.confirm.purge.title'),
+    message: t('protocols.confirm.purge.message', {
+      number: version.version_number,
+      name: protocol.name,
+    }),
+    confirmText: t('protocols.delete_permanently'),
+    cancelText: t('protocols.confirm.purge.cancel'),
   });
   if (!confirmed) return;
   error.value = '';
   try {
     await purgeProtocolVersion(projectId.value, version.protocol_version_id);
-    notify('Unused protocol version permanently deleted.');
+    notify(t('protocols.messages.purged'));
     await load();
   } catch (reason) {
     error.value = reasonText(reason);
@@ -557,9 +581,7 @@ const purgeVersion = async (protocol, version) => {
 const pin = async (id) => {
   try {
     await pinProtocolVersion(projectId.value, id);
-    notify(
-      'Project protocol updated. Preview its impact to review the corpus.'
-    );
+    notify(t('protocols.messages.pinned'));
   } catch (reason) {
     error.value = reasonText(reason);
   }
@@ -575,8 +597,8 @@ const scan = async (id) => {
     ];
     notify(
       data.failed_files
-        ? 'Impact scan complete. Review the files that need attention.'
-        : 'Impact scan complete. Every file passed.',
+        ? t('protocols.messages.scan_attention')
+        : t('protocols.messages.scan_passed'),
       data.failed_files ? 'warning' : 'success'
     );
   } catch (reason) {
@@ -591,10 +613,13 @@ const openCorrection = async (file, issue) => {
       upload_id: null,
       validation_issue_id: issue.validation_issue_id,
       filename: file.filename,
-      title: `Protocol correction: ${file.filename}`,
-      initial_comment: `${issue.message}\n\nLocation: ${issue.location}`,
+      title: t('protocols.correction.title', { filename: file.filename }),
+      initial_comment: t('protocols.correction.comment', {
+        message: issue.message,
+        location: issue.location,
+      }),
     });
-    notify('Correction created in Contributions.');
+    notify(t('protocols.messages.correction_created'));
   } catch (reason) {
     error.value = reasonText(reason);
   }
@@ -602,14 +627,14 @@ const openCorrection = async (file, issue) => {
 const summarizeRules = (rules) => {
   const count = countRules(rules);
   const warnings = Object.keys(rules.severities || {}).length;
-  const summary = `${count} configured rule${count === 1 ? '' : 's'}`;
+  const summary = t('protocols.rule_count', count);
   return warnings
-    ? `${summary}, ${warnings} enforced as warning${warnings === 1 ? '' : 's'}`
+    ? `${summary}, ${t('protocols.warning_count', warnings)}`
     : summary;
 };
 const friendlyLocation = (location) =>
   location === '/ANNOTATION_DOCUMENT'
-    ? 'ELAN document'
+    ? t('protocols.scan.document')
     : location.replace('/ANNOTATION_DOCUMENT/', '');
 const formatDate = (value) =>
   new Intl.DateTimeFormat(undefined, {

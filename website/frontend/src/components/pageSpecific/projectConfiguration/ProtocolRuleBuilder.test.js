@@ -3,14 +3,24 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
+import { createI18n } from 'vue-i18n';
+
+import messages from '@/locales/en.json';
 import AppSelect from '@/components/common/AppSelect.vue';
 import { emptyRules } from '@/utils/protocolRules';
 import ProtocolRuleBuilder from './ProtocolRuleBuilder.vue';
 
+const GLOBAL = {
+  plugins: [
+    createI18n({ legacy: false, locale: 'en', messages: { en: messages } }),
+  ],
+  stubs: { 'font-awesome-icon': true },
+};
+
 const render = (rules) =>
   mount(ProtocolRuleBuilder, {
     props: { modelValue: { ...emptyRules(), ...rules } },
-    global: { stubs: { 'font-awesome-icon': true } },
+    global: GLOBAL,
   });
 const lastUpdate = (wrapper) => wrapper.emitted('update:modelValue').at(-1)[0];
 const selectById = (wrapper, id) =>
@@ -22,7 +32,7 @@ describe('ProtocolRuleBuilder', () => {
   it('builds a required tier without exposing JSON editing', async () => {
     const wrapper = mount(ProtocolRuleBuilder, {
       props: { modelValue: emptyRules() },
-      global: { stubs: { 'font-awesome-icon': true } },
+      global: GLOBAL,
     });
 
     await wrapper
@@ -47,7 +57,7 @@ describe('ProtocolRuleBuilder', () => {
           },
         },
       },
-      global: { stubs: { 'font-awesome-icon': true } },
+      global: GLOBAL,
     });
 
     expect(wrapper.get('.hierarchy-preview').text()).toContain('Manual signs');

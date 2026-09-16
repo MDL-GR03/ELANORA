@@ -5,41 +5,43 @@
 // therefore has to remove every rule that names it, or the draft cannot be
 // saved.
 
+// Labels for these keys live in the locale files under protocolRules.
+
 export const CONSTRAINT_STEREOTYPES = [
-  { value: 'none', label: 'No constraint (independent tier)' },
-  { value: 'Time_Subdivision', label: 'Time subdivision' },
-  { value: 'Included_In', label: 'Included in' },
-  { value: 'Symbolic_Subdivision', label: 'Symbolic subdivision' },
-  { value: 'Symbolic_Association', label: 'Symbolic association' },
+  'none',
+  'Time_Subdivision',
+  'Included_In',
+  'Symbolic_Subdivision',
+  'Symbolic_Association',
 ];
 
 // Tier rules that are lists of tier names, with the check they switch on.
 export const TIER_CHECKS = [
-  { key: 'participant_tiers', label: 'Participant named' },
-  { key: 'annotator_tiers', label: 'Annotator named' },
-  { key: 'vocabulary_tiers', label: 'Values from vocabulary' },
-  { key: 'non_empty_tiers', label: 'No empty values' },
-  { key: 'time_aligned_tiers', label: 'Time-aligned' },
+  'participant_tiers',
+  'annotator_tiers',
+  'vocabulary_tiers',
+  'non_empty_tiers',
+  'time_aligned_tiers',
 ];
 
 // Every rule a severity can be attached to, in the order the editor shows.
-export const RULE_LABELS = {
-  required_tiers: 'Required tiers',
-  tier_parents: 'Parent tiers',
-  tier_linguistic_types: 'Tier linguistic types',
-  required_controlled_vocabularies: 'Required vocabularies',
-  vocabulary_languages: 'Vocabulary languages',
-  media_required: 'Linked media',
-  allowed_media_mime_types: 'Media formats',
-  participant_tiers: 'Participant named',
-  annotator_tiers: 'Annotator named',
-  tier_languages: 'Tier languages',
-  vocabulary_tiers: 'Values from vocabulary',
-  non_empty_tiers: 'No empty values',
-  time_aligned_tiers: 'Time-aligned tiers',
-  linguistic_type_constraints: 'Linguistic type constraints',
-  filename_standard: 'Filename standard',
-};
+export const RULE_KEYS = [
+  'required_tiers',
+  'tier_parents',
+  'tier_linguistic_types',
+  'required_controlled_vocabularies',
+  'vocabulary_languages',
+  'media_required',
+  'allowed_media_mime_types',
+  'participant_tiers',
+  'annotator_tiers',
+  'tier_languages',
+  'vocabulary_tiers',
+  'non_empty_tiers',
+  'time_aligned_tiers',
+  'linguistic_type_constraints',
+  'filename_standard',
+];
 
 export const emptyRules = () => ({
   required_tiers: [],
@@ -76,13 +78,10 @@ const ruleSize = (rules, key) => {
 };
 
 export const configuredRuleKeys = (rules) =>
-  Object.keys(RULE_LABELS).filter((key) => ruleSize(rules, key) > 0);
+  RULE_KEYS.filter((key) => ruleSize(rules, key) > 0);
 
 export const countRules = (rules) =>
-  Object.keys(RULE_LABELS).reduce(
-    (total, key) => total + ruleSize(rules, key),
-    0
-  );
+  RULE_KEYS.reduce((total, key) => total + ruleSize(rules, key), 0);
 
 export const severityOf = (rules, key) => rules.severities?.[key] || 'error';
 
@@ -114,7 +113,7 @@ export const withoutTier = (rules, tier) => {
       (name) => name !== tier
     ),
   };
-  TIER_CHECKS.forEach(({ key }) => {
+  TIER_CHECKS.forEach((key) => {
     next[key] = (rules[key] || []).filter((name) => name !== tier);
   });
   const parents = { ...(rules.tier_parents || {}) };

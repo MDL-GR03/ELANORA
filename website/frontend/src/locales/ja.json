@@ -2231,5 +2231,303 @@
       "review": "明示的なレビューと競合の解決",
       "ownership": "機関が管理するデータと外観"
     }
+  },
+  "protocols": {
+    "eyebrow": "研究プロトコル",
+    "title": "ルールを定義し、影響を確認してから有効にします",
+    "introduction": "公開済みのバージョンは変更できません。影響スキャンは研究データを変更せずに、承認済みの最新のELAN改訂をすべて検査します。",
+    "close_editor": "エディターを閉じる",
+    "create": "プロトコルを作成",
+    "name": "プロトコル名",
+    "analyzing": "承認済みの最新ELANファイルを分析して、出発点を探しています…",
+    "saving": "保存中…",
+    "archived_shown": "アーカイブ済みバージョン{n}件を表示中 | アーカイブ済みバージョン{n}件を表示中",
+    "archived_hidden": "アーカイブ済みバージョン{n}件を非表示 | アーカイブ済みバージョン{n}件を非表示",
+    "hide_archived": "アーカイブを隠す",
+    "show_archived": "アーカイブを表示",
+    "protocol": "プロトコル",
+    "no_description": "説明はありません。",
+    "version": "バージョン{number}",
+    "status": {
+      "draft": "下書き",
+      "published": "公開済み",
+      "archived": "アーカイブ済み"
+    },
+    "archive_reason": "理由：{reason}",
+    "withdrawn": "このバージョンは取り下げられています。有効化や新しいスキャンには使用できません。",
+    "edit_draft": "下書きを編集",
+    "publish": "公開",
+    "delete_draft": "下書きを削除",
+    "new_draft_from_version": "このバージョンから新しい下書き",
+    "preview_impact": "影響をプレビュー",
+    "delete_permanently": "完全に削除",
+    "use_for_project": "プロジェクトで使用",
+    "archive": "アーカイブ",
+    "empty": {
+      "title": "研究プロトコルはまだありません",
+      "description": "プロジェクトの規約を明文化する準備ができたら、下書きを作成してください。"
+    },
+    "scan": {
+      "eyebrow": "コーパスの適合性",
+      "title": "最新の影響スキャン",
+      "filter": "スキャン対象ファイルを絞り込む",
+      "checking": "承認済みのELAN改訂を確認中…",
+      "files_checked": "確認したファイル",
+      "passed": "合格",
+      "need_attention": "要確認",
+      "all_files": "すべてのファイル",
+      "impact_preview": "影響のプレビュー",
+      "project_scan": "プロジェクトのスキャン",
+      "latest_revision": "承認済みの最新改訂",
+      "findings": "指摘{n}件 | 指摘{n}件",
+      "create_correction": "修正を作成",
+      "file_passed": "このファイルはこのプロトコルのすべてのルールを満たしています。",
+      "empty": {
+        "title": "スキャンはまだ実行されていません",
+        "description": "プロトコルのバージョンを公開してから、コーパスへの影響をプレビューしてください。"
+      },
+      "document": "ELANドキュメント"
+    },
+    "editor": {
+      "edit_title": "プロトコルの下書きを編集",
+      "version_title": "新しいプロトコルのバージョン",
+      "new_title": "新しいプロトコルの下書き",
+      "edit_help": "この下書きは自由に修正できます。公開して有効にするまで何も適用されません。",
+      "version_help": "公開済みのバージョンは変わらず、修正は新しい下書きになります。",
+      "new_help": "このコーパスにとって意味のある規約から始めてください。",
+      "save_draft": "下書きを保存",
+      "create_draft": "下書きを作成"
+    },
+    "errors": {
+      "unexpected": "予期しないエラー"
+    },
+    "messages": {
+      "analyzed": "承認済みのELANファイル{n}件を分析しました。提案されたルールを確認してください。 | 承認済みのELANファイル{n}件を分析しました。提案されたルールを確認してください。",
+      "nothing_to_analyze": "プロトコルを提案するための承認済みELAN改訂がありません。",
+      "suggestions_added": "選択した提案を下の下書きに追加しました。",
+      "draft_saved": "下書きの変更を保存しました。",
+      "version_created": "新しい下書きバージョンを作成しました。",
+      "draft_created": "プロトコルの下書きを作成しました。",
+      "published": "バージョンを公開し、固定しました。",
+      "draft_deleted": "下書きを削除しました。",
+      "archived": "公開済みのバージョンをアーカイブしました。",
+      "purged": "未使用のプロトコルバージョンを完全に削除しました。",
+      "pinned": "プロジェクトのプロトコルを更新しました。影響をプレビューしてコーパスを確認してください。",
+      "scan_attention": "影響スキャンが完了しました。要確認のファイルを確認してください。",
+      "scan_passed": "影響スキャンが完了しました。すべてのファイルが合格しました。",
+      "correction_created": "提出物に修正を作成しました。"
+    },
+    "confirm": {
+      "delete_draft": {
+        "title": "プロトコルの下書きを削除しますか？",
+        "message": "{name}のバージョン{number}は公開されていません。削除すると元に戻せません。",
+        "cancel": "下書きを残す"
+      },
+      "archive": {
+        "title": "公開済みのバージョンをアーカイブしますか？",
+        "message": "{name}のバージョン{number}は監査履歴に残りますが、有効化や新しいスキャンには使用できなくなります。",
+        "confirm": "バージョンをアーカイブ",
+        "cancel": "バージョンを残す"
+      },
+      "purge": {
+        "title": "このバージョンを完全に削除しますか？",
+        "message": "{name}のバージョン{number}とそのプレビュー結果を削除します。一度も有効化されず、研究データの検証にも使われていない場合にのみ可能です。",
+        "cancel": "アーカイブに残す"
+      }
+    },
+    "correction": {
+      "title": "プロトコルの修正：{filename}",
+      "comment": "{message}\n\n場所：{location}"
+    },
+    "rule_count": "設定済みルール{n}件 | 設定済みルール{n}件",
+    "warning_count": "{n}件を警告として適用 | {n}件を警告として適用"
+  },
+  "protocolRules": {
+    "remove": "削除",
+    "remove_named": "{name}を削除",
+    "optional": "任意",
+    "tiers": {
+      "step": "1 · 注釈の構造",
+      "title": "必須の層と関係",
+      "description": "提出されるすべてのELANファイルに必要な層を追加します。",
+      "list": "必須の層",
+      "required": "必須",
+      "parent": "親の層",
+      "no_parent": "親なし",
+      "type": "言語タイプ",
+      "any_type": "任意のタイプ",
+      "remove": "必須の層{name}を削除",
+      "preview": "構造のプレビュー",
+      "orphaned": "次の層の親を選んでください：{tiers}。",
+      "empty": "層はまだ追加されていません。プロジェクトのELANテンプレートの重要な層から始めてください。",
+      "name": "層の名前",
+      "name_placeholder": "例：手話の手指動作",
+      "add": "必須の層を追加",
+      "cycle": "層を自分の子の下に置くことはできません。",
+      "duplicate": "層「{name}」はすでに必須です。",
+      "any_linguistic_type": "任意の言語タイプ"
+    },
+    "vocabularies": {
+      "step": "2 · 用語",
+      "title": "必須の統制語彙",
+      "description": "この研究プロジェクトで共有する語彙を必須にします。",
+      "languages": "値が必要な言語",
+      "languages_placeholder": "任意、または例：en, fr",
+      "identifier": "統制語彙の識別子",
+      "identifier_placeholder": "例：lsfb_vocabulaire",
+      "add": "語彙を追加"
+    },
+    "media": {
+      "step": "3 · 研究メディア",
+      "title": "リンクされた録画・録音",
+      "description": "注釈が映像や音声を参照する必要があるかを定めます。",
+      "required": "リンクされたメディアを必須にする",
+      "formats": "受け付けるメディア形式",
+      "other_formats": "その他の受け付けるメディア形式",
+      "other_type": "その他のメディアMIMEタイプ",
+      "other_placeholder": "その他の形式、例：video/webm",
+      "add": "形式を追加",
+      "mp4": "MP4動画",
+      "wav": "WAV音声",
+      "mp3": "MP3音声"
+    },
+    "quality": {
+      "step": "4 · 注釈の品質",
+      "title": "必須の層ごとの確認",
+      "description": "層のメタデータと完全な注釈を必須にします。語彙の確認には、層の言語タイプが指定する語彙を使います。"
+    },
+    "types": {
+      "step": "5 · 言語タイプ",
+      "title": "制約ステレオタイプ",
+      "description": "言語タイプの注釈が親とどう関係するかを定めます。"
+    },
+    "filenames": {
+      "step": "6 · ファイル名",
+      "title": "ファイル名の規則",
+      "description": "命名規則の固定されたコピーです。プロジェクトの命名設定を後で変更しても影響しません。",
+      "components": "ファイル名の構成要素",
+      "any_text": "任意のテキスト",
+      "accepted": "使用可能：{values}",
+      "remove": "ファイル名の規則を削除",
+      "empty": "ファイル名の規則はありません。アップロードはプロジェクトの命名設定に従います。"
+    },
+    "enforcement": {
+      "step": "7 · 適用",
+      "title": "ルールを満たさない場合の扱い",
+      "description": "拒否されたファイルはプロジェクトに入りません。警告の場合はファイルを受け入れ、レビュー担当者に表示します。",
+      "list": "ルールの適用",
+      "when_not_met": "{rule}：満たさない場合",
+      "empty": "上で追加したルールの適用方法をここで設定できます。",
+      "refuse": "ファイルを拒否",
+      "warn": "受け入れてレビュー担当者に警告"
+    },
+    "checks": {
+      "caption": "必須の各層の注釈に適用する確認",
+      "tier": "層",
+      "language": "内容の言語",
+      "language_of": "{tier}の内容の言語",
+      "any": "任意",
+      "empty": "上で必須の層を追加すると、その注釈を確認できます。"
+    },
+    "constraints": {
+      "required_for": "{type}に必要な制約",
+      "remove": "{type}の制約ルールを削除",
+      "type_placeholder": "例：gloss-type",
+      "required": "必要な制約",
+      "add": "制約ルールを追加",
+      "duplicate": "「{type}」にはすでに制約ルールがあります。"
+    },
+    "stereotypes": {
+      "none": "制約なし（独立した層）",
+      "Time_Subdivision": "時間分割",
+      "Included_In": "包含",
+      "Symbolic_Subdivision": "記号分割",
+      "Symbolic_Association": "記号関連付け"
+    },
+    "labels": {
+      "required_tiers": "必須の層",
+      "tier_parents": "親の層",
+      "tier_linguistic_types": "層の言語タイプ",
+      "required_controlled_vocabularies": "必須の語彙",
+      "vocabulary_languages": "語彙の言語",
+      "media_required": "リンクされたメディア",
+      "allowed_media_mime_types": "メディア形式",
+      "participant_tiers": "参加者の記載",
+      "annotator_tiers": "注釈者の記載",
+      "tier_languages": "層の言語",
+      "vocabulary_tiers": "語彙からの値",
+      "non_empty_tiers": "空の値なし",
+      "time_aligned_tiers": "時間合わせ済み",
+      "linguistic_type_constraints": "言語タイプの制約",
+      "filename_standard": "ファイル名の規則"
+    }
+  },
+  "protocolSuggestion": {
+    "eyebrow": "コーパスに基づく設定",
+    "title": "提案されたプロトコル構造",
+    "tooltip_title": "自動の判断ではなく根拠の提示",
+    "tooltip_text": "ELANoraはすべてのファイルの承認済み最新改訂を比較します。提案は選択したときだけ編集中の下書きに追加されます。",
+    "based_on": "承認済みの最新ELAN改訂{total}件のうち{analyzed}件に基づいています。下書きを作成する前にすべての選択を確認してください。",
+    "close": "閉じる",
+    "empty": {
+      "title": "分析できる承認済みのELAN改訂がありません。",
+      "description": "有効なEAFファイルを1件以上アップロードして承認してから、もう一度お試しください。"
+    },
+    "metrics": {
+      "universal": "すべてのファイルにある層",
+      "universal_help_label": "共通の層について",
+      "universal_help": "これらの層IDは分析したすべてのファイルに含まれ、共通の必須層として最も有力な候補です。",
+      "common": "半数以上のファイルにある層",
+      "common_help_label": "よく使われる層について",
+      "common_help": "これらの層はよく使われていますが、すべてにあるわけではありません。選択すると、その層を持たないファイルはプロトコルの確認に不合格になります。",
+      "conflicts": "確認が必要な関係",
+      "conflicts_help_label": "確認が必要な関係について",
+      "conflicts_help": "少なくとも2つのファイルで層の親または言語タイプが一致していません。ELANoraはその関係を自動では適用しません。",
+      "media": "メディアにリンクされたファイル",
+      "media_help_label": "メディアにリンクされたファイル数について",
+      "media_help": "ELANのメディア記述子を1つ以上含む、分析済みEAFファイルの数です。"
+    },
+    "no_universal": {
+      "title": "すべてのファイルに共通する層はありません。",
+      "description": "コーパスには複数の注釈テンプレートが含まれている可能性があります。よく使われる候補を下に示しますが、自動では選択されません。"
+    },
+    "skipped": "最新の改訂を検証できなかったため、{n}件のファイルをスキップしました。 | 最新の改訂を検証できなかったため、{n}件のファイルをスキップしました。",
+    "find": "層を検索",
+    "search": "層の名前で検索",
+    "show": "表示",
+    "evidence": {
+      "label": "根拠の区分",
+      "coverage": "出現率",
+      "coverage_help_label": "出現率について",
+      "coverage_help": "出現率は、層IDが1回以上現れる分析済みファイルの割合です。",
+      "consistency": "一貫性",
+      "consistency_help_label": "一貫性について",
+      "consistency_help": "一貫性はその層を含むファイルの中だけで計算され、それらのファイルが同じ親や言語タイプで一致する頻度を示します。",
+      "label_help_label": "根拠の区分について",
+      "label_help": "根拠の区分は層がどれだけ広く使われているかを示すもので、規約が学術的に正しいかを判断するものではありません。"
+    },
+    "tier": {
+      "coverage": "出現率：{total}件中{count}件 · {percent}%",
+      "parent": "親：{parent}",
+      "consistent": "一貫性{percent}%",
+      "type": "タイプ：{type}"
+    },
+    "no_match": "この表示条件に合う層はありません。",
+    "vocabularies": {
+      "title": "統制語彙",
+      "observed": "{count}件を確認",
+      "coverage": "ファイルの{percent}%"
+    },
+    "selected": "{n}件の層を選択中。下書きエディターに入力されるだけです。 | {n}件の層を選択中。下書きエディターに入力されるだけです。",
+    "apply": "選択した提案を追加",
+    "filters": {
+      "core": "すべてのファイル",
+      "common": "よく使われる候補",
+      "all": "すべての層"
+    },
+    "confidence": {
+      "recurring": "頻出",
+      "limited": "根拠が限定的"
+    }
   }
 }

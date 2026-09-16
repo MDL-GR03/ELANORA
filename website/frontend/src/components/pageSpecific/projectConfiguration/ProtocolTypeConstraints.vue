@@ -1,56 +1,62 @@
 <template>
   <div class="type-constraints">
-    <ul v-if="constraints.length" aria-label="Linguistic type constraints">
+    <ul
+      v-if="constraints.length"
+      :aria-label="t('protocolRules.labels.linguistic_type_constraints')"
+    >
       <li v-for="[typeId, stereotype] in constraints" :key="typeId">
         <strong>{{ typeId }}</strong>
         <AppSelect
           :id="`protocol-constraint-${typeId}`"
           :model-value="stereotype"
           size="small"
-          :aria-label="`Constraint required for ${typeId}`"
-          :options="CONSTRAINT_STEREOTYPES"
+          :aria-label="
+            t('protocolRules.constraints.required_for', { type: typeId })
+          "
+          :options="stereotypeOptions"
           @change="setConstraint(typeId, $event)"
         />
         <button
           class="remove-button"
           type="button"
-          :aria-label="`Remove constraint rule for ${typeId}`"
+          :aria-label="t('protocolRules.constraints.remove', { type: typeId })"
           @click="setConstraint(typeId, '')"
         >
-          Remove
+          {{ t('protocolRules.remove') }}
         </button>
       </li>
     </ul>
     <div class="add-constraint">
       <label>
-        Linguistic type
+        {{ t('protocolRules.tiers.type') }}
         <input
           v-model.trim="newType"
-          placeholder="For example: gloss-type"
+          :placeholder="t('protocolRules.constraints.type_placeholder')"
           @keydown.enter.prevent="add"
         />
       </label>
       <label for="new-protocol-constraint">
-        Required constraint
+        {{ t('protocolRules.constraints.required') }}
         <AppSelect
           id="new-protocol-constraint"
           v-model="newStereotype"
           size="small"
-          :options="CONSTRAINT_STEREOTYPES"
+          :options="stereotypeOptions"
         />
       </label>
       <button type="button" :disabled="!newType" @click="add">
-        Add constraint rule
+        {{ t('protocolRules.constraints.add') }}
       </button>
     </div>
     <p v-if="duplicate" class="field-error" role="alert">
-      “{{ duplicate }}” already has a constraint rule.
+      {{ t('protocolRules.constraints.duplicate', { type: duplicate }) }}
     </p>
   </div>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import AppSelect from '@/components/common/AppSelect.vue';
 import {
   CONSTRAINT_STEREOTYPES,
@@ -64,6 +70,15 @@ const props = defineProps({
   },
 });
 const emit = defineEmits(['update:modelValue']);
+
+const { t } = useI18n();
+
+const stereotypeOptions = computed(() =>
+  CONSTRAINT_STEREOTYPES.map((value) => ({
+    value,
+    label: t(`protocolRules.stereotypes.${value}`),
+  }))
+);
 
 const newType = ref('');
 const newStereotype = ref('none');

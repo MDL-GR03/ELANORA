@@ -1,12 +1,20 @@
 <template>
-  <ul v-if="ruleKeys.length" class="severities" aria-label="Rule enforcement">
+  <ul
+    v-if="ruleKeys.length"
+    class="severities"
+    :aria-label="t('protocolRules.enforcement.list')"
+  >
     <li v-for="key in ruleKeys" :key="key">
-      <span>{{ RULE_LABELS[key] }}</span>
+      <span>{{ t(`protocolRules.labels.${key}`) }}</span>
       <AppSelect
         :id="`protocol-severity-${key}`"
         :model-value="severityOf(modelValue, key)"
         size="small"
-        :aria-label="`${RULE_LABELS[key]}: when not met`"
+        :aria-label="
+          t('protocolRules.enforcement.when_not_met', {
+            rule: t(`protocolRules.labels.${key}`),
+          })
+        "
         :options="options"
         @change="
           emit('update:modelValue', withSeverity(modelValue, key, $event))
@@ -14,14 +22,14 @@
       />
     </li>
   </ul>
-  <p v-else class="empty">Rules you add above can be enforced here.</p>
+  <p v-else class="empty">{{ t('protocolRules.enforcement.empty') }}</p>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import AppSelect from '@/components/common/AppSelect.vue';
 import {
-  RULE_LABELS,
   configuredRuleKeys,
   severityOf,
   withSeverity,
@@ -35,10 +43,12 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:modelValue']);
 
-const options = [
-  { value: 'error', label: 'Refuse the file' },
-  { value: 'warning', label: 'Accept and warn reviewers' },
-];
+const { t } = useI18n();
+
+const options = computed(() => [
+  { value: 'error', label: t('protocolRules.enforcement.refuse') },
+  { value: 'warning', label: t('protocolRules.enforcement.warn') },
+]);
 
 const ruleKeys = computed(() => configuredRuleKeys(props.modelValue));
 </script>

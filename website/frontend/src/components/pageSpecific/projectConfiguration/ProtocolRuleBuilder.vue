@@ -3,22 +3,26 @@
     <section class="builder-section tier-section">
       <header>
         <div>
-          <span class="step">1 · Annotation structure</span>
-          <h5>Required tiers and relationships</h5>
-          <p>Add the tiers every submitted ELAN file must contain.</p>
+          <span class="step">{{ t('protocolRules.tiers.step') }}</span>
+          <h5>{{ t('protocolRules.tiers.title') }}</h5>
+          <p>{{ t('protocolRules.tiers.description') }}</p>
         </div>
       </header>
 
       <div v-if="tiers.length" class="tier-workspace">
-        <div class="tier-table" role="list" aria-label="Required tiers">
+        <div
+          class="tier-table"
+          role="list"
+          :aria-label="t('protocolRules.tiers.list')"
+        >
           <article v-for="tier in tiers" :key="tier.name" role="listitem">
             <div class="tier-name">
               <span aria-hidden="true">T</span>
               <strong>{{ tier.name }}</strong>
-              <small>Required</small>
+              <small>{{ t('protocolRules.tiers.required') }}</small>
             </div>
             <label :for="`protocol-parent-${tier.name}`">
-              Parent tier
+              {{ t('protocolRules.tiers.parent') }}
               <AppSelect
                 :id="`protocol-parent-${tier.name}`"
                 :model-value="tier.parent"
@@ -28,48 +32,53 @@
               />
             </label>
             <label>
-              Linguistic type
+              {{ t('protocolRules.tiers.type') }}
               <input
                 :value="tier.type"
-                placeholder="Any type"
+                :placeholder="t('protocolRules.tiers.any_type')"
                 @change="setTierField(tier.name, 'type', $event.target.value)"
               />
             </label>
             <button
               class="remove-button"
               type="button"
-              :aria-label="`Remove required tier ${tier.name}`"
+              :aria-label="t('protocolRules.tiers.remove', { name: tier.name })"
               @click="removeTier(tier.name)"
             >
-              Remove
+              {{ t('protocolRules.remove') }}
             </button>
           </article>
         </div>
 
         <aside class="hierarchy-preview">
-          <span class="preview-label">Structure preview</span>
+          <span class="preview-label">{{
+            t('protocolRules.tiers.preview')
+          }}</span>
           <ProtocolTierTree :nodes="tierTree" />
           <p v-if="orphanedTiers.length" class="preview-warning">
-            Choose an available parent for: {{ orphanedTiers.join(', ') }}.
+            {{
+              t('protocolRules.tiers.orphaned', {
+                tiers: orphanedTiers.join(', '),
+              })
+            }}
           </p>
         </aside>
       </div>
       <div v-else class="empty-builder">
-        No tiers added yet. Start with one important tier from the project’s
-        ELAN template.
+        {{ t('protocolRules.tiers.empty') }}
       </div>
 
       <div class="add-tier">
         <label>
-          Tier name
+          {{ t('protocolRules.tiers.name') }}
           <input
             v-model.trim="newTier.name"
-            placeholder="For example: Manual signs"
+            :placeholder="t('protocolRules.tiers.name_placeholder')"
             @keydown.enter.prevent="addTier"
           />
         </label>
         <label for="new-protocol-tier-parent">
-          Parent tier
+          {{ t('protocolRules.tiers.parent') }}
           <AppSelect
             id="new-protocol-tier-parent"
             v-model="newTier.parent"
@@ -78,15 +87,15 @@
           />
         </label>
         <label>
-          Linguistic type
+          {{ t('protocolRules.tiers.type') }}
           <input
             v-model.trim="newTier.type"
-            placeholder="Optional"
+            :placeholder="t('protocolRules.optional')"
             @keydown.enter.prevent="addTier"
           />
         </label>
         <button type="button" :disabled="!newTier.name" @click="addTier">
-          Add required tier
+          {{ t('protocolRules.tiers.add') }}
         </button>
       </div>
       <p v-if="tierError" class="field-error" role="alert">{{ tierError }}</p>
@@ -95,47 +104,49 @@
     <section class="builder-section">
       <header>
         <div>
-          <span class="step">2 · Terminology</span>
-          <h5>Required controlled vocabularies</h5>
-          <p>Require the shared vocabularies used by this research project.</p>
+          <span class="step">{{ t('protocolRules.vocabularies.step') }}</span>
+          <h5>{{ t('protocolRules.vocabularies.title') }}</h5>
+          <p>{{ t('protocolRules.vocabularies.description') }}</p>
         </div>
       </header>
       <ul
         v-if="vocabularies.length"
         class="vocabulary-list"
-        aria-label="Required controlled vocabularies"
+        :aria-label="t('protocolRules.vocabularies.title')"
       >
         <li v-for="vocabulary in vocabularies" :key="vocabulary">
           <strong>{{ vocabulary }}</strong>
           <label>
-            Values required in languages
+            {{ t('protocolRules.vocabularies.languages') }}
             <input
               :value="
                 (modelValue.vocabulary_languages?.[vocabulary] || []).join(', ')
               "
-              placeholder="Any, or for example: en, fr"
+              :placeholder="
+                t('protocolRules.vocabularies.languages_placeholder')
+              "
               @change="setVocabularyLanguages(vocabulary, $event.target.value)"
             />
           </label>
           <button
             class="remove-button"
             type="button"
-            :aria-label="`Remove ${vocabulary}`"
+            :aria-label="t('protocolRules.remove_named', { name: vocabulary })"
             @click="removeVocabulary(vocabulary)"
           >
-            Remove
+            {{ t('protocolRules.remove') }}
           </button>
         </li>
       </ul>
       <div class="inline-add">
         <input
           v-model.trim="newVocabulary"
-          aria-label="Controlled vocabulary identifier"
-          placeholder="For example: lsfb_vocabulaire"
+          :aria-label="t('protocolRules.vocabularies.identifier')"
+          :placeholder="t('protocolRules.vocabularies.identifier_placeholder')"
           @keydown.enter.prevent="addVocabulary"
         />
         <button type="button" :disabled="!newVocabulary" @click="addVocabulary">
-          Add vocabulary
+          {{ t('protocolRules.vocabularies.add') }}
         </button>
       </div>
     </section>
@@ -143,9 +154,9 @@
     <section class="builder-section">
       <header>
         <div>
-          <span class="step">3 · Research media</span>
-          <h5>Linked recordings</h5>
-          <p>Define whether annotations must reference video or audio.</p>
+          <span class="step">{{ t('protocolRules.media.step') }}</span>
+          <h5>{{ t('protocolRules.media.title') }}</h5>
+          <p>{{ t('protocolRules.media.description') }}</p>
         </div>
         <label class="switch-label">
           <input
@@ -153,11 +164,11 @@
             type="checkbox"
             @change="setMediaRequired($event.target.checked)"
           />
-          <span>Require linked media</span>
+          <span>{{ t('protocolRules.media.required') }}</span>
         </label>
       </header>
       <fieldset :disabled="!modelValue.media_required">
-        <legend>Accepted media formats</legend>
+        <legend>{{ t('protocolRules.media.formats') }}</legend>
         <label v-for="mimeType in commonMediaTypes" :key="mimeType">
           <input
             type="checkbox"
@@ -171,13 +182,13 @@
       <div
         v-if="customMediaTypes.length"
         class="chips"
-        aria-label="Other accepted media formats"
+        :aria-label="t('protocolRules.media.other_formats')"
       >
         <span v-for="mimeType in customMediaTypes" :key="mimeType">
           {{ mimeType }}
           <button
             type="button"
-            :aria-label="`Remove ${mimeType}`"
+            :aria-label="t('protocolRules.remove_named', { name: mimeType })"
             @click="toggleMediaType(mimeType, false)"
           >
             ×
@@ -188,8 +199,8 @@
         <input
           v-model.trim="newMediaType"
           :disabled="!modelValue.media_required"
-          aria-label="Other media MIME type"
-          placeholder="Other format, for example video/webm"
+          :aria-label="t('protocolRules.media.other_type')"
+          :placeholder="t('protocolRules.media.other_placeholder')"
           @keydown.enter.prevent="addMediaType"
         />
         <button
@@ -197,7 +208,7 @@
           :disabled="!modelValue.media_required || !newMediaType"
           @click="addMediaType"
         >
-          Add format
+          {{ t('protocolRules.media.add') }}
         </button>
       </div>
     </section>
@@ -205,12 +216,9 @@
     <section class="builder-section">
       <header>
         <div>
-          <span class="step">4 · Annotation quality</span>
-          <h5>Checks on each required tier</h5>
-          <p>
-            Require tier metadata and complete annotations. Vocabulary checks
-            use the vocabulary named by the tier’s linguistic type.
-          </p>
+          <span class="step">{{ t('protocolRules.quality.step') }}</span>
+          <h5>{{ t('protocolRules.quality.title') }}</h5>
+          <p>{{ t('protocolRules.quality.description') }}</p>
         </div>
       </header>
       <ProtocolTierChecks
@@ -222,11 +230,9 @@
     <section class="builder-section">
       <header>
         <div>
-          <span class="step">5 · Linguistic types</span>
-          <h5>Constraint stereotypes</h5>
-          <p>
-            Require how annotations of a linguistic type relate to a parent.
-          </p>
+          <span class="step">{{ t('protocolRules.types.step') }}</span>
+          <h5>{{ t('protocolRules.types.title') }}</h5>
+          <p>{{ t('protocolRules.types.description') }}</p>
         </div>
       </header>
       <ProtocolTypeConstraints
@@ -238,12 +244,9 @@
     <section class="builder-section">
       <header>
         <div>
-          <span class="step">6 · Filenames</span>
-          <h5>Filename standard</h5>
-          <p>
-            A frozen copy of a naming standard. Later changes to the project’s
-            naming settings do not alter it.
-          </p>
+          <span class="step">{{ t('protocolRules.filenames.step') }}</span>
+          <h5>{{ t('protocolRules.filenames.title') }}</h5>
+          <p>{{ t('protocolRules.filenames.description') }}</p>
         </div>
       </header>
       <div v-if="filenameStandard" class="filename-standard">
@@ -251,15 +254,21 @@
           <strong>{{ filenameStandard.name }}</strong>
           <code>{{ filenameStandard.pattern }}</code>
         </div>
-        <ul aria-label="Filename components">
+        <ul :aria-label="t('protocolRules.filenames.components')">
           <li
             v-for="component in filenameStandard.components"
             :key="component.name"
           >
             <code>{{ placeholder(component.name) }}</code>
-            <span>{{ component.regex || 'Any text' }}</span>
+            <span>{{
+              component.regex || t('protocolRules.filenames.any_text')
+            }}</span>
             <small v-if="component.accepted_values?.length">
-              Accepted: {{ component.accepted_values.join(', ') }}
+              {{
+                t('protocolRules.filenames.accepted', {
+                  values: component.accepted_values.join(', '),
+                })
+              }}
             </small>
           </li>
         </ul>
@@ -268,23 +277,20 @@
           type="button"
           @click="update({ filename_standard: null })"
         >
-          Remove filename standard
+          {{ t('protocolRules.filenames.remove') }}
         </button>
       </div>
       <p v-else class="empty-builder">
-        No filename standard. Uploads follow the project’s naming settings.
+        {{ t('protocolRules.filenames.empty') }}
       </p>
     </section>
 
     <section class="builder-section">
       <header>
         <div>
-          <span class="step">7 · Enforcement</span>
-          <h5>What happens when a rule is not met</h5>
-          <p>
-            Refused files never enter the project. Warnings let the file through
-            and are shown to reviewers.
-          </p>
+          <span class="step">{{ t('protocolRules.enforcement.step') }}</span>
+          <h5>{{ t('protocolRules.enforcement.title') }}</h5>
+          <p>{{ t('protocolRules.enforcement.description') }}</p>
         </div>
       </header>
       <ProtocolRuleSeverities
@@ -296,6 +302,7 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
 import { computed, reactive, ref } from 'vue';
 import AppSelect from '@/components/common/AppSelect.vue';
 import {
@@ -308,6 +315,8 @@ import ProtocolRuleSeverities from './ProtocolRuleSeverities.vue';
 import ProtocolTierChecks from './ProtocolTierChecks.vue';
 import ProtocolTierTree from './ProtocolTierTree.vue';
 import ProtocolTypeConstraints from './ProtocolTypeConstraints.vue';
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: {
@@ -367,14 +376,14 @@ const update = (changes) =>
 const parentChoices = (name) =>
   tiers.value.filter((tier) => tier.name !== name).map((tier) => tier.name);
 const parentSelectOptions = (name) => [
-  { value: '', label: 'No parent' },
+  { value: '', label: t('protocolRules.tiers.no_parent') },
   ...parentChoices(name).map((candidate) => ({
     value: candidate,
     label: candidate,
   })),
 ];
 const newTierParentOptions = computed(() => [
-  { value: '', label: 'No parent' },
+  { value: '', label: t('protocolRules.tiers.no_parent') },
   ...tiers.value.map((tier) => ({ value: tier.name, label: tier.name })),
 ]);
 const setTierField = (name, field, rawValue) => {
@@ -385,7 +394,7 @@ const setTierField = (name, field, rawValue) => {
     let ancestor = value;
     while (ancestor) {
       if (ancestor === name) {
-        tierError.value = 'A tier cannot be placed below one of its children.';
+        tierError.value = t('protocolRules.tiers.cycle');
         return;
       }
       ancestor = mapping[ancestor];
@@ -400,7 +409,7 @@ const addTier = () => {
   const name = newTier.name.trim();
   if (!name) return;
   if (props.modelValue.required_tiers.includes(name)) {
-    tierError.value = `The tier “${name}” is already required.`;
+    tierError.value = t('protocolRules.tiers.duplicate', { name });
     return;
   }
   tierError.value = '';
@@ -451,9 +460,9 @@ const addMediaType = () => {
 };
 const mediaTypeLabel = (mimeType) =>
   ({
-    'video/mp4': 'MP4 video',
-    'audio/wav': 'WAV audio',
-    'audio/mpeg': 'MP3 audio',
+    'video/mp4': t('protocolRules.media.mp4'),
+    'audio/wav': t('protocolRules.media.wav'),
+    'audio/mpeg': t('protocolRules.media.mp3'),
   })[mimeType];
 </script>
 

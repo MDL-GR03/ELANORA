@@ -2,34 +2,31 @@
   <div v-if="tiers.length" class="table-scroll">
     <table>
       <caption>
-        Checks applied to the annotations of each required tier
+        {{
+          t('protocolRules.checks.caption')
+        }}
       </caption>
       <thead>
         <tr>
-          <th scope="col">Tier</th>
-          <th v-for="check in TIER_CHECKS" :key="check.key" scope="col">
-            {{ check.label }}
+          <th scope="col">{{ t('protocolRules.checks.tier') }}</th>
+          <th v-for="check in TIER_CHECKS" :key="check" scope="col">
+            {{ t(`protocolRules.labels.${check}`) }}
           </th>
-          <th scope="col">Content language</th>
+          <th scope="col">{{ t('protocolRules.checks.language') }}</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="tier in tiers" :key="tier">
           <th scope="row">{{ tier }}</th>
-          <td v-for="check in TIER_CHECKS" :key="check.key">
+          <td v-for="check in TIER_CHECKS" :key="check">
             <input
               type="checkbox"
-              :checked="(modelValue[check.key] || []).includes(tier)"
-              :aria-label="`${check.label}: ${tier}`"
+              :checked="(modelValue[check] || []).includes(tier)"
+              :aria-label="`${t(`protocolRules.labels.${check}`)}: ${tier}`"
               @change="
                 emit(
                   'update:modelValue',
-                  withTierCheck(
-                    modelValue,
-                    check.key,
-                    tier,
-                    $event.target.checked
-                  )
+                  withTierCheck(modelValue, check, tier, $event.target.checked)
                 )
               "
             />
@@ -38,8 +35,8 @@
             <input
               class="language"
               :value="modelValue.tier_languages?.[tier] || ''"
-              :aria-label="`Content language of ${tier}`"
-              placeholder="Any"
+              :aria-label="t('protocolRules.checks.language_of', { tier })"
+              :placeholder="t('protocolRules.checks.any')"
               @change="
                 emit(
                   'update:modelValue',
@@ -58,12 +55,13 @@
     </table>
   </div>
   <p v-else class="empty">
-    Add required tiers above to check the annotations they contain.
+    {{ t('protocolRules.checks.empty') }}
   </p>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import {
   TIER_CHECKS,
   withMappingValue,
@@ -77,6 +75,8 @@ const props = defineProps({
   },
 });
 const emit = defineEmits(['update:modelValue']);
+
+const { t } = useI18n();
 
 const tiers = computed(() => props.modelValue.required_tiers || []);
 </script>

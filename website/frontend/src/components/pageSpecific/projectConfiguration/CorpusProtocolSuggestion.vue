@@ -2,87 +2,91 @@
   <section class="suggestion-panel" aria-labelledby="suggestion-title">
     <header>
       <div>
-        <span class="eyebrow">Corpus-assisted setup</span>
+        <span class="eyebrow">{{ t('protocolSuggestion.eyebrow') }}</span>
         <div class="title-line">
-          <h4 id="suggestion-title">Suggested protocol structure</h4>
+          <h4 id="suggestion-title">{{ t('protocolSuggestion.title') }}</h4>
           <HelpTooltip
-            title="Evidence, not automatic decisions"
-            text="ELANora compares the latest accepted revision of every file. Suggestions only enter your editable draft when you select them."
+            :title="t('protocolSuggestion.tooltip_title')"
+            :text="t('protocolSuggestion.tooltip_text')"
           />
         </div>
         <p>
-          Based on {{ suggestion.analyzed_files }} of
-          {{ suggestion.total_files }} latest accepted ELAN file revisions.
-          Review every choice before creating a draft.
+          {{
+            t('protocolSuggestion.based_on', {
+              analyzed: suggestion.analyzed_files,
+              total: suggestion.total_files,
+            })
+          }}
         </p>
       </div>
       <button class="close-button" type="button" @click="$emit('close')">
-        Close
+        {{ t('protocolSuggestion.close') }}
       </button>
     </header>
 
     <div v-if="!suggestion.analyzed_files" class="empty-analysis">
-      <strong>No accepted ELAN revisions could be analyzed.</strong>
-      <p>Upload and accept at least one valid EAF file, then try again.</p>
+      <strong>{{ t('protocolSuggestion.empty.title') }}</strong>
+      <p>{{ t('protocolSuggestion.empty.description') }}</p>
     </div>
     <template v-else>
       <div class="analysis-summary">
         <div>
           <strong>{{ suggestedTierCount }}</strong>
           <span class="metric-label"
-            >tiers found in every file
+            >{{ t('protocolSuggestion.metrics.universal') }}
             <HelpTooltip
-              label="Explain universal tiers"
-              text="These tier identifiers occur in every analyzed file and are the strongest candidates for a shared required baseline."
+              :label="t('protocolSuggestion.metrics.universal_help_label')"
+              :text="t('protocolSuggestion.metrics.universal_help')"
           /></span>
         </div>
         <div>
           <strong>{{ recurringTierCount }}</strong>
           <span class="metric-label"
-            >tiers found in at least half
+            >{{ t('protocolSuggestion.metrics.common') }}
             <HelpTooltip
-              label="Explain common tiers"
-              text="These tiers are common but not universal. Selecting one will cause files without it to fail the protocol check."
+              :label="t('protocolSuggestion.metrics.common_help_label')"
+              :text="t('protocolSuggestion.metrics.common_help')"
           /></span>
         </div>
         <div>
           <strong>{{ conflictCount }}</strong>
           <span class="metric-label"
-            >relationships to review
+            >{{ t('protocolSuggestion.metrics.conflicts') }}
             <HelpTooltip
-              label="Explain relationships to review"
-              text="At least two files disagree about a tier's parent or linguistic type. ELANora will not apply that relationship automatically."
+              :label="t('protocolSuggestion.metrics.conflicts_help_label')"
+              :text="t('protocolSuggestion.metrics.conflicts_help')"
           /></span>
         </div>
         <div>
           <strong>{{ suggestion.files_with_media }}</strong>
           <span class="metric-label"
-            >files linked to media
+            >{{ t('protocolSuggestion.metrics.media') }}
             <HelpTooltip
-              label="Explain linked media count"
-              text="The number of analyzed EAF files containing at least one ELAN media descriptor."
+              :label="t('protocolSuggestion.metrics.media_help_label')"
+              :text="t('protocolSuggestion.metrics.media_help')"
           /></span>
         </div>
       </div>
 
       <div v-if="!suggestedTierCount" class="analysis-note">
-        <strong>No single tier appears in every file.</strong>
-        Your corpus likely contains more than one annotation template. Common
-        candidates are shown below, but none are selected automatically.
+        <strong>{{ t('protocolSuggestion.no_universal.title') }}</strong>
+        {{ t('protocolSuggestion.no_universal.description') }}
       </div>
 
       <div v-if="suggestion.skipped_files.length" class="analysis-warning">
-        {{ suggestion.skipped_files.length }} file(s) were skipped because their
-        latest revisions could not be validated.
+        {{ t('protocolSuggestion.skipped', suggestion.skipped_files.length) }}
       </div>
 
       <div class="suggestion-tools">
         <label class="search-control">
-          <span>Find a tier</span>
-          <input v-model.trim="query" placeholder="Search tier names" />
+          <span>{{ t('protocolSuggestion.find') }}</span>
+          <input
+            v-model.trim="query"
+            :placeholder="t('protocolSuggestion.search')"
+          />
         </label>
         <label class="filter-control" for="protocol-tier-evidence-filter">
-          <span>Show</span>
+          <span>{{ t('protocolSuggestion.show') }}</span>
           <AppSelect
             id="protocol-tier-evidence-filter"
             v-model="filter"
@@ -94,27 +98,27 @@
 
       <div
         class="evidence-guide"
-        aria-label="Explanation of suggestion evidence"
+        :aria-label="t('protocolSuggestion.evidence.label')"
       >
         <span>
-          Coverage
+          {{ t('protocolSuggestion.evidence.coverage') }}
           <HelpTooltip
-            label="Explain tier coverage"
-            text="Coverage is the percentage of analyzed files in which a tier identifier appears at least once."
+            :label="t('protocolSuggestion.evidence.coverage_help_label')"
+            :text="t('protocolSuggestion.evidence.coverage_help')"
           />
         </span>
         <span>
-          Consistency
+          {{ t('protocolSuggestion.evidence.consistency') }}
           <HelpTooltip
-            label="Explain relationship consistency"
-            text="Consistency is calculated only among files containing that tier. It measures how often those files agree on the same parent or linguistic type."
+            :label="t('protocolSuggestion.evidence.consistency_help_label')"
+            :text="t('protocolSuggestion.evidence.consistency_help')"
           />
         </span>
         <span>
-          Evidence label
+          {{ t('protocolSuggestion.evidence.label') }}
           <HelpTooltip
-            label="Explain evidence labels"
-            text="Evidence labels describe how widely a tier occurs. They do not decide whether a convention is scientifically correct."
+            :label="t('protocolSuggestion.evidence.label_help_label')"
+            :text="t('protocolSuggestion.evidence.label_help')"
           />
         </span>
       </div>
@@ -133,22 +137,42 @@
           <span class="candidate-copy">
             <strong>{{ tier.tier_id }}</strong>
             <small class="evidence-line">
-              Coverage: {{ tier.occurrence_count }} of
-              {{ suggestion.analyzed_files }} files ·
-              {{ tier.coverage_percent }}%
+              {{
+                t('protocolSuggestion.tier.coverage', {
+                  count: tier.occurrence_count,
+                  total: suggestion.analyzed_files,
+                  percent: tier.coverage_percent,
+                })
+              }}
             </small>
             <small v-if="tier.parent_ref">
-              Parent: {{ tier.parent_ref }}
+              {{
+                t('protocolSuggestion.tier.parent', { parent: tier.parent_ref })
+              }}
               <template v-if="tier.parent_consistency_percent !== null">
-                · {{ tier.parent_consistency_percent }}% consistent
+                ·
+                {{
+                  t('protocolSuggestion.tier.consistent', {
+                    percent: tier.parent_consistency_percent,
+                  })
+                }}
               </template>
             </small>
             <small v-if="tier.linguistic_type_ref">
-              Type: {{ tier.linguistic_type_ref }}
+              {{
+                t('protocolSuggestion.tier.type', {
+                  type: tier.linguistic_type_ref,
+                })
+              }}
               <template
                 v-if="tier.linguistic_type_consistency_percent !== null"
               >
-                · {{ tier.linguistic_type_consistency_percent }}% consistent
+                ·
+                {{
+                  t('protocolSuggestion.tier.consistent', {
+                    percent: tier.linguistic_type_consistency_percent,
+                  })
+                }}
               </template>
             </small>
           </span>
@@ -157,14 +181,18 @@
           </span>
         </label>
         <p v-if="!visibleTiers.length" class="no-results">
-          No tiers match this view.
+          {{ t('protocolSuggestion.no_match') }}
         </p>
       </div>
 
       <details v-if="suggestion.vocabulary_suggestions.length" class="extras">
         <summary>
-          <span>Controlled vocabularies</span>
-          <small>{{ suggestion.vocabulary_suggestions.length }} observed</small>
+          <span>{{ t('protocolSuggestion.vocabularies.title') }}</span>
+          <small>{{
+            t('protocolSuggestion.vocabularies.observed', {
+              count: suggestion.vocabulary_suggestions.length,
+            })
+          }}</small>
         </summary>
         <div class="extra-options">
           <label
@@ -180,19 +208,20 @@
             />
             <span>
               <strong>{{ item.vocabulary_id }}</strong>
-              <small>{{ item.coverage_percent }}% of files</small>
+              <small>{{
+                t('protocolSuggestion.vocabularies.coverage', {
+                  percent: item.coverage_percent,
+                })
+              }}</small>
             </span>
           </label>
         </div>
       </details>
 
       <footer>
-        <p>
-          {{ selectedTiers.size }} tier(s) selected. This will only populate the
-          draft editor.
-        </p>
+        <p>{{ t('protocolSuggestion.selected', selectedTiers.size) }}</p>
         <button type="button" :disabled="!hasSelections" @click="apply">
-          Add selected suggestions
+          {{ t('protocolSuggestion.apply') }}
         </button>
       </footer>
     </template>
@@ -200,15 +229,18 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
 import HelpTooltip from '@/components/common/HelpTooltip.vue';
 import AppSelect from '@/components/common/AppSelect.vue';
 
-const filterOptions = [
-  { value: 'core', label: 'In every file' },
-  { value: 'common', label: 'Common candidates' },
-  { value: 'all', label: 'All tiers' },
-];
+const { t } = useI18n();
+
+const filterOptions = computed(() => [
+  { value: 'core', label: t('protocolSuggestion.filters.core') },
+  { value: 'common', label: t('protocolSuggestion.filters.common') },
+  { value: 'all', label: t('protocolSuggestion.filters.all') },
+]);
 
 const props = defineProps({
   suggestion: {
@@ -295,9 +327,10 @@ const confidenceClass = (tier) => {
   return 'limited';
 };
 const confidenceLabel = (tier) => {
-  if (tier.suggested_required) return 'In every file';
-  if (tier.coverage_percent >= 50) return 'Recurring';
-  return 'Limited evidence';
+  if (tier.suggested_required) return t('protocolSuggestion.filters.core');
+  if (tier.coverage_percent >= 50)
+    return t('protocolSuggestion.confidence.recurring');
+  return t('protocolSuggestion.confidence.limited');
 };
 const apply = () => {
   const selected = selectedTiers.value;

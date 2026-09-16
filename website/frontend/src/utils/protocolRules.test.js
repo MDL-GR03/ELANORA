@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  RULE_LABELS,
+  RULE_KEYS,
   configuredRuleKeys,
   countRules,
   emptyRules,
@@ -35,7 +35,7 @@ const BACKEND_RULE_KEYS = [
 
 describe('protocol rules', () => {
   it('knows every rule family the backend accepts', () => {
-    expect(Object.keys(RULE_LABELS).sort()).toEqual(BACKEND_RULE_KEYS);
+    expect([...RULE_KEYS].sort()).toEqual(BACKEND_RULE_KEYS);
     expect(Object.keys(emptyRules()).sort()).toEqual(
       [...BACKEND_RULE_KEYS, 'severities'].sort()
     );

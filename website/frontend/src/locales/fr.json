@@ -2231,5 +2231,303 @@
       "review": "Revue et résolution des conflits explicites",
       "ownership": "Données et identité contrôlées par l'institution"
     }
+  },
+  "protocols": {
+    "eyebrow": "Protocole de recherche",
+    "title": "Définissez des règles, prévisualisez leur impact, puis activez-les",
+    "introduction": "Les versions publiées sont immuables. Les analyses d'impact examinent chaque dernière révision ELAN acceptée sans modifier les données de recherche.",
+    "close_editor": "Fermer l'éditeur",
+    "create": "Créer un protocole",
+    "name": "Nom du protocole",
+    "analyzing": "Analyse des derniers fichiers ELAN acceptés pour proposer un point de départ…",
+    "saving": "Enregistrement…",
+    "archived_shown": "{n} version archivée affichée | {n} versions archivées affichées",
+    "archived_hidden": "{n} version archivée masquée | {n} versions archivées masquées",
+    "hide_archived": "Masquer les archives",
+    "show_archived": "Afficher les archives",
+    "protocol": "Protocole",
+    "no_description": "Aucune description.",
+    "version": "Version {number}",
+    "status": {
+      "draft": "brouillon",
+      "published": "publiée",
+      "archived": "archivée"
+    },
+    "archive_reason": "Motif : {reason}",
+    "withdrawn": "Cette version est retirée. Elle ne peut plus être activée ni servir à une nouvelle analyse.",
+    "edit_draft": "Modifier le brouillon",
+    "publish": "Publier",
+    "delete_draft": "Supprimer le brouillon",
+    "new_draft_from_version": "Nouveau brouillon à partir de cette version",
+    "preview_impact": "Prévisualiser l'impact",
+    "delete_permanently": "Supprimer définitivement",
+    "use_for_project": "Utiliser pour le projet",
+    "archive": "Archiver",
+    "empty": {
+      "title": "Aucun protocole de recherche",
+      "description": "Créez un brouillon lorsque le projet est prêt à formaliser ses conventions."
+    },
+    "scan": {
+      "eyebrow": "Conformité du corpus",
+      "title": "Dernière analyse d'impact",
+      "filter": "Filtrer les fichiers analysés",
+      "checking": "Vérification des révisions ELAN acceptées…",
+      "files_checked": "Fichiers vérifiés",
+      "passed": "Conformes",
+      "need_attention": "À examiner",
+      "all_files": "Tous les fichiers",
+      "impact_preview": "Aperçu de l'impact",
+      "project_scan": "Analyse du projet",
+      "latest_revision": "Dernière révision acceptée",
+      "findings": "{n} constat | {n} constats",
+      "create_correction": "Créer une correction",
+      "file_passed": "Ce fichier respecte toutes les règles de cette version du protocole.",
+      "empty": {
+        "title": "Aucune analyse n'a été lancée",
+        "description": "Publiez une version du protocole, puis prévisualisez son effet sur le corpus."
+      },
+      "document": "Document ELAN"
+    },
+    "editor": {
+      "edit_title": "Modifier le brouillon du protocole",
+      "version_title": "Nouvelle version du protocole",
+      "new_title": "Nouveau brouillon de protocole",
+      "edit_help": "Corrigez ce brouillon librement. Rien n'est appliqué avant sa publication et son activation.",
+      "version_help": "La version publiée reste inchangée ; vos corrections deviennent un nouveau brouillon.",
+      "new_help": "Commencez par les conventions qui ont du sens pour ce corpus.",
+      "save_draft": "Enregistrer le brouillon",
+      "create_draft": "Créer le brouillon"
+    },
+    "errors": {
+      "unexpected": "Erreur inattendue"
+    },
+    "messages": {
+      "analyzed": "{n} fichier ELAN accepté analysé. Examinez les règles suggérées. | {n} fichiers ELAN acceptés analysés. Examinez les règles suggérées.",
+      "nothing_to_analyze": "Aucune révision ELAN acceptée n'est disponible pour suggérer un protocole.",
+      "suggestions_added": "Les suggestions sélectionnées ont été ajoutées au brouillon ci-dessous.",
+      "draft_saved": "Modifications du brouillon enregistrées.",
+      "version_created": "Nouvelle version brouillon créée.",
+      "draft_created": "Brouillon de protocole créé.",
+      "published": "Version publiée et verrouillée.",
+      "draft_deleted": "Brouillon supprimé.",
+      "archived": "Version publiée archivée.",
+      "purged": "Version de protocole inutilisée supprimée définitivement.",
+      "pinned": "Protocole du projet mis à jour. Prévisualisez son impact pour examiner le corpus.",
+      "scan_attention": "Analyse d'impact terminée. Examinez les fichiers à corriger.",
+      "scan_passed": "Analyse d'impact terminée. Tous les fichiers sont conformes.",
+      "correction_created": "Correction créée dans les contributions."
+    },
+    "confirm": {
+      "delete_draft": {
+        "title": "Supprimer le brouillon du protocole ?",
+        "message": "La version {number} de {name} n'a pas été publiée. Sa suppression est définitive.",
+        "cancel": "Conserver le brouillon"
+      },
+      "archive": {
+        "title": "Archiver la version publiée ?",
+        "message": "La version {number} de {name} restera dans l'historique d'audit mais ne pourra plus être activée ni servir à de nouvelles analyses.",
+        "confirm": "Archiver la version",
+        "cancel": "Conserver la version"
+      },
+      "purge": {
+        "title": "Supprimer définitivement cette version ?",
+        "message": "La version {number} de {name} et ses résultats d'aperçu seront supprimés. Ce n'est possible que si elle n'a jamais été activée ni utilisée pour valider des données de recherche.",
+        "cancel": "Conserver dans les archives"
+      }
+    },
+    "correction": {
+      "title": "Correction de protocole : {filename}",
+      "comment": "{message}\n\nEmplacement : {location}"
+    },
+    "rule_count": "{n} règle configurée | {n} règles configurées",
+    "warning_count": "{n} appliquée comme avertissement | {n} appliquées comme avertissements"
+  },
+  "protocolRules": {
+    "remove": "Retirer",
+    "remove_named": "Retirer {name}",
+    "optional": "Facultatif",
+    "tiers": {
+      "step": "1 · Structure d'annotation",
+      "title": "Tiers requis et relations",
+      "description": "Ajoutez les tiers que chaque fichier ELAN soumis doit contenir.",
+      "list": "Tiers requis",
+      "required": "Requis",
+      "parent": "Tier parent",
+      "no_parent": "Aucun parent",
+      "type": "Type linguistique",
+      "any_type": "N'importe quel type",
+      "remove": "Retirer le tier requis {name}",
+      "preview": "Aperçu de la structure",
+      "orphaned": "Choisissez un parent disponible pour : {tiers}.",
+      "empty": "Aucun tier ajouté. Commencez par un tier important du modèle ELAN du projet.",
+      "name": "Nom du tier",
+      "name_placeholder": "Par exemple : Signes manuels",
+      "add": "Ajouter un tier requis",
+      "cycle": "Un tier ne peut pas être placé sous l'un de ses enfants.",
+      "duplicate": "Le tier « {name} » est déjà requis.",
+      "any_linguistic_type": "N'importe quel type linguistique"
+    },
+    "vocabularies": {
+      "step": "2 · Terminologie",
+      "title": "Vocabulaires contrôlés requis",
+      "description": "Exigez les vocabulaires partagés utilisés par ce projet de recherche.",
+      "languages": "Valeurs requises dans les langues",
+      "languages_placeholder": "Toutes, ou par exemple : en, fr",
+      "identifier": "Identifiant du vocabulaire contrôlé",
+      "identifier_placeholder": "Par exemple : lsfb_vocabulaire",
+      "add": "Ajouter un vocabulaire"
+    },
+    "media": {
+      "step": "3 · Médias de recherche",
+      "title": "Enregistrements liés",
+      "description": "Indiquez si les annotations doivent référencer une vidéo ou un audio.",
+      "required": "Exiger un média lié",
+      "formats": "Formats de média acceptés",
+      "other_formats": "Autres formats de média acceptés",
+      "other_type": "Autre type MIME de média",
+      "other_placeholder": "Autre format, par exemple video/webm",
+      "add": "Ajouter un format",
+      "mp4": "Vidéo MP4",
+      "wav": "Audio WAV",
+      "mp3": "Audio MP3"
+    },
+    "quality": {
+      "step": "4 · Qualité des annotations",
+      "title": "Vérifications sur chaque tier requis",
+      "description": "Exigez les métadonnées des tiers et des annotations complètes. Les vérifications de vocabulaire utilisent le vocabulaire nommé par le type linguistique du tier."
+    },
+    "types": {
+      "step": "5 · Types linguistiques",
+      "title": "Stéréotypes de contrainte",
+      "description": "Exigez la manière dont les annotations d'un type linguistique se rattachent à un parent."
+    },
+    "filenames": {
+      "step": "6 · Noms de fichiers",
+      "title": "Norme de nommage",
+      "description": "Une copie figée d'une norme de nommage. Les modifications ultérieures des réglages de nommage du projet ne la modifient pas.",
+      "components": "Composants du nom de fichier",
+      "any_text": "N'importe quel texte",
+      "accepted": "Acceptés : {values}",
+      "remove": "Retirer la norme de nommage",
+      "empty": "Aucune norme de nommage. Les téléversements suivent les réglages de nommage du projet."
+    },
+    "enforcement": {
+      "step": "7 · Application",
+      "title": "Ce qui se passe lorsqu'une règle n'est pas respectée",
+      "description": "Les fichiers refusés n'entrent jamais dans le projet. Les avertissements laissent passer le fichier et sont montrés aux relecteurs.",
+      "list": "Application des règles",
+      "when_not_met": "{rule} : si non respectée",
+      "empty": "Les règles ajoutées ci-dessus peuvent être appliquées ici.",
+      "refuse": "Refuser le fichier",
+      "warn": "Accepter et avertir les relecteurs"
+    },
+    "checks": {
+      "caption": "Vérifications appliquées aux annotations de chaque tier requis",
+      "tier": "Tier",
+      "language": "Langue du contenu",
+      "language_of": "Langue du contenu de {tier}",
+      "any": "Toutes",
+      "empty": "Ajoutez des tiers requis ci-dessus pour vérifier les annotations qu'ils contiennent."
+    },
+    "constraints": {
+      "required_for": "Contrainte requise pour {type}",
+      "remove": "Retirer la règle de contrainte pour {type}",
+      "type_placeholder": "Par exemple : gloss-type",
+      "required": "Contrainte requise",
+      "add": "Ajouter une règle de contrainte",
+      "duplicate": "« {type} » a déjà une règle de contrainte."
+    },
+    "stereotypes": {
+      "none": "Aucune contrainte (tier indépendant)",
+      "Time_Subdivision": "Subdivision temporelle",
+      "Included_In": "Inclus dans",
+      "Symbolic_Subdivision": "Subdivision symbolique",
+      "Symbolic_Association": "Association symbolique"
+    },
+    "labels": {
+      "required_tiers": "Tiers requis",
+      "tier_parents": "Tiers parents",
+      "tier_linguistic_types": "Types linguistiques des tiers",
+      "required_controlled_vocabularies": "Vocabulaires requis",
+      "vocabulary_languages": "Langues des vocabulaires",
+      "media_required": "Média lié",
+      "allowed_media_mime_types": "Formats de média",
+      "participant_tiers": "Participant indiqué",
+      "annotator_tiers": "Annotateur indiqué",
+      "tier_languages": "Langues des tiers",
+      "vocabulary_tiers": "Valeurs issues du vocabulaire",
+      "non_empty_tiers": "Aucune valeur vide",
+      "time_aligned_tiers": "Aligné temporellement",
+      "linguistic_type_constraints": "Contraintes des types linguistiques",
+      "filename_standard": "Norme de nommage"
+    }
+  },
+  "protocolSuggestion": {
+    "eyebrow": "Configuration assistée par le corpus",
+    "title": "Structure de protocole suggérée",
+    "tooltip_title": "Des éléments de preuve, pas des décisions automatiques",
+    "tooltip_text": "ELANora compare la dernière révision acceptée de chaque fichier. Les suggestions n'entrent dans votre brouillon que si vous les sélectionnez.",
+    "based_on": "D'après {analyzed} des {total} dernières révisions ELAN acceptées. Vérifiez chaque choix avant de créer un brouillon.",
+    "close": "Fermer",
+    "empty": {
+      "title": "Aucune révision ELAN acceptée n'a pu être analysée.",
+      "description": "Téléversez et acceptez au moins un fichier EAF valide, puis réessayez."
+    },
+    "metrics": {
+      "universal": "tiers présents dans chaque fichier",
+      "universal_help_label": "Expliquer les tiers universels",
+      "universal_help": "Ces identifiants de tiers apparaissent dans chaque fichier analysé et sont les meilleurs candidats pour une base commune requise.",
+      "common": "tiers présents dans au moins la moitié",
+      "common_help_label": "Expliquer les tiers courants",
+      "common_help": "Ces tiers sont courants mais pas universels. En sélectionner un fera échouer la vérification du protocole pour les fichiers qui ne le contiennent pas.",
+      "conflicts": "relations à examiner",
+      "conflicts_help_label": "Expliquer les relations à examiner",
+      "conflicts_help": "Au moins deux fichiers divergent sur le parent ou le type linguistique d'un tier. ELANora n'appliquera pas cette relation automatiquement.",
+      "media": "fichiers liés à un média",
+      "media_help_label": "Expliquer le nombre de fichiers liés à un média",
+      "media_help": "Le nombre de fichiers EAF analysés contenant au moins un descripteur de média ELAN."
+    },
+    "no_universal": {
+      "title": "Aucun tier n'apparaît dans chaque fichier.",
+      "description": "Votre corpus contient probablement plusieurs modèles d'annotation. Les candidats courants sont affichés ci-dessous, mais aucun n'est sélectionné automatiquement."
+    },
+    "skipped": "{n} fichier a été ignoré car sa dernière révision n'a pas pu être validée. | {n} fichiers ont été ignorés car leurs dernières révisions n'ont pas pu être validées.",
+    "find": "Trouver un tier",
+    "search": "Rechercher un nom de tier",
+    "show": "Afficher",
+    "evidence": {
+      "label": "Niveau de preuve",
+      "coverage": "Couverture",
+      "coverage_help_label": "Expliquer la couverture",
+      "coverage_help": "La couverture est le pourcentage de fichiers analysés dans lesquels un identifiant de tier apparaît au moins une fois.",
+      "consistency": "Cohérence",
+      "consistency_help_label": "Expliquer la cohérence",
+      "consistency_help": "La cohérence est calculée uniquement parmi les fichiers contenant ce tier. Elle mesure la fréquence à laquelle ces fichiers s'accordent sur le même parent ou type linguistique.",
+      "label_help_label": "Expliquer les niveaux de preuve",
+      "label_help": "Les niveaux de preuve décrivent la fréquence d'un tier. Ils ne décident pas si une convention est scientifiquement correcte."
+    },
+    "tier": {
+      "coverage": "Couverture : {count} fichiers sur {total} · {percent} %",
+      "parent": "Parent : {parent}",
+      "consistent": "{percent} % cohérent",
+      "type": "Type : {type}"
+    },
+    "no_match": "Aucun tier ne correspond à cette vue.",
+    "vocabularies": {
+      "title": "Vocabulaires contrôlés",
+      "observed": "{count} observés",
+      "coverage": "{percent} % des fichiers"
+    },
+    "selected": "{n} tier sélectionné. Cela remplit uniquement l'éditeur de brouillon. | {n} tiers sélectionnés. Cela remplit uniquement l'éditeur de brouillon.",
+    "apply": "Ajouter les suggestions sélectionnées",
+    "filters": {
+      "core": "Dans chaque fichier",
+      "common": "Candidats courants",
+      "all": "Tous les tiers"
+    },
+    "confidence": {
+      "recurring": "Récurrent",
+      "limited": "Preuves limitées"
+    }
   }
 }

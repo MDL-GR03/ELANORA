@@ -2231,5 +2231,303 @@
       "review": "Explicit review and conflict resolution",
       "ownership": "Institution-controlled data and identity"
     }
+  },
+  "protocols": {
+    "eyebrow": "Research protocol",
+    "title": "Define rules, preview their impact, then activate them",
+    "introduction": "Published versions are immutable. Impact scans inspect every latest accepted ELAN revision without changing research data.",
+    "close_editor": "Close editor",
+    "create": "Create protocol",
+    "name": "Protocol name",
+    "analyzing": "Analyzing the latest accepted ELAN files for useful starting points…",
+    "saving": "Saving…",
+    "archived_shown": "{n} archived version shown | {n} archived versions shown",
+    "archived_hidden": "{n} archived version hidden | {n} archived versions hidden",
+    "hide_archived": "Hide archived",
+    "show_archived": "Show archived",
+    "protocol": "Protocol",
+    "no_description": "No description provided.",
+    "version": "Version {number}",
+    "status": {
+      "draft": "draft",
+      "published": "published",
+      "archived": "archived"
+    },
+    "archive_reason": "Reason: {reason}",
+    "withdrawn": "This version is withdrawn. It cannot be activated or used for a new scan.",
+    "edit_draft": "Edit draft",
+    "publish": "Publish",
+    "delete_draft": "Delete draft",
+    "new_draft_from_version": "New draft from this version",
+    "preview_impact": "Preview impact",
+    "delete_permanently": "Delete permanently",
+    "use_for_project": "Use for project",
+    "archive": "Archive",
+    "empty": {
+      "title": "No research protocol yet",
+      "description": "Create a draft when the project is ready to formalize its conventions."
+    },
+    "scan": {
+      "eyebrow": "Corpus compliance",
+      "title": "Latest impact scan",
+      "filter": "Filter scan files",
+      "checking": "Checking accepted ELAN revisions…",
+      "files_checked": "Files checked",
+      "passed": "Passed",
+      "need_attention": "Need attention",
+      "all_files": "All files",
+      "impact_preview": "Impact preview",
+      "project_scan": "Project scan",
+      "latest_revision": "Latest accepted revision",
+      "findings": "{n} finding | {n} findings",
+      "create_correction": "Create correction",
+      "file_passed": "This file respects every rule in this protocol version.",
+      "empty": {
+        "title": "No scan has been run",
+        "description": "Publish a protocol version, then preview its effect on the corpus."
+      },
+      "document": "ELAN document"
+    },
+    "editor": {
+      "edit_title": "Edit protocol draft",
+      "version_title": "New protocol version",
+      "new_title": "New protocol draft",
+      "edit_help": "Correct this draft freely. Nothing is enforced until you publish and activate it.",
+      "version_help": "The published version remains unchanged; your corrections become a new draft.",
+      "new_help": "Start with the conventions that are meaningful for this corpus.",
+      "save_draft": "Save draft",
+      "create_draft": "Create draft"
+    },
+    "errors": {
+      "unexpected": "Unexpected error"
+    },
+    "messages": {
+      "analyzed": "Analyzed {n} accepted ELAN file. Review the suggested rules. | Analyzed {n} accepted ELAN files. Review the suggested rules.",
+      "nothing_to_analyze": "No accepted ELAN revisions are available for protocol suggestions.",
+      "suggestions_added": "Selected corpus suggestions added to the draft below.",
+      "draft_saved": "Draft changes saved.",
+      "version_created": "New draft version created.",
+      "draft_created": "Protocol draft created.",
+      "published": "Version published and locked.",
+      "draft_deleted": "Draft deleted.",
+      "archived": "Published version archived.",
+      "purged": "Unused protocol version permanently deleted.",
+      "pinned": "Project protocol updated. Preview its impact to review the corpus.",
+      "scan_attention": "Impact scan complete. Review the files that need attention.",
+      "scan_passed": "Impact scan complete. Every file passed.",
+      "correction_created": "Correction created in Contributions."
+    },
+    "confirm": {
+      "delete_draft": {
+        "title": "Delete protocol draft?",
+        "message": "Version {number} of {name} has not been published. Deleting it is permanent.",
+        "cancel": "Keep draft"
+      },
+      "archive": {
+        "title": "Archive published version?",
+        "message": "Version {number} of {name} will remain in the audit history but cannot be activated or used for new scans.",
+        "confirm": "Archive version",
+        "cancel": "Keep version"
+      },
+      "purge": {
+        "title": "Permanently delete this version?",
+        "message": "Version {number} of {name} and its disposable preview results will be removed. This is allowed only if it was never activated or used for research validation.",
+        "cancel": "Keep archived"
+      }
+    },
+    "correction": {
+      "title": "Protocol correction: {filename}",
+      "comment": "{message}\n\nLocation: {location}"
+    },
+    "rule_count": "{n} configured rule | {n} configured rules",
+    "warning_count": "{n} enforced as warning | {n} enforced as warnings"
+  },
+  "protocolRules": {
+    "remove": "Remove",
+    "remove_named": "Remove {name}",
+    "optional": "Optional",
+    "tiers": {
+      "step": "1 · Annotation structure",
+      "title": "Required tiers and relationships",
+      "description": "Add the tiers every submitted ELAN file must contain.",
+      "list": "Required tiers",
+      "required": "Required",
+      "parent": "Parent tier",
+      "no_parent": "No parent",
+      "type": "Linguistic type",
+      "any_type": "Any type",
+      "remove": "Remove required tier {name}",
+      "preview": "Structure preview",
+      "orphaned": "Choose an available parent for: {tiers}.",
+      "empty": "No tiers added yet. Start with one important tier from the project’s ELAN template.",
+      "name": "Tier name",
+      "name_placeholder": "For example: Manual signs",
+      "add": "Add required tier",
+      "cycle": "A tier cannot be placed below one of its children.",
+      "duplicate": "The tier “{name}” is already required.",
+      "any_linguistic_type": "Any linguistic type"
+    },
+    "vocabularies": {
+      "step": "2 · Terminology",
+      "title": "Required controlled vocabularies",
+      "description": "Require the shared vocabularies used by this research project.",
+      "languages": "Values required in languages",
+      "languages_placeholder": "Any, or for example: en, fr",
+      "identifier": "Controlled vocabulary identifier",
+      "identifier_placeholder": "For example: lsfb_vocabulaire",
+      "add": "Add vocabulary"
+    },
+    "media": {
+      "step": "3 · Research media",
+      "title": "Linked recordings",
+      "description": "Define whether annotations must reference video or audio.",
+      "required": "Require linked media",
+      "formats": "Accepted media formats",
+      "other_formats": "Other accepted media formats",
+      "other_type": "Other media MIME type",
+      "other_placeholder": "Other format, for example video/webm",
+      "add": "Add format",
+      "mp4": "MP4 video",
+      "wav": "WAV audio",
+      "mp3": "MP3 audio"
+    },
+    "quality": {
+      "step": "4 · Annotation quality",
+      "title": "Checks on each required tier",
+      "description": "Require tier metadata and complete annotations. Vocabulary checks use the vocabulary named by the tier’s linguistic type."
+    },
+    "types": {
+      "step": "5 · Linguistic types",
+      "title": "Constraint stereotypes",
+      "description": "Require how annotations of a linguistic type relate to a parent."
+    },
+    "filenames": {
+      "step": "6 · Filenames",
+      "title": "Filename standard",
+      "description": "A frozen copy of a naming standard. Later changes to the project’s naming settings do not alter it.",
+      "components": "Filename components",
+      "any_text": "Any text",
+      "accepted": "Accepted: {values}",
+      "remove": "Remove filename standard",
+      "empty": "No filename standard. Uploads follow the project’s naming settings."
+    },
+    "enforcement": {
+      "step": "7 · Enforcement",
+      "title": "What happens when a rule is not met",
+      "description": "Refused files never enter the project. Warnings let the file through and are shown to reviewers.",
+      "list": "Rule enforcement",
+      "when_not_met": "{rule}: when not met",
+      "empty": "Rules you add above can be enforced here.",
+      "refuse": "Refuse the file",
+      "warn": "Accept and warn reviewers"
+    },
+    "checks": {
+      "caption": "Checks applied to the annotations of each required tier",
+      "tier": "Tier",
+      "language": "Content language",
+      "language_of": "Content language of {tier}",
+      "any": "Any",
+      "empty": "Add required tiers above to check the annotations they contain."
+    },
+    "constraints": {
+      "required_for": "Constraint required for {type}",
+      "remove": "Remove constraint rule for {type}",
+      "type_placeholder": "For example: gloss-type",
+      "required": "Required constraint",
+      "add": "Add constraint rule",
+      "duplicate": "“{type}” already has a constraint rule."
+    },
+    "stereotypes": {
+      "none": "No constraint (independent tier)",
+      "Time_Subdivision": "Time subdivision",
+      "Included_In": "Included in",
+      "Symbolic_Subdivision": "Symbolic subdivision",
+      "Symbolic_Association": "Symbolic association"
+    },
+    "labels": {
+      "required_tiers": "Required tiers",
+      "tier_parents": "Parent tiers",
+      "tier_linguistic_types": "Tier linguistic types",
+      "required_controlled_vocabularies": "Required vocabularies",
+      "vocabulary_languages": "Vocabulary languages",
+      "media_required": "Linked media",
+      "allowed_media_mime_types": "Media formats",
+      "participant_tiers": "Participant named",
+      "annotator_tiers": "Annotator named",
+      "tier_languages": "Tier languages",
+      "vocabulary_tiers": "Values from vocabulary",
+      "non_empty_tiers": "No empty values",
+      "time_aligned_tiers": "Time-aligned",
+      "linguistic_type_constraints": "Linguistic type constraints",
+      "filename_standard": "Filename standard"
+    }
+  },
+  "protocolSuggestion": {
+    "eyebrow": "Corpus-assisted setup",
+    "title": "Suggested protocol structure",
+    "tooltip_title": "Evidence, not automatic decisions",
+    "tooltip_text": "ELANora compares the latest accepted revision of every file. Suggestions only enter your editable draft when you select them.",
+    "based_on": "Based on {analyzed} of {total} latest accepted ELAN file revisions. Review every choice before creating a draft.",
+    "close": "Close",
+    "empty": {
+      "title": "No accepted ELAN revisions could be analyzed.",
+      "description": "Upload and accept at least one valid EAF file, then try again."
+    },
+    "metrics": {
+      "universal": "tiers found in every file",
+      "universal_help_label": "Explain universal tiers",
+      "universal_help": "These tier identifiers occur in every analyzed file and are the strongest candidates for a shared required baseline.",
+      "common": "tiers found in at least half",
+      "common_help_label": "Explain common tiers",
+      "common_help": "These tiers are common but not universal. Selecting one will cause files without it to fail the protocol check.",
+      "conflicts": "relationships to review",
+      "conflicts_help_label": "Explain relationships to review",
+      "conflicts_help": "At least two files disagree about a tier's parent or linguistic type. ELANora will not apply that relationship automatically.",
+      "media": "files linked to media",
+      "media_help_label": "Explain linked media count",
+      "media_help": "The number of analyzed EAF files containing at least one ELAN media descriptor."
+    },
+    "no_universal": {
+      "title": "No single tier appears in every file.",
+      "description": "Your corpus likely contains more than one annotation template. Common candidates are shown below, but none are selected automatically."
+    },
+    "skipped": "{n} file was skipped because its latest revision could not be validated. | {n} files were skipped because their latest revisions could not be validated.",
+    "find": "Find a tier",
+    "search": "Search tier names",
+    "show": "Show",
+    "evidence": {
+      "label": "Evidence label",
+      "coverage": "Coverage",
+      "coverage_help_label": "Explain tier coverage",
+      "coverage_help": "Coverage is the percentage of analyzed files in which a tier identifier appears at least once.",
+      "consistency": "Consistency",
+      "consistency_help_label": "Explain relationship consistency",
+      "consistency_help": "Consistency is calculated only among files containing that tier. It measures how often those files agree on the same parent or linguistic type.",
+      "label_help_label": "Explain evidence labels",
+      "label_help": "Evidence labels describe how widely a tier occurs. They do not decide whether a convention is scientifically correct."
+    },
+    "tier": {
+      "coverage": "Coverage: {count} of {total} files · {percent}%",
+      "parent": "Parent: {parent}",
+      "consistent": "{percent}% consistent",
+      "type": "Type: {type}"
+    },
+    "no_match": "No tiers match this view.",
+    "vocabularies": {
+      "title": "Controlled vocabularies",
+      "observed": "{count} observed",
+      "coverage": "{percent}% of files"
+    },
+    "selected": "{n} tier selected. This will only populate the draft editor. | {n} tiers selected. This will only populate the draft editor.",
+    "apply": "Add selected suggestions",
+    "filters": {
+      "core": "In every file",
+      "common": "Common candidates",
+      "all": "All tiers"
+    },
+    "confidence": {
+      "recurring": "Recurring",
+      "limited": "Limited evidence"
+    }
   }
 }

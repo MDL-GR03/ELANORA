@@ -3,8 +3,18 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 
+import { createI18n } from 'vue-i18n';
+
+import messages from '@/locales/en.json';
 import CorpusProtocolSuggestion from './CorpusProtocolSuggestion.vue';
 import AppSelect from '@/components/common/AppSelect.vue';
+
+const GLOBAL = {
+  plugins: [
+    createI18n({ legacy: false, locale: 'en', messages: { en: messages } }),
+  ],
+  stubs: { 'font-awesome-icon': true },
+};
 
 const suggestion = {
   total_files: 2,
@@ -53,7 +63,7 @@ describe('CorpusProtocolSuggestion', () => {
   it('turns selected, consistent corpus evidence into editable rules', async () => {
     const wrapper = mount(CorpusProtocolSuggestion, {
       props: { suggestion },
-      global: { stubs: { 'font-awesome-icon': true } },
+      global: GLOBAL,
     });
 
     await wrapper.get('footer button').trigger('click');
@@ -81,7 +91,7 @@ describe('CorpusProtocolSuggestion', () => {
     };
     const wrapper = mount(CorpusProtocolSuggestion, {
       props: { suggestion: mixedCorpus },
-      global: { stubs: { 'font-awesome-icon': true } },
+      global: GLOBAL,
     });
 
     expect(wrapper.getComponent(AppSelect).props('modelValue')).toBe('common');
