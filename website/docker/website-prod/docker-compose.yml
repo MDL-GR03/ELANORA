@@ -98,6 +98,33 @@ services:
     restart: unless-stopped
     container_name: elanora-change-set-worker-prod
 
+  maintenance-worker:
+    build:
+      context: ../../backend
+      dockerfile: ../backend/docker/Dockerfile.prod
+    env_file:
+      - ../../env/.env.prod
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      ELAN_PROJECTS_BASE_PATH: /app/website/data/elanora_projects
+      ELAN_BACKUPS_BASE_PATH: /app/website/data/recovery-cache
+      INSTANCE_ASSETS_BASE_PATH: /app/website/data/instance-assets
+      SYNC_STAGING_BASE_PATH: /app/website/data/sync-staging
+      # Backups belong off this host. The bind mount below is the default
+      # target so a fresh installation is recoverable without configuration;
+      # point it at external storage, or set BACKUP_STORAGE_BACKEND=s3.
+      BACKUP_LOCAL_ROOT: /app/website/backups
+    command: ["python", "-m", "app.cli.maintenance_worker"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ../../data:/app/website/data
+      - ../../backups:/app/website/backups
+    restart: unless-stopped
+    container_name: elanora-maintenance-worker-prod
+
   db:
     image: postgres:18.6-alpine
     environment:

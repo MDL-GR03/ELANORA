@@ -14,12 +14,14 @@ from app.model.project_integrity import ProjectIntegrityStatus
 from app.schema.responses.operations import (
     EmailDeliveryStatusResponse,
     IntegrityStatusResponse,
+    MaintenanceJobStatusResponse,
     OperationsStatusResponse,
     PublicationQueueStatusResponse,
     RecoveryStatusResponse,
     StorageCheckResponse,
     StorageStatusResponse,
 )
+from app.service.maintenance import MaintenanceJob, latest_run_records
 from app.service.outbox import (
     FAILED_EVENT_RETENTION_DAYS,
     count_pending_events,
@@ -96,11 +98,7 @@ async def operations_status(db: AsyncSession) -> OperationsStatusResponse:
             unscanned_projects=max(total_projects - tracked, 0),
             latest_check_at=row[2],
         ),
-        recovery=RecoveryStatusResponse(
-            responsibility="deployment_operator",
-            latest_drill_at=None,
-            state="not_reported",
-        ),
+        recovery=await recovery_status(db),
         publication_queue=PublicationQueueStatusResponse(
             queued=int(publication_counts[0] or 0),
             running=int(publication_counts[1] or 0),
@@ -113,6 +111,50 @@ async def operations_status(db: AsyncSession) -> OperationsStatusResponse:
             oldest_pending_at=await oldest_pending_event_at(db),
             retention_days=FAILED_EVENT_RETENTION_DAYS,
         ),
+    )
+
+
+async def recovery_status(db: AsyncSession) -> RecoveryStatusResponse:
+    """Report whether this installation currently has a usable backup.
+
+    The product takes its own backups, so it can answer this instead of
+    telling the administrator that recoverability is somebody else's job.
+    """
+    runs = await latest_run_records(db)
+    backup = runs.get(MaintenanceJob.BACKUP)
+    verification = runs.get(MaintenanceJob.BACKUP_VERIFICATION)
+    succeeded = backup is not None and backup.outcome == "succeeded"
+    if backup is None:
+        state = "not_yet_run"
+    elif backup.outcome == "skipped":
+        # Almost always a missing passphrase: there is no backup to restore.
+        state = "not_configured"
+    elif backup.outcome == "failed":
+        state = "failing"
+    elif verification is not None and verification.outcome == "failed":
+        state = "unverified"
+    else:
+        state = "healthy"
+    return RecoveryStatusResponse(
+        responsibility="installation",
+        latest_backup_at=backup.started_at if succeeded else None,
+        latest_verified_backup_at=(
+            verification.started_at
+            if verification is not None and verification.outcome == "succeeded"
+            else None
+        ),
+        latest_drill_at=None,
+        state=state,
+        jobs=[
+            MaintenanceJobStatusResponse(
+                job=job.value,
+                outcome=run.outcome,
+                started_at=run.started_at,
+                finished_at=run.finished_at,
+                detail=run.detail,
+            )
+            for job, run in sorted(runs.items(), key=lambda item: item[0].value)
+        ],
     )
 
 

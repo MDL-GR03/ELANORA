@@ -54,6 +54,7 @@ from .file_type import FileType
 from .instance import Instance
 from .instance_asset import InstanceAsset
 from .invitation import Invitation
+from .maintenance_run import MaintenanceRun
 from .notification import Notification
 from .notification_preference import NotificationPreference
 from .pending_upload import PendingUpload
@@ -114,6 +115,7 @@ __all__ = [
     "InstanceAsset",
     "Invitation",
     "InvitationStatus",
+    "MaintenanceRun",
     "Notification",
     "NotificationPreference",
     "OutboxEvent",

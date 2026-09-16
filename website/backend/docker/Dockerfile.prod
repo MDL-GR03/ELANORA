@@ -1,9 +1,11 @@
 FROM python:3.13-slim AS runtime
 
 # Git is an application runtime dependency: each research project is a Git
-# repository. Poetry is used only to install the locked Python environment.
+# repository. postgresql-client provides pg_dump, which this installation uses
+# to take its own scheduled backups. Poetry is used only to install the locked
+# Python environment.
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends git \
+    && apt-get install --yes --no-install-recommends git postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir poetry==2.4.2
 

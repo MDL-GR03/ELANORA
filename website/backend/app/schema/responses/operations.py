@@ -21,10 +21,25 @@ class IntegrityStatusResponse(BaseModel):
     latest_check_at: datetime | None
 
 
+class MaintenanceJobStatusResponse(BaseModel):
+    """What one scheduled job last did."""
+
+    job: str
+    outcome: str
+    started_at: datetime
+    finished_at: datetime | None
+    detail: dict[str, object]
+
+
 class RecoveryStatusResponse(BaseModel):
+    """Whether this installation is actually recoverable right now."""
+
     responsibility: str
+    latest_backup_at: datetime | None
+    latest_verified_backup_at: datetime | None
     latest_drill_at: datetime | None
     state: str
+    jobs: list[MaintenanceJobStatusResponse]
 
 
 class PublicationQueueStatusResponse(BaseModel):
