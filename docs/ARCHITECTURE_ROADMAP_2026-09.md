@@ -230,10 +230,23 @@ before a blanket exclusion constraint is introduced.
 
 - *Classification:* each project records a data classification (public,
   internal, confidential, sensitive personal data) and its legal basis or
-  consent reference; access, exports and logging follow the project's level.
+  consent reference. This is record-keeping for retention timing and
+  compliance evidence only. It must never restrict a project member's access,
+  export, or visibility: every researcher granted a project needs full ability
+  to export and reuse its EAF files, and gating that would defeat the product.
 - *Retention:* deleting a project leaves a tombstone; its content is purged once
-  the project's retention period ends unless a legal hold is set. A participant
-  withdrawal purges that participant's files early, with an audit record.
+  the project's retention period ends unless a legal hold is set. Participant
+  withdrawal is deliberately **not** automated: ELANORA has no reliable
+  participant identity (the EAF `PARTICIPANT` tier attribute is free text an
+  annotator types, not a controlled identifier), so matching a withdrawal
+  request to "all of this person's data" cannot be done safely by software.
+  It is a rare, manual, admin-only action: an administrator locates the
+  relevant file(s) and edits or removes the content, recorded as an audit
+  event with the existing tooling. Every deletion-adjacent action (project
+  deletion, governance settings, the retention purge itself) already requires
+  project-admin permission or runs as an unattended scheduled job outside any
+  interactive user's reach; a contributor has no path to delete accepted
+  content or their own submitted data.
 - *Recovery targets:* at most 24 hours of data loss and restoration within one
   day, met by nightly encrypted off-host backups of the database and project
   storage, with a scheduled restore drill.
