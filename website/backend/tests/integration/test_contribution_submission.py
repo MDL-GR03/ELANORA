@@ -42,7 +42,7 @@ def isolate_backups(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "app.service.contribution_publication.update_backup", lambda *_a: None
     )
-    monkeypatch.setattr("app.service.git_operations.update_backup", lambda *_a: None)
+    monkeypatch.setattr("app.service.git_backup.update_backup", lambda *_a: None)
 
 
 def _revised(label: str) -> bytes:
@@ -350,7 +350,7 @@ async def test_two_uploads_in_the_same_second_are_both_kept(
         def now(cls, tz=None):
             return frozen
 
-    monkeypatch.setattr("app.service.git_operations.datetime", FrozenClock)
+    monkeypatch.setattr("app.service.git_branches.datetime", FrozenClock)
     service = GitService(base_path=str(tmp_path))
 
     first = await _submit(
@@ -399,8 +399,8 @@ async def test_a_colliding_submission_never_deletes_the_earlier_contribution(
         def now(cls, tz=None):
             return frozen
 
-    monkeypatch.setattr("app.service.git_operations.datetime", FrozenClock)
-    monkeypatch.setattr("app.service.git_operations.secrets.token_hex", lambda _n: "00")
+    monkeypatch.setattr("app.service.git_branches.datetime", FrozenClock)
+    monkeypatch.setattr("app.service.git_branches.secrets.token_hex", lambda _n: "00")
     service = GitService(base_path=str(tmp_path))
     first = await _submit(
         service, session, project, ada, [_upload("video-11.eaf", _revised("First"))]

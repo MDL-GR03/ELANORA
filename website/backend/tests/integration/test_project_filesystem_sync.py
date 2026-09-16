@@ -28,7 +28,7 @@ PROJECT_NAME = "sync-corpus"
 
 @pytest.fixture(autouse=True)
 def isolate_backups(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("app.service.git_operations.update_backup", lambda *_a: None)
+    monkeypatch.setattr("app.service.git_backup.update_backup", lambda *_a: None)
 
 
 async def _project(

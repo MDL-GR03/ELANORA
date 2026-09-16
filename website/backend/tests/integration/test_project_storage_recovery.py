@@ -28,7 +28,7 @@ def roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     projects.mkdir()
     backups.mkdir()
     monkeypatch.setattr("app.utils.project_backup.ELAN_BACKUPS_BASE_PATH", str(backups))
-    monkeypatch.setattr("app.service.git_operations.update_backup", lambda *_a: None)
+    monkeypatch.setattr("app.service.git_backup.update_backup", lambda *_a: None)
     return projects, backups
 
 
@@ -202,7 +202,7 @@ async def test_a_failed_restore_puts_partial_storage_back_and_can_be_retried(
     monkeypatch.setattr(
         "app.utils.project_backup.ELAN_BACKUPS_BASE_PATH", str(roots[1])
     )
-    monkeypatch.setattr("app.service.git_operations.update_backup", lambda *_a: None)
+    monkeypatch.setattr("app.service.git_backup.update_backup", lambda *_a: None)
     await GitService(base_path=str(projects)).restore_project_from_backup(
         "retry", session, curator_id
     )

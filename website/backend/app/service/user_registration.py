@@ -24,7 +24,7 @@ from app.utils.password_hashing import hash_password
 logger = get_logger()
 
 
-async def create_user(  # noqa: PLR0913, PLR0917 - the account's own fields
+async def create_user(
     db: AsyncSession,
     username: str,
     email: str,

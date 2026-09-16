@@ -23,7 +23,7 @@ def roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     projects.mkdir()
     backups.mkdir()
     monkeypatch.setattr("app.utils.project_backup.ELAN_BACKUPS_BASE_PATH", str(backups))
-    monkeypatch.setattr("app.service.git_operations.update_backup", lambda *_a: None)
+    monkeypatch.setattr("app.service.git_backup.update_backup", lambda *_a: None)
     return projects, backups
 
 

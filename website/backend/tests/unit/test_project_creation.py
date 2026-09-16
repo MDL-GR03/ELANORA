@@ -19,7 +19,7 @@ def eaf_upload(filename: str = "session.eaf") -> UploadFile:
 
 def test_init_repo_sets_an_application_owned_commit_identity(tmp_path: Path) -> None:
     """A container must not need a global Git identity to create projects."""
-    with patch("app.service.git_operations.update_backup"):
+    with patch("app.service.git_backup.update_backup"):
         runner = GitCommandRunner(tmp_path, maintain_backup=False)
         runner.init_repo()
 
@@ -89,7 +89,7 @@ async def test_failed_project_creation_removes_partial_repository(
         ),
         patch("app.service.project_lifecycle.remove_project_backup") as remove_backup,
         patch("app.service.project_lifecycle.copy_githooks"),
-        patch("app.service.git_operations.update_backup"),
+        patch("app.service.git_backup.update_backup"),
         patch(
             "app.service.project_lifecycle.create_project_db",
             new=AsyncMock(side_effect=RuntimeError("database unavailable")),

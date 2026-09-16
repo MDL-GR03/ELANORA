@@ -40,7 +40,7 @@ def isolate_recovery_backups(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "app.service.contribution_publication.update_backup", lambda *_args: None
     )
-    monkeypatch.setattr("app.service.git_operations.update_backup", lambda *_args: None)
+    monkeypatch.setattr("app.service.git_backup.update_backup", lambda *_args: None)
 
 
 def _user(username: str, instance: Instance, role: UserRole = UserRole.PUBLIC) -> User:

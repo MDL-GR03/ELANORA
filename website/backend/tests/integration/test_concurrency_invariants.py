@@ -233,7 +233,7 @@ async def test_competing_workers_never_publish_one_change_set_twice(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Publishing a contribution twice would rewrite accepted research data."""
-    monkeypatch.setattr("app.service.git_operations.update_backup", lambda *_: None)
+    monkeypatch.setattr("app.service.git_backup.update_backup", lambda *_: None)
     institution = _institution("publish")
     curator = _user(institution, "publish-curator", UserRole.ADMIN)
     project = Project(

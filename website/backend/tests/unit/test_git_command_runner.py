@@ -13,7 +13,7 @@ def test_git_commands_trust_only_the_resolved_project_directory(
     runner = GitCommandRunner(tmp_path, maintain_backup=False)
 
     with patch(
-        "app.service.git_operations.subprocess.run",
+        "app.service.git_command_runner.subprocess.run",
         return_value=CompletedProcess([], 0, stdout="", stderr=""),
     ) as run:
         runner.run(["status", "--porcelain"], check=True)
@@ -33,7 +33,7 @@ def test_git_blob_commands_can_preserve_arbitrary_bytes(tmp_path: Path) -> None:
     runner = GitCommandRunner(tmp_path, maintain_backup=False)
 
     with patch(
-        "app.service.git_operations.subprocess.run",
+        "app.service.git_command_runner.subprocess.run",
         return_value=CompletedProcess([], 0, stdout=b"\xffEAF", stderr=b""),
     ) as run:
         result = runner.run_bytes(["show", "main:file.eaf"], check=True)

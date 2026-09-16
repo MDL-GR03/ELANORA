@@ -131,7 +131,7 @@ ignore = [
     "ISC002",
 ]
 
-per-file-ignores = { "app/service/git.py" = ["S603", "S607"], "tests/**/*.py" = ["S101", "PLR2004"], "app/service/git_operations.py" = ["S603", "S607"], "app/legacy_migration/service.py" = ["S603", "S607"], "app/elan/validation.py" = ["PLR0912", "PLR0915"], "app/service/user.py" = ["PLR0913", "PLR0917"], "app/service/notification.py" = ["PLR0913", "PLR0917"] }
+per-file-ignores = { "app/service/git.py" = ["S603", "S607"], "tests/**/*.py" = ["S101", "PLR2004"], "app/service/git_branches.py" = ["S603", "S607"], "app/service/git_merge.py" = ["S603", "S607"], "app/service/git_uploads.py" = ["S603", "S607"], "app/service/git_command_runner.py" = ["S603", "S607"], "app/legacy_migration/service.py" = ["S603", "S607"], "app/elan/validation.py" = ["PLR0912", "PLR0915"], "app/service/user.py" = ["PLR0913", "PLR0917"], "app/service/user_registration.py" = ["PLR0913", "PLR0917"], "app/service/notification.py" = ["PLR0913", "PLR0917"] }
 
 [tool.ruff.lint.pylint]
 max-args = 8
