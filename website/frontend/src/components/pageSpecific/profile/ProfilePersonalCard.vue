@@ -1,56 +1,30 @@
 <template>
   <!-- Personal Information Card -->
   <div class="profile-card personal-info-card">
-    <div class="profile-card-header">
-      <div class="card-title-section">
-        <div class="card-icon">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M20.5899 22C20.5899 18.13 16.7399 15 11.9999 15C7.25991 15 3.40991 18.13 3.40991 22"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
-        <h3>{{ t('profile.overview.personal_info.title') }}</h3>
-      </div>
-      <button
-        v-if="!editUsernameMode"
-        class="edit-button modern-edit-btn"
-        @click="startEditUsername"
-      >
+    <ProfileCardHeader
+      :title="t('profile.overview.personal_info.title')"
+      :editable="!editUsernameMode"
+      @edit="startEditUsername"
+    >
+      <template #icon>
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
-            d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13"
+            d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
           <path
-            d="M18.5 2.49998C18.8978 2.10216 19.4374 1.87866 20 1.87866C20.5626 1.87866 21.1022 2.10216 21.5 2.49998C21.8978 2.89781 22.1213 3.43737 22.1213 3.99998C22.1213 4.56259 21.8978 5.10216 21.5 5.49998L12 15L8 16L9 12L18.5 2.49998Z"
+            d="M20.5899 22C20.5899 18.13 16.7399 15 11.9999 15C7.25991 15 3.40991 18.13 3.40991 22"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
         </svg>
-        {{ t('profile.overview.edit') }}
-      </button>
-    </div>
+      </template>
+    </ProfileCardHeader>
     <div class="profile-card-content">
       <div class="profile-field-group">
         <div class="profile-field">
@@ -341,6 +315,7 @@
 </template>
 
 <script setup>
+import ProfileCardHeader from './ProfileCardHeader.vue';
 import { useI18n } from 'vue-i18n';
 
 defineProps({

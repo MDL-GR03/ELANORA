@@ -1,54 +1,28 @@
 <template>
   <!-- Address Information Card -->
   <div v-if="userProfile.address" class="profile-card address-info-card">
-    <div class="profile-card-header">
-      <div class="card-title-section">
-        <div class="card-icon">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M21 10C21 17 12 23 12 23S3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.3639 3.63604C20.0518 5.32387 21 7.61305 21 10Z"
-              stroke="currentColor"
-              stroke-width="2"
-            />
-            <circle
-              cx="12"
-              cy="10"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            />
-          </svg>
-        </div>
-        <h3>{{ t('profile.overview.address_info.title') }}</h3>
-      </div>
-      <button
-        v-if="!editAddressMode"
-        class="edit-button modern-edit-btn"
-        @click="editAddress"
-      >
+    <ProfileCardHeader
+      :title="t('profile.overview.address_info.title')"
+      :editable="!editAddressMode"
+      @edit="editAddress"
+    >
+      <template #icon>
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
-            d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13"
+            d="M21 10C21 17 12 23 12 23S3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.3639 3.63604C20.0518 5.32387 21 7.61305 21 10Z"
             stroke="currentColor"
             stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
           />
-          <path
-            d="M18.5 2.49998C18.8978 2.10216 19.4374 1.87866 20 1.87866C20.5626 1.87866 21.1022 2.10216 21.5 2.49998C21.8978 2.89781 22.1213 3.43737 22.1213 3.99998C22.1213 4.56259 21.8978 5.10216 21.5 5.49998L12 15L8 16L9 12L18.5 2.49998Z"
+          <circle
+            cx="12"
+            cy="10"
+            r="3"
             stroke="currentColor"
             stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
           />
         </svg>
-        {{ t('profile.overview.edit') }}
-      </button>
-    </div>
+      </template>
+    </ProfileCardHeader>
     <div class="profile-card-content">
       <template v-if="editAddressMode">
         <div class="edit-form-container">
@@ -376,6 +350,7 @@
 </template>
 
 <script setup>
+import ProfileCardHeader from './ProfileCardHeader.vue';
 import { useI18n } from 'vue-i18n';
 import AppSelect from '@/components/common/AppSelect.vue';
 
