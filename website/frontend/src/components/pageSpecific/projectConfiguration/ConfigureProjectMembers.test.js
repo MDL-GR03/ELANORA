@@ -8,7 +8,7 @@ import { addUserToProject } from '@/api/service/projectAssociationService';
 import ConfigureProjectMembers from './ConfigureProjectMembers.vue';
 
 vi.mock('vue-i18n', () => ({
-  useI18n: () => ({ t: (key) => key }),
+  useI18n: () => ({ t: (key) => `t:${key}` }),
 }));
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { projectId: '42' } }),
@@ -117,5 +117,23 @@ describe('ConfigureProjectMembers', () => {
       user_id: 7,
       permission: 'read',
     });
+  });
+
+  it('keeps the dialog open and explains a refused addition', async () => {
+    addUserToProject.mockRejectedValueOnce({
+      response: { data: { code: 'invite_admin_forbidden' } },
+    });
+    const wrapper = mount(ConfigureProjectMembers, { global });
+    await flushPromises();
+    await wrapper.get('.btn-add-member').trigger('click');
+    await flushPromises();
+    await wrapper.get('#userId').trigger('click');
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+    expect(wrapper.get('#add-member-error').text()).toBe(
+      't:apiErrors.invite_admin_forbidden'
+    );
   });
 });
