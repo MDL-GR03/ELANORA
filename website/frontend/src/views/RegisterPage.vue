@@ -697,6 +697,14 @@ import {
   checkUsernameAvailability,
   checkEmailAvailability,
 } from '@/api/service/userService';
+import {
+  REQUIRED_ADDRESS_FIELDS,
+  REQUIRED_REGISTRATION_FIELDS,
+  passwordChecksOf,
+  passwordStrengthOf,
+  validateRegistrationField,
+  validateRegistrationForm,
+} from '@/utils/registrationValidation';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -777,21 +785,9 @@ const emailInputFocused = ref(false);
 const passwordInputFocused = ref(false);
 
 // Password strength
-const passwordStrength = computed(() => {
-  const password = form.value.password;
-  if (!password) return 'weak';
-
-  let score = 0;
-  if (password.length >= 8) score++;
-  if (/[a-z]/.test(password)) score++;
-  if (/[A-Z]/.test(password)) score++;
-  if (/\d/.test(password)) score++;
-  if (/[^A-Za-z0-9]/.test(password)) score++;
-
-  if (score < 3) return 'weak';
-  if (score < 5) return 'medium';
-  return 'strong';
-});
+const passwordStrength = computed(() =>
+  passwordStrengthOf(form.value.password)
+);
 
 const passwordStrengthWidth = computed(() => {
   const strength = passwordStrength.value;
@@ -801,16 +797,7 @@ const passwordStrengthWidth = computed(() => {
 });
 
 // Password requirements check
-const passwordChecks = computed(() => {
-  const password = form.value.password;
-  return {
-    length: password && password.length >= 8,
-    lowercase: password && /[a-z]/.test(password),
-    uppercase: password && /[A-Z]/.test(password),
-    number: password && /\d/.test(password),
-    special: password && /[^A-Za-z0-9]/.test(password),
-  };
-});
+const passwordChecks = computed(() => passwordChecksOf(form.value.password));
 
 // Computed properties for address validation message display
 const cityValidationMessage = computed(() => {
@@ -897,24 +884,8 @@ const postalCodeValidationMessage = computed(() => {
 });
 
 const isFormValid = computed(() => {
-  const requiredFields = [
-    'firstName',
-    'lastName',
-    'username',
-    'email',
-    'confirmEmail',
-    'password',
-    'confirmPassword',
-    'affiliation',
-    'department',
-  ];
-
-  const requiredAddressFields = [
-    'countryId',
-    'cityName',
-    'streetName',
-    'postalCode',
-  ];
+  const requiredFields = REQUIRED_REGISTRATION_FIELDS;
+  const requiredAddressFields = REQUIRED_ADDRESS_FIELDS;
 
   // Check required fields
   for (const field of requiredFields) {
@@ -992,185 +963,15 @@ const onPasswordInput = () => {
 
 // Validation functions
 const validateField = (fieldName) => {
-  validationErrors.value[fieldName] = '';
-
-  switch (fieldName) {
-    case 'firstName':
-      if (!form.value.firstName) {
-        validationErrors.value.firstName = t('register.first_name_required');
-      } else if (form.value.firstName.length < 2) {
-        validationErrors.value.firstName = t('register.first_name_too_short');
-      } else if (form.value.firstName.length > 50) {
-        validationErrors.value.firstName =
-          'First name must be less than 50 characters';
-      } else if (!/^[a-zA-ZÀ-ÿ\s-']+$/.test(form.value.firstName)) {
-        validationErrors.value.firstName =
-          'First name can only contain letters, spaces, hyphens, and apostrophes';
-      }
-      break;
-
-    case 'lastName':
-      if (!form.value.lastName) {
-        validationErrors.value.lastName = t('register.last_name_required');
-      } else if (form.value.lastName.length < 2) {
-        validationErrors.value.lastName = t('register.last_name_too_short');
-      } else if (form.value.lastName.length > 50) {
-        validationErrors.value.lastName =
-          'Last name must be less than 50 characters';
-      } else if (!/^[a-zA-ZÀ-ÿ\s-']+$/.test(form.value.lastName)) {
-        validationErrors.value.lastName =
-          'Last name can only contain letters, spaces, hyphens, and apostrophes';
-      }
-      break;
-
-    case 'username':
-      if (!form.value.username) {
-        validationErrors.value.username = t('register.username_required');
-      } else if (form.value.username.length < 3) {
-        validationErrors.value.username = t('register.username_too_short');
-      } else if (form.value.username.length > 20) {
-        validationErrors.value.username =
-          'Username must be less than 20 characters';
-      } else if (!/^\w+$/.test(form.value.username)) {
-        validationErrors.value.username = t('register.username_invalid');
-      }
-      break;
-
-    case 'email':
-      if (!form.value.email) {
-        validationErrors.value.email = t('register.email_required');
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
-        validationErrors.value.email = t('register.email_invalid');
-      }
-      break;
-
-    case 'confirmEmail':
-      if (!form.value.confirmEmail) {
-        validationErrors.value.confirmEmail = t('register.email_required');
-      } else if (form.value.email !== form.value.confirmEmail) {
-        validationErrors.value.confirmEmail = t('register.emails_no_match');
-      }
-      break;
-
-    case 'password':
-      if (!form.value.password) {
-        validationErrors.value.password = t('register.password_required');
-      } else if (form.value.password.length < 8) {
-        validationErrors.value.password = t('register.password_too_short');
-      } else if (passwordStrength.value === 'weak') {
-        validationErrors.value.password = t('register.password_weak');
-      }
-      break;
-
-    case 'confirmPassword':
-      if (!form.value.confirmPassword) {
-        validationErrors.value.confirmPassword = t(
-          'register.password_required'
-        );
-      } else if (form.value.password !== form.value.confirmPassword) {
-        validationErrors.value.confirmPassword = t(
-          'register.passwords_no_match'
-        );
-      }
-      break;
-
-    case 'phoneNumber':
-      if (form.value.phoneNumber) {
-        const cleaned = form.value.phoneNumber.replace(/[\s\-()]/g, '');
-        if (!/^(\+?[1-9]\d{7,15}|0\d{8,15})$/.test(cleaned)) {
-          validationErrors.value.phoneNumber = t('register.phone_invalid');
-        }
-      }
-      break;
-
-    case 'affiliation':
-      if (!form.value.affiliation) {
-        validationErrors.value.affiliation = t('register.affiliation_required');
-      } else if (form.value.affiliation.length < 2) {
-        validationErrors.value.affiliation =
-          'Affiliation must be at least 2 characters';
-      } else if (form.value.affiliation.length > 100) {
-        validationErrors.value.affiliation =
-          'Affiliation must be less than 100 characters';
-      }
-      break;
-
-    case 'department':
-      if (!form.value.department) {
-        validationErrors.value.department = t('register.department_required');
-      } else if (form.value.department.length < 2) {
-        validationErrors.value.department =
-          'Department must be at least 2 characters';
-      } else if (form.value.department.length > 100) {
-        validationErrors.value.department =
-          'Department must be less than 100 characters';
-      }
-      break;
-
-    case 'countryId':
-      if (!form.value.address.countryId) {
-        validationErrors.value.countryId = t('register.country_required');
-      }
-      break;
-
-    case 'cityName':
-      if (!form.value.address.cityName) {
-        validationErrors.value.cityName = t('register.city_required');
-      } else if (form.value.address.cityName.length < 2) {
-        validationErrors.value.cityName =
-          'City name must be at least 2 characters';
-      } else if (form.value.address.cityName.length > 50) {
-        validationErrors.value.cityName =
-          'City name must be less than 50 characters';
-      } else if (!/^[a-zA-ZÀ-ÿ\s-']+$/.test(form.value.address.cityName)) {
-        validationErrors.value.cityName =
-          'City name can only contain letters, spaces, hyphens, and apostrophes';
-      }
-      break;
-
-    case 'streetName':
-      if (!form.value.address.streetName) {
-        validationErrors.value.streetName = t('register.street_name_required');
-      } else if (form.value.address.streetName.length < 3) {
-        validationErrors.value.streetName =
-          'Street name must be at least 3 characters';
-      } else if (form.value.address.streetName.length > 100) {
-        validationErrors.value.streetName =
-          'Street name must be less than 100 characters';
-      }
-      break;
-
-    case 'postalCode':
-      if (!form.value.address.postalCode) {
-        validationErrors.value.postalCode = t('register.postal_code_required');
-      } else if (
-        !/^[A-Za-z0-9\s-]{3,10}$/.test(form.value.address.postalCode)
-      ) {
-        validationErrors.value.postalCode = t('register.postal_code_invalid');
-      }
-      break;
-  }
+  validationErrors.value[fieldName] = validateRegistrationField(
+    fieldName,
+    form.value,
+    t
+  );
 };
 
 const validateAllFields = () => {
-  const fieldsToValidate = [
-    'firstName',
-    'lastName',
-    'username',
-    'email',
-    'confirmEmail',
-    'password',
-    'confirmPassword',
-    'phoneNumber',
-    'affiliation',
-    'department',
-    'countryId',
-    'cityName',
-    'streetName',
-    'postalCode',
-  ];
-
-  fieldsToValidate.forEach((field) => validateField(field));
+  validationErrors.value = validateRegistrationForm(form.value, t);
 };
 
 // Address validation functions
