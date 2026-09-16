@@ -1,6 +1,6 @@
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, model_validator
 
-from app.core.password_policy import NewPassword
+from app.core.password_policy import NewPassword, enforce_password_policy
 from app.schema.common.base import CustomBaseModel
 
 
@@ -49,6 +49,11 @@ class ResetPasswordRequest(CustomBaseModel):
     email: str
     code: str
     new_password: NewPassword
+
+    @model_validator(mode="after")
+    def password_is_not_personal(self) -> "ResetPasswordRequest":
+        enforce_password_policy(self.new_password, (self.email,))
+        return self
 
 
 class SendVerificationEmailRequest(CustomBaseModel):

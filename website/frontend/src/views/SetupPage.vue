@@ -125,7 +125,7 @@
                 }}<input
                   v-model="form.password"
                   type="password"
-                  minlength="12"
+                  :minlength="PASSWORD_MINIMUM_LENGTH"
                   autocomplete="new-password"
                   required
               /></label>
@@ -134,7 +134,7 @@
                 }}<input
                   v-model="form.password_confirmation"
                   type="password"
-                  minlength="12"
+                  :minlength="PASSWORD_MINIMUM_LENGTH"
                   autocomplete="new-password"
                   required
               /></label>
@@ -156,6 +156,10 @@ import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import setupService from '@/api/service/setupService';
 import AppSelect from '@/components/common/AppSelect.vue';
+import {
+  PASSWORD_MINIMUM_LENGTH,
+  passwordRequestError,
+} from '@/utils/passwordPolicy';
 import { useAppInfoStore } from '@/stores/appInfo';
 
 const { t } = useI18n();
@@ -213,8 +217,11 @@ async function submit() {
     appInfoStore.setInstance(result.instance);
     window.location.assign(router.resolve({ name: 'LoginPage' }).href);
   } catch (requestError) {
-    error.value =
-      requestError.response?.data?.detail || t('setup.errors.failed');
+    error.value = passwordRequestError(
+      requestError,
+      t,
+      t('setup.errors.failed')
+    );
   } finally {
     submitting.value = false;
   }

@@ -34,7 +34,7 @@ async def test_reset_password_replaces_hash_and_preserves_account(
         admin_affiliation="Research institute",
         admin_department="Research IT",
     )
-    _, original = await bootstrap(session, config, "old-password-123")
+    _, original = await bootstrap(session, config, "tidal marsh 7 lanterns")
     session_id = uuid.uuid4()
     refresh_token = create_refresh_token(
         TokenData(sub=str(original.user_id), session_id=str(session_id))
@@ -42,12 +42,14 @@ async def test_reset_password_replaces_hash_and_preserves_account(
     await create_refresh_session(session, original.user_id, session_id, refresh_token)
     await session.commit()
 
-    updated = await reset_password(session, "administrator", "new-password-456")
+    updated = await reset_password(session, "administrator", "quiet river bends west")
 
     assert updated.user_id == original.user_id
-    assert password_hashing.verify_password("new-password-456", updated.hashed_password)
+    assert password_hashing.verify_password(
+        "quiet river bends west", updated.hashed_password
+    )
     assert not password_hashing.verify_password(
-        "old-password-123", updated.hashed_password
+        "tidal marsh 7 lanterns", updated.hashed_password
     )
     stored_session = await session.scalar(
         select(RefreshSession).where(RefreshSession.session_id == session_id)

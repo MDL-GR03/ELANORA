@@ -7,7 +7,7 @@ import getpass
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.cli.bootstrap import MINIMUM_BOOTSTRAP_PASSWORD_LENGTH
+from app.core.password_policy import MESSAGES, password_policy_violation
 from app.db.database import close_database, get_session_maker, init_database
 from app.model.user import User
 from app.service.refresh_session import revoke_all_refresh_sessions
@@ -16,13 +16,14 @@ from app.utils import password_hashing
 
 async def reset_password(db: AsyncSession, username: str, password: str) -> User:
     """Replace one user's password hash without changing any other account data."""
-    if len(password) < MINIMUM_BOOTSTRAP_PASSWORD_LENGTH:
-        raise ValueError(
-            f"password must have at least {MINIMUM_BOOTSTRAP_PASSWORD_LENGTH} characters"
-        )
     user = await db.scalar(select(User).where(User.username == username))
     if user is None:
         raise ValueError(f"user {username!r} does not exist")
+    refusal = password_policy_violation(
+        password, (user.username, user.email, user.first_name, user.last_name)
+    )
+    if refusal:
+        raise ValueError(f"password refused: {MESSAGES[refusal]}")
     user.hashed_password = password_hashing.hash_password(password)
     await revoke_all_refresh_sessions(db, user.user_id)
     await db.commit()

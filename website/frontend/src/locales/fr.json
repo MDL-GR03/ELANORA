@@ -314,8 +314,8 @@
     "password_label": "Mot de passe",
     "password_placeholder": "Créez un mot de passe",
     "password_required": "Le mot de passe est requis",
-    "password_too_short": "Le mot de passe doit contenir au moins 8 caractères",
-    "password_weak": "Le mot de passe devrait contenir majuscules, minuscules, chiffres et caractères spéciaux",
+    "password_too_short": "Le mot de passe doit contenir au moins 15 caractères",
+    "password_weak": "Le mot de passe ne doit pas être un motif répété ou une suite",
     "password_strength_weak": "Faible",
     "password_strength_medium": "Moyen",
     "password_strength_strong": "Fort",
@@ -2242,12 +2242,17 @@
     "saving": "Enregistrement…"
   },
   "passwordPolicy": {
-    "title": "Le mot de passe doit contenir :",
-    "length": "Au moins 8 caractères",
-    "uppercase": "Au moins une lettre majuscule",
-    "lowercase": "Au moins une lettre minuscule",
-    "number": "Au moins un chiffre",
-    "special": "Au moins un caractère spécial"
+    "title": "Votre mot de passe doit :",
+    "length": "Contenir au moins {min} caractères",
+    "pattern": "Ne pas être un motif répété ou une suite",
+    "advice": "Quelques mots sans rapport entre eux forment un mot de passe long et facile à retenir. Les mots de passe courants et ceux construits à partir de votre nom, nom d'utilisateur ou adresse e-mail sont refusés.",
+    "errors": {
+      "too_short": "Votre mot de passe doit contenir au moins {min} caractères.",
+      "too_long": "Votre mot de passe doit faire au plus {max} octets.",
+      "common": "Ce mot de passe est trop courant : il figure dans des listes de mots de passe divulgués.",
+      "repetitive": "Ce mot de passe est un motif répété ou une suite.",
+      "personal": "Ce mot de passe est construit à partir de votre nom, nom d'utilisateur ou adresse e-mail."
+    }
   },
   "setup": {
     "preview": {

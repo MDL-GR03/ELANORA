@@ -314,8 +314,8 @@
     "password_label": "Password",
     "password_placeholder": "Create a password",
     "password_required": "Password is required",
-    "password_too_short": "Password must be at least 8 characters",
-    "password_weak": "Password should contain uppercase, lowercase, numbers and special characters",
+    "password_too_short": "Password must be at least 15 characters",
+    "password_weak": "Password must not be a repeated or sequential pattern",
     "password_strength_weak": "Weak",
     "password_strength_medium": "Medium",
     "password_strength_strong": "Strong",
@@ -2242,12 +2242,17 @@
     "saving": "Saving…"
   },
   "passwordPolicy": {
-    "title": "Password must contain:",
-    "length": "At least 8 characters",
-    "uppercase": "At least one uppercase letter",
-    "lowercase": "At least one lowercase letter",
-    "number": "At least one number",
-    "special": "At least one special character"
+    "title": "Your password must:",
+    "length": "Be at least {min} characters long",
+    "pattern": "Not be a repeated or sequential pattern",
+    "advice": "A few unrelated words make a long password that is easy to remember. Common passwords and passwords built from your name, username or email address are refused.",
+    "errors": {
+      "too_short": "Your password must be at least {min} characters long.",
+      "too_long": "Your password must be at most {max} bytes long.",
+      "common": "This password is too common: it appears in lists of breached passwords.",
+      "repetitive": "This password is a repeated or sequential pattern.",
+      "personal": "This password is built from your own name, username or email address."
+    }
   },
   "setup": {
     "preview": {

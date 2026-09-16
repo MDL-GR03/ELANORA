@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.password_policy import MESSAGES, password_policy_violation
 from app.crud.user import get_all_active_users, get_all_users
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep, get_user_dep
@@ -308,6 +309,21 @@ async def change_user_password(
     db: AsyncSession = get_db_dep,
 ) -> dict[str, str]:
     """Change the current user's password."""
+    refusal = password_policy_violation(
+        request.new_password,
+        (user.username, user.email, user.first_name, user.last_name),
+    )
+    if refusal:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=[
+                {
+                    "type": f"password_{refusal}",
+                    "loc": ["body", "new_password"],
+                    "msg": MESSAGES[refusal],
+                }
+            ],
+        )
     try:
         # Change the password after verifying the current one
         result = await user_passwords.change_password(

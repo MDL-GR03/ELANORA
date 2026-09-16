@@ -9,13 +9,12 @@ from dataclasses import dataclass
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.password_policy import MESSAGES, password_policy_violation
 from app.db.database import close_database, get_session_maker, init_database
 from app.model.enums import UserRole
 from app.model.instance import Instance
 from app.model.user import User
 from app.utils import password_hashing
-
-MINIMUM_BOOTSTRAP_PASSWORD_LENGTH = 12
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,10 +42,19 @@ async def bootstrap(
     db: AsyncSession, config: BootstrapConfig, password: str
 ) -> tuple[Instance, User]:
     """Create the only institution profile and initial admin atomically."""
-    if len(password) < MINIMUM_BOOTSTRAP_PASSWORD_LENGTH:
-        raise ValueError(
-            f"administrator password must have at least {MINIMUM_BOOTSTRAP_PASSWORD_LENGTH} characters"
-        )
+    refusal = password_policy_violation(
+        password,
+        (
+            config.admin_username,
+            config.admin_email,
+            config.admin_first_name,
+            config.admin_last_name,
+            config.institution_name,
+            config.instance_name,
+        ),
+    )
+    if refusal:
+        raise ValueError(f"administrator password refused: {MESSAGES[refusal]}")
     existing_instances = await db.scalar(select(func.count()).select_from(Instance))
     existing_users = await db.scalar(select(func.count()).select_from(User))
     if existing_instances or existing_users:

@@ -65,8 +65,11 @@
           :class="{ met: checks[requirement] }"
         >
           <span class="check-icon">{{ checks[requirement] ? '✓' : '✗' }}</span>
-          {{ t(`passwordPolicy.${requirement}`) }}
+          {{
+            t(`passwordPolicy.${requirement}`, { min: PASSWORD_MINIMUM_LENGTH })
+          }}
         </div>
+        <p class="requirements-advice">{{ t('passwordPolicy.advice') }}</p>
       </div>
 
       <div id="password-message" class="validation-messages">
@@ -131,6 +134,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import {
+  PASSWORD_MINIMUM_LENGTH,
   PASSWORD_REQUIREMENTS as REQUIREMENTS,
   passwordChecksOf,
   passwordStrengthOf,

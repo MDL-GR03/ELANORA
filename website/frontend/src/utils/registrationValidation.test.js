@@ -16,8 +16,8 @@ function completeForm(overrides = {}) {
     username: 'ada_l',
     email: 'ada@example.org',
     confirmEmail: 'ada@example.org',
-    password: 'Analytical1!',
-    confirmPassword: 'Analytical1!',
+    password: 'the quiet river bends west',
+    confirmPassword: 'the quiet river bends west',
     phoneNumber: '',
     affiliation: 'University of London',
     department: 'Linguistics',
@@ -90,10 +90,9 @@ describe('registrationValidation', () => {
 
   it.each([
     ['', 'register.password_required'],
-    ['Ab1!', 'register.password_too_short'],
-    ['alllowercase', 'register.password_weak'],
-    ['Analytical12', 'register.password_weak'],
-    ['Analytical1!', ''],
+    ['Analytical1!', 'register.password_too_short'],
+    ['abcabcabcabcabcabc', 'register.password_weak'],
+    ['the quiet river bends west', ''],
   ])('judges the password %j', (password, expected) => {
     const form = completeForm({ password, confirmPassword: password });
     expect(validateRegistrationField('password', form, translate)).toBe(

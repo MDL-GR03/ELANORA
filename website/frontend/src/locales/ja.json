@@ -314,8 +314,8 @@
     "password_label": "パスワード",
     "password_placeholder": "パスワードを作成",
     "password_required": "パスワードが必要です",
-    "password_too_short": "パスワードは8文字以上である必要があります",
-    "password_weak": "パスワードには大文字、小文字、数字、特殊文字を含める必要があります",
+    "password_too_short": "パスワードは15文字以上にしてください",
+    "password_weak": "パスワードは繰り返しや連続した文字列にしないでください",
     "password_strength_weak": "弱い",
     "password_strength_medium": "中程度",
     "password_strength_strong": "強い",
@@ -2242,12 +2242,17 @@
     "saving": "保存しています…"
   },
   "passwordPolicy": {
-    "title": "パスワードの要件：",
-    "length": "8文字以上",
-    "uppercase": "大文字を1文字以上",
-    "lowercase": "小文字を1文字以上",
-    "number": "数字を1文字以上",
-    "special": "特殊文字を1文字以上"
+    "title": "パスワードの条件：",
+    "length": "{min}文字以上であること",
+    "pattern": "繰り返しや連続した文字列でないこと",
+    "advice": "関連のない単語をいくつか組み合わせると、長くて覚えやすいパスワードになります。よく使われるパスワードや、氏名・ユーザー名・メールアドレスから作ったパスワードは使用できません。",
+    "errors": {
+      "too_short": "パスワードは{min}文字以上にしてください。",
+      "too_long": "パスワードは{max}バイト以下にしてください。",
+      "common": "このパスワードはよく使われており、流出したパスワードの一覧に含まれています。",
+      "repetitive": "このパスワードは繰り返しや連続した文字列です。",
+      "personal": "このパスワードは氏名、ユーザー名、またはメールアドレスから作られています。"
+    }
   },
   "setup": {
     "preview": {

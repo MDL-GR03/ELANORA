@@ -14,8 +14,8 @@ function createRegistration(overrides = {}) {
     username: 'ada_l',
     email: 'ada@example.org',
     confirmEmail: 'ada@example.org',
-    password: 'Analytical1!',
-    confirmPassword: 'Analytical1!',
+    password: 'the quiet river bends west',
+    confirmPassword: 'the quiet river bends west',
     phoneNumber: '',
     affiliation: 'University of London',
     department: 'Linguistics',
@@ -219,6 +219,20 @@ describe('useInvitationRegistration', () => {
     );
     expect(reportError).toHaveBeenCalled();
     expect(registration.loading.value).toBe(false);
+  });
+
+  it('explains a password the server refused', async () => {
+    const { authApi, eventMessages, registration } = createRegistration();
+    authApi.registerWithInvitation.mockRejectedValue({
+      response: {
+        data: { detail: [{ type: 'password_common', loc: ['body'] }] },
+      },
+    });
+    await registration.register();
+    expect(eventMessages.addMessage).toHaveBeenCalledWith(
+      'passwordPolicy.errors.common',
+      'error'
+    );
   });
 
   it('omits an address that is not complete', () => {

@@ -3,48 +3,70 @@ import { describe, expect, it } from 'vitest';
 import {
   meetsPasswordPolicy,
   passwordChecksOf,
+  passwordRefusalMessage,
   passwordRequirementList,
   passwordStrengthOf,
 } from './passwordPolicy';
 
 describe('passwordPolicy', () => {
   it.each([
-    ['Analytical1!', true],
-    ['Analytical_1', true],
-    ['analytical1!', false],
-    ['ANALYTICAL1!', false],
-    ['Analytical!!', false],
-    ['Analytical12', false],
-    ['Ab1!', false],
-    ['A1!' + 'a'.repeat(70), false],
-    ['Aé1!' + 'é'.repeat(35), false],
+    ['the quiet river bends west', true],
+    ['tidal marsh 7 lanterns', true],
+    ['Sh0rt!Pass', false],
+    ['aaaaaaaaaaaaaaaaaaaa', false],
+    ['abcabcabcabcabcabc', false],
+    ['abcdefghijklmnop', false],
+    ['a'.repeat(60) + 'é'.repeat(7), false],
   ])('judges %j as acceptable: %s', (password, expected) => {
     expect(meetsPasswordPolicy(password)).toBe(expected);
   });
 
+  it('asks for length, not capitals, digits or symbols', () => {
+    expect(passwordChecksOf('the quiet river bends west')).toEqual({
+      length: true,
+      pattern: true,
+    });
+  });
+
   it.each([
     ['', 'weak'],
-    ['short', 'weak'],
-    ['lowercaseonly', 'weak'],
-    ['Lowercase1', 'medium'],
-    ['Analytical1!', 'strong'],
-  ])('rates the password %j as %s', (password, expected) => {
+    ['Analytical1!', 'weak'],
+    ['tidal marsh lamps', 'medium'],
+    ['the quiet river bends west', 'strong'],
+  ])('rates %j as %s', (password, expected) => {
     expect(passwordStrengthOf(password)).toBe(expected);
   });
 
-  it('reports nothing met for an empty password', () => {
-    expect(Object.values(passwordChecksOf('')).some(Boolean)).toBe(false);
+  it('lists the requirements with the minimum length', () => {
+    expect(
+      passwordRequirementList('short', (key, params) =>
+        params ? `${key}:${params.min}` : key
+      )
+    ).toEqual([
+      { key: 'length', text: 'passwordPolicy.length:15', valid: false },
+      { key: 'pattern', text: 'passwordPolicy.pattern:15', valid: true },
+    ]);
   });
 
-  it('lists the requirements in order, translated', () => {
-    expect(passwordRequirementList('Analytical1', (key) => `t:${key}`)).toEqual(
-      [
-        { key: 'length', text: 't:passwordPolicy.length', valid: true },
-        { key: 'uppercase', text: 't:passwordPolicy.uppercase', valid: true },
-        { key: 'lowercase', text: 't:passwordPolicy.lowercase', valid: true },
-        { key: 'number', text: 't:passwordPolicy.number', valid: true },
-        { key: 'special', text: 't:passwordPolicy.special', valid: false },
-      ]
+  it('explains a refusal the API reported', () => {
+    const error = {
+      response: {
+        data: {
+          detail: [
+            { type: 'missing', loc: ['body', 'email'] },
+            { type: 'password_common' },
+          ],
+        },
+      },
+    };
+    expect(passwordRefusalMessage(error, (key) => `t:${key}`)).toBe(
+      't:passwordPolicy.errors.common'
     );
+    expect(
+      passwordRefusalMessage(
+        { response: { data: { detail: 'Nope' } } },
+        (k) => k
+      )
+    ).toBeNull();
   });
 });

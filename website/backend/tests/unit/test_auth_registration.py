@@ -51,7 +51,7 @@ async def test_registration_rolls_back_when_invitation_cannot_be_redeemed(
         last_name="Researcher",
         username="researcher",
         email="researcher@example.org",
-        password="Safe-test-password-1",  # noqa: S106 - inert test value
+        password="tidal marsh 7 lanterns",  # noqa: S106 - inert test value
         affiliation="Research Institute",
         department="Linguistics",
     )
@@ -110,7 +110,7 @@ async def test_registration_commits_user_and_invitation_together(
         last_name="Researcher",
         username="researcher",
         email="researcher@example.org",
-        password="Safe-test-password-1",  # noqa: S106 - inert test value
+        password="tidal marsh 7 lanterns",  # noqa: S106 - inert test value
         affiliation="Research Institute",
         department="Linguistics",
     )

@@ -49,6 +49,7 @@
               }}</span>
               <span class="requirement-text">{{ requirement.text }}</span>
             </div>
+            <p class="requirements-advice">{{ t('passwordPolicy.advice') }}</p>
           </div>
         </div>
         <div class="form-group">
@@ -88,7 +89,10 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { passwordRequirementList } from '@/utils/passwordPolicy';
+import {
+  passwordRequestError,
+  passwordRequirementList,
+} from '@/utils/passwordPolicy';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { resetPassword } from '@/api/service/authService';
 import '@/assets/css/resetpassword.css';
@@ -167,7 +171,7 @@ const handleSubmit = async () => {
   } catch (error) {
     reportClientError('Reset password error', error);
     eventMessageStore.addMessage(
-      error?.response?.data?.detail || t('resetPassword.error'),
+      passwordRequestError(error, t, t('resetPassword.error')),
       'error'
     );
   } finally {

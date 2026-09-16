@@ -57,6 +57,7 @@
               }}</span>
               <span class="requirement-text">{{ requirement.text }}</span>
             </div>
+            <p class="requirements-advice">{{ t('passwordPolicy.advice') }}</p>
           </div>
         </div>
 
@@ -105,7 +106,10 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { passwordRequirementList } from '@/utils/passwordPolicy';
+import {
+  passwordRequestError,
+  passwordRequirementList,
+} from '@/utils/passwordPolicy';
 import { changePassword } from '@/api/service/userService.js';
 import { reportClientError } from '@/utils/errorDiagnostics';
 
@@ -183,9 +187,11 @@ async function handlePasswordChange() {
   } catch (error) {
     reportClientError('Password change error', error);
     emit('show-message', {
-      text:
-        error?.response?.data?.detail ||
-        t('profile.security.change_password.error'),
+      text: passwordRequestError(
+        error,
+        t,
+        t('profile.security.change_password.error')
+      ),
       type: 'error',
     });
   } finally {

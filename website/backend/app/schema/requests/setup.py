@@ -1,6 +1,8 @@
 from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, Field, StringConstraints, model_validator
+from pydantic import BaseModel, EmailStr, StringConstraints, model_validator
+
+from app.core.password_policy import NewPassword, enforce_password_policy
 
 HexColor = Annotated[str, StringConstraints(pattern=r"^#[0-9A-Fa-f]{6}$")]
 TrimmedText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -26,13 +28,24 @@ class SetupInitializeRequest(BaseModel):
     admin_last_name: Annotated[TrimmedText, StringConstraints(max_length=50)]
     admin_affiliation: Annotated[TrimmedText, StringConstraints(max_length=100)]
     admin_department: Annotated[TrimmedText, StringConstraints(max_length=100)]
-    password: str = Field(min_length=12, max_length=256)
-    password_confirmation: str = Field(min_length=12, max_length=256)
+    password: NewPassword
+    password_confirmation: str
 
     @model_validator(mode="after")
     def passwords_match(self) -> "SetupInitializeRequest":
         if self.password != self.password_confirmation:
             raise ValueError("administrator password confirmation does not match")
+        enforce_password_policy(
+            self.password,
+            (
+                self.admin_username,
+                self.admin_email,
+                self.admin_first_name,
+                self.admin_last_name,
+                self.institution_name,
+                self.instance_name,
+            ),
+        )
         return self
 
 
