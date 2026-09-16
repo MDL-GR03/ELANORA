@@ -682,8 +682,8 @@ import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
 import AppSelect from '@/components/common/AppSelect.vue';
-import { validateInvitation } from '@/api/service/invitationService';
-import { registerWithInvitation } from '@/api/service/authService';
+import * as invitationApi from '@/api/service/invitationService';
+import * as authApi from '@/api/service/authService';
 import { reportClientError } from '@/utils/errorDiagnostics';
 import * as locationApi from '@/api/service/locationService';
 import {
@@ -700,6 +700,7 @@ import {
 } from '@/utils/registrationValidation';
 import { useAddressVerification } from '@/composables/useAddressVerification';
 import { useAvailabilityCheck } from '@/composables/useAvailabilityCheck';
+import { useInvitationRegistration } from '@/composables/useInvitationRegistration';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -707,12 +708,6 @@ const route = useRoute();
 const eventMessageStore = useEventMessageStore();
 
 // Reactive data
-const invitationCode = ref('');
-const invitationValid = ref(false);
-const invitationValidating = ref(false);
-const invitationError = ref('');
-const invitationInfo = ref(null);
-const loading = ref(false);
 const countries = ref([]);
 const countryOptions = computed(() =>
   countries.value.map((country) => ({
@@ -800,6 +795,31 @@ const {
 const usernameInputFocused = ref(false);
 const emailInputFocused = ref(false);
 const passwordInputFocused = ref(false);
+
+// Validating the invitation and creating the account it was issued for
+const {
+  invitationCode,
+  invitationValid,
+  invitationValidating,
+  invitationError,
+  invitationInfo,
+  loading,
+  validateInvitationCode,
+  register: handleRegister,
+} = useInvitationRegistration({
+  form,
+  countries,
+  translate: t,
+  invitationApi,
+  authApi,
+  eventMessages: eventMessageStore,
+  router,
+  validateAllFields: () => validateAllFields(),
+  validationErrors,
+  usernameAvailable,
+  emailAvailable,
+  reportError: reportClientError,
+});
 
 // Password strength
 const passwordStrength = computed(() =>
@@ -897,59 +917,6 @@ watch(invitationCode, (newValue) => {
   }
 });
 
-const validateInvitationCode = async () => {
-  if (!invitationCode.value || invitationCode.value.length === 0) {
-    invitationError.value = t('register.invitation_code_required');
-    invitationValid.value = false;
-    return;
-  }
-
-  invitationValidating.value = true;
-  invitationError.value = '';
-
-  try {
-    const response = await validateInvitation(invitationCode.value);
-    if (response.data.valid) {
-      // Existing accounts review invitations after authentication. Validation
-      // never grants project access by itself.
-      if (response.data.user_exists) {
-        eventMessageStore.addMessage(
-          t('register.invitation_existing_user'),
-          'info'
-        );
-        setTimeout(() => {
-          router.push({ name: 'LoginPage' });
-        }, 2000);
-        return;
-      }
-
-      invitationValid.value = true;
-      invitationInfo.value = response.data.invitation;
-
-      // Pre-fill email if available and disable editing
-      if (invitationInfo.value?.receiver_email) {
-        form.value.email = invitationInfo.value.receiver_email;
-        form.value.confirmEmail = invitationInfo.value.receiver_email;
-      } else {
-        form.value.email = '';
-        form.value.confirmEmail = '';
-      }
-
-      eventMessageStore.addMessage(t('register.invitation_valid'), 'success');
-    } else {
-      invitationValid.value = false;
-      invitationError.value =
-        response.data.message || t('register.invitation_invalid');
-    }
-  } catch (error) {
-    invitationValid.value = false;
-    invitationError.value =
-      error.response?.data?.detail || t('register.invitation_validation_error');
-  } finally {
-    invitationValidating.value = false;
-  }
-};
-
 // Load countries from API
 const loadCountries = async () => {
   try {
@@ -968,118 +935,6 @@ const loadCountries = async () => {
       t('register.error_loading_countries'),
       'error'
     );
-  }
-};
-
-const handleRegister = async () => {
-  // Validate all fields first
-  validateAllFields();
-
-  // Check if form has any validation errors
-  const hasErrors = Object.values(validationErrors.value).some(
-    (error) => error
-  );
-  if (hasErrors) {
-    eventMessageStore.addMessage(t('register.please_fix_errors'), 'error');
-    return;
-  }
-
-  // Additional validations
-  if (form.value.password !== form.value.confirmPassword) {
-    eventMessageStore.addMessage(t('register.passwords_no_match'), 'error');
-    return;
-  }
-
-  if (form.value.email !== form.value.confirmEmail) {
-    eventMessageStore.addMessage(t('register.emails_no_match'), 'error');
-    return;
-  }
-
-  if (form.value.password.length < 8) {
-    eventMessageStore.addMessage(t('register.password_too_short'), 'error');
-    return;
-  }
-
-  // Check username and email availability
-  if (usernameAvailable.value === false) {
-    eventMessageStore.addMessage(t('register.username_taken'), 'error');
-    return;
-  }
-
-  if (emailAvailable.value === false) {
-    eventMessageStore.addMessage(t('register.email_taken'), 'error');
-    return;
-  }
-
-  loading.value = true;
-
-  try {
-    // Prepare address object if fields are filled
-    let address = null;
-    if (
-      form.value.address.streetName &&
-      form.value.address.cityName &&
-      form.value.address.postalCode &&
-      form.value.address.countryId
-    ) {
-      // Find the selected country to get its name
-      const selectedCountry = countries.value.find(
-        (country) => country.country_id === form.value.address.countryId
-      );
-
-      address = {
-        street_name: form.value.address.streetName,
-        street_number: form.value.address.streetNumber || null,
-        city_name: form.value.address.cityName,
-        country_code: form.value.address.countryId,
-        country_name: selectedCountry?.country_name || '',
-        postal_code: form.value.address.postalCode,
-        address_line_2: form.value.address.addressLine2 || null,
-      };
-    }
-
-    // API call for registration with invitation
-    const payload = {
-      invitation_code: invitationCode.value,
-      first_name: form.value.firstName,
-      last_name: form.value.lastName,
-      username: form.value.username,
-      email: form.value.email,
-      password: form.value.password,
-      phone_number: form.value.phoneNumber || null,
-      affiliation: form.value.affiliation,
-      department: form.value.department,
-      address: address,
-    };
-    const response = await registerWithInvitation(payload);
-
-    // Check if email verification is needed
-    if (response.data && response.data.requires_activation) {
-      eventMessageStore.addMessage(
-        t('register.success_needs_verification'),
-        'success'
-      );
-
-      // Redirect to email verification page
-      router.push({
-        name: 'EmailVerificationPage',
-        query: {
-          email: form.value.email,
-          freshCode: 'true',
-        },
-      });
-    } else {
-      eventMessageStore.addMessage(t('register.success'), 'success');
-      router.push({ name: 'LoginPage' });
-    }
-  } catch (error) {
-    reportClientError('Registration error', error);
-    eventMessageStore.addMessage(
-      error?.response?.data?.detail || t('register.error'),
-      'error'
-    );
-  } finally {
-    loading.value = false;
   }
 };
 
