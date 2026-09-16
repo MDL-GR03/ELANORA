@@ -419,7 +419,17 @@
     "already_have_account": "既にアカウントをお持ちですか？",
     "login_here": "こちらでログイン",
     "username_check_error": "ユーザー名の可用性確認エラー",
-    "email_check_error": "メールアドレスの可用性確認エラー"
+    "email_check_error": "メールアドレスの可用性確認エラー",
+    "username_requirements": "• 3〜20文字 • 英数字とアンダースコアのみ",
+    "password_requirements_title": "パスワードの要件:",
+    "password_requirement_length": "8文字以上",
+    "password_requirement_lowercase": "小文字を1文字",
+    "password_requirement_uppercase": "大文字を1文字",
+    "password_requirement_number": "数字を1文字",
+    "password_requirement_special": "特殊文字を1文字",
+    "show_password": "パスワードを表示",
+    "hide_password": "パスワードを非表示",
+    "invitation_sender_unknown": "管理者"
   },
   "invitation": {
     "send_title": "招待を送信",

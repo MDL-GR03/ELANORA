@@ -1,0 +1,381 @@
+/*
+ * The fields of the registration form, shared by the components it is built
+ * from.
+ *
+ * Every rule is confined to the registration page rather than scoped to one
+ * component: a scoped style does not reach into a child component, and
+ * loading this sheet in each of them would ship it five times over.
+ */
+
+/*
+ * Every rule is confined to the registration page rather than scoped to one
+ * component, because scoped styles do not reach into a child component and
+ * loading the same sheet in each of them would ship it five times over.
+ */
+.register-page .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.register-page .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.register-page .form-label {
+  /* Use style.css .form-label */
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.register-page .required {
+  color: #ef4444;
+  margin-left: 0.25rem;
+}
+
+.register-page .form-input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s;
+  background: white;
+}
+
+.register-page .form-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 10%);
+}
+
+.register-page .form-input:read-only {
+  background: #f9fafb;
+  color: #6b7280;
+}
+
+.register-page .form-input.valid {
+  border-color: #059669;
+  background-color: #f0fdf4;
+}
+
+.register-page .form-input.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 10%);
+}
+
+.register-page .form-input.loading {
+  border-color: #3b82f6;
+  background-color: #f0f9ff;
+}
+
+.register-page .error-message {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.register-page .success-message {
+  color: #059669;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.register-page .info-message {
+  color: #3b82f6;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Field requirements */
+.register-page .field-requirements {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+/* Validation messages container */
+.register-page .validation-messages {
+  margin-top: 0.5rem;
+}
+
+/* Loading dot animation */
+.register-page .loading-dot {
+  width: 12px;
+  height: 12px;
+  background: #3b82f6;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Password requirements */
+.register-page .password-requirements {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background: var(--secondary-bg);
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.register-page .requirements-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.register-page .requirement-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.register-page .requirement-item.met {
+  color: #059669;
+}
+
+.register-page .check-icon {
+  font-size: 0.75rem;
+  font-weight: bold;
+  width: 16px;
+  text-align: center;
+}
+
+.register-page .requirement-item.met .check-icon {
+  color: #059669;
+}
+
+.register-page .requirement-item:not(.met) .check-icon {
+  color: #ef4444;
+}
+
+/* Small icons for validation messages */
+.register-page .error-icon-small,
+.register-page .success-icon-small {
+  font-size: 0.875rem;
+  margin-right: 0.25rem;
+}
+
+.register-page .error-icon-small {
+  color: #ef4444;
+}
+
+.register-page .success-icon-small {
+  color: #059669;
+}
+
+/* Address section */
+.register-page .address-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--secondary-bg);
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.register-page .section-title {
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  margin-top: 0;
+}
+
+.register-page .form-select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background-color: white;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  appearance: none;
+}
+
+.register-page .form-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 10%);
+}
+
+.register-page .form-select:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.register-page .form-select.valid {
+  border-color: #059669;
+  background-color: #f0fdf4;
+}
+
+.register-page .form-select.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgb(239 68 68 / 10%);
+}
+
+.register-page .form-select option {
+  padding: 0.5rem;
+}
+
+/* Input validation styles */
+.register-page .input-with-indicator {
+  position: relative;
+}
+
+.register-page .input-indicator {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.register-page .loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.register-page .success-icon {
+  color: #059669;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.register-page .error-icon {
+  color: #ef4444;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Password strength indicator */
+.register-page .password-input-container {
+  position: relative;
+}
+
+.register-page .password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #6b7280;
+  padding: 4px;
+}
+
+.register-page .password-toggle:hover {
+  color: #374151;
+}
+
+.register-page .password-strength {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.register-page .strength-bar {
+  flex: 1;
+  height: 4px;
+  background-color: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.register-page .strength-fill {
+  height: 100%;
+  transition:
+    width 0.3s ease,
+    background-color 0.3s ease;
+  border-radius: 2px;
+}
+
+.register-page .strength-fill.strength-weak {
+  background-color: #ef4444;
+}
+
+.register-page .strength-fill.strength-medium {
+  background-color: #f59e0b;
+}
+
+.register-page .strength-fill.strength-strong {
+  background-color: #059669;
+}
+
+.register-page .strength-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 60px;
+}
+
+.register-page .strength-text.strength-weak {
+  color: #ef4444;
+}
+
+.register-page .strength-text.strength-medium {
+  color: #f59e0b;
+}
+
+.register-page .strength-text.strength-strong {
+  color: #059669;
+}
+
+/* A cross-check that did not confirm, which is a caution rather than a refusal. */
+.register-page .warning-message {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--warning-color, #b45309);
+}

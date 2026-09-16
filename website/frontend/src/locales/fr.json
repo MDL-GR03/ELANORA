@@ -423,7 +423,17 @@
     "already_have_account": "Vous avez déjà un compte ?",
     "login_here": "Connectez-vous ici",
     "username_check_error": "Erreur lors de la vérification de la disponibilité du nom d'utilisateur",
-    "email_check_error": "Erreur lors de la vérification de la disponibilité de l'email"
+    "email_check_error": "Erreur lors de la vérification de la disponibilité de l'email",
+    "username_requirements": "• 3 à 20 caractères • Lettres, chiffres et tirets bas uniquement",
+    "password_requirements_title": "Exigences du mot de passe :",
+    "password_requirement_length": "Au moins 8 caractères",
+    "password_requirement_lowercase": "Une lettre minuscule",
+    "password_requirement_uppercase": "Une lettre majuscule",
+    "password_requirement_number": "Un chiffre",
+    "password_requirement_special": "Un caractère spécial",
+    "show_password": "Afficher le mot de passe",
+    "hide_password": "Masquer le mot de passe",
+    "invitation_sender_unknown": "Un administrateur"
   },
   "event_messages": {
     "already_logged_in": "Vous êtes déjà connecté."
