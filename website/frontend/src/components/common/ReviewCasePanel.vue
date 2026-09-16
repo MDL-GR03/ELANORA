@@ -2444,13 +2444,6 @@ button.remove-change {
   }
 }
 
-.addressed-action,
-.accept-action {
-  border-color: #6fc58d;
-  color: #166534;
-  background: #f3fbf6;
-}
-
 .accept-action:hover:not(:disabled) {
   border-color: #249052;
   background: #e8f7ee;

@@ -719,11 +719,6 @@ article:focus-within .notification-item-actions {
   background: #94a3b8;
 }
 
-/* Smooth hover animations */
-.group:hover .opacity-0 {
-  opacity: 1;
-}
-
 /* Focus states */
 button:focus {
   outline: 2px solid transparent;

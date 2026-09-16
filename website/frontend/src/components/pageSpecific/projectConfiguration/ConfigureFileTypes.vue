@@ -348,8 +348,7 @@ async function addFileType() {
   color: #1f2937;
 }
 
-.configure-filetypes-loading,
-.configure-filetypes-empty {
+.configure-filetypes-loading {
   color: #888;
   font-size: 1.1rem;
   margin-bottom: 18px;

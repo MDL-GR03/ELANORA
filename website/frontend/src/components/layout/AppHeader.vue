@@ -296,104 +296,11 @@ onBeforeUnmount(() =>
   display: block;
 }
 
-.elanora-header-project-label {
-  background: #f3e8ff;
-  color: #7c3aed;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
 /* User Section Styles */
 .elanora-header-user-section {
   display: flex;
   align-items: center;
   gap: 1rem;
-}
-
-.elanora-header-user-menu {
-  position: relative;
-}
-
-.elanora-header-user-button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.elanora-header-user-button:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.elanora-header-user-avatar {
-  width: 2rem;
-  height: 2rem;
-  background: #e5e7eb;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-}
-
-.elanora-header-username {
-  font-weight: 500;
-  color: #374151;
-}
-
-.elanora-header-user-dropdown {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 0.5rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  box-shadow:
-    0 10px 15px -3px rgb(0 0 0 / 10%),
-    0 4px 6px -2px rgb(0 0 0 / 5%);
-  min-width: 12rem;
-  z-index: 50;
-  overflow: hidden;
-}
-
-.elanora-header-user-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  text-decoration: none;
-  color: #374151;
-  font-size: 0.875rem;
-  transition: background-color 0.2s ease;
-  border: none;
-  background: none;
-  cursor: pointer;
-  text-align: left;
-}
-
-.elanora-header-user-menu-item:hover {
-  background: #f9fafb;
-}
-
-.elanora-header-logout {
-  color: #dc2626;
-  border-top: 1px solid #e5e7eb;
-}
-
-.elanora-header-logout:hover {
-  background: #fef2f2;
 }
 
 @media (width <= 1024px) {

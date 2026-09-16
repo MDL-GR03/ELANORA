@@ -643,10 +643,6 @@ function formatDate(dateString) {
     grid-template-columns: 1fr;
   }
 
-  .semantic-action {
-    display: none;
-  }
-
   .file-row {
     align-items: flex-start;
     flex-wrap: wrap;
@@ -807,17 +803,6 @@ function formatDate(dateString) {
   display: block;
 }
 
-/* Alternative: use ellipsis truncation for very long names */
-.branch-name-ellipsis {
-  font-family: monospace;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-  display: block;
-}
-
 .status-badge {
   padding: 4px 8px;
   border-radius: 4px;
@@ -845,37 +830,6 @@ function formatDate(dateString) {
 .status-badge.pending {
   background: #e3f2fd;
   color: #1976d2;
-}
-
-.file-group {
-  margin-bottom: 20px;
-}
-
-.file-group-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 10px;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.file-icon {
-  font-weight: bold;
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-
-.file-group-title.new {
-  color: #2e7d32;
-}
-
-.file-group-title.modified {
-  color: #f57c00;
-}
-
-.file-group-title.deleted {
-  color: #d32f2f;
 }
 
 .file-list {
@@ -957,22 +911,6 @@ function formatDate(dateString) {
   margin-top: 1px; /* Align with text baseline */
 }
 
-.tech-details {
-  background: #f8f9fa;
-  border-radius: 8px;
-  overflow-x: auto;
-}
-
-.tech-details pre {
-  padding: 15px;
-  margin: 0;
-  font-size: 0.8rem;
-  color: #666;
-  white-space: pre-wrap;
-  word-break: break-all;
-  overflow-wrap: break-word;
-}
-
 /* Responsive design improvements */
 @media (width <= 768px) {
   .details-section {
@@ -1000,12 +938,6 @@ function formatDate(dateString) {
 @media (min-width: 769px) {
   .branch-name-ellipsis {
     max-width: 250px;
-  }
-}
-
-@media (max-width: 768px) {
-  .branch-name-ellipsis {
-    max-width: 200px;
   }
 }
 */

@@ -358,29 +358,6 @@ onMounted(async () => {
   color: #666;
 }
 
-.suggestions-header {
-  margin-bottom: 1rem;
-}
-
-.generate-suggestions-btn {
-  background: #4caf50;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.generate-suggestions-btn:hover {
-  background: #45a049;
-}
-
-.generate-suggestions-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
 .file-rename-item {
   border: 1px solid #e0e0e0;
   border-radius: 4px;

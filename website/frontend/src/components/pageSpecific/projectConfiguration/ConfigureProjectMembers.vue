@@ -787,46 +787,6 @@ defineExpose({
   min-width: 8rem;
 }
 
-.permission-select {
-  padding: 0.5rem 2rem 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: white;
-  font-size: 0.875rem;
-  min-width: 120px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-  background-position: right 0.5rem center;
-  background-repeat: no-repeat;
-  background-size: 1.5em 1.5em;
-}
-
-.permission-select:hover:not(:disabled) {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
-}
-
-.permission-select:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
-}
-
-.permission-select:disabled {
-  background: #f3f4f6;
-  color: #6b7280;
-  cursor: not-allowed;
-  border-color: #e5e7eb;
-}
-
-.permission-select.updating {
-  background: #f3f4f6;
-  color: #6b7280;
-  cursor: wait;
-}
-
 .update-spinner {
   display: flex;
   align-items: center;
@@ -877,27 +837,6 @@ defineExpose({
 
 .permission-badge.owner {
   background: #ede9fe;
-  color: #6b21a8;
-}
-
-/* Styles pour les options du select */
-.permission-select option.read {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
-
-.permission-select option.write {
-  background-color: #d1fae5;
-  color: #047857;
-}
-
-.permission-select option.admin {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.permission-select option.owner {
-  background-color: #ede9fe;
   color: #6b21a8;
 }
 
@@ -1089,24 +1028,7 @@ defineExpose({
   font-size: 0.875rem;
 }
 
-.form-input,
-.form-select {
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
-}
-
-.form-input:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 10%);
-}
-
-.form-actions,
-.modal-actions {
+.form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
@@ -1116,25 +1038,8 @@ defineExpose({
   border-top: 1px solid #e2e8f2;
 }
 
-.confirm-modal .modal-body {
-  margin-bottom: 1.5rem;
-}
-
-.confirm-modal .modal-body p {
-  margin: 0 0 0.75rem;
-  color: #374151;
-  line-height: 1.5;
-}
-
-.warning-text {
-  font-size: 0.875rem;
-  color: #dc2626;
-  font-weight: 500;
-}
-
 .btn-cancel,
-.btn-submit,
-.btn-danger {
+.btn-submit {
   padding: 0.625rem 1.25rem;
   border: none;
   min-height: 42px;
@@ -1186,18 +1091,8 @@ defineExpose({
   background: #4f46e5;
 }
 
-.btn-danger {
-  background: #dc2626;
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #b91c1c;
-}
-
 .btn-cancel:disabled,
-.btn-submit:disabled,
-.btn-danger:disabled {
+.btn-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

@@ -439,9 +439,4 @@ onBeforeUnmount(() => {
 .instance-section-action:last-child {
   color: #b42318;
 }
-
-.instance-section-menuicon {
-  font-size: 1.1em;
-  color: #a78bfa;
-}
 </style>
