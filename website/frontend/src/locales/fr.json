@@ -2138,5 +2138,98 @@
     "lowercase": "Au moins une lettre minuscule",
     "number": "Au moins un chiffre",
     "special": "Au moins un caractère spécial"
+  },
+  "setup": {
+    "preview": {
+      "step": "Espace de l'institution",
+      "workspace": "Votre portail de recherche",
+      "institution": "Votre institution",
+      "title": "Aperçu de l'identité en direct",
+      "hint": "Accessible, cohérente, et modifiable plus tard."
+    },
+    "eyebrow": "Configuration initiale",
+    "title": "Créer l'espace de votre institution",
+    "description": "Ce formulaire, rempli une seule fois, crée le propriétaire de l'installation et son identité visuelle.",
+    "sections": {
+      "access": "Accès à l'installation",
+      "institution": "Institution",
+      "identity": "Identité visuelle",
+      "administrator": "Premier administrateur"
+    },
+    "fields": {
+      "setup_token": "Jeton de configuration",
+      "workspace_name": "Nom de l'espace",
+      "institution_name": "Nom de l'institution",
+      "contact_email": "E-mail de contact",
+      "domain": "Domaine de l'institution",
+      "timezone": "Fuseau horaire",
+      "language": "Langue",
+      "username": "Nom d'utilisateur",
+      "email": "E-mail",
+      "first_name": "Prénom",
+      "last_name": "Nom",
+      "affiliation": "Affiliation",
+      "department": "Département",
+      "password": "Mot de passe",
+      "password_confirmation": "Confirmer le mot de passe"
+    },
+    "colors": {
+      "primary_color": "Principale",
+      "secondary_color": "Secondaire",
+      "accent_color": "Accent"
+    },
+    "submit": "Créer l'espace",
+    "submitting": "Création de l'espace…",
+    "errors": {
+      "passwords_no_match": "Les mots de passe de l'administrateur ne correspondent pas.",
+      "failed": "La configuration n'a pas pu être terminée."
+    }
+  },
+  "instanceBranding": {
+    "logo_preview": "Aperçu du logo de l'institution",
+    "logo": "Logo de l'institution",
+    "logo_hint": "PNG, JPEG ou WebP ; 5 Mo maximum. Il sera normalisé en toute sécurité.",
+    "save": "Enregistrer l'identité de l'institution",
+    "saving": "Enregistrement…",
+    "saved": "Identité de l'institution mise à jour.",
+    "save_failed": "L'identité de l'institution n'a pas pu être enregistrée."
+  },
+  "home": {
+    "eyebrow": "Espace de recherche",
+    "welcome": "Bon retour.",
+    "welcome_named": "Bon retour, {name}.",
+    "introduction": "Coordonnez l'annotation ELAN, conservez l'historique des révisions et appliquez les protocoles de recherche de votre institution depuis un seul espace.",
+    "open_projects": "Ouvrir les projets",
+    "submit_annotations": "Soumettre des annotations",
+    "summary": "Résumé de l'espace",
+    "accessible_projects": "Projets accessibles",
+    "workspace": "Espace de travail",
+    "continue": "Reprendre votre travail",
+    "actions": {
+      "projects": {
+        "title": "Projets",
+        "description": "Parcourez les corpus, les fichiers, l'historique et les collaborateurs."
+      },
+      "upload": {
+        "title": "Téléverser des annotations",
+        "description": "Validez et soumettez une contribution ELAN."
+      },
+      "review": {
+        "title": "Examiner les contributions",
+        "description": "Examinez les changements en attente et résolvez les conflits."
+      },
+      "tiers": {
+        "title": "Catalogue des tiers",
+        "description": "Explorez la structure d'annotation utilisée par les projets."
+      }
+    },
+    "principles": {
+      "eyebrow": "Conçu pour une recherche responsable",
+      "title": "Les preuves restent liées aux décisions.",
+      "history": "Historique versionné des annotations ELAN",
+      "validation": "Validation fondée sur les protocoles",
+      "review": "Revue et résolution des conflits explicites",
+      "ownership": "Données et identité contrôlées par l'institution"
+    }
   }
 }

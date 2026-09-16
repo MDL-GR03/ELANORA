@@ -2138,5 +2138,98 @@
     "lowercase": "At least one lowercase letter",
     "number": "At least one number",
     "special": "At least one special character"
+  },
+  "setup": {
+    "preview": {
+      "step": "Institution workspace",
+      "workspace": "Your research portal",
+      "institution": "Your institution",
+      "title": "Live identity preview",
+      "hint": "Accessible, consistent, and reversible later."
+    },
+    "eyebrow": "First-time setup",
+    "title": "Create your institution workspace",
+    "description": "This one-time form creates the installation owner and visual identity.",
+    "sections": {
+      "access": "Installation access",
+      "institution": "Institution",
+      "identity": "Visual identity",
+      "administrator": "First administrator"
+    },
+    "fields": {
+      "setup_token": "Setup token",
+      "workspace_name": "Workspace name",
+      "institution_name": "Institution name",
+      "contact_email": "Contact email",
+      "domain": "Institution domain",
+      "timezone": "Timezone",
+      "language": "Language",
+      "username": "Username",
+      "email": "Email",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "affiliation": "Affiliation",
+      "department": "Department",
+      "password": "Password",
+      "password_confirmation": "Confirm password"
+    },
+    "colors": {
+      "primary_color": "Primary",
+      "secondary_color": "Secondary",
+      "accent_color": "Accent"
+    },
+    "submit": "Create workspace",
+    "submitting": "Creating workspace…",
+    "errors": {
+      "passwords_no_match": "The administrator passwords do not match.",
+      "failed": "Setup could not be completed."
+    }
+  },
+  "instanceBranding": {
+    "logo_preview": "Institution logo preview",
+    "logo": "Institution logo",
+    "logo_hint": "PNG, JPEG, or WebP; maximum 5 MB. It will be safely normalized.",
+    "save": "Save institution identity",
+    "saving": "Saving…",
+    "saved": "Institution identity updated.",
+    "save_failed": "The institution identity could not be saved."
+  },
+  "home": {
+    "eyebrow": "Research workspace",
+    "welcome": "Welcome back.",
+    "welcome_named": "Welcome back, {name}.",
+    "introduction": "Coordinate ELAN annotation, preserve revision history, and apply your institution’s research protocols from one workspace.",
+    "open_projects": "Open projects",
+    "submit_annotations": "Submit annotations",
+    "summary": "Workspace summary",
+    "accessible_projects": "Accessible projects",
+    "workspace": "Workspace",
+    "continue": "Continue your work",
+    "actions": {
+      "projects": {
+        "title": "Projects",
+        "description": "Browse corpora, files, history, and collaborators."
+      },
+      "upload": {
+        "title": "Upload annotations",
+        "description": "Validate and submit an ELAN contribution."
+      },
+      "review": {
+        "title": "Review contributions",
+        "description": "Inspect pending changes and resolve conflicts."
+      },
+      "tiers": {
+        "title": "Tier catalogue",
+        "description": "Explore the annotation structure used by projects."
+      }
+    },
+    "principles": {
+      "eyebrow": "Built for accountable research",
+      "title": "Evidence stays connected to decisions.",
+      "history": "Versioned ELAN annotation history",
+      "validation": "Protocol-aware validation",
+      "review": "Explicit review and conflict resolution",
+      "ownership": "Institution-controlled data and identity"
+    }
   }
 }

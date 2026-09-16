@@ -1,7 +1,7 @@
 <template>
   <section class="branding-panel">
     <div class="branding-preview" :style="previewTheme">
-      <img :src="previewUrl" alt="Institution logo preview" />
+      <img :src="previewUrl" :alt="t('instanceBranding.logo_preview')" />
       <div>
         <strong>{{ form.instance_name }}</strong
         ><span>{{ form.institution_name }}</span>
@@ -10,37 +10,35 @@
     <form @submit.prevent="save">
       <div class="branding-grid">
         <label
-          >Workspace name<input v-model.trim="form.instance_name" required
+          >{{ t('setup.fields.workspace_name')
+          }}<input v-model.trim="form.instance_name" required
         /></label>
         <label
-          >Institution name<input v-model.trim="form.institution_name" required
+          >{{ t('setup.fields.institution_name')
+          }}<input v-model.trim="form.institution_name" required
         /></label>
         <label
-          >Contact email<input
-            v-model.trim="form.contact_email"
-            type="email"
-            required
+          >{{ t('setup.fields.contact_email')
+          }}<input v-model.trim="form.contact_email" type="email" required
         /></label>
       </div>
       <div class="color-grid">
         <label v-for="color in colors" :key="color.key"
-          >{{ color.label }}<input v-model="form[color.key]" type="color"
+          >{{ t(`setup.colors.${color.key}`)
+          }}<input v-model="form[color.key]" type="color"
         /></label>
       </div>
       <label class="logo-picker"
-        >Institution logo
+        >{{ t('instanceBranding.logo') }}
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp"
           @change="selectLogo"
         />
-        <small
-          >PNG, JPEG, or WebP; maximum 5 MB. It will be safely
-          normalized.</small
-        >
+        <small>{{ t('instanceBranding.logo_hint') }}</small>
       </label>
       <button :disabled="saving">
-        {{ saving ? 'Saving…' : 'Save institution identity' }}
+        {{ saving ? t('instanceBranding.saving') : t('instanceBranding.save') }}
       </button>
       <p v-if="error" role="alert">{{ error }}</p>
     </form>
@@ -48,9 +46,12 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
 import { computed, onBeforeUnmount, reactive, ref } from 'vue';
 import instanceService from '@/api/service/instanceService';
 import { useAppInfoStore } from '@/stores/appInfo';
+
+const { t } = useI18n();
 
 const emit = defineEmits(['show-message']);
 const store = useAppInfoStore();
@@ -64,9 +65,9 @@ const form = reactive({
   accent_color: source.accent_color,
 });
 const colors = [
-  { key: 'primary_color', label: 'Primary' },
-  { key: 'secondary_color', label: 'Secondary' },
-  { key: 'accent_color', label: 'Accent' },
+  { key: 'primary_color' },
+  { key: 'secondary_color' },
+  { key: 'accent_color' },
 ];
 const logoFile = ref(null);
 const localPreview = ref('');
@@ -100,13 +101,12 @@ async function save() {
     }
     store.setInstance(updated);
     emit('show-message', {
-      text: 'Institution identity updated.',
+      text: t('instanceBranding.saved'),
       type: 'success',
     });
   } catch (requestError) {
     error.value =
-      requestError.response?.data?.detail ||
-      'The institution identity could not be saved.';
+      requestError.response?.data?.detail || t('instanceBranding.save_failed');
   } finally {
     saving.value = false;
   }

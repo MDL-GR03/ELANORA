@@ -2138,5 +2138,98 @@
     "lowercase": "小文字を1文字以上",
     "number": "数字を1文字以上",
     "special": "特殊文字を1文字以上"
+  },
+  "setup": {
+    "preview": {
+      "step": "機関のワークスペース",
+      "workspace": "研究ポータル",
+      "institution": "所属機関",
+      "title": "外観のプレビュー",
+      "hint": "アクセシブルで統一され、後から変更できます。"
+    },
+    "eyebrow": "初期設定",
+    "title": "機関のワークスペースを作成",
+    "description": "このフォームは一度だけ使用し、インストールの管理者と外観を作成します。",
+    "sections": {
+      "access": "インストールへのアクセス",
+      "institution": "機関",
+      "identity": "外観",
+      "administrator": "最初の管理者"
+    },
+    "fields": {
+      "setup_token": "セットアップトークン",
+      "workspace_name": "ワークスペース名",
+      "institution_name": "機関名",
+      "contact_email": "連絡先メールアドレス",
+      "domain": "機関のドメイン",
+      "timezone": "タイムゾーン",
+      "language": "言語",
+      "username": "ユーザー名",
+      "email": "メールアドレス",
+      "first_name": "名",
+      "last_name": "姓",
+      "affiliation": "所属",
+      "department": "部署",
+      "password": "パスワード",
+      "password_confirmation": "パスワードの確認"
+    },
+    "colors": {
+      "primary_color": "メイン",
+      "secondary_color": "サブ",
+      "accent_color": "アクセント"
+    },
+    "submit": "ワークスペースを作成",
+    "submitting": "ワークスペースを作成中…",
+    "errors": {
+      "passwords_no_match": "管理者のパスワードが一致しません。",
+      "failed": "セットアップを完了できませんでした。"
+    }
+  },
+  "instanceBranding": {
+    "logo_preview": "機関ロゴのプレビュー",
+    "logo": "機関のロゴ",
+    "logo_hint": "PNG、JPEG、WebP（最大5MB）。安全な形式に変換されます。",
+    "save": "機関の外観を保存",
+    "saving": "保存中…",
+    "saved": "機関の外観を更新しました。",
+    "save_failed": "機関の外観を保存できませんでした。"
+  },
+  "home": {
+    "eyebrow": "研究ワークスペース",
+    "welcome": "おかえりなさい。",
+    "welcome_named": "おかえりなさい、{name}さん。",
+    "introduction": "ELANの注釈作業の調整、改訂履歴の保存、機関の研究プロトコルの適用を一つのワークスペースで行えます。",
+    "open_projects": "プロジェクトを開く",
+    "submit_annotations": "注釈を提出",
+    "summary": "ワークスペースの概要",
+    "accessible_projects": "アクセスできるプロジェクト",
+    "workspace": "ワークスペース",
+    "continue": "作業を続ける",
+    "actions": {
+      "projects": {
+        "title": "プロジェクト",
+        "description": "コーパス、ファイル、履歴、共同研究者を閲覧します。"
+      },
+      "upload": {
+        "title": "注釈をアップロード",
+        "description": "ELANの提出物を検証して提出します。"
+      },
+      "review": {
+        "title": "提出物をレビュー",
+        "description": "保留中の変更を確認し、競合を解決します。"
+      },
+      "tiers": {
+        "title": "層のカタログ",
+        "description": "プロジェクトで使われている注釈の構造を確認します。"
+      }
+    },
+    "principles": {
+      "eyebrow": "説明責任のある研究のために",
+      "title": "根拠は常に判断と結びついています。",
+      "history": "バージョン管理されたELAN注釈の履歴",
+      "validation": "プロトコルに基づく検証",
+      "review": "明示的なレビューと競合の解決",
+      "ownership": "機関が管理するデータと外観"
+    }
   }
 }
