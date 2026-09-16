@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     elan_max_file_size_mb: int = Field(default=50, ge=1, le=2048)
     elan_max_batch_size_mb: int = Field(default=500, ge=1, le=8192)
     integrity_scan_on_startup: bool = False
+    # New passwords are checked against Have I Been Pwned's range API, which
+    # receives only the first five characters of the password's SHA-1 hash.
+    # Turn it off for an installation without internet access.
+    password_breach_check: bool = True
+    breach_check_api_url: str = "https://api.pwnedpasswords.com/range/"
+    breach_check_timeout_seconds: float = Field(default=3.0, gt=0, le=30)
 
     mail_username: str = ""
     mail_password: SecretStr = SecretStr("")

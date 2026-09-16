@@ -122,3 +122,43 @@ async def test_registration_commits_user_and_invitation_together(
     db.commit.assert_awaited_once()
     db.rollback.assert_not_awaited()
     notifier.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_registration_refuses_a_breached_password_before_creating_anyone(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.core.errors import ErrorCode  # noqa: PLC0415
+
+    db = AsyncMock(spec=AsyncSession)
+    invitation = SimpleNamespace(
+        invitation_id=9, project_id=4, receiver_email="researcher@example.org"
+    )
+    monkeypatch.setattr(
+        invitation_queries,
+        "validate_invitation",
+        AsyncMock(return_value=SimpleNamespace(valid=True, invitation=invitation)),
+    )
+
+    async def breached(_password: str) -> None:
+        raise ElanoraError(ErrorCode.PASSWORD_BREACHED)
+
+    monkeypatch.setattr(auth_registration, "refuse_breached_password", breached)
+    creator = AsyncMock()
+    monkeypatch.setattr(user_registration, "create_user", creator)
+    request = RegisterWithInvitationRequest(
+        invitation_code="valid-code",
+        first_name="Ada",
+        last_name="Researcher",
+        username="researcher",
+        email="researcher@example.org",
+        password="tidal marsh 7 lanterns",  # noqa: S106 - inert test value
+        affiliation="Research Institute",
+        department="Linguistics",
+    )
+
+    with pytest.raises(ElanoraError) as refused:
+        await auth_registration.register(request, db)
+
+    assert refused.value.code == ErrorCode.PASSWORD_BREACHED
+    creator.assert_not_awaited()

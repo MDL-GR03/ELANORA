@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.breached_passwords import refuse_breached_password
 from app.core.errors import ElanoraError, ErrorCode
 from app.crud.project import get_project_by_id
 from app.dependency.database import get_db_dep
@@ -48,6 +49,7 @@ async def register(
     )
     if not invitation_validation.valid or not invitation_validation.invitation:
         raise ElanoraError(ErrorCode.INVITATION_INVALID)
+    await refuse_breached_password(request.password)
 
     invitation_info = invitation_validation.invitation
     project = await get_project_by_id(db, invitation_info.project_id)

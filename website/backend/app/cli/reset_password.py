@@ -7,6 +7,7 @@ import getpass
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.breached_passwords import refuse_breached_password
 from app.core.password_policy import MESSAGES, password_policy_violation
 from app.db.database import close_database, get_session_maker, init_database
 from app.model.user import User
@@ -24,6 +25,7 @@ async def reset_password(db: AsyncSession, username: str, password: str) -> User
     )
     if refusal:
         raise ValueError(f"password refused: {MESSAGES[refusal]}")
+    await refuse_breached_password(password)
     user.hashed_password = password_hashing.hash_password(password)
     await revoke_all_refresh_sessions(db, user.user_id)
     await db.commit()

@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.breached_passwords import refuse_breached_password
 from app.core.centralized_logging import get_logger
 from app.core.errors import ElanoraError, ErrorCode
 from app.crud.user import update_user_password
@@ -88,6 +89,7 @@ async def change_password(
     ):
         logger.warning("Password change failed: incorrect current password")
         raise ElanoraError(ErrorCode.CURRENT_PASSWORD_INCORRECT)
+    await refuse_breached_password(new_password)
 
     if not await update_password(db, user, new_password, commit=False):
         logger.error("Password change failed during update")

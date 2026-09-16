@@ -36,10 +36,10 @@ def test_a_long_password_needs_no_symbols_digits_or_capitals() -> None:
 
 
 def test_passwords_known_from_breaches_are_refused_whatever_their_case() -> None:
-    known = next(iter(common_passwords()))
-    assert len(known) >= PASSWORD_MINIMUM_LENGTH
-    assert password_policy_violation(known.upper()) in {"common", "repetitive"}
-    assert password_policy_violation(known) in {"common", "repetitive"}
+    known = sorted(common_passwords())
+    assert all(len(entry) >= PASSWORD_MINIMUM_LENGTH for entry in known)
+    assert all(password_policy_violation(entry) is not None for entry in known)
+    assert all(password_policy_violation(entry.upper()) is not None for entry in known)
 
 
 def test_the_list_ignores_its_own_header() -> None:

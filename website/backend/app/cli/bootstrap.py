@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.breached_passwords import refuse_breached_password
 from app.core.password_policy import MESSAGES, password_policy_violation
 from app.db.database import close_database, get_session_maker, init_database
 from app.model.enums import UserRole
@@ -55,6 +56,7 @@ async def bootstrap(
     )
     if refusal:
         raise ValueError(f"administrator password refused: {MESSAGES[refusal]}")
+    await refuse_breached_password(password)
     existing_instances = await db.scalar(select(func.count()).select_from(Instance))
     existing_users = await db.scalar(select(func.count()).select_from(User))
     if existing_instances or existing_users:

@@ -6,6 +6,7 @@ from typing import cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.breached_passwords import refuse_breached_password
 from app.core.centralized_logging import get_logger
 from app.core.errors import ElanoraError, ErrorCode
 from app.crud.user import get_user_by_username_or_email
@@ -60,6 +61,7 @@ async def reset_password(
     if not user or not verify_password(reset_code, user.activation_code):
         logger.warning("Password reset failed: invalid code or account")
         raise ElanoraError(ErrorCode.VERIFICATION_CODE_INVALID)
+    await refuse_breached_password(new_password)
 
     if not await update_password(db, user, new_password, commit=False):
         raise ElanoraError(ErrorCode.PASSWORD_RESET_FAILED)
