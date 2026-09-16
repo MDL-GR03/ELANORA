@@ -48,7 +48,7 @@ async def register(
     if not invitation_validation.valid or not invitation_validation.invitation:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invitation invalide ou expirée.",
+            detail="The invitation is invalid or has expired.",
         )
 
     invitation_info = invitation_validation.invitation
@@ -66,7 +66,7 @@ async def register(
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="L'email du formulaire ne correspond pas à celui de l'invitation.",
+            detail="The email address does not match the invitation.",
         )
 
     # 2. Create the user
