@@ -23,6 +23,7 @@ elanora-purge-expired-projects = "app.cli.purge_expired_projects:main"
 elanora-backup = "app.cli.backup:main"
 elanora-maintenance = "app.cli.maintenance_worker:main"
 elanora-setup = "app.cli.setup_installation:main"
+elanora-export-audit = "app.cli.export_audit:main"
 
 [tool.poetry]
 packages = [

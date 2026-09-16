@@ -42,6 +42,34 @@ with another project through identical bytes is kept. What remains is the
 project row with its governance, its members, and the audit events, including
 one recording what the purge destroyed.
 
+## Answering a compliance request
+
+An ethics board or data protection authority asks what was held, why, and when
+it was destroyed. The audit trail answers that, and can be exported:
+
+```bash
+poetry run elanora-export-audit --project-id 12 --format csv --output audit.csv
+poetry run elanora-export-audit --since 2026-01-01 --until 2026-06-30
+```
+
+Events come out oldest first, and carry the moment, the action, who acted, the
+project and resource, and the recorded detail. Purges appear as
+`project.content.purged` with what was destroyed; classification changes appear
+as `project.data_governance.updated` with the values before and after.
+
+## Participant withdrawal
+
+This is deliberately not automated. ELANORA has no reliable participant
+identity: the EAF `PARTICIPANT` tier attribute is free text an annotator types,
+inconsistent between files, and good practice is a pseudonymous code whose
+mapping to a real person is kept outside these files entirely. Software cannot
+safely decide which annotations belong to a person who has withdrawn.
+
+An administrator handles a withdrawal: locate the affected file or files, edit
+or remove the content, and the action is recorded in the audit trail like any
+other. Deletion-adjacent actions require project-admin permission; a
+contributor has no path to delete accepted content.
+
 ## Why a purge can delete immutable rows
 
 Revision manifests and validation evidence are append-only: PostgreSQL triggers
