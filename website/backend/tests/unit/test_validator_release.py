@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import app.service.protocol as protocol_service
 from app.elan.validation import SCHEMA_PATH
 from app.service import protocol_evaluation
 from app.service.protocol_evaluation import (
@@ -27,7 +26,18 @@ def test_the_fingerprint_covers_every_source_that_decides_an_outcome() -> None:
 
 def test_protocol_administration_code_is_not_part_of_the_fingerprint() -> None:
     """Editing unrelated service code must not halt validation everywhere."""
-    assert Path(protocol_service.__file__).resolve() not in VALIDATOR_SOURCES
+    administration = (
+        "protocol.py",
+        "protocol_administration.py",
+        "protocol_capabilities.py",
+        "protocol_compliance.py",
+        "protocol_shared.py",
+        "protocol_suggestions.py",
+        "protocol_validation_runs.py",
+    )
+    for name in administration:
+        assert (APP_ROOT / "service" / name).is_file(), name
+        assert (APP_ROOT / "service" / name) not in VALIDATOR_SOURCES
 
 
 def test_the_fingerprint_changes_when_any_covered_source_changes(
