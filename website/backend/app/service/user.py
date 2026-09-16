@@ -1,338 +1,78 @@
-"""User service layer - Business logic and password management."""
+"""User use cases: credentials, sessions, registration, profile and status.
 
-import secrets
-import uuid
-from datetime import UTC, datetime
-from typing import Any, cast
+The work lives in focused modules; ``UserService`` remains the entry point its
+callers already use, and the account-status errors are still importable here.
+"""
 
-from passlib.context import CryptContext
-from sqlalchemy import select
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.centralized_logging import get_logger
-from app.core.error_diagnostics import safe_exception_type
-from app.core.jwt import create_access_token, create_refresh_token, verify_refresh_token
-from app.crud.user import (
-    check_user_exists_by_email,
-    check_user_exists_by_username,
-    create_user_in_db,
-    get_user_by_id,
-    get_user_by_username_or_email,
-    update_user_password,
-    update_user_profile,
-)
-from app.model.audit_event import AuditEvent
-from app.model.enums import UserRole
 from app.model.user import User
-from app.schema.common.token import TokenData
-from app.schema.common.user import UserCreateData
-from app.schema.requests.user import (
-    AddressRequest,
-    ProfileUpdateRequest,
+from app.schema.requests.user import AddressRequest, ProfileUpdateRequest
+from app.service import (
+    user_account_status,
+    user_passwords,
+    user_profile,
+    user_registration,
+    user_sessions,
+    user_verification,
 )
-from app.service.address import AddressService
-from app.service.notification import NotificationService
-from app.service.outbox import enqueue_account_verification_email
-from app.service.refresh_session import (
-    revoke_all_refresh_sessions,
-    rotate_refresh_session,
+from app.service.user_errors import (
+    AccountNotFoundError,
+    AccountStatusConflictError,
+    AdministratorNoLongerActiveError,
+    LastAdministratorError,
+    RedundantAccountStatusError,
+    SelfAccountStatusError,
 )
-from app.utils.database import DatabaseUtils
+from app.utils.password_hashing import hash_password, pwd_context, verify_password
 
-# Get logger for this module
-logger = get_logger()
-
-# Create a passlib context for bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-class AccountNotFoundError(LookupError):
-    """The requested account does not exist inside this installation."""
-
-
-class AccountStatusConflictError(ValueError):
-    """The requested account status change is not permitted."""
-
-
-class SelfAccountStatusError(AccountStatusConflictError):
-    """An administrator attempted to change their own account status."""
-
-
-class LastAdministratorError(AccountStatusConflictError):
-    """Suspending the account would leave the institution unadministered."""
-
-
-class RedundantAccountStatusError(AccountStatusConflictError):
-    """The account already has the requested status."""
-
-
-class AdministratorNoLongerActiveError(PermissionError):
-    """The acting administrator was suspended before their request completed."""
+__all__ = [
+    "AccountNotFoundError",
+    "AccountStatusConflictError",
+    "AdministratorNoLongerActiveError",
+    "LastAdministratorError",
+    "RedundantAccountStatusError",
+    "SelfAccountStatusError",
+    "UserService",
+    "pwd_context",
+]
 
 
 class UserService:
-    """Service for user-related business logic."""
-
-    @classmethod
-    async def set_account_active(
-        cls,
-        db: AsyncSession,
-        *,
-        actor: User,
-        target_user_id: int,
-        is_active: bool,
-        reason: str,
-    ) -> User:
-        """Suspend or restore an institution account with safety invariants."""
-        # Lock the institution's active administrators before anything else, in
-        # a fixed order. Every status change takes these locks in the same
-        # sequence, so two administrators acting on each other at once queue
-        # behind one another instead of deadlocking, and each sees the other's
-        # committed decision.
-        active_admin_ids = set(
-            (
-                await db.execute(
-                    select(User.user_id)
-                    .where(
-                        User.instance_id == actor.instance_id,
-                        User.role == UserRole.ADMIN,
-                        User.is_active.is_(True),
-                    )
-                    .order_by(User.user_id)
-                    .with_for_update()
-                )
-            ).scalars()
-        )
-        # The request was authorized when it began. If this administrator was
-        # suspended while it was in flight, it must not complete.
-        if actor.user_id not in active_admin_ids:
-            raise AdministratorNoLongerActiveError(
-                "The acting administrator is no longer active"
-            )
-
-        target = await db.scalar(
-            select(User)
-            .where(
-                User.user_id == target_user_id,
-                User.instance_id == actor.instance_id,
-            )
-            .with_for_update()
-        )
-        if target is None:
-            raise AccountNotFoundError("Account not found")
-        if target.user_id == actor.user_id:
-            raise SelfAccountStatusError(
-                "Administrators cannot change their own account status"
-            )
-        if target.is_active == is_active:
-            state = "active" if is_active else "suspended"
-            raise RedundantAccountStatusError(f"Account is already {state}")
-
-        # Backstop. An active actor who cannot target themselves already implies
-        # a second active administrator survives, but the invariant is too
-        # important to rest on that reasoning if either rule above changes.
-        remaining = active_admin_ids - {target.user_id}
-        if not is_active and target.role == UserRole.ADMIN and not remaining:
-            raise LastAdministratorError(
-                "The institution must retain an active administrator"
-            )
-
-        target.is_active = is_active
-        target.updated_at = datetime.now(UTC)
-        revoked_sessions = 0
-        if not is_active:
-            revoked_sessions = await revoke_all_refresh_sessions(db, target.user_id)
-        db.add(
-            AuditEvent(
-                actor_user_id=actor.user_id,
-                action="account.reactivated" if is_active else "account.suspended",
-                resource_type="user",
-                resource_id=str(target.user_id),
-                details={
-                    "reason": reason.strip(),
-                    "revoked_sessions": revoked_sessions,
-                },
-            )
-        )
-        await db.commit()
-        await db.refresh(target)
-        return target
+    """Entry point for account credentials, sessions, profiles and status."""
 
     @staticmethod
     def hash_password(password: str) -> str:
-        """Hash a password using bcrypt.
-
-        Args:
-            password (str): The plaintext password to be hashed.
-
-        Returns:
-            str: The hashed password.
-
-        """
-        return str(pwd_context.hash(password))
+        """Hash a password with bcrypt."""
+        return hash_password(password)
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
-        """Verify a password against a bcrypt hash.
-
-        Args:
-            plain_password (str): The plain text password.
-            hashed_password (str): The hashed password.
-
-        Returns:
-            bool: True if password matches.
-
-        """
-        return bool(pwd_context.verify(plain_password, hashed_password))
+        """Whether a plain password matches a stored bcrypt hash."""
+        return verify_password(plain_password, hashed_password)
 
     @classmethod
     async def authenticate_user(
         cls, db: AsyncSession, login_or_email: str, password: str
     ) -> User | None:
-        """Authenticate user with bcrypt password verification.
-
-        Args:
-            db (AsyncSession): Database session.
-            login_or_email (str): User username or email.
-            password (str): Plain text password.
-
-        Returns:
-            User | None: User object if authentication successful, None otherwise.
-
-        """
-        user = await get_user_by_username_or_email(db, login_or_email)
-
-        if not user:
-            logger.warning("Authentication failed: account not found")
-            return None
-
-        if not user.hashed_password:
-            logger.warning("Authentication failed: account has no password")
-            return None
-
-        # Verify password using bcrypt
-        is_valid = cls.verify_password(password, user.hashed_password)
-
-        if is_valid:
-            logger.info("User authenticated successfully")
-            return user
-
-        logger.warning("Authentication failed: invalid password")
-        return None
+        """Authenticate a researcher by username or email address."""
+        return await user_sessions.authenticate_user(db, login_or_email, password)
 
     @classmethod
     async def login_user(
-        cls,
-        db: AsyncSession,
-        login_or_email: str,
-        password: str,
+        cls, db: AsyncSession, login_or_email: str, password: str
     ) -> dict[str, Any]:
-        """Handle user login with business logic.
-
-        Returns:
-            Dict with success, message, user, needs_verification, email
-
-        """
-        # Authenticate user
-        user = await cls.authenticate_user(db, login_or_email, password)
-
-        if not user:
-            return {"success": False, "message": "Invalid credentials"}
-
-        # A suspended account keeps its data but must never obtain new
-        # credentials, even when the presented password is still correct.
-        if not user.is_active:
-            logger.warning("Login refused: account is suspended")
-            return {
-                "success": False,
-                "message": "This account is suspended. Contact your institution administrator.",
-            }
-
-        # Check if email is verified
-        if not user.is_verified_account:
-            logger.info("User login requires email verification")
-            verification_code = cls._generate_verification_code()
-            hashed_code = cls._hash_verification_code(verification_code)
-
-            # Store the hash and encrypted delivery request atomically.
-            user.activation_code = hashed_code
-            await enqueue_account_verification_email(
-                db,
-                user_id=user.user_id,
-                email=user.email,
-                username=user.username,
-                code=verification_code,
-                language="fr",
-            )
-            await db.commit()
-
-            return {
-                "success": True,
-                "message": "Login successful but email verification required",
-                "needs_verification": True,
-                "email": user.email,
-                "code_sent": True,
-            }
-        user.last_login = datetime.now(UTC)
-        await db.commit()
-        logger.info("User logged in successfully")
-
-        return {"success": True, "message": "Login successful", "user": user}
+        """Sign a researcher in, reporting why when it is refused."""
+        return await user_sessions.login_user(db, login_or_email, password)
 
     @classmethod
     async def refresh_user_tokens(
         cls, db: AsyncSession, refresh_token: str
     ) -> dict[str, Any]:
-        """Handle token refresh with business logic."""
-        try:
-            # Verify refresh token
-            token_data = verify_refresh_token(refresh_token)
-            if token_data.session_id is None:
-                return {"success": False, "message": "Token refresh failed"}
-            try:
-                session_id = uuid.UUID(token_data.session_id)
-            except ValueError:
-                return {"success": False, "message": "Token refresh failed"}
-
-            # Get user from database
-            user = await get_user_by_id(db, int(token_data.sub))
-
-            if not user or not user.is_active:
-                logger.warning("Token refresh failed: account inactive or unavailable")
-                return {
-                    "success": False,
-                    "message": "User account is inactive or not found",
-                }
-
-            # Create new tokens
-            new_token_data = TokenData(
-                sub=str(user.user_id),
-                session_id=str(session_id),
-                token_id=secrets.token_hex(16),
-            )
-            new_access_token = create_access_token(new_token_data)
-            new_refresh_token = create_refresh_token(new_token_data)
-            csrf_token = secrets.token_hex(16)
-
-            if not await rotate_refresh_session(
-                db, session_id, refresh_token, new_refresh_token
-            ):
-                await db.rollback()
-                return {"success": False, "message": "Token refresh failed"}
-            await db.commit()
-
-            logger.info("Tokens refreshed successfully")
-            return {
-                "success": True,
-                "access_token": new_access_token,
-                "refresh_token": new_refresh_token,
-                "csrf_token": csrf_token,
-                "message": "Tokens refreshed successfully",
-            }
-
-        except Exception as e:
-            logger.error("Token refresh failed; error_type=%s", safe_exception_type(e))
-            return {"success": False, "message": "Token refresh failed"}
+        """Rotate a refresh token and issue the next access token."""
+        return await user_sessions.refresh_user_tokens(db, refresh_token)
 
     @classmethod
     async def create_user(
@@ -353,120 +93,84 @@ class UserService:
         commit: bool = True,
     ) -> User:
         """Create a new user with bcrypt password hashing."""
-        try:
-            logger.info("Creating a user account")
+        return await user_registration.create_user(
+            db,
+            username,
+            email,
+            password,
+            first_name,
+            last_name,
+            affiliation,
+            department,
+            instance_id,
+            is_verified,
+            phone_number,
+            address_data,
+            commit=commit,
+        )
 
-            # Hash the password
-            hashed_password = cls.hash_password(password)
+    @classmethod
+    async def check_username_availability(cls, db: AsyncSession, username: str) -> bool:
+        """Whether a username is free."""
+        return await user_registration.check_username_availability(db, username)
 
-            # Determine activation code logic
-            activation_code = ""
-            if not is_verified:
-                # If email is not verified, generate activation code
-                activation_code = cls._generate_verification_code()
-                activation_code = cls._hash_verification_code(activation_code)
+    @classmethod
+    async def check_username_availability_for_update(
+        cls, db: AsyncSession, username: str, exclude_user_id: int
+    ) -> bool:
+        """Whether a username is free for this account to take."""
+        return await user_registration.check_username_availability_for_update(
+            db, username, exclude_user_id
+        )
 
-            # Create address if provided
-            address_id = None
-            if address_data:
-                address = await AddressService.create_address(
-                    db, address_data, commit=False
-                )
-                address_id = address.address_id
+    @classmethod
+    async def check_email_availability(cls, db: AsyncSession, email: str) -> bool:
+        """Whether an email address is free."""
+        return await user_registration.check_email_availability(db, email)
 
-            # Create UserCreateData object
-            user_data = UserCreateData(
-                username=username,
-                hashed_password=hashed_password,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                phone_number=phone_number,
-                affiliation=affiliation,
-                department=department,
-                activation_code=activation_code,
-                instance_id=instance_id,
-                is_verified_account=is_verified,
-                address_id=address_id,
-            )
-
-            # Create user in database
-            user = await create_user_in_db(db, user_data)
-
-            # Flush to get the user_id before creating preferences
-            await db.flush()
-
-            # Create default notification preferences
-            await NotificationService.create_user_preference(
-                db, user.user_id, email_enabled=True
-            )
-
-            if commit:
-                await db.commit()
-            logger.info("User account created successfully")
-            return user
-        except Exception:
-            await db.rollback()
-            raise
+    @classmethod
+    async def get_user_by_email(cls, db: AsyncSession, email: str) -> User | None:
+        """The account with this email address, if any."""
+        return await user_registration.get_user_by_email(db, email)
 
     @classmethod
     async def update_password(
-        cls,
-        db: AsyncSession,
-        user: User,
-        new_password: str,
-        *,
-        commit: bool = True,
+        cls, db: AsyncSession, user: User, new_password: str, *, commit: bool = True
     ) -> bool:
-        """Update user's password with bcrypt hashing.
-
-        Args:
-            db (AsyncSession): Database session.
-            user (User): User object to update.
-            new_password (str): New plain text password.
-
-        Returns:
-            bool: True if update successful, False otherwise.
-
-        """
-        logger.info("Updating an account password")
-        new_password_hash = cls.hash_password(new_password)
-        success = await update_user_password(db, user, new_password_hash)
-
-        if success:
-            user.updated_at = datetime.now(UTC)
-            if commit:
-                await revoke_all_refresh_sessions(db, user.user_id)
-                await db.commit()
-            logger.info("Account password updated successfully")
-        else:
-            logger.error("Failed to update account password")
-
-        return success
+        """Replace an account's password."""
+        return await user_passwords.update_password(
+            db, user, new_password, commit=commit
+        )
 
     @classmethod
     async def verify_current_password(cls, user: User, current_password: str) -> bool:
-        """Verify user's current password.
+        """Whether the given password is the account's current one."""
+        return await user_passwords.verify_current_password(user, current_password)
 
-        Args:
-            user (User): User object.
-            current_password (str): Current plain text password.
+    @classmethod
+    async def change_password(
+        cls, db: AsyncSession, user: User, current_password: str, new_password: str
+    ) -> dict[str, Any]:
+        """Change a password after checking the current one."""
+        return await user_passwords.change_password(
+            db, user, current_password, new_password
+        )
 
-        Returns:
-            bool: True if current password is correct.
+    @classmethod
+    async def verify_account(
+        cls, db: AsyncSession, email: str, verification_code: str
+    ) -> dict[str, Any]:
+        """Verify an account with its activation code."""
+        return await user_verification.verify_account(db, email, verification_code)
 
-        """
-        if not user.hashed_password:
-            logger.warning("Password verification failed: account has no password")
-            return False
-
-        result = cls.verify_password(current_password, user.hashed_password)
-        if result:
-            logger.debug("Current password verified")
-        else:
-            logger.warning("Current password verification failed")
-
-        return result
+    @classmethod
+    async def reset_password(
+        cls, db: AsyncSession, email: str, reset_code: str, new_password: str
+    ) -> dict[str, Any]:
+        """Reset a password with a valid reset code."""
+        return await user_verification.reset_password(
+            db, email, reset_code, new_password
+        )
 
     @classmethod
     async def update_user_profile(
@@ -475,269 +179,34 @@ class UserService:
         user: User,
         profile_data: ProfileUpdateRequest,
     ) -> dict[str, Any]:
-        """Update user profile with validation."""
-        try:
-            logger.info("Updating an account profile")
-
-            # Prepare update fields
-            update_fields: dict[str, Any] = {}
-            updated_field_names: list[str] = []
-
-            field_mapping = {
-                "username": profile_data.username,
-                "email": profile_data.email,
-                "first_name": profile_data.first_name,
-                "last_name": profile_data.last_name,
-                "phone_number": profile_data.phone_number,
-                "affiliation": profile_data.affiliation,
-                "department": profile_data.department,
-            }
-
-            # Special validation for username if provided
-            if profile_data.username is not None:
-                # Check if username is already taken by another user (exclude current user)
-                username_available = await cls.check_username_availability_for_update(
-                    db, profile_data.username, user.user_id
-                )
-                if not username_available:
-                    logger.warning("Username already taken during profile update")
-                    return {
-                        "success": False,
-                        "message": "Username already taken",
-                        "updated_fields": [],
-                    }
-
-            for field_name, field_value in field_mapping.items():
-                if field_value is not None:
-                    update_fields[field_name] = field_value
-                    updated_field_names.append(field_name)
-
-            if not update_fields:
-                logger.warning("Profile update attempted with no fields to update")
-                return {
-                    "success": False,
-                    "message": "No fields to update",
-                    "updated_fields": [],
-                }
-
-            update_fields["updated_at"] = datetime.now(UTC)
-
-            # Update in database
-            success = await update_user_profile(db, user, **update_fields)
-
-            if success:
-                await db.commit()
-                logger.info(
-                    "Account profile updated successfully; fields=%s",
-                    updated_field_names,
-                )
-            else:
-                await db.rollback()
-                logger.error("Account profile update failed")
-
-            return {
-                "success": success,
-                "message": "Profile updated successfully"
-                if success
-                else "Profile update failed",
-                "updated_fields": updated_field_names if success else [],
-            }
-        except Exception:
-            await db.rollback()
-            raise
+        """Update a researcher's own profile."""
+        return await user_profile.update_profile(db, user, profile_data)
 
     @classmethod
-    async def check_username_availability(cls, db: AsyncSession, username: str) -> bool:
-        """Check if a username is available for registration.
-
-        Args:
-            db (AsyncSession): Database session.
-            username (str): Username to check.
-
-        Returns:
-            bool: True if available, False if taken.
-
-        """
-        is_available = not await check_user_exists_by_username(db, username)
-        logger.debug(
-            f"Username availability check for '{username}': {'available' if is_available else 'taken'}"
-        )
-        return is_available
-
-    @classmethod
-    async def check_username_availability_for_update(
-        cls, db: AsyncSession, username: str, exclude_user_id: int
-    ) -> bool:
-        """Check if a username is available for profile update (excluding current user).
-
-        Args:
-            db (AsyncSession): Database session.
-            username (str): Username to check.
-            exclude_user_id (int): User ID to exclude from check.
-
-        Returns:
-            bool: True if available, False if taken by another user.
-
-        """
-        # Get user with this username (if any)
-        existing_user = await DatabaseUtils.get_one_by_filter(
-            db, User, {"username": username}
+    async def set_account_active(
+        cls,
+        db: AsyncSession,
+        *,
+        actor: User,
+        target_user_id: int,
+        is_active: bool,
+        reason: str,
+    ) -> User:
+        """Suspend or restore an institution account with safety invariants."""
+        return await user_account_status.set_account_active(
+            db,
+            actor=actor,
+            target_user_id=target_user_id,
+            is_active=is_active,
+            reason=reason,
         )
 
-        # If no user exists with this username, it's available
-        if not existing_user:
-            return True
-
-        # If the user with this username is the current user, it's available
-        return existing_user.user_id == exclude_user_id
-
-    @classmethod
-    async def check_email_availability(cls, db: AsyncSession, email: str) -> bool:
-        """Check if an email is available for registration.
-
-        Args:
-            db (AsyncSession): Database session.
-            email (str): Email to check.
-
-        Returns:
-            bool: True if available, False if taken.
-
-        """
-        is_available = not await check_user_exists_by_email(db, email)
-        logger.debug(
-            f"Email availability check for '{email}': {'available' if is_available else 'taken'}"
-        )
-        return is_available
-
-    @classmethod
-    async def verify_account(
-        cls, db: AsyncSession, email: str, verification_code: str
-    ) -> dict[str, Any]:
-        """Verify user account with activation code.
-
-        Args:
-            db (AsyncSession): Database session.
-            email (str): User email.
-            verification_code (str): Verification code.
-
-        Returns:
-            Dict[str, Any]: Verification result.
-
-        """
-        logger.info("Account verification attempted")
-        user = await get_user_by_username_or_email(db, email)
-
-        if not user:
-            logger.warning("Account verification failed: account not found")
-            return {"success": False, "message": "User not found"}
-
-        if user.is_verified_account:
-            logger.info("Account verification attempted for a verified account")
-            return {"success": False, "message": "Account is already verified"}
-
-        # Verify the activation code
-        if not cls.verify_password(verification_code, user.activation_code):
-            logger.warning("Account verification failed: invalid code")
-            return {"success": False, "message": "Invalid verification code"}
-
-        # Mark account as verified
-        user.is_verified_account = True
-        user.updated_at = datetime.now(UTC)
-        await db.commit()
-
-        logger.info("Account verified successfully")
-        return {"success": True, "message": "Account verified successfully"}
-
-    @classmethod
-    async def reset_password(
-        cls, db: AsyncSession, email: str, reset_code: str, new_password: str
-    ) -> dict[str, Any]:
-        """Reset user password with reset code.
-
-        Args:
-            db (AsyncSession): Database session.
-            email (str): User email.
-            reset_code (str): Password reset code.
-            new_password (str): New password.
-
-        Returns:
-            Dict[str, Any]: Reset result.
-
-        """
-        logger.info("Password reset attempted")
-        user = await get_user_by_username_or_email(db, email)
-
-        if not user:
-            logger.warning("Password reset failed: account not found")
-            return {"success": False, "message": "User not found"}
-
-        # Verify reset code
-        if not cls.verify_password(reset_code, user.activation_code):
-            logger.warning("Password reset failed: invalid code")
-            return {"success": False, "message": "Invalid reset code"}
-
-        # Update password
-        success = await cls.update_password(db, user, new_password, commit=False)
-
-        if success:
-            # Clear activation code after successful reset
-            user.activation_code = ""
-            user.updated_at = datetime.now(UTC)
-            await revoke_all_refresh_sessions(db, user.user_id)
-            await db.commit()
-
-        logger.info("Password reset successfully")
-        return {"success": True, "message": "Password reset successfully"}
-
-    @classmethod
-    async def change_password(
-        cls, db: AsyncSession, user: User, current_password: str, new_password: str
-    ) -> dict[str, Any]:
-        """Change user password with current password verification.
-
-        Args:
-            db (AsyncSession): Database session.
-            user (User): Current user.
-            current_password (str): Current password.
-            new_password (str): New password.
-
-        Returns:
-            Dict[str, Any]: Change result.
-
-        """
-        logger.info("Password change attempted")
-
-        # Verify current password
-        if not cls.verify_password(current_password, user.hashed_password):
-            logger.warning("Password change failed: incorrect current password")
-            return {"success": False, "message": "Current password is incorrect"}
-
-        # Update password
-        success = await cls.update_password(db, user, new_password, commit=False)
-
-        if success:
-            user.updated_at = datetime.now(UTC)
-            await revoke_all_refresh_sessions(db, user.user_id)
-            await db.commit()
-
-            logger.info("Password changed successfully")
-            return {"success": True, "message": "Password changed successfully"}
-
-        logger.error("Password change failed during update")
-        return {"success": False, "message": "Failed to change password"}
-
-    @classmethod
-    async def get_user_by_email(cls, db: AsyncSession, email: str) -> User | None:
-        """Get a user by email address."""
-        return await get_user_by_username_or_email(db, email)
-
-    # Private helper methods for business logic
     @staticmethod
     def _generate_verification_code() -> str:
-        """Generate a 6-digit numeric verification code."""
-        return f"{secrets.randbelow(1000000):06d}"
+        """A fresh verification code."""
+        return user_verification.generate_verification_code()
 
     @staticmethod
     def _hash_verification_code(code: str) -> str:
-        """Hash verification code."""
-        return cast("str", pwd_context.hash(code))
+        """Hash a verification code the way stored codes are hashed."""
+        return user_verification.hash_verification_code(code)

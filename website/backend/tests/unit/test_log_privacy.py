@@ -7,7 +7,7 @@ import pytest
 from lxml import etree
 
 import app.crud.annotation_value as annotation_value_module
-import app.service.user as user_service_module
+import app.service.user_sessions as user_sessions_module
 import app.utils.database as database_module
 import app.utils.file_processing as file_processing_module
 import app.utils.validation as validation_module
@@ -122,9 +122,9 @@ def test_validation_logs_exclude_string_and_filename_values(monkeypatch) -> None
 @pytest.mark.asyncio
 async def test_authentication_logs_exclude_login_identifier(monkeypatch) -> None:
     logger = Mock()
-    monkeypatch.setattr(user_service_module, "logger", logger)
+    monkeypatch.setattr(user_sessions_module, "logger", logger)
     monkeypatch.setattr(
-        user_service_module,
+        user_sessions_module,
         "get_user_by_username_or_email",
         AsyncMock(return_value=None),
     )
