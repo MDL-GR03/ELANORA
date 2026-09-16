@@ -270,7 +270,9 @@ async def test_membership_failure_does_not_consume_invitation(
     async def fail_membership(*args: object, **kwargs: object) -> None:
         raise RuntimeError("simulated membership failure")
 
-    monkeypatch.setattr("app.service.invitation.add_user_to_project", fail_membership)
+    monkeypatch.setattr(
+        "app.service.invitation_decisions.add_user_to_project", fail_membership
+    )
 
     assert not await InvitationService().accept_invitation(
         session, invitation.invitation_id, recipient_id
