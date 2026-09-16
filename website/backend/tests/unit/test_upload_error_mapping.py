@@ -10,10 +10,10 @@ import ast
 import inspect
 from pathlib import Path
 
-import app.api.v1.git as git_api
+from app.api.v1 import git_contributions
 from app.service.upload_naming_compliance import FilenameNotCompliantError
 
-API_SOURCE = Path(inspect.getfile(git_api))
+API_SOURCE = Path(inspect.getfile(git_contributions))
 
 
 def _upload_handler() -> ast.AsyncFunctionDef:

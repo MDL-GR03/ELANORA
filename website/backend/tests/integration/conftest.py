@@ -78,7 +78,7 @@ async def api_client(
     recovery copies live under a temporary directory. Cookies follow their
     paths, just as a browser would send them.
     """
-    import app.api.v1.git as git_api  # noqa: PLC0415 - imports the whole app
+    from app.api.v1 import git_shared  # noqa: PLC0415 - imports the whole app
     from app.core.limiter import limiter  # noqa: PLC0415
     from app.db.database import get_db  # noqa: PLC0415
     from app.main import app  # noqa: PLC0415
@@ -95,14 +95,14 @@ async def api_client(
         project_backup, "ELAN_BACKUPS_BASE_PATH", str(tmp_path / "recovery")
     )
     git_service = GitService(base_path=str(projects_root))
-    monkeypatch.setattr(git_api, "git_service", git_service)
+    monkeypatch.setattr(git_shared, "git_service", git_service)
     monkeypatch.setattr(
-        git_api,
+        git_shared,
         "contribution_change_sets",
         ContributionChangeSetCoordinator(git_service),
     )
     monkeypatch.setattr(
-        git_api, "sync_coordinator", ProjectSyncCoordinator(git_service)
+        git_shared, "sync_coordinator", ProjectSyncCoordinator(git_service)
     )
 
     engine = create_async_engine(_database_url(), pool_pre_ping=True)

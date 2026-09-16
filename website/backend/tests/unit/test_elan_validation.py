@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi import HTTPException, UploadFile
 
-from app.api.v1 import git as git_api
+from app.api.v1 import git_projects, git_shared
 from app.dependency.elan_validation import validate_multiple_elan_files
 
 
@@ -84,12 +84,12 @@ async def test_folder_project_import_validates_before_creating_project(
     database = MagicMock()
     database.commit = AsyncMock()
     monkeypatch.setattr(
-        git_api.git_service, "init_project_from_folder_upload", create_project
+        git_shared.git_service, "init_project_from_folder_upload", create_project
     )
     malformed = upload("broken.eaf", b"<ANNOTATION_DOCUMENT><HEADER/><TIME_ORDER>")
 
     with pytest.raises(HTTPException) as error:
-        await git_api.init_project_from_folder_upload(
+        await git_projects.init_project_from_folder_upload(
             project_name="research-project",
             description="Research project",
             files=[malformed],
