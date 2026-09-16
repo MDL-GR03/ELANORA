@@ -121,64 +121,75 @@ function checkComponent(comp, value) {
   );
 }
 
-export function isFilenameCompliant(standard, name) {
-  const nameWithoutExt = String(name || '').replace(/\.[^/.]+$/, '');
-
-  if (!standard?.pattern || !Array.isArray(standard?.components)) {
-    return false;
+/** Read a component in whichever shape the API or the editor supplied it. */
+function normalizeComponent(component) {
+  let acceptedValues = [];
+  if (Array.isArray(component.acceptedValues)) {
+    acceptedValues = component.acceptedValues;
+  } else if (Array.isArray(component.accepted_values)) {
+    acceptedValues = component.accepted_values;
+  } else if (typeof component.accepted_values_str === 'string') {
+    acceptedValues = component.accepted_values_str
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
   }
 
-  const components = standard.components.map((c) => {
-    let acceptedValues = [];
-    if (Array.isArray(c.acceptedValues)) {
-      acceptedValues = c.acceptedValues;
-    } else if (Array.isArray(c.accepted_values)) {
-      acceptedValues = c.accepted_values;
-    } else if (typeof c.accepted_values_str === 'string') {
-      acceptedValues = c.accepted_values_str
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
+  return {
+    ...component,
+    regex: component.regex ?? component.pattern ?? null,
+    acceptedValues,
+    fixedValue:
+      component.fixedValue ?? component.fixed_value ?? component.value ?? null,
+    numericRange:
+      component.numericRange ??
+      component.numeric_range ??
+      component.numericRangeValue ??
+      null,
+  };
+}
 
-    return {
-      ...c,
-      name: c.name,
-      regex: c.regex ?? c.pattern ?? null,
-      acceptedValues,
-      fixedValue: c.fixedValue ?? c.fixed_value ?? c.value ?? null,
-      numericRange:
-        c.numericRange ?? c.numeric_range ?? c.numericRangeValue ?? null,
-    };
-  });
+/**
+ * Match a name against a standard's pattern.
+ *
+ * Returns the normalised components with the value each one captured, or null
+ * when the standard is unusable or the name does not fit its pattern.
+ */
+function matchStandard(standard, name) {
+  if (!standard?.pattern || !Array.isArray(standard?.components)) {
+    return null;
+  }
+  const components = standard.components.map(normalizeComponent);
 
   let pattern = standard.pattern;
-  for (const comp of components) {
-    const compRegex = comp.regex || '.+';
+  for (const component of components) {
     pattern = pattern.replace(
-      new RegExp(`\\{${comp.name}\\}`, 'g'),
-      `(${compRegex})`
+      new RegExp(`\\{${component.name}\\}`, 'g'),
+      `(${component.regex || '.+'})`
     );
   }
 
-  let topRx;
+  let expression;
   try {
-    topRx = new RegExp(`^${pattern}$`, 'u');
+    expression = new RegExp(`^${pattern}$`, 'u');
   } catch {
-    return false;
+    return null;
   }
 
-  const match = topRx.exec(nameWithoutExt);
-  if (!match) {
-    return false;
-  }
+  const match = expression.exec(name);
+  if (!match) return null;
+  return components.map((component, index) => ({
+    component,
+    value: match[index + 1],
+  }));
+}
 
-  for (const [i, comp] of components.entries()) {
-    const value = match[i + 1];
-    if (!checkComponent(comp, value)) return false;
-  }
-
-  return true;
+export function isFilenameCompliant(standard, name) {
+  const nameWithoutExt = String(name || '').replace(/\.[^/.]+$/, '');
+  const captured = matchStandard(standard, nameWithoutExt);
+  return Boolean(
+    captured?.every(({ component, value }) => checkComponent(component, value))
+  );
 }
 
 /**
@@ -188,64 +199,13 @@ export function isFilenameCompliant(standard, name) {
  * @returns {Object|null} Object with component names as keys and extracted values as values, or null if extraction fails
  */
 export function extractComponentsFromFilename(standard, filename) {
-  if (!standard?.pattern || !Array.isArray(standard?.components) || !filename) {
-    return null;
+  if (!filename) return null;
+  const captured = matchStandard(standard, filename);
+  if (!captured) return null;
+
+  const extracted = {};
+  for (const { component, value } of captured) {
+    if (value !== undefined) extracted[component.name] = value;
   }
-
-  const components = standard.components.map((c) => {
-    let acceptedValues = [];
-    if (Array.isArray(c.acceptedValues)) {
-      acceptedValues = c.acceptedValues;
-    } else if (Array.isArray(c.accepted_values)) {
-      acceptedValues = c.accepted_values;
-    } else if (typeof c.accepted_values_str === 'string') {
-      acceptedValues = c.accepted_values_str
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-
-    return {
-      ...c,
-      name: c.name,
-      regex: c.regex ?? c.pattern ?? null,
-      acceptedValues,
-      fixedValue: c.fixedValue ?? c.fixed_value ?? c.value ?? null,
-      numericRange:
-        c.numericRange ?? c.numeric_range ?? c.numericRangeValue ?? null,
-    };
-  });
-
-  // Build regex pattern by replacing component placeholders with capture groups
-  let pattern = standard.pattern;
-  for (const comp of components) {
-    const compRegex = comp.regex || '.+';
-    pattern = pattern.replace(
-      new RegExp(`\\{${comp.name}\\}`, 'g'),
-      `(${compRegex})`
-    );
-  }
-
-  let topRx;
-  try {
-    topRx = new RegExp(`^${pattern}$`, 'u');
-  } catch {
-    return null;
-  }
-
-  const match = topRx.exec(filename);
-  if (!match) {
-    return null;
-  }
-
-  // Extract values for each component
-  const extractedComponents = {};
-  for (const [i, comp] of components.entries()) {
-    const value = match[i + 1];
-    if (value !== undefined) {
-      extractedComponents[comp.name] = value;
-    }
-  }
-
-  return extractedComponents;
+  return extracted;
 }

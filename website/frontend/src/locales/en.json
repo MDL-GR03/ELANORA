@@ -387,7 +387,17 @@
     "password_requirement_special": "One special character",
     "show_password": "Show password",
     "hide_password": "Hide password",
-    "invitation_sender_unknown": "An administrator"
+    "invitation_sender_unknown": "An administrator",
+    "street_name_invalid": "Street name cannot be only numbers",
+    "location": {
+      "street_in_city": "Street found in this city",
+      "street_not_in_city": "This street was not found in this city",
+      "street_not_found": "Street not found",
+      "postal_code_in_city": "Postal code matches this city",
+      "postal_code_belongs_to": "This postal code belongs to: {cities}",
+      "postal_code_not_in_city": "This postal code does not match this city",
+      "postal_code_not_found": "Postal code not found"
+    }
   },
   "invitation": {
     "context": "Collaboration",
@@ -1040,6 +1050,12 @@
     },
     "errors": {
       "load_failed": "Failed to load profile information. Please try again."
+    },
+    "address": {
+      "fix_errors": "Please fix the address errors before saving.",
+      "unconfirmed": "This address could not be confirmed. Please check it.",
+      "saved": "Address updated.",
+      "save_failed": "The address could not be updated."
     }
   },
   "notificationBell": {

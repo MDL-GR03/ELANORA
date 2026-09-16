@@ -387,7 +387,17 @@
     "password_requirement_special": "特殊文字を1文字",
     "show_password": "パスワードを表示",
     "hide_password": "パスワードを非表示",
-    "invitation_sender_unknown": "管理者"
+    "invitation_sender_unknown": "管理者",
+    "street_name_invalid": "街路名を数字のみにすることはできません",
+    "location": {
+      "street_in_city": "この市区町村で街路が見つかりました",
+      "street_not_in_city": "この市区町村ではこの街路が見つかりませんでした",
+      "street_not_found": "街路が見つかりません",
+      "postal_code_in_city": "郵便番号はこの市区町村と一致しています",
+      "postal_code_belongs_to": "この郵便番号の地域: {cities}",
+      "postal_code_not_in_city": "この郵便番号はこの市区町村と一致しません",
+      "postal_code_not_found": "郵便番号が見つかりません"
+    }
   },
   "invitation": {
     "context": "共同研究",
@@ -1040,6 +1050,12 @@
     },
     "errors": {
       "load_failed": "プロフィール情報の読み込みに失敗しました。もう一度お試しください。"
+    },
+    "address": {
+      "fix_errors": "保存する前に住所のエラーを修正してください。",
+      "unconfirmed": "この住所を確認できませんでした。内容をご確認ください。",
+      "saved": "住所を更新しました。",
+      "save_failed": "住所を更新できませんでした。"
     }
   },
   "notificationBell": {

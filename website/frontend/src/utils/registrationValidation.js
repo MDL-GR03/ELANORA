@@ -170,11 +170,17 @@ const RULES = {
     if (bounded) return bounded;
     return NAME_PATTERN.test(value) ? '' : translate('register.city_invalid');
   },
-  streetName: (form, translate) =>
-    boundedText(form.address?.streetName, translate, 'street_name', {
+  streetName: (form, translate) => {
+    const value = form.address?.streetName;
+    const bounded = boundedText(value, translate, 'street_name', {
       minimum: 3,
       maximum: 100,
-    }),
+    });
+    if (bounded) return bounded;
+    return /^\d+$/.test(value.trim())
+      ? translate('register.street_name_invalid')
+      : '';
+  },
   postalCode: (form, translate) => {
     const value = form.address?.postalCode;
     if (!value) return translate('register.postal_code_required');

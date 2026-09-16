@@ -1,4 +1,6 @@
-import { computed, ref, toValue } from 'vue';
+import { computed, onScopeDispose, ref, toValue } from 'vue';
+
+import { validateRegistrationField } from '@/utils/registrationValidation';
 
 /** How long to wait after the last keystroke before asking the server. */
 export const ADDRESS_VALIDATION_DELAY = 500;
@@ -67,10 +69,11 @@ export function useAddressVerification({
 
       validation.value.city = {
         isValid: result.data.isValid,
-        message: result.data.isValid
-          ? translate('register.city_valid_in_country')
-          : result.data.message ||
-            translate('register.city_not_found_in_country'),
+        message: translate(
+          result.data.isValid
+            ? 'register.city_valid_in_country'
+            : 'register.city_not_found_in_country'
+        ),
         loading: false,
       };
 
@@ -118,7 +121,9 @@ export function useAddressVerification({
 
       validation.value.postalCode = {
         isValid: result.data.isValid,
-        message: result.data.isValid ? '' : result.data.message,
+        message: result.data.isValid
+          ? ''
+          : translate('register.postal_code_invalid'),
         loading: false,
       };
 
@@ -142,9 +147,13 @@ export function useAddressVerification({
   }
 
   async function validateStreetName() {
-    const result = locationApi.validateStreetName(current().streetName);
-    if (!result.isValid) {
-      validation.value.streetName = { isValid: false, message: result.message };
+    const message = validateRegistrationField(
+      'streetName',
+      { address: current() },
+      translate
+    );
+    if (message) {
+      validation.value.streetName = { isValid: false, message };
       reset('streetInCity');
       return;
     }
@@ -176,7 +185,10 @@ export function useAddressVerification({
       validation.value.streetInCity = result.success
         ? {
             isValid: result.data.isValid,
-            message: result.data.message,
+            message: translate(
+              result.data.messageKey,
+              result.data.messageParams
+            ),
             loading: false,
             suggestions: result.data.suggestions || [],
           }
@@ -212,7 +224,10 @@ export function useAddressVerification({
       validation.value.postalCodeInCity = result.success
         ? {
             isValid: result.data.isValid,
-            message: result.data.message,
+            message: translate(
+              result.data.messageKey,
+              result.data.messageParams
+            ),
             loading: false,
             suggestions: result.data.suggestions || [],
           }
@@ -230,6 +245,10 @@ export function useAddressVerification({
       };
     }
   }
+
+  onScopeDispose(() => {
+    Object.values(timers).forEach(clearTimeout);
+  });
 
   function debounce(name, run) {
     clearTimeout(timers[name]);

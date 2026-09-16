@@ -32,7 +32,6 @@ vi.mock('@/api/service/locationService', () => ({
   validatePostalCode: vi.fn(),
   validatePostalCodeInCity: vi.fn(),
   validateStreetInCity: vi.fn(),
-  validateStreetName: vi.fn(),
 }));
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push }),

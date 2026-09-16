@@ -28,13 +28,15 @@ function createEditor(profileValue = {}) {
     }),
     validatePostalCodeInCity: vi.fn().mockResolvedValue({
       success: true,
-      data: { isValid: true, message: 'Postal code matches' },
+      data: {
+        isValid: true,
+        messageKey: 'register.location.postal_code_in_city',
+      },
     }),
     validateStreetInCity: vi.fn().mockResolvedValue({
       success: true,
-      data: { isValid: true, message: 'Street matches' },
+      data: { isValid: true, messageKey: 'register.location.street_in_city' },
     }),
-    validateStreetName: vi.fn().mockReturnValue({ isValid: true }),
   };
   const updateAddress = vi.fn().mockResolvedValue({ data: { ok: true } });
   const emit = vi.fn();
@@ -119,7 +121,7 @@ describe('useAddressProfileEditor', () => {
     await expect(editor.saveAddress()).resolves.toBeUndefined();
     expect(updateAddress).not.toHaveBeenCalled();
     expect(emit).toHaveBeenCalledWith('show-message', {
-      text: 'Le nom de rue est requis',
+      text: 'translated:register.street_name_required',
       type: 'error',
     });
     scope.stop();
@@ -147,6 +149,29 @@ describe('useAddressProfileEditor', () => {
     expect(emit).toHaveBeenCalledWith('profile-updated');
     expect(editor.editAddressMode.value).toBe(false);
     scope.stop();
+  });
+
+  it('explains a failed save in the reader language when the server gives no detail', async () => {
+    const { editor, updateAddress, emit, scope } = createEditor();
+    updateAddress.mockRejectedValue({ response: { status: 500 } });
+    await editor.startEditAddress();
+
+    await editor.saveAddress();
+    expect(emit).toHaveBeenCalledWith('show-message', {
+      text: 'translated:profile.address.save_failed',
+      type: 'error',
+    });
+    scope.stop();
+  });
+
+  it('stops waiting to check a city once the editor is gone', async () => {
+    vi.useFakeTimers();
+    const { editor, location, scope } = createEditor();
+    await editor.startEditAddress();
+    editor.onCityChange();
+    scope.stop();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(location.validateCity).not.toHaveBeenCalled();
   });
 
   it('surfaces persistence details and releases saving state', async () => {

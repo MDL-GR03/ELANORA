@@ -6,7 +6,10 @@ import {
   useAddressVerification,
 } from './useAddressVerification';
 
-const translate = (key) => key;
+const translate = (key, params) =>
+  params && Object.keys(params).length
+    ? `${key}:${JSON.stringify(params)}`
+    : key;
 
 function ok(data) {
   return { success: true, data };
@@ -23,13 +26,17 @@ function createVerification(address = {}) {
   const locationApi = {
     validateCity: vi.fn().mockResolvedValue(ok({ isValid: true })),
     validatePostalCode: vi.fn().mockResolvedValue(ok({ isValid: true })),
-    validateStreetName: vi.fn().mockReturnValue({ isValid: true, message: '' }),
     validateStreetInCity: vi
       .fn()
-      .mockResolvedValue(ok({ isValid: true, message: 'street confirmed' })),
-    validatePostalCodeInCity: vi
-      .fn()
-      .mockResolvedValue(ok({ isValid: true, message: 'postal confirmed' })),
+      .mockResolvedValue(
+        ok({ isValid: true, messageKey: 'register.location.street_in_city' })
+      ),
+    validatePostalCodeInCity: vi.fn().mockResolvedValue(
+      ok({
+        isValid: true,
+        messageKey: 'register.location.postal_code_in_city',
+      })
+    ),
   };
   const reportError = vi.fn();
   const verification = useAddressVerification({
@@ -65,7 +72,7 @@ describe('useAddressVerification', () => {
     );
     expect(verification.streetMessage.value).toEqual({
       type: 'success',
-      text: 'street confirmed',
+      text: 'register.location.street_in_city',
     });
   });
 
@@ -111,28 +118,44 @@ describe('useAddressVerification', () => {
     expect(verification.validation.value.streetName.isValid).toBe(true);
   });
 
-  it('keeps a street refusal out of the way of a basic street error', async () => {
-    const { locationApi, verification } = createVerification();
-    locationApi.validateStreetName.mockReturnValue({
-      isValid: false,
-      message: 'street name looks wrong',
+  it('refuses a street that fails its own rule without asking the service', async () => {
+    const { locationApi, verification } = createVerification({
+      streetName: '123',
     });
     await verification.validateStreetName();
+    expect(locationApi.validateStreetInCity).not.toHaveBeenCalled();
     expect(verification.streetMessage.value).toEqual({
       type: 'error',
-      text: 'street name looks wrong',
+      text: 'register.street_name_invalid',
+    });
+  });
+
+  it('shows the service answer in the reader language, with its details', async () => {
+    const { locationApi, verification } = createVerification();
+    locationApi.validatePostalCodeInCity.mockResolvedValue(
+      ok({
+        isValid: false,
+        messageKey: 'register.location.postal_code_belongs_to',
+        messageParams: { cities: 'Villeurbanne' },
+        suggestions: ['Villeurbanne'],
+      })
+    );
+    await verification.validateCity();
+    expect(verification.postalCodeMessage.value).toEqual({
+      type: 'warning',
+      text: 'register.location.postal_code_belongs_to:{"cities":"Villeurbanne"}',
     });
   });
 
   it('shows a failed cross-check as a warning, not a refusal', async () => {
     const { locationApi, verification } = createVerification();
     locationApi.validateStreetInCity.mockResolvedValue(
-      ok({ isValid: false, message: 'not in this city' })
+      ok({ isValid: false, messageKey: 'register.location.street_not_in_city' })
     );
     await verification.validateCity();
     expect(verification.streetMessage.value).toEqual({
       type: 'warning',
-      text: 'not in this city',
+      text: 'register.location.street_not_in_city',
     });
   });
 
@@ -169,7 +192,7 @@ describe('useAddressVerification', () => {
   it('blocks submission when the street is not in the city', async () => {
     const { locationApi, verification } = createVerification();
     locationApi.validateStreetInCity.mockResolvedValue(
-      ok({ isValid: false, message: 'not in this city' })
+      ok({ isValid: false, messageKey: 'register.location.street_not_in_city' })
     );
     await verification.validateCity();
     expect(verification.addressAccepted.value).toBe(false);
