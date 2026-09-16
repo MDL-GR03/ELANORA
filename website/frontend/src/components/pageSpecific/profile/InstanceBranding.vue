@@ -46,6 +46,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { useI18n } from 'vue-i18n';
 import { computed, onBeforeUnmount, reactive, ref } from 'vue';
 import instanceService from '@/api/service/instanceService';
@@ -105,8 +106,11 @@ async function save() {
       type: 'success',
     });
   } catch (requestError) {
-    error.value =
-      requestError.response?.data?.detail || t('instanceBranding.save_failed');
+    error.value = apiErrorMessage(
+      requestError,
+      t,
+      t('instanceBranding.save_failed')
+    );
   } finally {
     saving.value = false;
   }

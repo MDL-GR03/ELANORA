@@ -120,6 +120,7 @@
 </template>
 
 <script setup>
+import { apiErrorCode } from '@/utils/apiError';
 import { ref, nextTick, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useFileTypeStore } from '@/stores/fileType.js';
@@ -254,8 +255,7 @@ async function deleteFileType(id) {
       4000
     );
   } catch (e) {
-    const detail = e?.response?.data?.detail;
-    if (detail && detail.error === 'file_type_in_use') {
+    if (apiErrorCode(e) === 'file_type_in_use') {
       eventMessageStore.addMessage(
         'configureNamingStandards.eventMessages.cannotDeleteUsedFileType',
         'error',

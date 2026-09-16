@@ -86,13 +86,11 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import {
-  passwordRequestError,
-  passwordRequirementList,
-} from '@/utils/passwordPolicy';
+import { passwordRequirementList } from '@/utils/passwordPolicy';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { resetPassword } from '@/api/service/authService';
 import '@/assets/css/resetpassword.css';
@@ -171,7 +169,7 @@ const handleSubmit = async () => {
   } catch (error) {
     reportClientError('Reset password error', error);
     eventMessageStore.addMessage(
-      passwordRequestError(error, t, t('resetPassword.error')),
+      apiErrorMessage(error, t, t('resetPassword.error')),
       'error'
     );
   } finally {

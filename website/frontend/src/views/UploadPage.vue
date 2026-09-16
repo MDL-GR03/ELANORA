@@ -407,6 +407,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
@@ -706,9 +707,11 @@ async function loadCorrectionContext() {
       error.value = t('uploadPage.correction.unavailable');
     }
   } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail ||
-      t('uploadPage.correction.loadFailed');
+    error.value = apiErrorMessage(
+      requestError,
+      t,
+      t('uploadPage.correction.loadFailed')
+    );
   }
 }
 
@@ -789,14 +792,17 @@ async function uploadFiles() {
           },
         });
       } catch (linkError) {
-        error.value =
-          linkError?.response?.data?.detail ||
-          'The contribution was created, but could not be linked automatically. Use the action below to finish linking it.';
+        error.value = apiErrorMessage(
+          linkError,
+          t,
+          t('uploadPage.correction.linkFailed')
+        );
       }
     }
   } catch (uploadError) {
     error.value = formatEafUploadError(
-      uploadError?.response?.data?.detail,
+      uploadError,
+      t,
       t('uploadPage.errors.uploadFailed')
     );
   } finally {

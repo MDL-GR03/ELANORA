@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cli.bootstrap import BootstrapConfig, bootstrap
 from app.cli.reset_password import reset_password
+from app.core.errors import ElanoraError
 from app.core.jwt import create_refresh_token
 from app.model.refresh_session import RefreshSession
 from app.schema.common.token import TokenData
@@ -56,5 +57,5 @@ async def test_reset_password_replaces_hash_and_preserves_account(
     )
     assert stored_session is not None
     assert stored_session.revoked_at is not None
-    rejected = await user_sessions.refresh_user_tokens(session, refresh_token)
-    assert rejected["success"] is False
+    with pytest.raises(ElanoraError):
+        await user_sessions.refresh_user_tokens(session, refresh_token)

@@ -2,10 +2,11 @@
 
 from dataclasses import dataclass
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.association import ProjectCapabilityGrant, UserToProject
@@ -76,9 +77,7 @@ async def authorize_project(
         raise RuntimeError("Project authorization requires an identifier")
     project = (await db.execute(statement)).scalar_one_or_none()
     if project is None or user.instance_id != project.instance_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
+        raise ElanoraError(ErrorCode.PROJECT_NOT_FOUND)
     if user.role == UserRole.ADMIN:
         return ProjectAccess(project, user, ProjectPermission.OWNER)
     membership = await db.scalar(
@@ -88,15 +87,10 @@ async def authorize_project(
         )
     )
     if membership is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
+        raise ElanoraError(ErrorCode.PROJECT_NOT_FOUND)
     permission = ProjectPermission(membership.permission)
     if PERMISSION_LEVEL[permission] < PERMISSION_LEVEL[required]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient project permission",
-        )
+        raise ElanoraError(ErrorCode.PROJECT_PERMISSION_REQUIRED)
     return ProjectAccess(project, user, permission)
 
 
@@ -123,9 +117,8 @@ class ProjectCapabilityGuard:
             )
         )
         if grant is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Missing project capability: {self.capability.value}",
+            raise ElanoraError(
+                ErrorCode.PROJECT_CAPABILITY_REQUIRED, capability=self.capability.value
             )
         return access
 

@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.jwt import create_refresh_token
 from app.crud.user import get_all_active_users, get_all_users
 from app.model.audit_event import AuditEvent
@@ -94,9 +95,8 @@ async def test_suspension_signs_the_account_out_everywhere(
 
     assert updated.is_active is False
     for token in tokens:
-        assert (await user_sessions.refresh_user_tokens(session, token))[
-            "success"
-        ] is False
+        with pytest.raises(ElanoraError):
+            await user_sessions.refresh_user_tokens(session, token)
     revoked = (
         (
             await session.execute(
@@ -121,7 +121,7 @@ async def test_suspended_account_cannot_log_in_with_valid_password(
     before = await user_sessions.login_user(
         session, researcher.username, RESEARCHER_PASSWORD
     )
-    assert before["success"] is True
+    assert before.user.user_id == researcher.user_id
 
     await user_account_status.set_account_active(
         session,
@@ -131,12 +131,11 @@ async def test_suspended_account_cannot_log_in_with_valid_password(
         reason="Offboarding",
     )
 
-    refused = await user_sessions.login_user(
-        session, researcher.username, RESEARCHER_PASSWORD
-    )
-    assert refused["success"] is False
-    assert "suspended" in refused["message"]
-    assert "user" not in refused
+    with pytest.raises(ElanoraError) as refused:
+        await user_sessions.login_user(
+            session, researcher.username, RESEARCHER_PASSWORD
+        )
+    assert refused.value.code == ErrorCode.ACCOUNT_SUSPENDED
 
 
 @pytest.mark.asyncio
@@ -162,7 +161,7 @@ async def test_restoration_allows_login_again(session: AsyncSession) -> None:
     allowed = await user_sessions.login_user(
         session, researcher.username, RESEARCHER_PASSWORD
     )
-    assert allowed["success"] is True
+    assert allowed.user.user_id == researcher.user_id
 
 
 @pytest.mark.asyncio

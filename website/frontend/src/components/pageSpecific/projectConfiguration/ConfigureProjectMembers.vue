@@ -214,6 +214,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -325,8 +326,11 @@ const loadUsers = async () => {
     }
   } catch (err) {
     reportClientError('Error loading users', err);
-    error.value =
-      err.response?.data?.detail || t('projectSettings.members.load_error');
+    error.value = apiErrorMessage(
+      err,
+      t,
+      t('projectSettings.members.load_error')
+    );
   } finally {
     loading.value = false;
   }
@@ -520,7 +524,7 @@ const addUser = async () => {
   } catch (err) {
     reportClientError('Error adding user', err);
     eventMessageStore.addMessage(
-      err.response?.data?.detail || 'projectSettings.members.add_error',
+      apiErrorMessage(err, t, 'projectSettings.members.add_error'),
       'error'
     );
   } finally {

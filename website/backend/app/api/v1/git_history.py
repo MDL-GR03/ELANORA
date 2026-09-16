@@ -1,9 +1,10 @@
 """Accepted project history, its health, and restoring it."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import git_shared
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.project_access import (
     ProjectAccess,
@@ -46,9 +47,7 @@ async def get_accepted_project_history(
         )
         return AcceptedProjectHistoryResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from exc
 
 
 @router.get(
@@ -68,9 +67,7 @@ async def get_current_project_revision_health(
         )
         return ProjectRevisionHealthResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from exc
 
 
 @router.post(
@@ -96,13 +93,9 @@ async def recover_current_project_revision(
         )
         return ProjectRevisionRecoveryResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from exc
     except (ValueError, RuntimeError, EafValidationError) as exc:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STATE_CONFLICT
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_STATE_CONFLICT) from exc
 
 
 @router.post(
@@ -123,13 +116,9 @@ async def preview_project_version_restore(
         )
         return ProjectVersionPreviewResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from exc
     except (ValueError, EafValidationError) as exc:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STATE_CONFLICT
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_STATE_CONFLICT) from exc
 
 
 @router.post(
@@ -157,13 +146,9 @@ async def restore_project_version(
         )
         return ProjectVersionRestoreResponse(**result)
     except FileNotFoundError as exc:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from exc
     except (ValueError, EafValidationError) as exc:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STATE_CONFLICT
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_STATE_CONFLICT) from exc
 
 
 @router.post(
@@ -181,16 +166,14 @@ async def restore_from_backup(
             project_name, db, user.user_id
         )
         return {"status": "success", "detail": result}
+    except ElanoraError:
+        raise
     except ProjectStorageIntactError as e:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STORAGE_INTACT
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_STORAGE_INTACT) from e
     except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=404, detail=git_shared.RECOVERY_BACKUP_NOT_FOUND
-        ) from e
+        raise ElanoraError(ErrorCode.RECOVERY_BACKUP_NOT_FOUND) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.post(
@@ -205,12 +188,12 @@ async def decline_backup(
     """Decline restoration of the most recent backup for the project, delete it and erase all related data from the database."""
     try:
         await git_shared.git_service.decline_project_backup(db, project_name)
+    except ElanoraError:
+        raise
     except ProjectStorageIntactError as e:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STORAGE_INTACT
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_STORAGE_INTACT) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.post(
@@ -232,9 +215,9 @@ async def discard_local_changes(
             "detail": "Server-side changes discarded",
             "operation_id": str(operation.operation_id),
         }
+    except ElanoraError:
+        raise
     except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e

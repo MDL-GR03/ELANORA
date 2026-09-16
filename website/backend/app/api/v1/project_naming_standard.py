@@ -1,8 +1,9 @@
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep
 from app.schema.requests.project_naming_standard import (
@@ -70,7 +71,7 @@ async def get_standard_with_components(
         db, standard_id
     )
     if not result:
-        raise HTTPException(status_code=404, detail="Standard not found")
+        raise ElanoraError(ErrorCode.NAMING_STANDARD_NOT_FOUND)
     return result
 
 

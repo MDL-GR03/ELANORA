@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, File, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep
 from app.model.instance import Instance
@@ -42,7 +43,7 @@ async def update_instance_branding(
         body.model_dump(exclude_none=True),
     )
     if instance is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
+        raise ElanoraError(ErrorCode.INSTITUTION_NOT_FOUND)
     return InstanceResponse.model_validate(instance, from_attributes=True)
 
 
@@ -56,13 +57,11 @@ async def upload_instance_logo(
     content = await logo.read(MAX_UPLOAD_BYTES + 1)
     instance = await db.get(Instance, administrator.instance_id)
     if instance is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
+        raise ElanoraError(ErrorCode.INSTITUTION_NOT_FOUND)
     try:
         await replace_logo(db, instance, administrator, content)
     except ValueError as error:
-        raise HTTPException(
-            status_code=422, detail="Invalid institution logo"
-        ) from error
+        raise ElanoraError(ErrorCode.LOGO_INVALID) from error
     return Response(status_code=204)
 
 
@@ -71,10 +70,10 @@ async def get_instance_logo(db: AsyncSession = get_db_dep) -> Response:
     """Return the current normalized logo with immutable-safe caching semantics."""
     instance = await db.scalar(select(Instance))
     if instance is None:
-        raise HTTPException(status_code=404, detail="Institution not found")
+        raise ElanoraError(ErrorCode.INSTITUTION_NOT_FOUND)
     content = await read_logo(db, instance)
     if content is None:
-        raise HTTPException(status_code=404, detail="Institution logo not configured")
+        raise ElanoraError(ErrorCode.LOGO_NOT_CONFIGURED)
     return Response(
         content=content,
         media_type="image/webp",

@@ -272,6 +272,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { useI18n } from 'vue-i18n';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -367,9 +368,11 @@ const visibleFiles = computed(
 );
 const form = reactive({ name: '', rules: emptyRules() });
 const reasonText = (reason) =>
-  reason.response?.data?.detail ||
-  reason.message ||
-  t('protocols.errors.unexpected');
+  apiErrorMessage(
+    reason,
+    t,
+    reason.message || t('protocols.errors.unexpected')
+  );
 const notify = (message, type = 'success') =>
   eventMessageStore.addMessage(message, type, 5000);
 const resetForm = () => {

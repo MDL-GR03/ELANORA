@@ -74,7 +74,7 @@ async def test_successful_login_records_timezone_aware_timestamp(
         "correct horse battery staple",
     )
 
-    assert result["success"] is True
+    assert result.needs_verification is False
     assert user.last_login is not None
     assert user.last_login.tzinfo is UTC
     assert User.__table__.c.last_login.type.timezone is True

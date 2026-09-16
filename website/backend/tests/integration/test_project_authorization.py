@@ -1,8 +1,8 @@
 import pytest
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
+from app.core.errors import ElanoraError
 from app.dependency.project_access import (
     ProjectCapabilityGuard,
     ProjectGuard,
@@ -81,13 +81,13 @@ async def test_project_guard_enforces_membership_and_permission_boundaries(
     assert access.project.project_id == project.project_id
     assert access.permission == ProjectPermission.READ
 
-    with pytest.raises(HTTPException) as insufficient:
+    with pytest.raises(ElanoraError) as insufficient:
         await ProjectGuard(ProjectPermission.WRITE)(
             _request(project.project_id), session, reader
         )
     assert insufficient.value.status_code == 403
 
-    with pytest.raises(HTTPException) as hidden_nonmember_project:
+    with pytest.raises(ElanoraError) as hidden_nonmember_project:
         await ProjectGuard(ProjectPermission.READ)(
             _request(project.project_id), session, outsider
         )
@@ -118,7 +118,7 @@ async def test_protocol_capability_is_independent_from_write_and_admin_access(
     await session.flush()
     guard = ProjectCapabilityGuard(ProjectCapability.MANAGE_PROTOCOLS)
 
-    with pytest.raises(HTTPException) as missing_capability:
+    with pytest.raises(ElanoraError) as missing_capability:
         await guard(_request(project.project_id), session, researcher)
     assert missing_capability.value.status_code == 403
 
@@ -133,7 +133,7 @@ async def test_protocol_capability_is_independent_from_write_and_admin_access(
 
     access = await guard(_request(project.project_id), session, researcher)
     assert access.permission == ProjectPermission.READ
-    with pytest.raises(HTTPException) as still_not_writer:
+    with pytest.raises(ElanoraError) as still_not_writer:
         await ProjectGuard(ProjectPermission.WRITE)(
             _request(project.project_id), session, researcher
         )

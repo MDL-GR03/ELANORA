@@ -68,14 +68,6 @@ class RejectedEafFileResponse(CustomBaseModel):
     issues: list[EafValidationIssueResponse]
 
 
-class EafBatchValidationErrorResponse(CustomBaseModel):
-    """Stable API contract for a rejected EAF upload batch."""
-
-    code: str = "invalid_eaf_batch"
-    message: str
-    rejected_files: list[RejectedEafFileResponse]
-
-
 class DiffChange(CustomBaseModel):
     type: str  # "addition", "deletion", "context"
     line_number: int | None = None

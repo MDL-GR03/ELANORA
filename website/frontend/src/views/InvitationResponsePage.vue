@@ -38,6 +38,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -92,10 +93,11 @@ const processInvitation = async () => {
   } catch (err) {
     reportClientError('Error processing invitation', err);
     error.value = true;
-    errorMessage.value =
-      err.response?.data?.detail ||
-      err.message ||
-      t('invitation.general_error');
+    errorMessage.value = apiErrorMessage(
+      err,
+      t,
+      err.message || t('invitation.general_error')
+    );
   } finally {
     loading.value = false;
   }

@@ -1,11 +1,11 @@
 from typing import Any
 
-from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
+from app.core.errors import ElanoraError, ErrorCode
 from app.crud import file_type as file_type_crud
 from app.crud.association import (
     add_project_file_type,
@@ -27,20 +27,6 @@ from app.model.file_type import FileType
 from app.model.project_file_type import ProjectFileType
 
 logger = get_logger(__name__)
-
-
-def file_type_in_use() -> HTTPException:
-    """A file type a naming standard still refers to cannot be deleted."""
-    return HTTPException(
-        status_code=409,
-        detail={
-            "error": "file_type_in_use",
-            "message": (
-                "Cannot delete: This file type is used by a naming standard or "
-                "component. Please delete the related naming standard first."
-            ),
-        },
-    )
 
 
 class FileTypeService:
@@ -76,7 +62,7 @@ class FileTypeService:
             await db.rollback()
             # Check for the specific constraint name
             if "fk_project_file_type" in str(exc.orig):
-                raise file_type_in_use() from exc
+                raise ElanoraError(ErrorCode.FILE_TYPE_IN_USE) from exc
             raise
         except Exception:
             await db.rollback()
@@ -93,9 +79,7 @@ class FileTypeService:
         # Check for existing ProjectFileType with same name in this project
         project_types = await get_project_file_types(db, project_id)
         if any(pt.name == name for pt in project_types):
-            raise HTTPException(
-                status_code=409, detail="File type name already exists in this project"
-            )
+            raise ElanoraError(ErrorCode.FILE_TYPE_NAME_EXISTS)
         # Create the ProjectFileType association
         project_file_type = await add_project_file_type(
             db, project_id, name, file_type.id
@@ -174,7 +158,7 @@ class FileTypeService:
     ) -> None:
         pft = await get_project_file_type_by_id(db, project_file_type_id)
         if not pft:
-            raise HTTPException(status_code=404, detail="Project file type not found")
+            raise ElanoraError(ErrorCode.FILE_TYPE_NOT_FOUND)
         try:
             await delete_project_file_type(db, project_file_type_id, project_id)
             await db.commit()
@@ -184,7 +168,7 @@ class FileTypeService:
         except IntegrityError as exc:
             await db.rollback()
             if "fk_project_file_type" in str(exc.orig):
-                raise file_type_in_use() from exc
+                raise ElanoraError(ErrorCode.FILE_TYPE_IN_USE) from exc
             raise
         except Exception:
             await db.rollback()
@@ -199,11 +183,9 @@ class FileTypeService:
     ) -> dict[str, Any]:
         pft = await get_project_file_type_by_id(db, project_file_type_id)
         if not pft:
-            raise HTTPException(status_code=404, detail="Project file type not found")
+            raise ElanoraError(ErrorCode.FILE_TYPE_NOT_FOUND)
         if pft.project_id != project_id:
-            raise HTTPException(
-                status_code=403, detail="File type does not belong to this project"
-            )
+            raise ElanoraError(ErrorCode.FILE_TYPE_FOREIGN)
 
         # Update name if present
         new_name = update_fields.get("name")
@@ -240,9 +222,7 @@ class FileTypeService:
 
         updated_pft = await get_project_file_type_by_id(db, project_file_type_id)
         if not updated_pft:
-            raise HTTPException(
-                status_code=404, detail="Project file type not found after update"
-            )
+            raise ElanoraError(ErrorCode.FILE_TYPE_NOT_FOUND)
         return {
             "id": updated_pft.id,
             "name": updated_pft.name,

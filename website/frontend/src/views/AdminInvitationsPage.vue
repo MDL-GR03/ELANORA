@@ -122,6 +122,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import AppSelect from '@/components/common/AppSelect.vue';
 import { computed, ref, onMounted } from 'vue';
@@ -231,7 +232,7 @@ const handleSendInvitation = async () => {
   } catch (error) {
     reportClientError('Failed to send invitation', error);
     eventMessageStore.addMessage(
-      error.response?.data?.detail || t('invitation.error'),
+      apiErrorMessage(error, t, t('invitation.error')),
       'error'
     );
   } finally {

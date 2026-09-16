@@ -2,10 +2,10 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import auth_registration
+from app.core.errors import ElanoraError
 from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
 from app.service import (
     invitation_decisions,
@@ -56,7 +56,7 @@ async def test_registration_rolls_back_when_invitation_cannot_be_redeemed(
         department="Linguistics",
     )
 
-    with pytest.raises(HTTPException) as caught:
+    with pytest.raises(ElanoraError) as caught:
         await auth_registration.register(request, db)
 
     assert caught.value.status_code == 409

@@ -1,11 +1,11 @@
 from typing import Any
 
-from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
+from app.core.errors import ElanoraError, ErrorCode
 from app.crud import (
     accepted_value,
     component_accepted_value,
@@ -92,18 +92,13 @@ class ProjectNamingStandardService:
             for comp in components:
                 regex = comp.get("regex", "")
                 if not regex or not str(regex).strip():
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Regex must not be empty for any component.",
-                    )
+                    raise ElanoraError(ErrorCode.NAMING_REGEX_EMPTY)
             standard = await project_naming_standard.create_standard(
                 db, project_id, name, project_file_type_id, pattern, description
             )
             project_file_type = await db.get(ProjectFileType, project_file_type_id)
             if not project_file_type:
-                raise HTTPException(
-                    status_code=400, detail="Invalid project_file_type_id"
-                )
+                raise ElanoraError(ErrorCode.PROJECT_FILE_TYPE_INVALID)
             file_type_id = project_file_type.file_type_id
             for idx, comp in enumerate(components):
                 template = await component_template.get_or_create_component_template(
@@ -139,10 +134,7 @@ class ProjectNamingStandardService:
                 safe_exception_type(e),
             )
             if _is_duplicate_standard_error(e):
-                raise HTTPException(
-                    status_code=409,
-                    detail="configureNamingStandards.eventMessages.addFailedDuplicate",
-                ) from e
+                raise ElanoraError(ErrorCode.NAMING_STANDARD_DUPLICATE) from e
             raise
         except Exception as e:
             await db.rollback()
@@ -267,20 +259,14 @@ class ProjectNamingStandardService:
                     )
                 )
                 if not source_standard:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Naming standard {standard_id} was not found.",
-                    )
+                    raise ElanoraError(ErrorCode.NAMING_STANDARD_NOT_FOUND)
 
                 # Get the file_type_id from the source's project_file_type_id
                 source_pft = await db.get(
                     ProjectFileType, source_standard["project_file_type_id"]
                 )
                 if source_pft is None:
-                    raise HTTPException(
-                        status_code=409,
-                        detail="The source naming standard has no valid file type.",
-                    )
+                    raise ElanoraError(ErrorCode.NAMING_SOURCE_FILE_TYPE_INVALID)
                 file_type_id = source_pft.file_type_id
 
                 # Use the new CRUD util to get the ProjectFileType for the target project
@@ -288,10 +274,7 @@ class ProjectNamingStandardService:
                     db, target_project_id, file_type_id
                 )
                 if not target_pft:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Target project does not have the required file type.",
-                    )
+                    raise ElanoraError(ErrorCode.NAMING_TARGET_FILE_TYPE_MISSING)
 
                 # Prepare components for creation (no need to set project_file_type_id in components)
                 components = [
@@ -321,9 +304,8 @@ class ProjectNamingStandardService:
                 except IntegrityError as e:
                     await db.rollback()
                     if _is_duplicate_standard_error(e):
-                        raise HTTPException(
-                            status_code=409,
-                            detail="configureNamingStandards.eventMessages.importFailedDuplicate",
+                        raise ElanoraError(
+                            ErrorCode.NAMING_STANDARD_IMPORT_DUPLICATE
                         ) from e
                     else:
                         logger.error(

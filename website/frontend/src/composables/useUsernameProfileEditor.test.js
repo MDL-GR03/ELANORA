@@ -59,7 +59,12 @@ describe('useUsernameProfileEditor', () => {
   it('restores the current username after a duplicate response', async () => {
     const { updateProfile, emit, editor } = createEditor();
     updateProfile.mockRejectedValue({
-      response: { data: { detail: 'Username already taken' } },
+      response: {
+        data: {
+          detail: 'This username is already taken',
+          code: 'username_taken',
+        },
+      },
     });
     editor.startEditUsername();
     editor.editedUsername.value = 'duplicate';
@@ -67,7 +72,7 @@ describe('useUsernameProfileEditor', () => {
     await expect(editor.saveUsername()).resolves.toBe(false);
     expect(editor.editedUsername.value).toBe('researcher');
     expect(emit).toHaveBeenCalledWith('show-message', {
-      text: 'translated:register.username_taken',
+      text: 'translated:apiErrors.username_taken',
       type: 'error',
     });
     expect(editor.savingUsername.value).toBe(false);

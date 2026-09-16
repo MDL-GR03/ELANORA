@@ -278,6 +278,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, nextTick, ref, toRef, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import gitService from '@/api/service/gitService';
@@ -399,9 +400,11 @@ async function applyResolution() {
     );
     emit('resolved', result);
   } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail ||
-      t('contributionResolution.errors.failed');
+    error.value = apiErrorMessage(
+      requestError,
+      t,
+      t('contributionResolution.errors.failed')
+    );
     reportClientError('Resolution error', requestError);
   } finally {
     resolving.value = false;

@@ -1,10 +1,11 @@
 """API endpoints for contact functionality."""
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.limiter import limiter
 from app.dependency.database import get_db_dep
 from app.schema.requests.contact import ContactRequest
@@ -34,7 +35,7 @@ async def send_contact_message(
         dict: Success message
 
     Raises:
-        HTTPException: If sending fails
+        ElanoraError: If sending fails
 
     """
     try:
@@ -54,9 +55,8 @@ async def send_contact_message(
 
         return {"message": "Contact message sent successfully"}
 
+    except ElanoraError:
+        raise
     except Exception as e:
         logger.error("Contact endpoint failed; error_type=%s", safe_exception_type(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send contact message",
-        ) from e
+        raise ElanoraError(ErrorCode.CONTACT_FAILED) from e

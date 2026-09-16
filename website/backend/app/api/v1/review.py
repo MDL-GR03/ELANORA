@@ -2,10 +2,11 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.project_access import (
     ProjectAccess,
@@ -38,9 +39,6 @@ from app.service.review import (
 
 router = APIRouter()
 project_lock_dep = Depends(project_write_lock)
-REVIEW_NOT_FOUND = "Review case or task not found"
-INVALID_REVIEW_OPERATION = "Invalid review operation"
-REVIEW_ACTION_FORBIDDEN = "Review action not permitted"
 
 
 @router.get("/projects/{project_id}/cases", response_model=list[ReviewCaseResponse])
@@ -74,7 +72,7 @@ async def post_review_case(
             db, access.project.project_id, access.user.user_id, request
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
+        raise ElanoraError(ErrorCode.REVIEW_OPERATION_INVALID) from exc
 
 
 @router.post(
@@ -99,9 +97,9 @@ async def post_review_comment(
             request,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
+        raise ElanoraError(ErrorCode.REVIEW_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
+        raise ElanoraError(ErrorCode.REVIEW_OPERATION_INVALID) from exc
 
 
 @router.patch(
@@ -126,9 +124,9 @@ async def patch_review_case(
             request,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
+        raise ElanoraError(ErrorCode.REVIEW_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
+        raise ElanoraError(ErrorCode.REVIEW_OPERATION_INVALID) from exc
 
 
 @router.post(
@@ -164,10 +162,7 @@ async def post_review_resubmission(
             or review_case.upload is None
             or review_case.upload.submitted_by != access.user.user_id
         ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only the submitting researcher may link this contribution",
-            )
+            raise ElanoraError(ErrorCode.REVIEW_LINK_FORBIDDEN)
         return await transition_case(
             db,
             access.project.project_id,
@@ -179,9 +174,9 @@ async def post_review_resubmission(
             ),
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
+        raise ElanoraError(ErrorCode.REVIEW_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
+        raise ElanoraError(ErrorCode.REVIEW_OPERATION_INVALID) from exc
 
 
 @router.post(
@@ -200,7 +195,7 @@ async def post_review_case_view(
             db, access.project.project_id, case_id, access.user.user_id
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
+        raise ElanoraError(ErrorCode.REVIEW_NOT_FOUND) from exc
 
 
 @router.patch(
@@ -228,13 +223,11 @@ async def patch_review_task(
             in {ProjectPermission.ADMIN, ProjectPermission.OWNER},
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
+        raise ElanoraError(ErrorCode.REVIEW_NOT_FOUND) from exc
     except PermissionError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=REVIEW_ACTION_FORBIDDEN
-        ) from exc
+        raise ElanoraError(ErrorCode.REVIEW_ACTION_FORBIDDEN) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
+        raise ElanoraError(ErrorCode.REVIEW_OPERATION_INVALID) from exc
 
 
 @router.post(
@@ -259,6 +252,6 @@ async def post_review_revision_request(
             request,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=REVIEW_NOT_FOUND) from exc
+        raise ElanoraError(ErrorCode.REVIEW_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=INVALID_REVIEW_OPERATION) from exc
+        raise ElanoraError(ErrorCode.REVIEW_OPERATION_INVALID) from exc

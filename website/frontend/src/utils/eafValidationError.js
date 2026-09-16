@@ -1,26 +1,49 @@
-export function formatEafUploadError(detail, fallback) {
-  if (typeof detail === 'string' && detail.trim()) {
-    return detail;
+import { apiErrorMessage } from '@/utils/apiError';
+
+const FILE_DETAIL_CODES = new Set([
+  'protected_baseline_modified',
+  'tier_reintegration_conflict',
+  'filename_not_compliant',
+]);
+
+function rejectedFileSummary(file, translate) {
+  const firstIssue = Array.isArray(file.issues) ? file.issues[0] : null;
+  if (!firstIssue) {
+    return translate('uploadPage.errors.fileValidationFailed', {
+      filename: file.filename,
+    });
   }
+  const remaining = Math.max(0, (file.issue_count || 0) - 1);
+  const summary = `${file.filename}: ${firstIssue.message} (${firstIssue.location})`;
+  return remaining > 0
+    ? `${summary}; ${translate('uploadPage.errors.moreIssues', remaining)}`
+    : summary;
+}
+
+/**
+ * Explain a refused EAF upload: the refusal itself, then what was wrong with
+ * each rejected file, or which tiers conflicted.
+ */
+export function formatEafUploadError(error, translate, fallback) {
+  const message = apiErrorMessage(error, translate, fallback);
+  const body = error?.response?.data;
+  const params = body?.params || {};
+
   if (
-    !detail ||
-    detail.code !== 'invalid_eaf_batch' ||
-    !Array.isArray(detail.rejected_files)
+    body?.code === 'invalid_eaf_batch' &&
+    Array.isArray(params.rejected_files)
   ) {
-    return typeof detail?.message === 'string' && detail.message.trim()
-      ? detail.message
-      : fallback;
+    return [
+      message,
+      ...params.rejected_files.map((file) =>
+        rejectedFileSummary(file, translate)
+      ),
+    ].join(' ');
   }
-
-  const files = detail.rejected_files.map((file) => {
-    const firstIssue = Array.isArray(file.issues) ? file.issues[0] : null;
-    if (!firstIssue) {
-      return `${file.filename}: validation failed`;
-    }
-    const remaining = Math.max(0, file.issue_count - 1);
-    const suffix = remaining > 0 ? `; ${remaining} more issue(s)` : '';
-    return `${file.filename}: ${firstIssue.message} (${firstIssue.location})${suffix}`;
-  });
-
-  return [detail.message, ...files].filter(Boolean).join(' ');
+  if (FILE_DETAIL_CODES.has(body?.code) && params.filename) {
+    const tiers = Array.isArray(params.tiers) ? params.tiers.join(', ') : '';
+    const pattern = params.pattern ? ` ${params.pattern}` : '';
+    return `${message} (${params.filename}${tiers ? `: ${tiers}` : ''}${pattern})`;
+  }
+  return message;
 }

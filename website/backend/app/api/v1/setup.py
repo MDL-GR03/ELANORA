@@ -1,11 +1,12 @@
 import secrets
 
-from fastapi import APIRouter, Header, HTTPException, Request, status
+from fastapi import APIRouter, Header, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.cli.bootstrap import BootstrapConfig, bootstrap
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.limiter import limiter
 from app.core.settings import get_settings
 from app.dependency.database import get_db_dep
@@ -48,11 +49,9 @@ async def initialize(
     """Create the institution and first administrator exactly once."""
     expected_token = get_settings().setup_token.get_secret_value()
     if not setup_token or not secrets.compare_digest(setup_token, expected_token):
-        raise HTTPException(status_code=403, detail="Invalid setup token")
+        raise ElanoraError(ErrorCode.SETUP_TOKEN_INVALID)
     if await _is_initialized(db):
-        raise HTTPException(
-            status_code=409, detail="This installation is already initialized"
-        )
+        raise ElanoraError(ErrorCode.SETUP_ALREADY_DONE)
 
     values = body.model_dump(exclude={"password", "password_confirmation"})
     try:
@@ -61,9 +60,7 @@ async def initialize(
         )
     except IntegrityError as error:
         await db.rollback()
-        raise HTTPException(
-            status_code=409, detail="This installation was initialized concurrently"
-        ) from error
+        raise ElanoraError(ErrorCode.SETUP_CONCURRENT) from error
     return SetupInitializeResponse(
         instance=InstanceResponse.model_validate(instance, from_attributes=True),
         administrator_username=administrator.username,

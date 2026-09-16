@@ -199,6 +199,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import gitService from '@/api/service/gitService.js';
@@ -270,8 +271,7 @@ function fileStatus(status) {
 
 function apiError(value) {
   return (
-    value?.response?.data?.detail ||
-    value?.message ||
+    apiErrorMessage(value, t, value)?.message ||
     t('acceptedHistory.requestFailed')
   );
 }

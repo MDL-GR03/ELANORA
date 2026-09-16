@@ -1,6 +1,5 @@
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, toValue } from 'vue';
-
-import { passwordRequestError } from '@/utils/passwordPolicy';
 
 /** How long the researcher reads the "you already have an account" notice. */
 export const EXISTING_ACCOUNT_REDIRECT_DELAY = 2000;
@@ -105,9 +104,11 @@ export function useInvitationRegistration({
       );
     } catch (error) {
       invitationValid.value = false;
-      invitationError.value =
-        error.response?.data?.detail ||
-        translate('register.invitation_validation_error');
+      invitationError.value = apiErrorMessage(
+        error,
+        translate,
+        translate('register.invitation_validation_error')
+      );
     } finally {
       invitationValidating.value = false;
     }
@@ -171,7 +172,7 @@ export function useInvitationRegistration({
     } catch (error) {
       reportError('Registration error', error);
       eventMessages.addMessage(
-        passwordRequestError(error, translate, translate('register.error')),
+        apiErrorMessage(error, translate, translate('register.error')),
         'error'
       );
     } finally {

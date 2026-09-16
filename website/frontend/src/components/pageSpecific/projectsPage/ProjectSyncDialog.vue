@@ -233,6 +233,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import gitService from '@/api/service/gitService';
@@ -332,8 +333,11 @@ async function checkSync() {
     }
   } catch (error) {
     syncState.value = 'error';
-    syncError.value =
-      error?.response?.data?.detail || t('projectsPage.syncDialog.checkFailed');
+    syncError.value = apiErrorMessage(
+      error,
+      t,
+      t('projectsPage.syncDialog.checkFailed')
+    );
   } finally {
     loading.value = false;
   }
@@ -382,7 +386,7 @@ async function runAction(operation, successKey, failureKey) {
     closeDialog();
   } catch (error) {
     syncState.value = 'error';
-    syncError.value = error?.response?.data?.detail || t(failureKey);
+    syncError.value = apiErrorMessage(error, t, t)(failureKey);
     eventMessageStore.addMessage(failureKey, 'error');
     actionLoading.value = false;
   }
@@ -431,9 +435,11 @@ async function recoverOperation(operation) {
     emit('sync-completed');
   } catch (error) {
     syncState.value = 'error';
-    syncError.value =
-      error?.response?.data?.detail ||
-      t('projectsPage.syncDialog.recoveryFailed');
+    syncError.value = apiErrorMessage(
+      error,
+      t,
+      t('projectsPage.syncDialog.recoveryFailed')
+    );
   } finally {
     actionLoading.value = false;
   }

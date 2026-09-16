@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, toValue } from 'vue';
 
 import { validateRegistrationField } from '@/utils/registrationValidation';
@@ -92,9 +93,11 @@ export function useProfessionalProfileEditor({
       return true;
     } catch (error) {
       emit('show-message', {
-        text:
-          error.response?.data?.detail ||
-          translate('profile.professional.save_failed'),
+        text: apiErrorMessage(
+          error,
+          translate,
+          translate('profile.professional.save_failed')
+        ),
         type: 'error',
       });
       return false;

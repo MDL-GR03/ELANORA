@@ -748,6 +748,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import '@/assets/css/tiers.css';
 import {
   computed,
@@ -1251,8 +1252,11 @@ async function saveTopic() {
     cancelEdit();
     messages.addMessage(t('researchScopes.messages.topicSaved'), 'success');
   } catch (e) {
-    operationError.value =
-      e.response?.data?.detail || t('researchScopes.messages.topicSaveFailed');
+    operationError.value = apiErrorMessage(
+      e,
+      t,
+      t('researchScopes.messages.topicSaveFailed')
+    );
   } finally {
     operationPending.value = false;
   }

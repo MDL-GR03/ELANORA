@@ -1,10 +1,11 @@
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Response
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.project_access import (
     ProjectAccess,
@@ -56,18 +57,16 @@ async def export_tier_subset(
     """Download a derived EAF containing only selected tiers and dependencies."""
     filename = Path(request.filename)
     if filename.name != request.filename or filename.suffix.lower() != ".eaf":
-        raise HTTPException(status_code=400, detail="Select a valid EAF filename.")
+        raise ElanoraError(ErrorCode.EAF_FILENAME_INVALID)
 
     project_path = safe_project_path(GitService().base_path, project_name)
     source = project_path / "elan_files" / filename.name
     try:
         source.resolve().relative_to((project_path / "elan_files").resolve())
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Invalid EAF filename.") from exc
+        raise ElanoraError(ErrorCode.EAF_FILENAME_INVALID) from exc
     if not source.is_file():
-        raise HTTPException(
-            status_code=404, detail="The selected EAF file was not found."
-        )
+        raise ElanoraError(ErrorCode.EAF_FILE_NOT_FOUND)
 
     topic = None
     if request.topic_id is not None:
@@ -78,7 +77,7 @@ async def export_tier_subset(
             )
         )
         if topic is None:
-            raise HTTPException(status_code=404, detail="Research topic not found.")
+            raise ElanoraError(ErrorCode.RESEARCH_TOPIC_NOT_FOUND)
     try:
         baseline_tiers = list(
             (
@@ -118,9 +117,7 @@ async def export_tier_subset(
             ),
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=422, detail="Invalid research-copy tier selection."
-        ) from exc
+        raise ElanoraError(ErrorCode.RESEARCH_COPY_SELECTION_INVALID) from exc
 
     download_name = filename.name
     return Response(
@@ -221,9 +218,8 @@ async def create_research_topic(
     try:
         require_distinct_topic_name(request.name, existing_topics)
     except SimilarResearchTopicError as exc:
-        raise HTTPException(
-            status_code=409,
-            detail=f'Use the existing research topic "{exc.topic.name}" instead.',
+        raise ElanoraError(
+            ErrorCode.RESEARCH_TOPIC_USE_EXISTING, name=exc.topic.name
         ) from exc
     topic = ResearchTopic(
         project_id=project_id,
@@ -240,9 +236,7 @@ async def create_research_topic(
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
-        raise HTTPException(
-            status_code=409, detail="A research topic with this name already exists."
-        ) from exc
+        raise ElanoraError(ErrorCode.RESEARCH_TOPIC_EXISTS) from exc
     await db.refresh(topic, attribute_names=["tiers"])
     return _topic_response(topic)
 
@@ -262,7 +256,7 @@ async def update_research_topic(
         )
     )
     if topic is None:
-        raise HTTPException(status_code=404, detail="Research topic not found.")
+        raise ElanoraError(ErrorCode.RESEARCH_TOPIC_NOT_FOUND)
     other_topics = list(
         (
             await db.scalars(
@@ -276,9 +270,8 @@ async def update_research_topic(
     try:
         require_distinct_topic_name(request.name, other_topics)
     except SimilarResearchTopicError as exc:
-        raise HTTPException(
-            status_code=409,
-            detail=f'Use the existing research topic "{exc.topic.name}" instead.',
+        raise ElanoraError(
+            ErrorCode.RESEARCH_TOPIC_USE_EXISTING, name=exc.topic.name
         ) from exc
     topic.name = request.name.strip()
     topic.description = (request.description or "").strip() or None
@@ -290,9 +283,7 @@ async def update_research_topic(
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
-        raise HTTPException(
-            status_code=409, detail="A research topic with this name already exists."
-        ) from exc
+        raise ElanoraError(ErrorCode.RESEARCH_TOPIC_EXISTS) from exc
     await db.refresh(topic, attribute_names=["tiers"])
     return _topic_response(topic)
 
@@ -311,7 +302,7 @@ async def delete_research_topic(
         )
     )
     if topic is None:
-        raise HTTPException(status_code=404, detail="Research topic not found.")
+        raise ElanoraError(ErrorCode.RESEARCH_TOPIC_NOT_FOUND)
     await db.delete(topic)
     await db.commit()
     return Response(status_code=204)
@@ -329,9 +320,7 @@ async def get_tiers(
     """
     result = await TierService.get_project_tiers_grouped_by_file(db, project_name)
     if result is None:
-        raise HTTPException(
-            status_code=404, detail="Project not found or no tiers available."
-        )
+        raise ElanoraError(ErrorCode.TIERS_NOT_FOUND)
 
     # Unwrap the 'tiers' key if present
     tiers_dict = result.get("tiers", {})

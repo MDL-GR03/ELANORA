@@ -2,11 +2,12 @@
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Response, status
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.project_access import (
     ProjectAccess,
@@ -39,14 +40,14 @@ from app.service import (
 router = APIRouter()
 
 
-def _domain_http_error(error: Exception) -> HTTPException:
+def _domain_error(error: Exception) -> ElanoraError:
     # Pydantic's ValidationError is a ValueError. Serializing a response badly
     # is a fault in ELANORA, not a conflicting request.
     if isinstance(error, PydanticValidationError):
         raise error
     if isinstance(error, protocol_errors.ProtocolNotFoundError):
-        return HTTPException(status_code=404, detail="Protocol not found")
-    return HTTPException(status_code=409, detail="Protocol state conflict")
+        return ElanoraError(ErrorCode.PROTOCOL_NOT_FOUND)
+    return ElanoraError(ErrorCode.PROTOCOL_STATE_CONFLICT)
 
 
 @router.get("/projects/{project_id}/protocols", response_model=list[ProtocolResponse])
@@ -93,10 +94,7 @@ async def create_protocol(
         return ProtocolResponse.model_validate(protocol)
     except IntegrityError as error:
         await db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="A protocol with this name already exists",
-        ) from error
+        raise ElanoraError(ErrorCode.PROTOCOL_NAME_EXISTS) from error
 
 
 @router.post(
@@ -122,7 +120,7 @@ async def create_version(
         return ProtocolVersionResponse.model_validate(version)
     except (LookupError, ValueError) as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.put(
@@ -146,7 +144,7 @@ async def update_draft(
         return ProtocolVersionResponse.model_validate(version)
     except (LookupError, ValueError) as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.post(
@@ -169,7 +167,7 @@ async def publish_version(
         return ProtocolVersionResponse.model_validate(version)
     except (LookupError, ValueError) as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.put(
@@ -192,7 +190,7 @@ async def pin_version(
         return ProtocolVersionResponse.model_validate(version)
     except (LookupError, ValueError) as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.delete(
@@ -216,7 +214,7 @@ async def delete_draft_version(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except (LookupError, ValueError) as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.post(
@@ -242,7 +240,7 @@ async def archive_published_version(
         return ProtocolVersionResponse.model_validate(version)
     except (LookupError, ValueError) as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.delete(
@@ -266,7 +264,7 @@ async def purge_archived_version(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except (LookupError, ValueError) as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.post(
@@ -286,7 +284,7 @@ async def validate_revision(
         return ValidationRunResponse.model_validate(run)
     except (LookupError, ValueError) as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.get(
@@ -330,7 +328,7 @@ async def post_compliance_scan(
         return protocol_compliance.compliance_scan_response(scan)
     except (LookupError, ValueError) as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.put(
@@ -357,7 +355,7 @@ async def grant_protocol_manager(
         )
     except ValueError as error:
         await db.rollback()
-        raise _domain_http_error(error) from error
+        raise _domain_error(error) from error
 
 
 @router.delete(

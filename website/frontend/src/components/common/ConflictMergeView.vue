@@ -240,6 +240,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, onMounted, ref, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import gitService from '@/api/service/gitService';
@@ -457,9 +458,11 @@ async function loadReview() {
     emit('loaded', { filename: requested.filename, review: result });
   } catch (requestError) {
     if (request !== loadSequence) return;
-    error.value =
-      requestError?.response?.data?.detail ||
-      t('annotationComparison.loadFailed');
+    error.value = apiErrorMessage(
+      requestError,
+      t,
+      t('annotationComparison.loadFailed')
+    );
   } finally {
     if (request === loadSequence) loading.value = false;
   }

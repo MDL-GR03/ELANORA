@@ -18,6 +18,7 @@ import pytest
 from sqlalchemy import Select, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.core.errors import ElanoraError
 from app.core.jwt import create_refresh_token
 from app.crud.pending_upload import save_pending_upload
 from app.model.contribution_change_set import ContributionChangeSet
@@ -387,9 +388,13 @@ async def test_a_refresh_token_replayed_concurrently_is_honoured_once(
     await create_refresh_session(session, user.user_id, session_id, token)
     await session.commit()
 
-    async def refresh() -> dict[str, Any]:
+    async def refresh() -> bool:
         async with session_factory() as db:
-            return await user_sessions.refresh_user_tokens(db, token)
+            try:
+                await user_sessions.refresh_user_tokens(db, token)
+            except ElanoraError:
+                return False
+            return True
 
     outcomes = await race(
         session_factory,
@@ -400,7 +405,7 @@ async def test_a_refresh_token_replayed_concurrently_is_honoured_once(
     )
 
     assert not [o for o in outcomes if isinstance(o, BaseException)], outcomes
-    successes = [o for o in outcomes if isinstance(o, dict) and o["success"]]
+    successes = [o for o in outcomes if o is True]
     assert len(successes) == 1
 
 

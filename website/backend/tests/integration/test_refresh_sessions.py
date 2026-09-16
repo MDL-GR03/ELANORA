@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.jwt import create_refresh_token
 from app.model.enums import UserRole
 from app.model.instance import Instance
@@ -54,15 +55,14 @@ async def test_refresh_token_rotation_rejects_replay_and_revocation(
     await session.commit()
 
     first = await user_sessions.refresh_user_tokens(session, original)
-    assert first["success"] is True
 
-    replay = await user_sessions.refresh_user_tokens(session, original)
-    assert replay["success"] is False
+    with pytest.raises(ElanoraError) as replay:
+        await user_sessions.refresh_user_tokens(session, original)
+    assert replay.value.code == ErrorCode.SESSION_REFRESH_FAILED
 
-    rotated = str(first["refresh_token"])
     await revoke_refresh_session(session, session_id)
-    revoked = await user_sessions.refresh_user_tokens(session, rotated)
-    assert revoked["success"] is False
+    with pytest.raises(ElanoraError):
+        await user_sessions.refresh_user_tokens(session, first.refresh_token)
 
 
 @pytest.mark.asyncio
@@ -102,11 +102,10 @@ async def test_password_change_revokes_every_active_refresh_session(
         tokens.append(token)
     await session.commit()
 
-    changed = await user_passwords.change_password(
+    await user_passwords.change_password(
         session, user, "old-password-123", "new-password-456"
     )
 
-    assert changed["success"] is True
     stored_sessions = (
         await session.execute(
             select(RefreshSession).where(RefreshSession.user_id == user.user_id)
@@ -114,8 +113,8 @@ async def test_password_change_revokes_every_active_refresh_session(
     ).scalars()
     assert all(item.revoked_at is not None for item in stored_sessions)
     for token in tokens:
-        rejected = await user_sessions.refresh_user_tokens(session, token)
-        assert rejected["success"] is False
+        with pytest.raises(ElanoraError):
+            await user_sessions.refresh_user_tokens(session, token)
 
 
 @pytest.mark.asyncio

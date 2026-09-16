@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.password_policy import MESSAGES, password_policy_violation
+from app.core.errors import ElanoraError, ErrorCode
+from app.core.password_policy import password_policy_violation
 from app.crud.user import get_all_active_users, get_all_users
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep, get_user_dep
@@ -38,11 +39,6 @@ router = APIRouter()
 
 # Account lifecycle refusals are published as fixed, reviewable messages so
 # no internal exception text can reach an institution administrator.
-ACCOUNT_NOT_FOUND = "Account not found in this institution"
-SELF_STATUS_CHANGE_REFUSED = "Administrators cannot change their own account status"
-LAST_ADMINISTRATOR_REFUSED = "The institution must retain an active administrator"
-REDUNDANT_ACCOUNT_STATUS = "The account already has the requested status"
-ADMINISTRATOR_NO_LONGER_ACTIVE = "Your administrator access is no longer active"
 
 
 @router.get("/me", response_model=UserResponse)
@@ -134,23 +130,16 @@ async def update_current_user_profile(
 ) -> ProfileUpdateResponse:
     """Update the current user's profile."""
     try:
-        result = await user_profile.update_profile(db, user, profile_data)
-
-        if result["success"]:
-            return ProfileUpdateResponse(
-                message=result["message"],
-                updated_fields=result["updated_fields"],
-                address_updated=False,  # TODO: Handle address updates separately
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
-            )
+        updated_fields = await user_profile.update_profile(db, user, profile_data)
+    except ElanoraError:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to update profile",
-        ) from e
+        raise ElanoraError(ErrorCode.PROFILE_UPDATE_FAILED) from e
+    return ProfileUpdateResponse(
+        message="Profile updated successfully",
+        updated_fields=updated_fields,
+        address_updated=False,
+    )
 
 
 @router.put("/me/address", response_model=AddressResponse)
@@ -217,11 +206,10 @@ async def update_current_user_address(
             updated_at=updated_address_with_relations.updated_at,
         )
 
+    except ElanoraError:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to update address",
-        ) from e
+        raise ElanoraError(ErrorCode.ADDRESS_UPDATE_FAILED) from e
 
 
 @router.get("/active", response_model=UserListResponse)
@@ -279,26 +267,15 @@ async def set_institution_account_status(
             reason=request.reason,
         )
     except AdministratorNoLongerActiveError as error:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=ADMINISTRATOR_NO_LONGER_ACTIVE,
-        ) from error
+        raise ElanoraError(ErrorCode.ADMINISTRATOR_INACTIVE) from error
     except AccountNotFoundError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=ACCOUNT_NOT_FOUND
-        ) from error
+        raise ElanoraError(ErrorCode.ACCOUNT_NOT_FOUND) from error
     except SelfAccountStatusError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=SELF_STATUS_CHANGE_REFUSED
-        ) from error
+        raise ElanoraError(ErrorCode.SELF_STATUS_CHANGE_REFUSED) from error
     except LastAdministratorError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=LAST_ADMINISTRATOR_REFUSED
-        ) from error
+        raise ElanoraError(ErrorCode.LAST_ADMINISTRATOR_REFUSED) from error
     except RedundantAccountStatusError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=REDUNDANT_ACCOUNT_STATUS
-        ) from error
+        raise ElanoraError(ErrorCode.ACCOUNT_STATUS_UNCHANGED) from error
     return UserResponse.model_validate(updated)
 
 
@@ -314,36 +291,16 @@ async def change_user_password(
         (user.username, user.email, user.first_name, user.last_name),
     )
     if refusal:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=[
-                {
-                    "type": f"password_{refusal}",
-                    "loc": ["body", "new_password"],
-                    "msg": MESSAGES[refusal],
-                }
-            ],
-        )
+        raise ElanoraError(ErrorCode(f"password_{refusal}"))
     try:
-        # Change the password after verifying the current one
-        result = await user_passwords.change_password(
+        await user_passwords.change_password(
             db=db,
             user=user,
             current_password=request.current_password,
             new_password=request.new_password,
         )
-
-        if result["success"]:
-            return {"message": "Password changed successfully"}
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
-            )
-
-    except HTTPException:
+    except ElanoraError:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to change password",
-        ) from e
+        raise ElanoraError(ErrorCode.PASSWORD_CHANGE_FAILED) from e
+    return {"message": "Password changed successfully"}

@@ -1,9 +1,10 @@
 """Renaming accepted files."""
 
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import git_shared
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.exceptions import RenameConflictError
 from app.dependency.database import get_db_dep
 from app.dependency.project_access import (
@@ -42,6 +43,8 @@ async def rename_file(
             db=db,
         )
         return result
+    except ElanoraError:
+        raise
     except RenameConflictError as e:
         # Return conflict info with 409 status code
         return FileRenameResponse(
@@ -57,11 +60,11 @@ async def rename_file(
             message_key=e.message_key,
         )
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail="Project or file not found") from e
+        raise ElanoraError(ErrorCode.PROJECT_FILE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid project operation") from e
+        raise ElanoraError(ErrorCode.PROJECT_OPERATION_INVALID) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.post(
@@ -87,9 +90,11 @@ async def rename_files(
             db=db,
         )
         return result
+    except ElanoraError:
+        raise
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail="Project or file not found") from e
+        raise ElanoraError(ErrorCode.PROJECT_FILE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid project operation") from e
+        raise ElanoraError(ErrorCode.PROJECT_OPERATION_INVALID) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e

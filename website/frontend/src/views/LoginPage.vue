@@ -98,6 +98,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, onMounted, reactive } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -163,8 +164,11 @@ const handleLogin = async () => {
     await router.push({ name: 'HomePage' });
   } catch (error) {
     reportClientError('Login error', error);
-    const message =
-      error.response?.data?.detail || t('login.login_connection_error');
+    const message = apiErrorMessage(
+      error,
+      t,
+      t('login.login_connection_error')
+    );
     eventMessageStore.addMessage(message, 'error');
   }
 };

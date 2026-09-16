@@ -79,6 +79,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -172,9 +173,11 @@ const handleSubmit = async () => {
         } else {
           eventMessageStore.addMessage(t('forgotPassword.error'), 'error');
         }
-      } else if (typeof errorDetail === 'string') {
-        // Single error message from backend
-        eventMessageStore.addMessage(errorDetail, 'error');
+      } else if (error?.response?.data?.code) {
+        eventMessageStore.addMessage(
+          apiErrorMessage(error, t, t('forgotPassword.error')),
+          'error'
+        );
       } else {
         eventMessageStore.addMessage(
           t('forgotPassword.validation_error'),
@@ -184,9 +187,11 @@ const handleSubmit = async () => {
     } else if (error?.response?.status === 500) {
       // Server error
       eventMessageStore.addMessage(t('forgotPassword.server_error'), 'error');
-    } else if (error?.response?.data?.detail) {
-      // Use backend error message if available
-      eventMessageStore.addMessage(error.response.data.detail, 'error');
+    } else if (error?.response?.data?.code) {
+      eventMessageStore.addMessage(
+        apiErrorMessage(error, t, t('forgotPassword.error')),
+        'error'
+      );
     } else if (!error?.response) {
       // Network error
       eventMessageStore.addMessage(t('forgotPassword.network_error'), 'error');

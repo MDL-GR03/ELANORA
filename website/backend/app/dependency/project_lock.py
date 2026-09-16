@@ -6,11 +6,12 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request
 from filelock import FileLock, Timeout
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_user_dep
 from app.model.project import Project
@@ -25,10 +26,7 @@ def ensure_lock_root(lock_root: Path) -> None:
     try:
         lock_root.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Project storage is not writable; contact the instance administrator",
-        ) from exc
+        raise ElanoraError(ErrorCode.STORAGE_NOT_WRITABLE) from exc
 
 
 @asynccontextmanager
@@ -48,10 +46,7 @@ async def acquire_project_write_lock(
     try:
         await asyncio.to_thread(lock.acquire, timeout=LOCK_TIMEOUT_SECONDS)
     except Timeout as exc:
-        raise HTTPException(
-            status_code=status.HTTP_423_LOCKED,
-            detail="Another operation is currently modifying this project",
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_LOCKED) from exc
     try:
         yield
     finally:
@@ -76,13 +71,9 @@ async def project_write_lock(
 
     project = (await db.execute(statement)).scalar_one_or_none()
     if project is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
+        raise ElanoraError(ErrorCode.PROJECT_NOT_FOUND)
     if project.instance_id != user.instance_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
-        )
+        raise ElanoraError(ErrorCode.PROJECT_NOT_FOUND)
 
     async with acquire_project_write_lock(
         project.project_id, Path(get_elanora_projects_base_path())

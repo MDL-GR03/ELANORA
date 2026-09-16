@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   meetsPasswordPolicy,
   passwordChecksOf,
-  passwordRefusalMessage,
   passwordRequirementList,
   passwordStrengthOf,
 } from './passwordPolicy';
@@ -46,27 +45,5 @@ describe('passwordPolicy', () => {
       { key: 'length', text: 'passwordPolicy.length:15', valid: false },
       { key: 'pattern', text: 'passwordPolicy.pattern:15', valid: true },
     ]);
-  });
-
-  it('explains a refusal the API reported', () => {
-    const error = {
-      response: {
-        data: {
-          detail: [
-            { type: 'missing', loc: ['body', 'email'] },
-            { type: 'password_common' },
-          ],
-        },
-      },
-    };
-    expect(passwordRefusalMessage(error, (key) => `t:${key}`)).toBe(
-      't:passwordPolicy.errors.common'
-    );
-    expect(
-      passwordRefusalMessage(
-        { response: { data: { detail: 'Nope' } } },
-        (k) => k
-      )
-    ).toBeNull();
   });
 });

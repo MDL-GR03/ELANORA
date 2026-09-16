@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/utils/apiError';
 import { reactive, ref, toValue } from 'vue';
 
 export function useReviewerTaskDecisions({
@@ -113,8 +114,11 @@ export function useReviewerTaskDecisions({
         'success'
       );
     } catch (requestError) {
-      error.value =
-        requestError?.response?.data?.detail || t('reviewCases.errors.approve');
+      error.value = apiErrorMessage(
+        requestError,
+        t,
+        t('reviewCases.errors.approve')
+      );
       notify(error.value, 'error');
     } finally {
       busy.value = false;

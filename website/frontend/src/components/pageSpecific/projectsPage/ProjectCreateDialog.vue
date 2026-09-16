@@ -99,6 +99,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, computed, onMounted, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import UploadFolder from '@components/common/UploadFolder.vue';
@@ -191,9 +192,11 @@ async function handleCreate() {
 
     emit('created');
   } catch (e) {
-    error.value =
-      e?.response?.data?.detail ||
-      t('projectsPage.createDialog.errors.createFailed');
+    error.value = apiErrorMessage(
+      e,
+      t,
+      t('projectsPage.createDialog.errors.createFailed')
+    );
   } finally {
     creating.value = false;
   }

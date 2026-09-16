@@ -157,6 +157,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -241,8 +242,11 @@ async function saveStatus() {
       type: 'success',
     });
   } catch (requestError) {
-    dialogError.value =
-      requestError.response?.data?.detail || t('profile.accounts.save_error');
+    dialogError.value = apiErrorMessage(
+      requestError,
+      t,
+      t('profile.accounts.save_error')
+    );
   } finally {
     saving.value = false;
   }

@@ -1,9 +1,9 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError
 from app.model.project_file_type import ProjectFileType
 from app.service import project_naming_standard as service_module
 from app.service.project_naming_standard import ProjectNamingStandardService
@@ -63,7 +63,7 @@ async def test_import_missing_standard_rolls_back_instead_of_silently_skipping(
         AsyncMock(return_value=None),
     )
 
-    with pytest.raises(HTTPException) as caught:
+    with pytest.raises(ElanoraError) as caught:
         await ProjectNamingStandardService.import_selected_standards(db, 2, [404])
 
     assert caught.value.status_code == 404

@@ -85,6 +85,7 @@ async def validation_exception_handler(
             status_code=HTTP_400_BAD_REQUEST,
             content={
                 "detail": public_errors,
+                "code": "validation_error",
                 "correlation_id": client_info["correlation_id"],
             },
         )
@@ -138,6 +139,7 @@ def add_general_exception_handler() -> Callable[
             status_code=500,
             content={
                 "detail": "Internal server error occurred.",
+                "code": "internal_error",
                 "correlation_id": client_info["correlation_id"],
             },
         )

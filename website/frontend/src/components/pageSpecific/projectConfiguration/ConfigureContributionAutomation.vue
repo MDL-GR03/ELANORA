@@ -53,6 +53,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
@@ -107,9 +108,11 @@ async function save(value) {
       : t('contributionAutomation.saved_disabled');
   } catch (requestError) {
     error.value = true;
-    message.value =
-      requestError?.response?.data?.detail ||
-      t('contributionAutomation.save_failed');
+    message.value = apiErrorMessage(
+      requestError,
+      t,
+      t('contributionAutomation.save_failed')
+    );
   } finally {
     saving.value = false;
   }

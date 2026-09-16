@@ -5,6 +5,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.crud.association import (
     get_project_users,
     remove_user_from_project,
@@ -37,8 +38,6 @@ from app.service.notification import NotificationService
 router = APIRouter()
 
 # Constants to avoid duplication
-USER_NOT_FOUND = "User not found"
-INVALID_MEMBERSHIP_OPERATION = "Invalid project membership operation"
 
 
 def _reject_reserved_or_escalated_permission(
@@ -46,15 +45,12 @@ def _reject_reserved_or_escalated_permission(
 ) -> None:
     """Keep owner virtual and prevent project admins granting peer authority."""
     if requested == ProjectPermission.OWNER:
-        raise HTTPException(status_code=422, detail="Owner is a reserved permission")
+        raise ElanoraError(ErrorCode.OWNER_PERMISSION_RESERVED)
     if (
         access.permission == ProjectPermission.ADMIN
         and requested == ProjectPermission.ADMIN
     ):
-        raise HTTPException(
-            status_code=403,
-            detail="Only an institution administrator can grant project admin access",
-        )
+        raise ElanoraError(ErrorCode.PROJECT_ADMIN_GRANT_FORBIDDEN)
 
 
 async def _protect_privileged_target(
@@ -67,10 +63,7 @@ async def _protect_privileged_target(
         ProjectPermission.ADMIN,
         ProjectPermission.OWNER,
     }:
-        raise HTTPException(
-            status_code=403,
-            detail="Project administrators cannot modify another administrator",
-        )
+        raise ElanoraError(ErrorCode.PROJECT_ADMIN_CHANGE_FORBIDDEN)
 
 
 @router.get("/projects/{project_id}/users", response_model=ProjectUserListResponse)
@@ -109,10 +102,10 @@ async def list_project_users(
                 for user_info in users
             ],
         )
-    except HTTPException:
+    except (HTTPException, ElanoraError):
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.get("/projects/{project_id}/available-users", response_model=UserListResponse)
@@ -136,7 +129,7 @@ async def list_user_projects_admin(
         # check if the user exists
         target_user = await get_user_by_id(db, user_id)
         if not target_user or target_user.instance_id != user.instance_id:
-            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
+            raise ElanoraError(ErrorCode.USER_NOT_FOUND)
 
         # Retrieve the user's projects
         projects = await list_projects_by_user(
@@ -155,10 +148,10 @@ async def list_user_projects_admin(
                 for project in projects
             ],
         )
-    except HTTPException:
+    except (HTTPException, ElanoraError):
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.post("/projects/{project_id}/users", response_model=ProjectAssociationResponse)
@@ -172,7 +165,7 @@ async def add_user_to_project_admin(
         _reject_reserved_or_escalated_permission(access, request.permission)
         target_user = await get_user_by_id(db, request.user_id)
         if not target_user or target_user.instance_id != access.project.instance_id:
-            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
+            raise ElanoraError(ErrorCode.USER_NOT_FOUND)
 
         # Add the user to the project
         association = await add_user_to_project(
@@ -191,11 +184,11 @@ async def add_user_to_project_admin(
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=INVALID_MEMBERSHIP_OPERATION) from e
-    except HTTPException:
+        raise ElanoraError(ErrorCode.MEMBERSHIP_INVALID) from e
+    except (HTTPException, ElanoraError):
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.put(
@@ -214,7 +207,7 @@ async def update_user_project_permission_admin(
         await _protect_privileged_target(db, access, user_id)
         target_user = await get_user_by_id(db, user_id)
         if not target_user or target_user.instance_id != access.project.instance_id:
-            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
+            raise ElanoraError(ErrorCode.USER_NOT_FOUND)
 
         # Update the user's permission
         association = await update_user_project_permission(
@@ -225,9 +218,7 @@ async def update_user_project_permission_admin(
         )
 
         if not association:
-            raise HTTPException(
-                status_code=404, detail="User is not associated with this project"
-            )
+            raise ElanoraError(ErrorCode.USER_NOT_IN_PROJECT)
 
         # Send notification and email about role change
         admin_name = f"{access.user.first_name} {access.user.last_name}"
@@ -262,11 +253,11 @@ async def update_user_project_permission_admin(
         )
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=INVALID_MEMBERSHIP_OPERATION) from e
-    except HTTPException:
+        raise ElanoraError(ErrorCode.MEMBERSHIP_INVALID) from e
+    except (HTTPException, ElanoraError):
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.delete(
@@ -283,7 +274,7 @@ async def remove_user_from_project_admin(
         await _protect_privileged_target(db, access, user_id)
         target_user = await get_user_by_id(db, user_id)
         if not target_user or target_user.instance_id != access.project.instance_id:
-            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
+            raise ElanoraError(ErrorCode.USER_NOT_FOUND)
 
         await remove_user_from_project(db, user_id, access.project.project_id)
 
@@ -295,10 +286,10 @@ async def remove_user_from_project_admin(
             message=f"User {target_user.username} removed from project {access.project.project_name}",
         )
 
-    except HTTPException:
+    except (HTTPException, ElanoraError):
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.get("/overview", response_model=dict)
@@ -342,7 +333,7 @@ async def get_associations_overview(
 
         return overview
 
-    except HTTPException:
+    except (HTTPException, ElanoraError):
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e

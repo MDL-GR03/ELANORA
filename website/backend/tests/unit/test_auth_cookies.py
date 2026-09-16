@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import HTTPException, Response
+from fastapi import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
@@ -11,6 +11,7 @@ from app.core.config import (
     CSRF_TOKEN_NAME,
     REFRESH_TOKEN_COOKIE_NAME,
 )
+from app.core.errors import ElanoraError
 
 
 def _cookie_headers(response: Response) -> str:
@@ -32,7 +33,7 @@ async def test_missing_refresh_token_clears_all_auth_cookies() -> None:
     )
     response = Response()
 
-    with pytest.raises(HTTPException) as caught:
+    with pytest.raises(ElanoraError) as caught:
         await refresh_tokens(request, response, AsyncMock(spec=AsyncSession))
 
     assert caught.value.status_code == 401

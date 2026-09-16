@@ -5,6 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.limiter import limiter
 from app.dependency.database import get_db_dep
 from app.schema.requests.user import (
@@ -43,7 +44,7 @@ async def forgot_password(
         dict[str, Any]: JSON response with a confirmation message
 
     Raises:
-        HTTPException: If an error occurs during request processing
+        ElanoraError: If an error occurs during request processing
 
     Note:
         For security reasons, the same response is returned whether the email exists or not
@@ -77,11 +78,10 @@ async def forgot_password(
             "success": True,
         }
 
+    except ElanoraError:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to process request",
-        ) from e
+        raise ElanoraError(ErrorCode.REQUEST_FAILED) from e
 
 
 @router.post("/reset-password")
@@ -105,33 +105,25 @@ async def reset_password(
         dict[str, Any]: JSON response with success or error message
 
     Raises:
-        HTTPException: If the reset code is invalid or user is not found
+        ElanoraError: If the reset code is invalid or user is not found
 
     """
     try:
         # Reset password using the service
-        result = await user_verification.reset_password(
+        await user_verification.reset_password(
             db=db,
             email=body.email,
             reset_code=body.code,
             new_password=body.new_password,
         )
-
-        if result["success"]:
-            return {
-                "message": "Password reset successfully. You can now log in with your new password.",
-                "success": True,
-            }
-        else:
-            raise HTTPException(status_code=400, detail=result["message"])
-
+    except ElanoraError:
+        raise
     except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to reset password",
-        ) from e
+        raise ElanoraError(ErrorCode.PASSWORD_RESET_FAILED) from e
+    return {
+        "message": "Password reset successfully. You can now log in with your new password.",
+        "success": True,
+    }
 
 
 @router.post("/send-verification-email")
@@ -156,7 +148,7 @@ async def send_verification_email(
         dict[str, Any]: JSON response with a confirmation message
 
     Raises:
-        HTTPException: If an error occurs during request processing
+        ElanoraError: If an error occurs during request processing
 
     """
     try:
@@ -164,10 +156,10 @@ async def send_verification_email(
         user = await user_registration.get_user_by_email(db, body.email)
 
         if not user:
-            raise HTTPException(status_code=404, detail="User not found.")
+            raise ElanoraError(ErrorCode.VERIFICATION_CODE_INVALID)
 
         if user.is_verified_account:
-            raise HTTPException(status_code=400, detail="Account is already verified.")
+            raise ElanoraError(ErrorCode.ACCOUNT_ALREADY_VERIFIED)
 
         # Generate verification code
         verification_code = user_verification.generate_verification_code()
@@ -190,13 +182,10 @@ async def send_verification_email(
             "success": True,
         }
 
-    except HTTPException:
+    except (HTTPException, ElanoraError):
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to process request",
-        ) from e
+        raise ElanoraError(ErrorCode.REQUEST_FAILED) from e
 
 
 @router.post("/verify-email")
@@ -220,29 +209,21 @@ async def verify_email(
         dict[str, Any]: JSON response with success or error message
 
     Raises:
-        HTTPException: If the verification code is invalid or user is not found
+        ElanoraError: If the verification code is invalid or user is not found
 
     """
     try:
         # Verify email using the service
-        result = await user_verification.verify_account(
+        await user_verification.verify_account(
             db=db,
             email=body.email,
             verification_code=body.code,
         )
-
-        if result["success"]:
-            return {
-                "message": "Email verified successfully. You can now access all features.",
-                "success": True,
-            }
-        else:
-            raise HTTPException(status_code=400, detail=result["message"])
-
+    except ElanoraError:
+        raise
     except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to verify email",
-        ) from e
+        raise ElanoraError(ErrorCode.EMAIL_VERIFICATION_FAILED) from e
+    return {
+        "message": "Email verified successfully. You can now access all features.",
+        "success": True,
+    }

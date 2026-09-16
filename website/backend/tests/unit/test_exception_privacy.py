@@ -7,14 +7,14 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
 
 import app.api.v1.review as review_api
 import app.core.exception_handler as exception_handler_module
 import app.middleware.csrf as csrf_module
-from app.api.v1.protocol import _domain_http_error
+from app.api.v1.protocol import _domain_error
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.exception_handler import (
     add_general_exception_handler,
     validation_exception_handler,
@@ -146,7 +146,7 @@ async def test_review_domain_failure_does_not_publish_exception_text(
         user=SimpleNamespace(user_id=11),
     )
 
-    with pytest.raises(HTTPException) as raised:
+    with pytest.raises(ElanoraError) as raised:
         await review_api.post_review_case(
             7,
             ReviewCaseCreate(upload_id=1, title="Review"),
@@ -155,16 +155,16 @@ async def test_review_domain_failure_does_not_publish_exception_text(
         )
 
     assert raised.value.status_code == 422
-    assert raised.value.detail == review_api.INVALID_REVIEW_OPERATION
-    assert SENSITIVE_VALUE not in str(raised.value.detail)
+    assert raised.value.code == ErrorCode.REVIEW_OPERATION_INVALID
+    assert SENSITIVE_VALUE not in raised.value.message
 
 
 def test_protocol_domain_failure_does_not_publish_exception_text() -> None:
-    public_error = _domain_http_error(RuntimeError(SENSITIVE_VALUE))
+    public_error = _domain_error(RuntimeError(SENSITIVE_VALUE))
 
     assert public_error.status_code == 409
-    assert public_error.detail == "Protocol state conflict"
-    assert SENSITIVE_VALUE not in str(public_error.detail)
+    assert public_error.code == ErrorCode.PROTOCOL_STATE_CONFLICT
+    assert SENSITIVE_VALUE not in public_error.message
 
 
 def test_api_boundary_never_serializes_caught_exception_text() -> None:

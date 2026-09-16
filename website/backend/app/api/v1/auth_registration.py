@@ -2,9 +2,10 @@
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.crud.project import get_project_by_id
 from app.dependency.database import get_db_dep
 from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
@@ -37,7 +38,7 @@ async def register(
         UserResponse: The registered user details.
 
     Raises:
-        HTTPException: If the invitation code is invalid or expired, or if user creation fails.
+        ElanoraError: If the invitation code is invalid or expired, or if user creation fails.
 
     """
 
@@ -46,17 +47,12 @@ async def register(
         db, request.invitation_code
     )
     if not invitation_validation.valid or not invitation_validation.invitation:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The invitation is invalid or has expired.",
-        )
+        raise ElanoraError(ErrorCode.INVITATION_INVALID)
 
     invitation_info = invitation_validation.invitation
     project = await get_project_by_id(db, invitation_info.project_id)
     if project is None:
-        raise HTTPException(
-            status_code=400, detail="Invitation project no longer exists."
-        )
+        raise ElanoraError(ErrorCode.INVITATION_PROJECT_MISSING)
     # check if the email in the invitation matches the one in the request (if provided)
     if (
         invitation_info.receiver_email
@@ -64,10 +60,7 @@ async def register(
         and invitation_info.receiver_email.strip().lower()
         != request.email.strip().lower()
     ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The email address does not match the invitation.",
-        )
+        raise ElanoraError(ErrorCode.INVITATION_EMAIL_MISMATCH)
 
     # 2. Create the user
     # Registration requires the exact email bound to the invitation, so that
@@ -99,10 +92,7 @@ async def register(
     )
     if not accepted:
         await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Invitation could not be redeemed. No account was created.",
-        )
+        raise ElanoraError(ErrorCode.INVITATION_NOT_REDEEMED)
     await db.commit()
     await invitation_notifications.notify_project_admins_member_joined(
         db, invitation_info.project_id, user
@@ -132,10 +122,10 @@ async def check_username_availability(
             if available
             else "Username is already taken",
         }
+    except ElanoraError:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Unable to check username availability"
-        ) from e
+        raise ElanoraError(ErrorCode.USERNAME_CHECK_FAILED) from e
 
 
 @router.get("/check-email/{email}")
@@ -150,7 +140,7 @@ async def check_email_availability(
             "available": available,
             "message": "Email is available" if available else "Email is already in use",
         }
+    except ElanoraError:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail="Unable to check email availability"
-        ) from e
+        raise ElanoraError(ErrorCode.EMAIL_CHECK_FAILED) from e

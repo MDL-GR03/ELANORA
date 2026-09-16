@@ -1,8 +1,9 @@
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request
 from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.jwt import verify_access_token
 from app.dependency.database import get_db_dep
 from app.model.enums import UserRole
@@ -42,12 +43,10 @@ async def get_current_user(
         if user and user.is_active:
             return user
 
+    except ElanoraError:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from e
+        raise ElanoraError(ErrorCode.NOT_AUTHENTICATED) from e
     return None
 
 
@@ -59,11 +58,7 @@ class BaseGuard:
         """Authenticate the user and return the User object."""
         user = await get_current_user(request, db)
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+            raise ElanoraError(ErrorCode.NOT_AUTHENTICATED)
         return user
 
     def check_role(
@@ -88,10 +83,7 @@ class BaseGuard:
         required_role_level = role_hierarchy.get(required_role)
 
         if user_role_level is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"User has invalid role: {user.role}",
-            )
+            raise ElanoraError(ErrorCode.ROLE_REQUIRED)
 
         if required_role_level is None:
             raise ValueError(f"Invalid role requirement: {required_role}")
@@ -103,12 +95,7 @@ class BaseGuard:
         )
 
         if not has_access:
-            if min_role:
-                message = f"Insufficient privileges. Minimum role {required_role.value} required."
-            else:
-                message = f"Not authorized. Role {required_role.value} required."
-
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=message)
+            raise ElanoraError(ErrorCode.ROLE_REQUIRED, role=required_role.value)
 
 
 class UserGuard(BaseGuard):

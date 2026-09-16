@@ -32,6 +32,7 @@ from app.api.v1.user import router as user_router
 from app.core.centralized_logging import get_logger
 from app.core.config import ENVIRONMENT, FRONTEND_HOST, TRUSTED_HOSTS
 from app.core.error_diagnostics import safe_exception_type
+from app.core.errors import ElanoraError, elanora_error_handler
 from app.core.exception_handler import (
     add_general_exception_handler,
     rate_limit_exception_handler,
@@ -89,6 +90,7 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
+app.add_exception_handler(ElanoraError, elanora_error_handler)
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, add_general_exception_handler())

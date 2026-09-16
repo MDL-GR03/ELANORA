@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/utils/apiError';
 import { toValue } from 'vue';
 
 export function useReviewCaseTransitions({
@@ -77,9 +78,11 @@ export function useReviewCaseTransitions({
       notify(t('reviewCases.notify.statusUpdated'), 'success');
       return true;
     } catch (requestError) {
-      error.value =
-        requestError?.response?.data?.detail ||
-        t('reviewCases.errors.transition');
+      error.value = apiErrorMessage(
+        requestError,
+        t,
+        t('reviewCases.errors.transition')
+      );
       notify(error.value, 'error');
       return false;
     } finally {
@@ -150,9 +153,11 @@ export function useReviewCaseTransitions({
       notify(t('reviewCases.notify.revisionRequested'), 'success');
       return true;
     } catch (requestError) {
-      error.value =
-        requestError?.response?.data?.detail ||
-        t('reviewCases.errors.revision');
+      error.value = apiErrorMessage(
+        requestError,
+        t,
+        t('reviewCases.errors.revision')
+      );
       notify(error.value, 'error');
       return false;
     } finally {
@@ -182,8 +187,11 @@ export function useReviewCaseTransitions({
       );
       return true;
     } catch (requestError) {
-      error.value =
-        requestError?.response?.data?.detail || t('reviewCases.errors.assign');
+      error.value = apiErrorMessage(
+        requestError,
+        t,
+        t('reviewCases.errors.assign')
+      );
       return false;
     } finally {
       busy.value = false;
@@ -204,8 +212,11 @@ export function useReviewCaseTransitions({
       notify(t('reviewCases.notify.linked'), 'success');
       return true;
     } catch (requestError) {
-      error.value =
-        requestError?.response?.data?.detail || t('reviewCases.errors.link');
+      error.value = apiErrorMessage(
+        requestError,
+        t,
+        t('reviewCases.errors.link')
+      );
       notify(error.value, 'error');
       return false;
     } finally {

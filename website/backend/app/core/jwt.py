@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
 import jwt
-from fastapi import HTTPException, status
 from jwt.exceptions import ExpiredSignatureError, PyJWTError
 
 from app.core.config import (
@@ -10,6 +9,7 @@ from app.core.config import (
     JWT_SECRET_KEY,
     REFRESH_TOKEN_EXPIRE_DAYS,
 )
+from app.core.errors import ElanoraError, ErrorCode
 from app.schema.common.token import TokenData
 
 # Token type constants for clarity and to avoid hardcoded string warnings
@@ -65,7 +65,7 @@ def verify_token(token: str, expected_token_type: str = ACCESS_TOKEN_TYPE) -> To
         TokenData: The user data extracted from the token
 
     Raises:
-        HTTPException: If the token is invalid or expired
+        ElanoraError: If the token is invalid or expired
 
     """
     try:
@@ -80,17 +80,11 @@ def verify_token(token: str, expected_token_type: str = ACCESS_TOKEN_TYPE) -> To
 
         # Check token fields exist
         if sub is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token is missing required field : sub",
-            )
+            raise ElanoraError(ErrorCode.TOKEN_INVALID)
 
         # If token type verification is requested
         if token_type != expected_token_type:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Invalid token type. Expected {expected_token_type}.",
-            )
+            raise ElanoraError(ErrorCode.TOKEN_INVALID)
         return TokenData(
             sub=sub,
             session_id=payload.get("session_id"),
@@ -98,16 +92,10 @@ def verify_token(token: str, expected_token_type: str = ACCESS_TOKEN_TYPE) -> To
         )
 
     except ExpiredSignatureError as err:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired",
-        ) from err
+        raise ElanoraError(ErrorCode.TOKEN_EXPIRED) from err
 
     except PyJWTError as err:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-        ) from err
+        raise ElanoraError(ErrorCode.CREDENTIALS_INVALID) from err
 
 
 def create_access_token(data: TokenData, expires_delta: timedelta | None = None) -> str:

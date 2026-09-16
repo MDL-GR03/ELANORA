@@ -4,7 +4,7 @@ import secrets
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import (
@@ -17,6 +17,7 @@ from app.core.config import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     REFRESH_TOKEN_PATH,
 )
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.jwt import create_access_token, create_refresh_token, verify_refresh_token
 from app.core.limiter import limiter
 from app.dependency.database import get_db_dep
@@ -51,28 +52,21 @@ async def login(
     db: AsyncSession = get_db_dep,
 ) -> LoginResponse:
     """Handle user login and set JWT tokens as HTTP-only cookies."""
-    # Use service layer for authentication
-    login_result = await user_sessions.login_user(
+    outcome = await user_sessions.login_user(
         db=db,
         login_or_email=body.login,
         password=body.password,
     )
-
-    if not login_result["success"]:
-        raise HTTPException(status_code=400, detail=login_result["message"])
-
-    # Handle email verification case
-    if login_result.get("needs_verification"):
+    user = outcome.user
+    if outcome.needs_verification:
         return LoginResponse(
-            message=login_result["message"],
+            message="Email verification required",
             user=None,
             csrf_token="",
             needs_verification=True,
-            email=login_result["email"],
+            email=user.email,
         )
 
-    # Get user and create tokens
-    user = login_result["user"]
     session_id = uuid.uuid4()
     token_data = TokenData(
         sub=str(user.user_id),
@@ -147,24 +141,15 @@ async def refresh_tokens(
     refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
     if not refresh_token:
         _clear_auth_cookies(response)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is missing"
-        )
+        raise ElanoraError(ErrorCode.REFRESH_TOKEN_MISSING)
 
     try:
-        # Use service layer for token refresh
-        refresh_result = await user_sessions.refresh_user_tokens(db, refresh_token)
-
-        if not refresh_result["success"]:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=refresh_result["message"],
-            )
+        tokens = await user_sessions.refresh_user_tokens(db, refresh_token)
 
         # Set new cookies
         response.set_cookie(
             ACCESS_TOKEN_COOKIE_NAME,
-            refresh_result["access_token"],
+            tokens.access_token,
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             httponly=True,
             secure=COOKIE_SECURE,
@@ -174,7 +159,7 @@ async def refresh_tokens(
 
         response.set_cookie(
             REFRESH_TOKEN_COOKIE_NAME,
-            refresh_result["refresh_token"],
+            tokens.refresh_token,
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
             httponly=True,
             secure=COOKIE_SECURE,
@@ -184,7 +169,7 @@ async def refresh_tokens(
 
         response.set_cookie(
             CSRF_TOKEN_NAME,
-            refresh_result["csrf_token"],
+            tokens.csrf_token,
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
             httponly=False,
             secure=COOKIE_SECURE,
@@ -193,18 +178,16 @@ async def refresh_tokens(
 
         return {
             "message": "Tokens refreshed successfully",
-            CSRF_TOKEN_NAME: refresh_result["csrf_token"],
+            CSRF_TOKEN_NAME: tokens.csrf_token,
         }
 
-    except HTTPException:
+    except (HTTPException, ElanoraError):
         # Clear invalid tokens
         _clear_auth_cookies(response)
         raise
     except Exception as e:
         _clear_auth_cookies(response)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to refresh tokens"
-        ) from e
+        raise ElanoraError(ErrorCode.SESSION_REFRESH_FAILED) from e
 
 
 @router.post("/logout")

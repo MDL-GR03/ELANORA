@@ -1,9 +1,9 @@
 """Every way of setting a password enforces the same NIST-style policy."""
 
 import pytest
-from fastapi import HTTPException
 from pydantic import ValidationError
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.core.password_policy import (
     PASSWORD_MINIMUM_LENGTH,
     common_passwords,
@@ -105,7 +105,7 @@ async def test_changing_a_password_refuses_the_researchers_own_name() -> None:
         first_name="Ada",
         last_name="Lovelace",
     )
-    with pytest.raises(HTTPException) as caught:
+    with pytest.raises(ElanoraError) as caught:
         await user_api.change_user_password(
             ChangePasswordRequest(
                 current_password="anything",  # noqa: S106 - inert test value
@@ -115,4 +115,4 @@ async def test_changing_a_password_refuses_the_researchers_own_name() -> None:
             AsyncMock(),
         )
     assert caught.value.status_code == 400
-    assert caught.value.detail[0]["type"] == "password_personal"
+    assert caught.value.code == ErrorCode.PASSWORD_PERSONAL

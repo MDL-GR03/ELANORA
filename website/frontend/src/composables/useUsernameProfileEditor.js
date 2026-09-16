@@ -1,5 +1,7 @@
 import { ref, toValue } from 'vue';
 
+import { apiErrorMessage } from '@/utils/apiError';
+
 export function useUsernameProfileEditor({
   profile,
   updateProfile,
@@ -53,12 +55,14 @@ export function useUsernameProfileEditor({
       editUsernameMode.value = false;
       return true;
     } catch (error) {
-      const detail = error.response?.data?.detail;
-      let text = detail || translate('profile.username.save_failed');
-      if (detail?.includes('already taken')) {
-        text = translate('register.username_taken');
-      }
-      emit('show-message', { text, type: 'error' });
+      emit('show-message', {
+        text: apiErrorMessage(
+          error,
+          translate,
+          translate('profile.username.save_failed')
+        ),
+        type: 'error',
+      });
       editedUsername.value = currentUsername();
       return false;
     } finally {

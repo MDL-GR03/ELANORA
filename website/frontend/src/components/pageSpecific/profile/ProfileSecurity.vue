@@ -104,12 +104,10 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import {
-  passwordRequestError,
-  passwordRequirementList,
-} from '@/utils/passwordPolicy';
+import { passwordRequirementList } from '@/utils/passwordPolicy';
 import { changePassword } from '@/api/service/userService.js';
 import { reportClientError } from '@/utils/errorDiagnostics';
 
@@ -187,7 +185,7 @@ async function handlePasswordChange() {
   } catch (error) {
     reportClientError('Password change error', error);
     emit('show-message', {
-      text: passwordRequestError(
+      text: apiErrorMessage(
         error,
         t,
         t('profile.security.change_password.error')

@@ -222,7 +222,9 @@ describe('useInvitationRegistration', () => {
   });
 
   it('explains a password the server refused', async () => {
-    const { authApi, eventMessages, registration } = createRegistration();
+    const { authApi, eventMessages, registration } = createRegistration({
+      translate: (key) => `t:${key}`,
+    });
     authApi.registerWithInvitation.mockRejectedValue({
       response: {
         data: { detail: [{ type: 'password_common', loc: ['body'] }] },
@@ -230,7 +232,7 @@ describe('useInvitationRegistration', () => {
     });
     await registration.register();
     expect(eventMessages.addMessage).toHaveBeenCalledWith(
-      'passwordPolicy.errors.common',
+      't:passwordPolicy.errors.common',
       'error'
     );
   });

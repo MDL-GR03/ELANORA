@@ -6,12 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_MAX_BATCH_SIZE_MB, ELAN_MAX_FILE_SIZE_MB
+from app.core.errors import ElanoraError, ErrorCode
 from app.crud.eaf_ingestion_attempt import record_rejected_eaf
 from app.elan.validation import EafValidationError, ValidationIssue, validate_eaf
 from app.model.project import Project
 from app.model.protocol import ProtocolVersion
 from app.schema.responses.git import (
-    EafBatchValidationErrorResponse,
     EafValidationIssueResponse,
     RejectedEafFileResponse,
 )
@@ -46,25 +46,21 @@ async def _pinned_protocol(
         return None
     project = await db.get(Project, project_id)
     if project is None:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise ElanoraError(ErrorCode.PROJECT_NOT_FOUND)
     try:
         return await get_pinned_protocol_version(db, project)
     except ProtocolConflictError as error:
-        raise HTTPException(
-            status_code=409,
-            detail="Project protocol configuration conflict",
-        ) from error
+        raise ElanoraError(ErrorCode.PROTOCOL_CONFIGURATION_CONFLICT) from error
 
 
 def _validate_batch_envelope(files: list[UploadFile]) -> int:
     """Validate declared batch metadata and return the byte limit."""
     if not files:
-        raise HTTPException(status_code=400, detail="At least one file is required")
+        raise ElanoraError(ErrorCode.UPLOAD_EMPTY)
     max_batch_size = ELAN_MAX_BATCH_SIZE_MB * 1024 * 1024
     if sum(file.size or 0 for file in files) > max_batch_size:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Total upload size too large. Maximum is {ELAN_MAX_BATCH_SIZE_MB}MB",
+        raise ElanoraError(
+            ErrorCode.UPLOAD_BATCH_TOO_LARGE, max_mb=ELAN_MAX_BATCH_SIZE_MB
         )
     return max_batch_size
 
@@ -75,9 +71,8 @@ async def _read_bounded_content(file: UploadFile) -> bytes:
     file.size = len(content)
     file.file.seek(0)
     if len(content) > ELAN_MAX_FILE_SIZE_MB * 1024 * 1024:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size is {ELAN_MAX_FILE_SIZE_MB}MB per file",
+        raise ElanoraError(
+            ErrorCode.UPLOAD_FILE_TOO_LARGE, max_mb=ELAN_MAX_FILE_SIZE_MB
         )
     return content
 
@@ -92,12 +87,12 @@ def validate_elan_file(file: UploadFile) -> UploadFile:
         The validated file
 
     Raises:
-        HTTPException: If file validation fails
+        ElanoraError: If file validation fails
 
     """
     # Check file extension
     if not file.filename or not file.filename.lower().endswith(".eaf"):
-        raise HTTPException(status_code=400, detail="Only .eaf files are allowed")
+        raise ElanoraError(ErrorCode.UPLOAD_EXTENSION_REFUSED)
 
     # Upload names are untrusted input. Project uploads are deliberately flat, so
     # accepting path components would permit writes outside of ``elan_files``.
@@ -107,14 +102,13 @@ def validate_elan_file(file: UploadFile) -> UploadFile:
         or "\\" in file.filename
         or "\x00" in file.filename
     ):
-        raise HTTPException(status_code=400, detail="Invalid ELAN filename")
+        raise ElanoraError(ErrorCode.EAF_FILENAME_INVALID)
 
     # Check file size (max 50MB per file - generous for ELAN files)
     max_file_size = ELAN_MAX_FILE_SIZE_MB * 1024 * 1024
     if file.size is not None and file.size > max_file_size:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size is {ELAN_MAX_FILE_SIZE_MB}MB per file",
+        raise ElanoraError(
+            ErrorCode.UPLOAD_FILE_TOO_LARGE, max_mb=ELAN_MAX_FILE_SIZE_MB
         )
 
     logger.info(f"Debug MIME type for file: {file.filename} - {file.content_type}")
@@ -131,10 +125,7 @@ def validate_elan_file(file: UploadFile) -> UploadFile:
         ]
 
         if file.content_type in dangerous_types:
-            raise HTTPException(
-                status_code=400,
-                detail=f"File type '{file.content_type}' is not allowed for security reasons",
-            )
+            raise ElanoraError(ErrorCode.UPLOAD_CONTENT_TYPE_REFUSED)
 
     return file
 
@@ -149,7 +140,7 @@ async def validate_multiple_elan_files(files: list[UploadFile]) -> list[UploadFi
         List of validated files
 
     Raises:
-        HTTPException: If validation fails
+        ElanoraError: If validation fails
 
     """
     max_total_size = _validate_batch_envelope(files)
@@ -162,9 +153,8 @@ async def validate_multiple_elan_files(files: list[UploadFile]) -> list[UploadFi
         validated_files.append(await validate_elan_file_content(file))
         actual_total_size += file.size or 0
         if actual_total_size > max_total_size:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Total upload size too large. Maximum is {ELAN_MAX_BATCH_SIZE_MB}MB",
+            raise ElanoraError(
+                ErrorCode.UPLOAD_BATCH_TOO_LARGE, max_mb=ELAN_MAX_BATCH_SIZE_MB
             )
 
     return validated_files
@@ -180,7 +170,7 @@ async def validate_elan_file_content(file: UploadFile) -> UploadFile:
         The validated file with reset file pointer
 
     Raises:
-        HTTPException: If file content validation fails
+        ElanoraError: If file content validation fails
 
     """
     try:
@@ -194,13 +184,11 @@ async def validate_elan_file_content(file: UploadFile) -> UploadFile:
         remaining = len(e.issues) - 10
         if remaining > 0:
             summary = f"{summary}; and {remaining} more issue(s)"
-        raise HTTPException(
-            status_code=400, detail=f"Invalid ELAN file: {summary}"
-        ) from e
-    except HTTPException:
+        raise ElanoraError(ErrorCode.UPLOAD_EAF_INVALID, summary=summary) from e
+    except (HTTPException, ElanoraError):
         raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail="File validation failed") from e
+        raise ElanoraError(ErrorCode.UPLOAD_VALIDATION_FAILED) from e
 
 
 async def validate_and_record_elan_files(
@@ -225,9 +213,8 @@ async def validate_and_record_elan_files(
         content = await _read_bounded_content(file)
         actual_size += len(content)
         if actual_size > max_batch_size:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Total upload size too large. Maximum is {ELAN_MAX_BATCH_SIZE_MB}MB",
+            raise ElanoraError(
+                ErrorCode.UPLOAD_BATCH_TOO_LARGE, max_mb=ELAN_MAX_BATCH_SIZE_MB
             )
         try:
             if protocol_version is None:
@@ -292,14 +279,10 @@ async def validate_and_record_elan_files(
 
     if rejected:
         await db.commit()
-        detail = EafBatchValidationErrorResponse(
-            message=(
-                "One or more EAF files failed validation. Original bytes were "
-                "preserved for diagnosis; no file in this batch entered project history."
-            ),
-            rejected_files=rejected,
+        raise ElanoraError(
+            ErrorCode.INVALID_EAF_BATCH,
+            rejected_files=[file.model_dump(mode="json") for file in rejected],
         )
-        raise HTTPException(status_code=422, detail=detail.model_dump(mode="json"))
 
     return ValidatedEafBatch(
         files=validated,

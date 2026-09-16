@@ -1,8 +1,9 @@
 """Notification API endpoints."""
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.user import User
@@ -104,17 +105,11 @@ async def update_notification(
             db, notification_id, current_user.user_id
         )
         if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Notification not found or does not belong to user",
-            )
+            raise ElanoraError(ErrorCode.NOTIFICATION_NOT_FOUND)
         return result
 
     # For now, we only support marking as read
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="Only marking notifications as read is currently supported",
-    )
+    raise ElanoraError(ErrorCode.NOTIFICATION_UPDATE_UNSUPPORTED)
 
 
 @router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -128,10 +123,7 @@ async def delete_notification(
         db, notification_id, current_user.user_id
     )
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found or does not belong to user",
-        )
+        raise ElanoraError(ErrorCode.NOTIFICATION_NOT_FOUND)
 
 
 @router.post("/mark-all-read", response_model=MarkAllNotificationsReadResponse)

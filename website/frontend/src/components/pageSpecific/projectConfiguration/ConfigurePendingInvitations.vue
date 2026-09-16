@@ -109,6 +109,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -171,8 +172,11 @@ const loadInvitations = async () => {
     invitations.value = response.data.invitations || [];
   } catch (err) {
     reportClientError('Error loading invitations', err);
-    error.value =
-      err.response?.data?.detail || t('projectSettings.invitations.load_error');
+    error.value = apiErrorMessage(
+      err,
+      t,
+      t('projectSettings.invitations.load_error')
+    );
     invitations.value = [];
   } finally {
     loading.value = false;
@@ -213,7 +217,7 @@ const resendInvitation = async (invitation) => {
   } catch (err) {
     reportClientError('Error resending invitation', err);
     eventMessageStore.addMessage(
-      err.response?.data?.detail || 'projectSettings.invitations.resend_error',
+      apiErrorMessage(err, t, 'projectSettings.invitations.resend_error'),
       'error'
     );
   } finally {
@@ -252,7 +256,7 @@ const cancelInvitation = async (invitation) => {
   } catch (err) {
     reportClientError('Error canceling invitation', err);
     eventMessageStore.addMessage(
-      err.response?.data?.detail || 'projectSettings.invitations.cancel_error',
+      apiErrorMessage(err, t, 'projectSettings.invitations.cancel_error'),
       'error'
     );
   } finally {

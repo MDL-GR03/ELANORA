@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import git_shared
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.elan_validation import validate_and_record_elan_files
 from app.dependency.project_access import (
@@ -103,14 +104,11 @@ async def _prepare_tier_scoped_uploads(
             or Path(source_filename).name != source_filename
             or not source_filename.lower().endswith(".eaf")
         ):
-            raise HTTPException(
-                status_code=400, detail="Research-copy source filename is invalid"
-            )
+            raise ElanoraError(ErrorCode.RESEARCH_COPY_FILENAME_INVALID)
         source = project_files / source_filename
         if not source.is_file():
-            raise HTTPException(
-                status_code=409,
-                detail=f"The source file {source_filename} is no longer available.",
+            raise ElanoraError(
+                ErrorCode.RESEARCH_COPY_SOURCE_MISSING, filename=source_filename
             )
         merged = reintegrate_tier_subset(source.read_bytes(), content)
         selected_tiers = metadata.get("selected_tiers", [])
@@ -142,17 +140,14 @@ async def _prepare_tier_scoped_uploads(
             )
         )
         if topic is None:
-            raise HTTPException(status_code=422, detail="Research topic not found.")
+            raise ElanoraError(ErrorCode.RESEARCH_TOPIC_UNKNOWN)
     embedded_topic_ids = {
         item["topic_id"]
         for item in scoped_files
         if isinstance(item.get("topic_id"), int)
     }
     if declared_topic_id is not None and embedded_topic_ids - {declared_topic_id}:
-        raise HTTPException(
-            status_code=409,
-            detail="The selected research topic does not match the downloaded research copy.",
-        )
+        raise ElanoraError(ErrorCode.RESEARCH_TOPIC_MISMATCH)
     if topic is None and len(embedded_topic_ids) == 1:
         embedded_topic_id = next(iter(embedded_topic_ids))
         topic = await db.scalar(
@@ -162,10 +157,7 @@ async def _prepare_tier_scoped_uploads(
             )
         )
     if len(embedded_topic_ids) > 1:
-        raise HTTPException(
-            status_code=422,
-            detail="Upload research copies from one research topic at a time.",
-        )
+        raise ElanoraError(ErrorCode.RESEARCH_TOPICS_MIXED)
 
     proposed_name = (proposed_topic_name or "").strip()
     if topic is None and not scoped_files and proposed_name:
@@ -182,14 +174,10 @@ async def _prepare_tier_scoped_uploads(
             require_distinct_topic_name(proposed_name, project_topics)
         except SimilarResearchTopicError as exc:
             suggested = exc.topic
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "code": "similar_research_topic",
-                    "message": f'Did you mean the existing topic "{suggested.name}"?',
-                    "suggested_topic_id": getattr(suggested, "topic_id", None),
-                    "suggested_topic_name": suggested.name,
-                },
+            raise ElanoraError(
+                ErrorCode.RESEARCH_TOPIC_SIMILAR,
+                suggested_topic_id=getattr(suggested, "topic_id", None),
+                suggested_topic_name=suggested.name,
             ) from exc
 
     topic_tiers = []
@@ -277,7 +265,7 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
         FileUploadResponse: Details of the uploaded file including filename and timestamp.
 
     Raises:
-        HTTPException: 404 if the project is absent, 422 if EAF validation
+        ElanoraError: 404 if the project is absent, 422 if EAF validation
             fails, or 500 if upload processing fails.
 
     Note:
@@ -288,14 +276,12 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
     try:
         project = await db.get(Project, project_id)
         if project is None:
-            raise HTTPException(status_code=404, detail="Project not found")
+            raise ElanoraError(ErrorCode.PROJECT_NOT_FOUND)
         allow_current_tree = False
         if correction_case_id is not None:
             review_case = await db.get(ReviewCase, correction_case_id)
             if review_case is None or review_case.project_id != project_id:
-                raise HTTPException(
-                    status_code=404, detail="Correction request not found"
-                )
+                raise ElanoraError(ErrorCode.CORRECTION_REQUEST_NOT_FOUND)
             original_upload = (
                 await db.get(PendingUpload, review_case.upload_id)
                 if review_case.upload_id is not None
@@ -306,10 +292,7 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
                 or original_upload is None
                 or original_upload.submitted_by != access.user.user_id
             ):
-                raise HTTPException(
-                    status_code=409,
-                    detail="This correction request cannot accept a new response.",
-                )
+                raise ElanoraError(ErrorCode.CORRECTION_REQUEST_CLOSED)
             allow_current_tree = True
         files, research_context = await _prepare_tier_scoped_uploads(
             files,
@@ -348,50 +331,33 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
         )
         return BatchFileUploadResponse(**result)
     except ProtectedContextModifiedError as e:
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "code": "protected_baseline_modified",
-                "message": "Protected baseline tiers were modified",
-                "filename": e.filename,
-                "tiers": e.tiers,
-            },
+        raise ElanoraError(
+            ErrorCode.PROTECTED_BASELINE_MODIFIED,
+            filename=e.filename,
+            tiers=list(e.tiers),
         ) from e
     except TierReintegrationConflictError as e:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "code": "tier_reintegration_conflict",
-                "message": "Submitted tiers conflict with the accepted file",
-                "filename": e.filename,
-                "tiers": e.tiers,
-            },
+        raise ElanoraError(
+            ErrorCode.TIER_REINTEGRATION_CONFLICT,
+            filename=e.filename,
+            tiers=list(e.tiers),
         ) from e
     except FilenameNotCompliantError as e:
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "code": "filename_not_compliant",
-                "message": (
-                    "This project requires uploaded filenames to follow its "
-                    "naming standard. Rename the file and upload it again."
-                ),
-                "filename": e.filename,
-                "pattern": e.pattern,
-            },
+        raise ElanoraError(
+            ErrorCode.FILENAME_NOT_COMPLIANT,
+            filename=e.filename,
+            pattern=e.pattern,
         ) from e
-    except HTTPException:
+    except (HTTPException, ElanoraError):
         raise
     except (DuplicatePendingContributionError, ContributionAlreadyCurrentError) as e:
-        raise HTTPException(
-            status_code=409, detail="Contribution state conflict"
-        ) from e
+        raise ElanoraError(ErrorCode.CONTRIBUTION_STATE_CONFLICT) from e
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail="Project or file not found") from e
+        raise ElanoraError(ErrorCode.PROJECT_FILE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid project operation") from e
+        raise ElanoraError(ErrorCode.PROJECT_OPERATION_INVALID) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.get(
@@ -410,10 +376,12 @@ async def get_pending_uploads(
             project_name, db
         )
         return PendingUploadsResponse(**result)
+    except ElanoraError:
+        raise
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail="Project or file not found") from e
+        raise ElanoraError(ErrorCode.PROJECT_FILE_NOT_FOUND) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.post(
@@ -428,12 +396,12 @@ async def test_pending_upload(
     """Test whether a pending contribution merges cleanly without changing history."""
     try:
         return git_shared.git_service.test_pending_upload(project_name, branch_name)
+    except ElanoraError:
+        raise
     except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.get(
@@ -454,13 +422,9 @@ async def review_pending_eaf(
         )
         return EafReviewResponse(**comparison_payload(comparison))
     except FileNotFoundError as exc:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from exc
     except (EafReviewUnavailableError, EafValidationError) as exc:
-        raise HTTPException(
-            status_code=422, detail="EAF review is unavailable"
-        ) from exc
+        raise ElanoraError(ErrorCode.EAF_REVIEW_UNAVAILABLE) from exc
 
 
 @router.post(
@@ -486,16 +450,14 @@ async def merge_pending_upload(
         return await git_shared.contribution_change_sets.execute(
             db, change_set.change_set_id
         )
+    except ElanoraError:
+        raise
     except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STATE_CONFLICT
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_STATE_CONFLICT) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.post(
@@ -514,16 +476,14 @@ async def decline_pending_upload(
         return await git_shared.git_service.decline_pending_upload(
             project_name, upload_id, request.reason, db, access.user.user_id
         )
+    except ElanoraError:
+        raise
     except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STATE_CONFLICT
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_STATE_CONFLICT) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.put(
@@ -547,13 +507,9 @@ async def set_contribution_research_topic(
             db,
         )
     except FileNotFoundError as exc:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from exc
     except ValueError as exc:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STATE_CONFLICT
-        ) from exc
+        raise ElanoraError(ErrorCode.PROJECT_STATE_CONFLICT) from exc
 
 
 @router.delete(
@@ -571,13 +527,11 @@ async def dismiss_duplicate_upload(
         return await git_shared.git_service.dismiss_duplicate_upload(
             project_name, upload_id, db, access.user.user_id
         )
+    except ElanoraError:
+        raise
     except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STATE_CONFLICT
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_STATE_CONFLICT) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e

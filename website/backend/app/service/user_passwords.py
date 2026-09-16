@@ -1,11 +1,11 @@
 """Hashing and changing passwords."""
 
 from datetime import UTC, datetime
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.errors import ElanoraError, ErrorCode
 from app.crud.user import update_user_password
 from app.model.user import User
 from app.service.refresh_session import revoke_all_refresh_sessions
@@ -74,36 +74,25 @@ async def verify_current_password(user: User, current_password: str) -> bool:
 
 async def change_password(
     db: AsyncSession, user: User, current_password: str, new_password: str
-) -> dict[str, Any]:
-    """Change user password with current password verification.
+) -> None:
+    """Change a password after checking the current one, ending other sessions.
 
-    Args:
-        db (AsyncSession): Database session.
-        user (User): Current user.
-        current_password (str): Current password.
-        new_password (str): New password.
-
-    Returns:
-        Dict[str, Any]: Change result.
+    Raises:
+        ElanoraError: ``current_password_incorrect`` or
+            ``password_change_failed``.
 
     """
     logger.info("Password change attempted")
-
-    # Verify current password
-    if not verify_password(current_password, user.hashed_password):
+    if not user.hashed_password or not verify_password(
+        current_password, user.hashed_password
+    ):
         logger.warning("Password change failed: incorrect current password")
-        return {"success": False, "message": "Current password is incorrect"}
+        raise ElanoraError(ErrorCode.CURRENT_PASSWORD_INCORRECT)
 
-    # Update password
-    success = await update_password(db, user, new_password, commit=False)
-
-    if success:
-        user.updated_at = datetime.now(UTC)
-        await revoke_all_refresh_sessions(db, user.user_id)
-        await db.commit()
-
-        logger.info("Password changed successfully")
-        return {"success": True, "message": "Password changed successfully"}
-
-    logger.error("Password change failed during update")
-    return {"success": False, "message": "Failed to change password"}
+    if not await update_password(db, user, new_password, commit=False):
+        logger.error("Password change failed during update")
+        raise ElanoraError(ErrorCode.PASSWORD_CHANGE_FAILED)
+    user.updated_at = datetime.now(UTC)
+    await revoke_all_refresh_sessions(db, user.user_id)
+    await db.commit()
+    logger.info("Password changed successfully")

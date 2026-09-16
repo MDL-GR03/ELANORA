@@ -58,36 +58,3 @@ export function passwordRequirementList(password, translate) {
     valid: checks[key],
   }));
 }
-
-/**
- * The translated reason the API refused a password, or null.
- *
- * Refusals arrive as validation errors whose type is `password_<rule>`.
- */
-export function passwordRefusalMessage(error, translate) {
-  const detail = error?.response?.data?.detail;
-  if (!Array.isArray(detail)) return null;
-  const refusal = detail.find((item) =>
-    String(item?.type || '').startsWith('password_')
-  );
-  if (!refusal) return null;
-  const rule = refusal.type.slice('password_'.length);
-  return translate(`passwordPolicy.errors.${rule}`, {
-    min: PASSWORD_MINIMUM_LENGTH,
-    max: PASSWORD_MAXIMUM_BYTES,
-  });
-}
-
-/**
- * What to tell the researcher when a request that sets a password fails: the
- * password refusal if there is one, the server's message if it sent a
- * sentence, otherwise the fallback.
- */
-export function passwordRequestError(error, translate, fallback) {
-  const detail = error?.response?.data?.detail;
-  return (
-    passwordRefusalMessage(error, translate) ||
-    (typeof detail === 'string' && detail) ||
-    fallback
-  );
-}

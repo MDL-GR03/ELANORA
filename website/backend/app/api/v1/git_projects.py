@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import git_shared
 from app.core.error_diagnostics import safe_exception_type
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.elan_validation import validate_and_record_elan_files
 from app.dependency.project_access import (
@@ -45,14 +46,16 @@ async def check_git(user: User = get_admin_dep) -> GitStatusResponse:
         GitStatusResponse: Git availability status, version, and any errors.
 
     Raises:
-        HTTPException: 500 if Git check fails.
+        ElanoraError: 500 if Git check fails.
 
     """
     try:
         result = git_shared.git_service.check_git_availability()
         return GitStatusResponse(**result)
+    except ElanoraError:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.post("/projects/create", response_model=ProjectCreateResponse)
@@ -71,7 +74,7 @@ async def create_project(
         ProjectCreateResponse: Details of the created project including path and Git status.
 
     Raises:
-        HTTPException: 400 if project already exists, 500 if creation fails.
+        ElanoraError: 400 if project already exists, 500 if creation fails.
 
     """
     try:
@@ -83,13 +86,15 @@ async def create_project(
             user.instance_id,
         )
         return ProjectCreateResponse(**result)
+    except ElanoraError:
+        raise
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid project operation") from e
+        raise ElanoraError(ErrorCode.PROJECT_OPERATION_INVALID) from e
     except Exception as e:
         git_shared.logger.error(
             "Unable to create a project; error_type=%s", safe_exception_type(e)
         )
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.get("/projects", response_model=ProjectListResponse)
@@ -141,12 +146,12 @@ async def init_project_from_folder_upload(
             user.instance_id,
         )
         return ProjectCreateResponse(**result)
-    except HTTPException:
+    except (HTTPException, ElanoraError):
         raise
     except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid project operation") from e
+        raise ElanoraError(ErrorCode.PROJECT_OPERATION_INVALID) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.get("/projects/{project_name}/files")
@@ -176,8 +181,10 @@ async def get_project_files(
             ProjectFilesWithMediaResponse if include_media else ProjectFilesResponse
         )
         return response_type(**result)
+    except ElanoraError:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.get("/projects/{project_name}/branches")
@@ -188,10 +195,12 @@ async def get_project_branches(
     try:
         result = git_shared.git_service.get_branches(project_name)
         return result
+    except ElanoraError:
+        raise
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail="Project or file not found") from e
+        raise ElanoraError(ErrorCode.PROJECT_FILE_NOT_FOUND) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.delete("/projects/{project_name}", dependencies=[git_shared.project_lock_dep])
@@ -204,8 +213,10 @@ async def delete_project(
     try:
         await git_shared.git_service.delete_project(project_name, db)
         return {"status": "success", "detail": f"Project '{project_name}' deleted."}
+    except ElanoraError:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.post(
@@ -224,16 +235,16 @@ async def edit_project(
             project_name, req.new_project_name, req.new_project_description, db
         )
         return ProjectEditResponse(**result)
+    except ElanoraError:
+        raise
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail="Project or file not found") from e
+        raise ElanoraError(ErrorCode.PROJECT_FILE_NOT_FOUND) from e
     except ProjectNameUnavailableError as e:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_NAME_UNAVAILABLE
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_NAME_UNAVAILABLE) from e
     except FileExistsError as e:
-        raise HTTPException(status_code=409, detail="Project state conflict") from e
+        raise ElanoraError(ErrorCode.PROJECT_STATE_CONFLICT) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.put("/projects/{project_id}/contribution-policy")

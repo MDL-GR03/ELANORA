@@ -6,9 +6,10 @@ from typing import Any, BinaryIO, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 
 from app.api.v1 import git_projects, git_shared
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.elan_validation import validate_multiple_elan_files
 
 
@@ -46,7 +47,7 @@ async def test_malformed_xml_is_rejected_instead_of_recovered() -> None:
     """Do not silently repair malformed research data during ingestion."""
     file = upload("broken.eaf", b"<ANNOTATION_DOCUMENT><HEADER/><TIME_ORDER>")
 
-    with pytest.raises(HTTPException, match="XML is not well formed"):
+    with pytest.raises(ElanoraError, match="XML is not well formed"):
         await validate_multiple_elan_files([file])
 
 
@@ -56,7 +57,7 @@ async def test_malformed_xml_is_rejected_instead_of_recovered() -> None:
 )
 async def test_path_components_in_upload_name_are_rejected(filename: str) -> None:
     """Keep flat project uploads inside their designated directory."""
-    with pytest.raises(HTTPException, match="Invalid ELAN filename"):
+    with pytest.raises(ElanoraError, match="Select a valid EAF filename"):
         await validate_multiple_elan_files([upload(filename, VALID_EAF)])
 
 
@@ -71,7 +72,7 @@ async def test_doctype_is_rejected() -> None:
 </ANNOTATION_DOCUMENT>
 """
 
-    with pytest.raises(HTTPException, match="document type declarations"):
+    with pytest.raises(ElanoraError, match="document type declarations"):
         await validate_multiple_elan_files([upload("doctype.eaf", content)])
 
 
@@ -88,7 +89,7 @@ async def test_folder_project_import_validates_before_creating_project(
     )
     malformed = upload("broken.eaf", b"<ANNOTATION_DOCUMENT><HEADER/><TIME_ORDER>")
 
-    with pytest.raises(HTTPException) as error:
+    with pytest.raises(ElanoraError) as error:
         await git_projects.init_project_from_folder_upload(
             project_name="research-project",
             description="Research project",
@@ -98,9 +99,11 @@ async def test_folder_project_import_validates_before_creating_project(
         )
 
     assert error.value.status_code == 422
-    assert error.value.detail["code"] == "invalid_eaf_batch"
-    assert error.value.detail["rejected_files"][0]["issue_count"] == 1
-    assert error.value.detail["rejected_files"][0]["issues"][0]["code"] == "xml_syntax"
+    assert error.value.code == ErrorCode.INVALID_EAF_BATCH
+    rejected = error.value.params["rejected_files"]
+    assert isinstance(rejected, list)
+    assert rejected[0]["issue_count"] == 1
+    assert rejected[0]["issues"][0]["code"] == "xml_syntax"
     database.add.assert_called_once()
     database.commit.assert_awaited_once()
     create_project.assert_not_awaited()

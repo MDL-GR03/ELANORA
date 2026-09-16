@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from fastapi import HTTPException
 
+from app.core.errors import ElanoraError
 from app.dependency import project_lock
 from app.dependency.project_lock import acquire_project_write_lock
 from app.service.git import GitService
@@ -76,7 +76,7 @@ async def test_a_writer_that_cannot_get_the_lock_is_told_the_project_is_busy(
     task = asyncio.create_task(holder())
     await holding.wait()
     try:
-        with pytest.raises(HTTPException) as refused:
+        with pytest.raises(ElanoraError) as refused:
             async with acquire_project_write_lock(7, tmp_path):
                 pass
         assert refused.value.status_code == 423

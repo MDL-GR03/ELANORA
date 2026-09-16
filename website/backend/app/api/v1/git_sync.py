@@ -3,11 +3,12 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import git_shared
 from app.core.error_diagnostics import safe_exception_type
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep
 from app.elan.validation import EafValidationError
@@ -35,12 +36,14 @@ async def synchronize_project_check(
         return ProjectSyncCheckResponse(
             **git_shared.git_service.synchronize_project_check(project_name)
         )
+    except ElanoraError:
+        raise
     except Exception as e:
         git_shared.logger.error(
             "Failed to inspect server-side project changes; error_type=%s",
             safe_exception_type(e),
         )
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.post(
@@ -68,12 +71,12 @@ async def synchronize_project(
             status=operation.state,
             operation_id=str(operation.operation_id),
         )
+    except ElanoraError:
+        raise
     except (EafValidationError, ValueError) as e:
-        raise HTTPException(
-            status_code=422, detail=git_shared.INVALID_PROJECT_STATE
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_STATE_INVALID) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
 
 
 @router.get(
@@ -92,9 +95,7 @@ async def list_synchronization_operations(
         )
         return {"operations": [operation_payload(item) for item in operations]}
     except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from e
 
 
 @router.post(
@@ -114,10 +115,6 @@ async def recover_synchronization_operation(
         )
         return operation_payload(operation)
     except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=404, detail=git_shared.PROJECT_RESOURCE_NOT_FOUND
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from e
     except ValueError as e:
-        raise HTTPException(
-            status_code=409, detail=git_shared.PROJECT_STATE_CONFLICT
-        ) from e
+        raise ElanoraError(ErrorCode.PROJECT_STATE_CONFLICT) from e

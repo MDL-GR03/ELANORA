@@ -4,11 +4,12 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from fastapi import HTTPException, UploadFile
+from fastapi import UploadFile
 from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError
 from app.crud.association import get_project_users
 from app.crud.eaf_revision import append_eaf_revision
 from app.dependency.elan_validation import validate_and_record_elan_files
@@ -424,7 +425,7 @@ async def test_upload_boundary_blocks_and_preserves_protocol_violations(
         size=FIXTURE.stat().st_size,
     )
 
-    with pytest.raises(HTTPException) as rejected:
+    with pytest.raises(ElanoraError) as rejected:
         await validate_and_record_elan_files(
             [upload],
             db=session,
@@ -435,9 +436,9 @@ async def test_upload_boundary_blocks_and_preserves_protocol_violations(
         )
 
     assert rejected.value.status_code == 422
-    assert rejected.value.detail["code"] == "invalid_eaf_batch"
+    assert rejected.value.code == "invalid_eaf_batch"
     assert (
-        rejected.value.detail["rejected_files"][0]["issues"][0]["code"]
+        rejected.value.params["rejected_files"][0]["issues"][0]["code"]
         == "protocol.required_tier_missing"
     )
     attempt = await session.scalar(
@@ -737,9 +738,9 @@ async def test_a_pinned_filename_standard_judges_uploads(
         batch = await validate_and_record_elan_files([upload], **arguments)
         assert batch.files == [upload]
         return
-    with pytest.raises(HTTPException) as rejected:
+    with pytest.raises(ElanoraError) as rejected:
         await validate_and_record_elan_files([upload], **arguments)
-    (issue,) = rejected.value.detail["rejected_files"][0]["issues"]
+    (issue,) = rejected.value.params["rejected_files"][0]["issues"]
     assert issue["code"] == "protocol.filename_not_compliant"
 
 

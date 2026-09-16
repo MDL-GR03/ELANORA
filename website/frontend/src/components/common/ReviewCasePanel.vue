@@ -949,6 +949,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import {
   computed,
   nextTick,
@@ -1224,8 +1225,11 @@ async function loadCases(showLoading = true) {
     }
     emit('count-change', activeCount.value);
   } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail || t('reviewCases.errors.load');
+    error.value = apiErrorMessage(
+      requestError,
+      t,
+      t('reviewCases.errors.load')
+    );
   } finally {
     if (showLoading) loading.value = false;
   }
@@ -1261,8 +1265,11 @@ async function createCase() {
     emit('created', created);
     emit('count-change', activeCount.value);
   } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail || t('reviewCases.errors.create');
+    error.value = apiErrorMessage(
+      requestError,
+      t,
+      t('reviewCases.errors.create')
+    );
   } finally {
     busy.value = false;
   }
@@ -1280,8 +1287,11 @@ async function addComment(item) {
     replaceCase(updated);
     replies[item.case_id] = '';
   } catch (requestError) {
-    error.value =
-      requestError?.response?.data?.detail || t('reviewCases.errors.comment');
+    error.value = apiErrorMessage(
+      requestError,
+      t,
+      t('reviewCases.errors.comment')
+    );
   } finally {
     busy.value = false;
   }

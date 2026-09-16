@@ -139,6 +139,7 @@
 </template>
 
 <script>
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -247,9 +248,11 @@ export default {
         }
       } catch (error) {
         reportClientError('Email verification error', error);
-        validationMessage.value =
-          error.response?.data?.detail ||
-          t('emailVerification.errors.verificationFailed');
+        validationMessage.value = apiErrorMessage(
+          error,
+          t,
+          t('emailVerification.errors.verificationFailed')
+        );
       } finally {
         isLoading.value = false;
       }
@@ -280,9 +283,11 @@ export default {
         }
       } catch (error) {
         reportClientError('Resend verification error', error);
-        validationMessage.value =
-          error.response?.data?.detail ||
-          t('emailVerification.errors.resendFailed');
+        validationMessage.value = apiErrorMessage(
+          error,
+          t,
+          t('emailVerification.errors.resendFailed')
+        );
       } finally {
         isResending.value = false;
       }

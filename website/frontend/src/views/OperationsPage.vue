@@ -267,6 +267,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
@@ -366,7 +367,7 @@ async function loadStatus() {
   try {
     status.value = await operationsService.getStatus();
   } catch (error) {
-    loadError.value = error.response?.data?.detail || t('operations.loadError');
+    loadError.value = apiErrorMessage(error, t, t('operations.loadError'));
   } finally {
     loading.value = false;
   }
@@ -379,8 +380,11 @@ async function runStorageCheck() {
   try {
     storageCheck.value = await operationsService.checkStorage();
   } catch (error) {
-    storageError.value =
-      error.response?.data?.detail || t('operations.storage.failed');
+    storageError.value = apiErrorMessage(
+      error,
+      t,
+      t('operations.storage.failed')
+    );
   } finally {
     checkingStorage.value = false;
   }

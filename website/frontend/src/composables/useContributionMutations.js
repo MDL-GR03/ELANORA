@@ -1,10 +1,7 @@
 import { computed, ref } from 'vue';
 
 import gitService from '@/api/service/gitService';
-
-function requestMessage(error, fallback) {
-  return error?.response?.data?.detail || fallback;
-}
+import { apiErrorMessage } from '@/utils/apiError';
 
 export function useContributionMutations({
   currentProjectName,
@@ -34,7 +31,7 @@ export function useContributionMutations({
   }
 
   function fail(requestError, fallback) {
-    error.value = requestMessage(requestError, fallback);
+    error.value = apiErrorMessage(requestError, translate, fallback);
     notify(error.value, 'error');
   }
 

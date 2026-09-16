@@ -97,6 +97,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { ref, computed, onMounted, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import gitService from '@api/service/gitService';
@@ -191,9 +192,11 @@ async function handleEdit() {
     error.value = '';
     emit('edited');
   } catch (e) {
-    error.value =
-      e?.response?.data?.detail ||
-      t('projectsPage.editDialog.errors.editFailed');
+    error.value = apiErrorMessage(
+      e,
+      t,
+      t('projectsPage.editDialog.errors.editFailed')
+    );
   } finally {
     editing.value = false;
   }

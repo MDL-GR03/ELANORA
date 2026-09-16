@@ -2,9 +2,10 @@
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.project_access import authorize_project
 from app.dependency.user import get_user_dep
@@ -40,18 +41,12 @@ async def send_invitation(
         project_name=request.project_name,
     )
     if request.project_permission == ProjectPermission.OWNER:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Owner is a reserved permission",
-        )
+        raise ElanoraError(ErrorCode.OWNER_PERMISSION_RESERVED)
     if (
         access.permission == ProjectPermission.ADMIN
         and request.project_permission == ProjectPermission.ADMIN
     ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only an institution administrator can invite project administrators",
-        )
+        raise ElanoraError(ErrorCode.INVITE_ADMIN_FORBIDDEN)
 
     try:
         result = await invitation_issuing.send_invitation(
@@ -89,10 +84,7 @@ async def get_sent_invitations(
     """Get invitations sent by the current user (Admin only)."""
     # Check if user is admin
     if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can view sent invitations",
-        )
+        raise ElanoraError(ErrorCode.INVITATIONS_ADMIN_ONLY)
 
     return await invitation_queries.sent_invitations(
         db=db,
@@ -109,10 +101,7 @@ async def get_received_invitations(
     """Get invitations received by email (Admin only or own email)."""
     # Check if user is admin or requesting their own invitations
     if user.role != UserRole.ADMIN and user.email != email:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only view your own invitations",
-        )
+        raise ElanoraError(ErrorCode.INVITATIONS_OWN_ONLY)
 
     return await invitation_queries.user_invitations(
         db=db,
@@ -186,10 +175,7 @@ async def resend_invitation(
     """Resend an invitation (Admin only)."""
     # Check if user is admin
     if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can resend invitations",
-        )
+        raise ElanoraError(ErrorCode.INVITATIONS_ADMIN_ONLY)
 
     return await invitation_issuing.resend_invitation(
         db=db,
@@ -208,10 +194,7 @@ async def cancel_invitation(
     """Cancel an invitation (Admin only)."""
     # Check if user is admin
     if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can cancel invitations",
-        )
+        raise ElanoraError(ErrorCode.INVITATIONS_ADMIN_ONLY)
 
     return await invitation_issuing.cancel_invitation(
         db=db,

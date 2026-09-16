@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.errors import ElanoraError, ErrorCode
 from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep
 from app.schema.requests.file_type import (
@@ -47,7 +48,7 @@ async def remove_file_type_from_project(
     )
     ft = next((ft for ft in project_file_types if ft.id == project_file_type_id), None)
     if not ft:
-        raise HTTPException(status_code=404, detail="File type not found in project")
+        raise ElanoraError(ErrorCode.FILE_TYPE_NOT_FOUND)
     extension = ft.file_type.extension if ft.file_type else None
 
     # Actually delete the association

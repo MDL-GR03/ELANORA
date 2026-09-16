@@ -1,3 +1,4 @@
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, ref, toValue } from 'vue';
 
 import { useAddressVerification } from '@/composables/useAddressVerification';
@@ -136,7 +137,7 @@ export function useAddressProfileEditor({
     } catch (error) {
       reportClientError('Error updating address', error);
       emit('show-message', {
-        text: error.response?.data?.detail || t('profile.address.save_failed'),
+        text: apiErrorMessage(error, t, t('profile.address.save_failed')),
         type: 'error',
       });
     } finally {

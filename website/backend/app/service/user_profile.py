@@ -1,11 +1,11 @@
 """Updating a researcher's own profile."""
 
 from datetime import UTC, datetime
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
+from app.core.errors import ElanoraError, ErrorCode
 from app.crud.user import update_user_profile
 from app.model.user import User
 from app.schema.requests.user import ProfileUpdateRequest
@@ -18,74 +18,49 @@ async def update_profile(
     db: AsyncSession,
     user: User,
     profile_data: ProfileUpdateRequest,
-) -> dict[str, Any]:
-    """Update user profile with validation."""
-    try:
-        logger.info("Updating an account profile")
+) -> list[str]:
+    """Update the fields a researcher sent, returning their names.
 
-        # Prepare update fields
-        update_fields: dict[str, Any] = {}
-        updated_field_names: list[str] = []
+    Raises:
+        ElanoraError: ``username_taken`` or ``profile_no_changes``.
 
-        field_mapping = {
-            "username": profile_data.username,
-            "email": profile_data.email,
-            "first_name": profile_data.first_name,
-            "last_name": profile_data.last_name,
-            "phone_number": profile_data.phone_number,
-            "affiliation": profile_data.affiliation,
-            "department": profile_data.department,
-        }
+    """
+    logger.info("Updating an account profile")
+    if profile_data.username is not None and not (
+        await check_username_availability_for_update(
+            db, profile_data.username, user.user_id
+        )
+    ):
+        logger.warning("Username already taken during profile update")
+        raise ElanoraError(ErrorCode.USERNAME_TAKEN)
 
-        # Special validation for username if provided
-        if profile_data.username is not None:
-            # Check if username is already taken by another user (exclude current user)
-            username_available = await check_username_availability_for_update(
-                db, profile_data.username, user.user_id
-            )
-            if not username_available:
-                logger.warning("Username already taken during profile update")
-                return {
-                    "success": False,
-                    "message": "Username already taken",
-                    "updated_fields": [],
-                }
-
-        for field_name, field_value in field_mapping.items():
-            if field_value is not None:
-                update_fields[field_name] = field_value
-                updated_field_names.append(field_name)
-
-        if not update_fields:
-            logger.warning("Profile update attempted with no fields to update")
-            return {
-                "success": False,
-                "message": "No fields to update",
-                "updated_fields": [],
+    update_fields: dict[str, object] = {
+        name: value
+        for name, value in profile_data.model_dump(
+            include={
+                "username",
+                "email",
+                "first_name",
+                "last_name",
+                "phone_number",
+                "affiliation",
+                "department",
             }
+        ).items()
+        if value is not None
+    }
+    if not update_fields:
+        logger.warning("Profile update attempted with no fields to update")
+        raise ElanoraError(ErrorCode.PROFILE_NO_CHANGES)
 
-        update_fields["updated_at"] = datetime.now(UTC)
-
-        # Update in database
-        success = await update_user_profile(db, user, **update_fields)
-
-        if success:
-            await db.commit()
-            logger.info(
-                "Account profile updated successfully; fields=%s",
-                updated_field_names,
-            )
-        else:
-            await db.rollback()
-            logger.error("Account profile update failed")
-
-        return {
-            "success": success,
-            "message": "Profile updated successfully"
-            if success
-            else "Profile update failed",
-            "updated_fields": updated_field_names if success else [],
-        }
+    updated_field_names = list(update_fields)
+    update_fields["updated_at"] = datetime.now(UTC)
+    try:
+        if not await update_user_profile(db, user, **update_fields):
+            raise ElanoraError(ErrorCode.PROFILE_UPDATE_FAILED)
+        await db.commit()
     except Exception:
         await db.rollback()
         raise
+    logger.info("Account profile updated successfully; fields=%s", updated_field_names)
+    return updated_field_names

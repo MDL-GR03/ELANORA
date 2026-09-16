@@ -133,9 +133,9 @@ async def test_an_invalid_eaf_is_refused_with_its_findings(
     response = await browser.upload(project_id, "session-002.eaf", broken)
 
     assert response.status_code == 422, response.text
-    detail = response.json()["detail"]
-    assert detail["code"] == "invalid_eaf_batch"
-    (rejected,) = detail["rejected_files"]
+    body = response.json()
+    assert body["code"] == "invalid_eaf_batch"
+    (rejected,) = body["params"]["rejected_files"]
     assert rejected["filename"] == "session-002.eaf"
     assert "unknown_annotation_ref" in {issue["code"] for issue in rejected["issues"]}
 

@@ -151,15 +151,13 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { useI18n } from 'vue-i18n';
 import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import setupService from '@/api/service/setupService';
 import AppSelect from '@/components/common/AppSelect.vue';
-import {
-  PASSWORD_MINIMUM_LENGTH,
-  passwordRequestError,
-} from '@/utils/passwordPolicy';
+import { PASSWORD_MINIMUM_LENGTH } from '@/utils/passwordPolicy';
 import { useAppInfoStore } from '@/stores/appInfo';
 
 const { t } = useI18n();
@@ -217,11 +215,7 @@ async function submit() {
     appInfoStore.setInstance(result.instance);
     window.location.assign(router.resolve({ name: 'LoginPage' }).href);
   } catch (requestError) {
-    error.value = passwordRequestError(
-      requestError,
-      t,
-      t('setup.errors.failed')
-    );
+    error.value = apiErrorMessage(requestError, t, t('setup.errors.failed'));
   } finally {
     submitting.value = false;
   }

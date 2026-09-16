@@ -254,6 +254,7 @@
 </template>
 
 <script setup>
+import { apiErrorMessage } from '@/utils/apiError';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useEventMessageStore } from '@stores/eventMessage';
@@ -412,8 +413,7 @@ const handleInvitationError = (error) => {
   } else if (error.response?.status === 400) {
     // Bad request - could be validation error
     eventMessageStore.addMessage(
-      error.response?.data?.detail ||
-        'project.share.invitation_send_error_generic',
+      apiErrorMessage(error, t, 'project.share.invitation_send_error_generic'),
       'error'
     );
   } else {
