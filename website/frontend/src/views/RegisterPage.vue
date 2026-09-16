@@ -699,6 +699,7 @@ import {
   validateRegistrationForm,
 } from '@/utils/registrationValidation';
 import { useAddressVerification } from '@/composables/useAddressVerification';
+import { useAvailabilityCheck } from '@/composables/useAvailabilityCheck';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -741,17 +742,33 @@ const form = ref({
   },
 });
 
-// Username availability check
-const usernameAvailable = ref(null);
-const usernameCheckLoading = ref(false);
-const usernameCheckMessage = ref('');
-let usernameCheckTimeout = null;
+// Is this username or email address still free?
+const {
+  available: usernameAvailable,
+  checking: usernameCheckLoading,
+  message: usernameCheckMessage,
+  reset: resetUsernameAvailability,
+  request: requestUsernameAvailability,
+} = useAvailabilityCheck({
+  check: checkUsernameAvailability,
+  translate: t,
+  errorKey: 'register.username_check_error',
+  minimumLength: 3,
+  reportError: reportClientError,
+});
 
-// Email availability check
-const emailAvailable = ref(null);
-const emailCheckLoading = ref(false);
-const emailCheckMessage = ref('');
-let emailCheckTimeout = null;
+const {
+  available: emailAvailable,
+  checking: emailCheckLoading,
+  message: emailCheckMessage,
+  reset: resetEmailAvailability,
+  request: requestEmailAvailability,
+} = useAvailabilityCheck({
+  check: checkEmailAvailability,
+  translate: t,
+  errorKey: 'register.email_check_error',
+  reportError: reportClientError,
+});
 
 // Form validation
 const validationErrors = ref({});
@@ -828,14 +845,12 @@ const isFormValid = computed(() => {
 // Input handlers
 const onUsernameInput = () => {
   validationErrors.value.username = '';
-  usernameAvailable.value = null;
-  usernameCheckMessage.value = '';
+  resetUsernameAvailability();
 };
 
 const onEmailInput = () => {
   validationErrors.value.email = '';
-  emailAvailable.value = null;
-  emailCheckMessage.value = '';
+  resetEmailAvailability();
 };
 
 const onPasswordInput = () => {
@@ -1068,60 +1083,23 @@ const handleRegister = async () => {
   }
 };
 
-// Username availability check
 watch(
   () => form.value.username,
-  (newUsername) => {
-    usernameAvailable.value = null;
-    usernameCheckMessage.value = '';
-    if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+  (username) => {
     validateField('username');
-    if (
-      !newUsername ||
-      newUsername.length < 3 ||
-      validationErrors.value.username
-    )
-      return;
-    usernameCheckLoading.value = true;
-    usernameCheckTimeout = setTimeout(async () => {
-      try {
-        const res = await checkUsernameAvailability(newUsername);
-        usernameAvailable.value = res.available;
-        usernameCheckMessage.value = res.message;
-      } catch (e) {
-        reportClientError('Username availability check error', e);
-        usernameAvailable.value = null;
-        usernameCheckMessage.value = t('register.username_check_error');
-      } finally {
-        usernameCheckLoading.value = false;
-      }
-    }, 500);
+    requestUsernameAvailability(username, {
+      skip: Boolean(validationErrors.value.username),
+    });
   }
 );
 
-// Email availability check
 watch(
   () => form.value.email,
-  (newEmail) => {
-    emailAvailable.value = null;
-    emailCheckMessage.value = '';
-    if (emailCheckTimeout) clearTimeout(emailCheckTimeout);
+  (email) => {
     validateField('email');
-    if (!newEmail || validationErrors.value.email) return;
-    emailCheckLoading.value = true;
-    emailCheckTimeout = setTimeout(async () => {
-      try {
-        const res = await checkEmailAvailability(newEmail);
-        emailAvailable.value = res.available;
-        emailCheckMessage.value = res.message;
-      } catch (e) {
-        reportClientError('Email availability check error', e);
-        emailAvailable.value = null;
-        emailCheckMessage.value = t('register.email_check_error');
-      } finally {
-        emailCheckLoading.value = false;
-      }
-    }, 500);
+    requestEmailAvailability(email, {
+      skip: Boolean(validationErrors.value.email),
+    });
   }
 );
 </script>
