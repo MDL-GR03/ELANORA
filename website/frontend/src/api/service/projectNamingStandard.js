@@ -4,19 +4,11 @@ export default {
   async getStandardsByProject(projectId) {
     return axiosInstance.get(`/project-naming-standard/project/${projectId}`);
   },
-  async getStandardWithComponents(standardId) {
-    return axiosInstance.get(`/project-naming-standard/${standardId}`);
-  },
   async createStandardWithComponents(payload) {
     return axiosInstance.post('/project-naming-standard/create', payload);
   },
   async deleteStandard(standardId) {
     return axiosInstance.delete(`/project-naming-standard/${standardId}`);
-  },
-  async getComponentNames(projectId) {
-    return axiosInstance.get(
-      `/project-naming-standard/project/${projectId}/component-names`
-    );
   },
   async getProjectNamingStandardsFull(projectId) {
     return axiosInstance.get(

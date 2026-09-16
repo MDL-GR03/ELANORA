@@ -12,14 +12,6 @@ export default {
       `/file-type/project/${projectId}/file_type/${fileTypeId}`
     );
   },
-  async importPreview(sourceProjectId, targetProjectId) {
-    return axiosInstance.get(`/file-type/import_preview/`, {
-      params: {
-        source_project_id: sourceProjectId,
-        target_project_id: targetProjectId,
-      },
-    });
-  },
   async importSelected(sourceProjectId, targetProjectId, fileTypeNames) {
     return axiosInstance.post(
       `/file-type/import_selected/?source_project_id=${sourceProjectId}&target_project_id=${targetProjectId}`,

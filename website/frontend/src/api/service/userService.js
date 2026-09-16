@@ -16,14 +16,6 @@ export async function fetchUserProfile() {
   return await axiosInstance.get('/user/me/profile');
 }
 
-/**
- * Fetch all active users.
- * @returns {Promise<import('axios').AxiosResponse>}
- */
-export async function fetchActiveUsers() {
-  return await axiosInstance.get('/user/active');
-}
-
 /** Fetch every institution account for administrator lifecycle management. */
 export async function fetchInstitutionAccounts() {
   return await axiosInstance.get('/user/admin/accounts');

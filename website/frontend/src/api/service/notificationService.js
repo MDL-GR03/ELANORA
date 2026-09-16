@@ -25,20 +25,6 @@ const notificationService = {
   },
 
   /**
-   * Create a new notification
-   * @param {Object} notificationData - The notification data
-   * @param {number} notificationData.user_id - The ID of the user receiving the notification
-   * @param {string} notificationData.title - The title of the notification
-   * @param {string} notificationData.message - The message content of the notification
-   * @param {string} notificationData.action_url - Optional URL for the notification action
-   * @returns {Promise} Promise that resolves to the created notification
-   */
-  async createNotification(notificationData) {
-    const response = await apiClient.post('/notifications/', notificationData);
-    return response.data;
-  },
-
-  /**
    * Mark a notification as read
    * @param {number} notificationId - The ID of the notification to mark as read
    * @returns {Promise} Promise that resolves to the updated notification

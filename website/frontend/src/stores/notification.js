@@ -145,27 +145,6 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   };
 
-  const addNotification = (notification) => {
-    // Add a new notification to the beginning of the list
-    notifications.value.unshift(notification);
-    // Update stats (increment unread count)
-    stats.value.unread_notifications += 1;
-    stats.value.total_notifications += 1;
-  };
-
-  const clearError = () => {
-    error.value = null;
-  };
-
-  const clearNotifications = () => {
-    notifications.value = [];
-    stats.value = {
-      total_notifications: 0,
-      unread_notifications: 0,
-      read_notifications: 0,
-    };
-  };
-
   return {
     // State
     notifications,
@@ -188,8 +167,5 @@ export const useNotificationStore = defineStore('notification', () => {
     deleteNotification,
     fetchNotificationPreferences,
     updateNotificationPreferences,
-    addNotification,
-    clearError,
-    clearNotifications,
   };
 });

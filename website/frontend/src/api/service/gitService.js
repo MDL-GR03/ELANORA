@@ -3,10 +3,6 @@ import axiosInstance from '@/api/apiClient';
 const GIT_PREFIX = '/git';
 const gitService = {
   // Check if Git is available
-  async checkGit() {
-    const { data } = await axiosInstance.get(`${GIT_PREFIX}/check`);
-    return data;
-  },
   // List all projects for the instance
   async listProjects() {
     const { data } = await axiosInstance.get(`${GIT_PREFIX}/projects`);
@@ -70,13 +66,6 @@ const gitService = {
   },
 
   // Get all branches for a project
-  async getBranches(projectName) {
-    const { data } = await axiosInstance.get(
-      `${GIT_PREFIX}/projects/${encodeURIComponent(projectName)}/branches`
-    );
-    return data;
-  },
-
   // Resolve conflicts and merge a branch
   async getPendingUploadsWithStatus(projectName) {
     const { data } = await axiosInstance.get(
