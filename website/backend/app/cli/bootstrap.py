@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import getpass
+import sys
 from dataclasses import dataclass
 
 from sqlalchemy import func, select
@@ -96,16 +97,37 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--admin-last-name", required=True)
     parser.add_argument("--admin-affiliation", required=True)
     parser.add_argument("--admin-department", required=True)
+    parser.add_argument(
+        "--password-stdin",
+        action="store_true",
+        help="Read the administrator password from standard input, for guided setup",
+    )
     return parser.parse_args()
+
+
+def read_password(*, from_stdin: bool) -> str:
+    """Take the first administrator's password from setup or from a person.
+
+    Guided setup has no terminal to prompt at, so it pipes the password in.
+    Someone running this by hand types it twice instead.
+    """
+    if from_stdin:
+        password = sys.stdin.readline().strip()
+    else:
+        password = getpass.getpass("Initial administrator password: ")
+        if password != getpass.getpass("Confirm administrator password: "):
+            raise ValueError("password confirmation does not match")
+    if not password:
+        raise ValueError("administrator password must not be empty")
+    return password
 
 
 async def _main() -> None:
     arguments = _arguments()
-    password = getpass.getpass("Initial administrator password: ")
-    confirmation = getpass.getpass("Confirm administrator password: ")
-    if password != confirmation:
-        raise ValueError("password confirmation does not match")
-    config = BootstrapConfig(**vars(arguments))
+    password = read_password(from_stdin=arguments.password_stdin)
+    settings = vars(arguments) | {}
+    settings.pop("password_stdin")
+    config = BootstrapConfig(**settings)
 
     init_database()
     try:

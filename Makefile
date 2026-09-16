@@ -8,10 +8,14 @@ export ELANORA_DEV_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-dispatch-change-sets dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-recovery test-e2e legacy-validate legacy-status legacy-down security-check backend-check frontend-check check
+.PHONY: help install install-check dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-dispatch-change-sets dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-recovery test-e2e legacy-validate legacy-status legacy-down security-check backend-check frontend-check check
 
 help:
-	@echo "ELANORA development commands"
+	@echo "ELANORA commands"
+	@echo "  make install        Install ELANORA for an institution (guided)"
+	@echo "  make install-check  Verify an installation's prerequisites only"
+	@echo ""
+	@echo "Development commands"
 	@echo "  make dev-up         Build, migrate, and start the local website"
 	@echo "  make dev-bootstrap  Create the first local institution administrator"
 	@echo "  make dev-reset-password  Set a new password for ELANORA_USER (default: MDL)"
@@ -130,6 +134,12 @@ test-recovery:
 
 test-e2e:
 	cd website/frontend && npm run test:e2e
+
+install:
+	sh installer/install.sh $(INSTALL_ARGS)
+
+install-check:
+	sh installer/install.sh --check
 
 legacy-validate:
 	$(LEGACY_COMPOSE) build importer
