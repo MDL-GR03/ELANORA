@@ -125,6 +125,7 @@ class ElanService:
         project_id: int,
         *,
         commit_changes: bool = True,
+        replace_existing_tiers: bool = False,
     ) -> int:
         """Store parsed ELAN file data in the database and sync associations."""
         logger.info("Storing parsed ELAN file data")
@@ -141,60 +142,8 @@ class ElanService:
                 raw_xml=file_info["raw_xml"],
                 created_by=user_id,
             )
-
-            # Store tiers and annotations (this sets tier["tier_id"])
-            await self._store_tiers_and_annotations(file_info["tiers"], elan_id)
-
-            # Now that tiers have IDs, sync associations
-            tier_ids = [tier["tier_id"] for tier in file_info["tiers"]]
-            await sync_elan_file_to_tiers(self.db, elan_id, tier_ids)
-
-            if commit_changes:
-                await self.db.commit()
-            else:
-                await self.db.flush()
-            logger.info("Successfully stored parsed ELAN file data")
-            return elan_id
-
-        except Exception as e:
-            if commit_changes:
-                await self.db.rollback()
-            logger.error(
-                "Failed to store ELAN file data; error_type=%s",
-                safe_exception_type(e),
-            )
-            raise
-
-    async def update_elan_file_data(
-        self,
-        file_info: dict,
-        user_id: int,
-        project_id: int,
-        *,
-        commit_changes: bool = True,
-    ) -> int:
-        """Store parsed ELAN file data in the database and sync associations."""
-        logger.info("Storing parsed ELAN file data")
-        try:
-            existing_file = await get_elan_file_by_filename_and_project(
-                self.db, file_info["filename"], project_id
-            )
-            if existing_file:
-                logger.info("Updating an existing ELAN file")
-            else:
-                logger.info("No existing ELAN file record was found")
-            # Store all ELAN file data and associations using CRUD
-            elan_id = await store_elan_file_data_in_db(
-                self.db, file_info, user_id, project_id
-            )
-            await append_eaf_revision(
-                self.db,
-                elan_id=elan_id,
-                sha256=file_info["sha256"],
-                raw_xml=file_info["raw_xml"],
-                created_by=user_id,
-            )
-            await delete_tiers_for_elan_file(self.db, elan_id)
+            if replace_existing_tiers:
+                await delete_tiers_for_elan_file(self.db, elan_id)
 
             # Store tiers and annotations (this sets tier["tier_id"])
             await self._store_tiers_and_annotations(file_info["tiers"], elan_id)
@@ -291,11 +240,12 @@ class ElanService:
         logger.debug("Updating an ELAN file for a project")
 
         file_info = self.parse_elan_file(file_path)
-        elan_id = await self.update_elan_file_data(
+        elan_id = await self.store_elan_file_data(
             file_info,
             user_id,
             project.project_id,
             commit_changes=commit_changes,
+            replace_existing_tiers=True,
         )
         logger.info("Successfully updated one ELAN file")
         return {"status": "updated", "filename": filename, "elan_id": elan_id}

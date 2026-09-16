@@ -43,7 +43,6 @@ from app.service.project_recovery import ProjectRecoveryService
 from app.storage.paths import safe_project_path
 
 logger = get_logger()
-EXPECTED_LOG_FIELDS = 4
 MIN_RECOVERY_REASON_LENGTH = 10
 MIN_NAME_STATUS_FIELDS = 2
 

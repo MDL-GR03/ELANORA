@@ -5,8 +5,6 @@ from app.core.centralized_logging import get_logger
 
 logger = get_logger()
 NAME_STATUS_FIELD_COUNT = 2
-EXCERPT_LINE_LIMIT = 10
-SIMPLE_CONFLICT_LINE_LIMIT = 5
 
 
 class GitDiffParser:

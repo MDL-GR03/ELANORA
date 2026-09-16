@@ -10,13 +10,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.error_diagnostics import safe_failure_summary
 from app.crud.project import get_project_by_name
 from app.model.audit_event import AuditEvent
+from app.model.project import Project
 from app.model.project_sync_operation import ProjectSyncOperation
+from app.service.git_command_runner import GitCommandRunner
 from app.service.project_revision import append_project_revision
 from app.storage.paths import safe_project_path
 from app.storage.sync_evidence import SyncEvidenceStore
 
 if TYPE_CHECKING:
     from app.service.git import GitService
+
+
+EVIDENCE_RETENTION = timedelta(days=30)
 
 
 class ProjectSyncCoordinator:
@@ -31,29 +36,10 @@ class ProjectSyncCoordinator:
     async def execute(
         self, project_name: str, db: AsyncSession, user_id: int
     ) -> ProjectSyncOperation:
-        project = await get_project_by_name(db, project_name)
-        if project is None:
-            raise FileNotFoundError("Project not found")
-        preview = self.git.synchronize_project_check(project_name)
-        changes = [dict(item) for item in preview.get("files_status", [])]
-        runner = self.git.command_runner(project_name)
-        operation = ProjectSyncOperation(
-            project_id=project.project_id,
-            initiated_by=user_id,
-            state="preparing",
-            changes=changes,
-            starting_commit=runner.canonical_head(),
-        )
-        db.add(operation)
-        await db.commit()
+        project, operation, runner = await self._begin(project_name, db, user_id)
         try:
-            project_path = safe_project_path(self.git.base_path, project_name)
-            staging_key, manifest = self.evidence.preserve(
-                operation.operation_id, project_path, changes
-            )
-            self.git.validate_sync_changes(project_name, changes)
-            operation.staging_key = staging_key
-            operation.evidence_manifest = manifest
+            self._preserve_evidence(project_name, operation)
+            self.git.validate_sync_changes(project_name, operation.changes)
             operation.state = "prepared"
             await db.commit()
             operation.state = "committing"
@@ -76,7 +62,7 @@ class ProjectSyncCoordinator:
             )
             operation.state = "completed"
             operation.completed_at = datetime.now(UTC)
-            operation.evidence_expires_at = datetime.now(UTC) + timedelta(days=30)
+            operation.evidence_expires_at = datetime.now(UTC) + EVIDENCE_RETENTION
             self._add_audit(db, operation, "project.server_sync.completed")
             await db.commit()
             return operation
@@ -86,15 +72,7 @@ class ProjectSyncCoordinator:
                 ProjectSyncOperation, operation.operation_id
             )
             if refreshed_operation is not None:
-                head = runner.canonical_head()
-                refreshed_operation.state = (
-                    "recovery_required"
-                    if head != operation.starting_commit
-                    else "failed"
-                )
-                refreshed_operation.resulting_commit = (
-                    head if head != operation.starting_commit else None
-                )
+                self._settle_interrupted(refreshed_operation, runner.canonical_head())
                 refreshed_operation.error = safe_failure_summary(
                     error, operation="Project synchronization failed"
                 )
@@ -130,17 +108,10 @@ class ProjectSyncCoordinator:
                 self._add_audit(db, operation, "project.server_sync.failed")
                 changed = True
             elif operation.state == "committing":
-                runner = self.git.command_runner(project_name)
-                head = runner.canonical_head()
-                operation.state = (
-                    "recovery_required"
-                    if head != operation.starting_commit
-                    else "failed"
+                self._settle_interrupted(
+                    operation, self.git.command_runner(project_name).canonical_head()
                 )
                 operation.error = "The process stopped before recording a final outcome"
-                operation.resulting_commit = (
-                    head if head != operation.starting_commit else None
-                )
                 self._add_audit(db, operation, f"project.server_sync.{operation.state}")
                 changed = True
             if (
@@ -197,7 +168,7 @@ class ProjectSyncCoordinator:
         operation.resulting_commit = head
         operation.error = None
         operation.completed_at = datetime.now(UTC)
-        operation.evidence_expires_at = datetime.now(UTC) + timedelta(days=30)
+        operation.evidence_expires_at = datetime.now(UTC) + EVIDENCE_RETENTION
         self._add_audit(db, operation, "project.server_sync.recovered")
         await db.commit()
         return operation
@@ -206,34 +177,15 @@ class ProjectSyncCoordinator:
         self, project_name: str, db: AsyncSession, user_id: int
     ) -> ProjectSyncOperation:
         """Preserve evidence, then discard exceptional server-side changes."""
-        project = await get_project_by_name(db, project_name)
-        if project is None:
-            raise FileNotFoundError("Project not found")
-        preview = self.git.synchronize_project_check(project_name)
-        changes = [dict(item) for item in preview.get("files_status", [])]
-        runner = self.git.command_runner(project_name)
-        operation = ProjectSyncOperation(
-            project_id=project.project_id,
-            initiated_by=user_id,
-            state="preparing",
-            changes=changes,
-            starting_commit=runner.canonical_head(),
-        )
-        db.add(operation)
-        await db.commit()
+        _, operation, _ = await self._begin(project_name, db, user_id)
         try:
-            project_path = safe_project_path(self.git.base_path, project_name)
-            staging_key, manifest = self.evidence.preserve(
-                operation.operation_id, project_path, changes
-            )
-            operation.staging_key = staging_key
-            operation.evidence_manifest = manifest
+            self._preserve_evidence(project_name, operation)
             operation.state = "prepared"
             await db.commit()
             self.git.discard_local_changes(project_name)
             operation.state = "discarded"
             operation.completed_at = datetime.now(UTC)
-            operation.evidence_expires_at = datetime.now(UTC) + timedelta(days=30)
+            operation.evidence_expires_at = datetime.now(UTC) + EVIDENCE_RETENTION
             self._add_audit(db, operation, "project.server_sync.discarded")
             await db.commit()
             return operation
@@ -250,6 +202,42 @@ class ProjectSyncCoordinator:
                 self._add_audit(db, refreshed_operation, "project.server_sync.failed")
                 await db.commit()
             raise
+
+    async def _begin(
+        self, project_name: str, db: AsyncSession, user_id: int
+    ) -> tuple[Project, ProjectSyncOperation, GitCommandRunner]:
+        """Record the intent before touching anything, so a crash leaves a trace."""
+        project = await get_project_by_name(db, project_name)
+        if project is None:
+            raise FileNotFoundError("Project not found")
+        preview = self.git.synchronize_project_check(project_name)
+        runner = self.git.command_runner(project_name)
+        operation = ProjectSyncOperation(
+            project_id=project.project_id,
+            initiated_by=user_id,
+            state="preparing",
+            changes=[dict(item) for item in preview.get("files_status", [])],
+            starting_commit=runner.canonical_head(),
+        )
+        db.add(operation)
+        await db.commit()
+        return project, operation, runner
+
+    def _preserve_evidence(
+        self, project_name: str, operation: ProjectSyncOperation
+    ) -> None:
+        """Copy the server-side changes aside before they are accepted or discarded."""
+        project_path = safe_project_path(self.git.base_path, project_name)
+        operation.staging_key, operation.evidence_manifest = self.evidence.preserve(
+            operation.operation_id, project_path, operation.changes
+        )
+
+    @staticmethod
+    def _settle_interrupted(operation: ProjectSyncOperation, head: str) -> None:
+        """Classify a commit that never finished by whether Git history moved."""
+        moved = head != operation.starting_commit
+        operation.state = "recovery_required" if moved else "failed"
+        operation.resulting_commit = head if moved else None
 
     @staticmethod
     def _add_audit(

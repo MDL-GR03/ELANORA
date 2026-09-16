@@ -29,6 +29,20 @@ from app.model.project_file_type import ProjectFileType
 logger = get_logger(__name__)
 
 
+def file_type_in_use() -> HTTPException:
+    """A file type a naming standard still refers to cannot be deleted."""
+    return HTTPException(
+        status_code=409,
+        detail={
+            "error": "file_type_in_use",
+            "message": (
+                "Cannot delete: This file type is used by a naming standard or "
+                "component. Please delete the related naming standard first."
+            ),
+        },
+    )
+
+
 class FileTypeService:
     @staticmethod
     async def create_file_type(db: AsyncSession, name: str, extension: str) -> FileType:
@@ -62,13 +76,7 @@ class FileTypeService:
             await db.rollback()
             # Check for the specific constraint name
             if "fk_project_file_type" in str(exc.orig):
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "error": "file_type_in_use",
-                        "message": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first.",
-                    },
-                ) from exc
+                raise file_type_in_use() from exc
             raise
         except Exception:
             await db.rollback()
@@ -176,13 +184,7 @@ class FileTypeService:
         except IntegrityError as exc:
             await db.rollback()
             if "fk_project_file_type" in str(exc.orig):
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "error": "file_type_in_use",
-                        "message": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first.",
-                    },
-                ) from exc
+                raise file_type_in_use() from exc
             raise
         except Exception:
             await db.rollback()

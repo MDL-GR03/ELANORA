@@ -31,8 +31,6 @@ from app.service.protocol_errors import (
 )
 from app.service.protocol_shared import _rules_checksum, _rules_dict, _scoped_version
 
-FULL_COVERAGE_PERCENT = 100.0
-
 
 async def create_protocol(
     db: AsyncSession,

@@ -35,8 +35,6 @@ from app.service.protocol_evaluation import (
 )
 from app.service.protocol_shared import _scoped_version
 
-FULL_COVERAGE_PERCENT = 100.0
-
 
 async def validate_revision(
     db: AsyncSession,

@@ -4,10 +4,12 @@ import hashlib
 import json
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.model.eaf_revision import EafRevision
+from app.model.elan_file import ElanFile
 from app.model.enums import (
     ProtocolVersionStatus,
 )
@@ -24,7 +26,33 @@ from app.service.protocol_errors import (
     ProtocolNotFoundError,
 )
 
-FULL_COVERAGE_PERCENT = 100.0
+
+async def latest_project_revisions(
+    db: AsyncSession, project: Project
+) -> list[EafRevision]:
+    """The newest accepted revision of every EAF file in a project."""
+    latest_number = (
+        select(
+            EafRevision.elan_id,
+            func.max(EafRevision.revision_number).label("revision_number"),
+        )
+        .join(ElanFile, ElanFile.elan_id == EafRevision.elan_id)
+        .where(ElanFile.project_id == project.project_id)
+        .group_by(EafRevision.elan_id)
+        .subquery()
+    )
+    return list(
+        await db.scalars(
+            select(EafRevision)
+            .join(
+                latest_number,
+                (latest_number.c.elan_id == EafRevision.elan_id)
+                & (latest_number.c.revision_number == EafRevision.revision_number),
+            )
+            .options(selectinload(EafRevision.elan_file))
+            .order_by(EafRevision.elan_id)
+        )
+    )
 
 
 async def get_pinned_protocol_version(

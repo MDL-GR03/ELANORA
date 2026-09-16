@@ -22,7 +22,6 @@ MAIL_USE_CREDENTIALS = settings.mail_use_credentials
 
 # Get the frontend host from the environment variables
 FRONTEND_HOST = settings.frontend_host
-BACKEND_HOST = settings.backend_host
 TRUSTED_HOSTS = settings.trusted_hosts
 COOKIE_SECURE = settings.cookie_secure
 

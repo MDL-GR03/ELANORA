@@ -3,13 +3,11 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.model.audit_event import AuditEvent
-from app.model.eaf_revision import EafRevision
-from app.model.elan_file import ElanFile
 from app.model.enums import (
     ProtocolVersionStatus,
     ValidationOutcome,
@@ -29,10 +27,8 @@ from app.schema.protocol import (
 from app.service.protocol_errors import (
     ProtocolConflictError,
 )
-from app.service.protocol_shared import _scoped_version
+from app.service.protocol_shared import _scoped_version, latest_project_revisions
 from app.service.protocol_validation_runs import validate_revision_against_version
-
-FULL_COVERAGE_PERCENT = 100.0
 
 
 async def run_compliance_scan(
@@ -54,30 +50,7 @@ async def run_compliance_scan(
     if trigger not in {"manual", "preview", "protocol_pinned"}:
         raise ProtocolConflictError("Unsupported compliance scan trigger")
 
-    latest_number = (
-        select(
-            EafRevision.elan_id,
-            func.max(EafRevision.revision_number).label("revision_number"),
-        )
-        .join(ElanFile, ElanFile.elan_id == EafRevision.elan_id)
-        .where(ElanFile.project_id == project.project_id)
-        .group_by(EafRevision.elan_id)
-        .subquery()
-    )
-    revisions = list(
-        (
-            await db.scalars(
-                select(EafRevision)
-                .join(
-                    latest_number,
-                    (latest_number.c.elan_id == EafRevision.elan_id)
-                    & (latest_number.c.revision_number == EafRevision.revision_number),
-                )
-                .options(selectinload(EafRevision.elan_file))
-                .order_by(EafRevision.elan_id)
-            )
-        ).all()
-    )
+    revisions = await latest_project_revisions(db, project)
     scan = ProjectComplianceScan(
         project_id=project.project_id,
         protocol_version_id=protocol_version_id,

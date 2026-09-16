@@ -3,13 +3,9 @@
 import asyncio
 from collections import Counter, defaultdict
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.elan.validation import EafValidationError, validate_eaf
-from app.model.eaf_revision import EafRevision
-from app.model.elan_file import ElanFile
 from app.model.project import Project
 from app.schema.protocol import (
     CorpusProtocolSuggestionResponse,
@@ -17,6 +13,7 @@ from app.schema.protocol import (
     ProtocolTierSuggestion,
     ProtocolVocabularySuggestion,
 )
+from app.service.protocol_shared import latest_project_revisions
 
 FULL_COVERAGE_PERCENT = 100.0
 
@@ -25,30 +22,7 @@ async def suggest_protocol_from_corpus(
     db: AsyncSession, project: Project
 ) -> CorpusProtocolSuggestionResponse:
     """Infer conservative, evidence-backed rules from latest accepted revisions."""
-    latest_number = (
-        select(
-            EafRevision.elan_id,
-            func.max(EafRevision.revision_number).label("revision_number"),
-        )
-        .join(ElanFile, ElanFile.elan_id == EafRevision.elan_id)
-        .where(ElanFile.project_id == project.project_id)
-        .group_by(EafRevision.elan_id)
-        .subquery()
-    )
-    revisions = list(
-        (
-            await db.scalars(
-                select(EafRevision)
-                .join(
-                    latest_number,
-                    (latest_number.c.elan_id == EafRevision.elan_id)
-                    & (latest_number.c.revision_number == EafRevision.revision_number),
-                )
-                .options(selectinload(EafRevision.elan_file))
-                .order_by(EafRevision.elan_id)
-            )
-        ).all()
-    )
+    revisions = await latest_project_revisions(db, project)
     tier_counts: Counter[str] = Counter()
     tier_parents: dict[str, Counter[str]] = defaultdict(Counter)
     tier_types: dict[str, Counter[str]] = defaultdict(Counter)

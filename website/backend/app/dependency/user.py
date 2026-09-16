@@ -12,7 +12,6 @@ from app.model.user import User
 security = HTTPBearer(auto_error=False)
 
 # Role constants using the enum
-ROLE_PUBLIC = UserRole.PUBLIC
 ROLE_ADMIN = UserRole.ADMIN
 
 

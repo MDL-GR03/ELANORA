@@ -12,8 +12,6 @@ from app.service.protocol_errors import (
     ProtocolConflictError,
 )
 
-FULL_COVERAGE_PERCENT = 100.0
-
 
 async def grant_protocol_manager(
     db: AsyncSession, *, project: Project, user_id: int, actor_user_id: int

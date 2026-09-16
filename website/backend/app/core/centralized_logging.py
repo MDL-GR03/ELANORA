@@ -13,7 +13,6 @@ from app.core.logging import get_stream_logger
 
 # Constants
 MAX_FRAME_DEPTH = 10
-MIN_MODULE_PARTS = 2
 
 # Try to import config, but don't fail if it's not available
 try:
