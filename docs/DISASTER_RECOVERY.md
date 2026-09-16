@@ -10,46 +10,66 @@ procedure against disposable PostgreSQL and storage: seed data, dump, encrypt,
 destroy the source database, restore into an empty database and storage root,
 then verify the revision ledger, EAF projection, and institution asset.
 
-The same-host `recovery-cache` is not a disaster backup. Copy completed bundles
-to institution-controlled off-host storage with version retention and access
-logging. ELANORA stores linked audiovisual media as references, not managed
-objects; the institution must back up those source recordings separately.
+The same-host `recovery-cache` is not a disaster backup: it is a working copy
+the application refreshes as it writes. The backups described below are the
+recoverable ones. ELANORA stores linked audiovisual media as references, not
+managed objects; the institution must back up those source recordings
+separately.
 
-## Nightly off-host backups
+## Backups this installation takes for itself
 
-The institution accepts losing at most 24 hours of work and restoring within one
-day. `elanora-backup` meets that with one scheduled command:
+An institution installs ELANORA; it does not staff a platform team. The
+installation therefore runs its own maintenance in the `maintenance-worker`
+service that ships with the composition. No cron entry is needed on the host.
 
-```sh
-ELANORA_BACKUP_PASSPHRASE=... poetry run elanora-backup create   # take and prune
-poetry run elanora-backup list                                   # oldest first
-ELANORA_BACKUP_PASSPHRASE=... poetry run elanora-backup verify   # check the newest
-```
+It takes an encrypted backup of the database, project storage and institution
+assets every 24 hours, verifies the newest backup weekly, applies each
+project's retention policy daily, and checks hourly how full the disk holding
+project storage is. What runs next is decided from the runs recorded in
+PostgreSQL, so restarting never repeats a backup and a window missed while the
+installation was switched off is caught up at the next wake-up. A failed job is
+retried within the hour; one skipped because it is not configured waits, rather
+than recording a row every few minutes.
 
-`create` dumps the database with `pg_dump`, bundles it with project storage and
-instance assets, encrypts it, writes it to the configured backup store under
-`backups/elanora-<UTC moment>.elanora`, and removes copies beyond
-`BACKUP_RETAIN_COPIES` (14 by default). Nothing is stored unless the dump, the
-bundle and its own verification all succeed, and a second run in the same second
-is refused rather than overwriting a good copy.
+**Administrators see the result** on the operations page: when the last backup
+ran, when it was last verified, whether backups are healthy, failing or not
+configured, and how full the disk is. An installation with no backup passphrase
+is called out there, because otherwise nobody discovers there is nothing to
+restore until the day they need it.
 
-Configure where backups go, which must not be storage this installation can
-reach on its own:
+### What setup configures for you
+
+`elanora-setup` generates every secret the installation needs, including the
+passphrase that encrypts its backups, and keeps any value already present.
+Running it again is safe: it never rotates an existing passphrase, which would
+make every backup taken so far unreadable.
+
+### Where backups are written
+
+The composition mounts `./backups` into the maintenance worker as the default
+destination, so a fresh installation is recoverable without any configuration.
+That directory is on the same host as the installation, which protects against
+losing the database or a bad upgrade, but **not** against losing the machine.
+Point it at institution-controlled storage off this host, or use an
+S3-compatible service:
 
 | Setting | Meaning |
 | --- | --- |
 | `BACKUP_STORAGE_BACKEND` | `local` or `s3`. |
-| `BACKUP_LOCAL_ROOT` | Directory for `local`, on a mounted off-host volume. |
+| `BACKUP_LOCAL_ROOT` | Directory for `local`; mount external storage there. |
 | `BACKUP_S3_BUCKET`, `BACKUP_S3_PREFIX`, `BACKUP_S3_REGION`, `BACKUP_S3_ENDPOINT_URL` | Object store for `s3`; any S3-compatible service works. |
 | `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | Credentials, set together. |
-| `BACKUP_RETAIN_COPIES` | How many copies to keep. |
+| `BACKUP_RETAIN_COPIES` | How many copies to keep, 14 by default. |
 
-Schedule the backup nightly and the verification weekly, for example with a
-systemd timer or cron:
+### Running it by hand
 
-```cron
-15 2 * * *  cd /srv/elanora/website/backend && ELANORA_BACKUP_PASSPHRASE=... poetry run elanora-backup create
-45 3 * * 0  cd /srv/elanora/website/backend && ELANORA_BACKUP_PASSPHRASE=... poetry run elanora-backup verify
+The same work can be run on demand; it takes the same lock as the worker, so
+the two never back up at once.
+
+```sh
+poetry run elanora-maintenance --once      # run whatever is due now
+poetry run elanora-backup list             # what is stored, oldest first
+poetry run elanora-backup verify           # check the newest against its manifest
 ```
 
 Verification proves a copy is readable and matches its manifest. It does not
