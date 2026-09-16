@@ -4,18 +4,6 @@ const path = require('node:path');
 
 const localeDirectory = path.resolve(__dirname, '../src/locales');
 const languages = ['en', 'fr', 'ja'];
-const protectedNamespaces = [
-  'acceptedHistory',
-  'annotationComparison',
-  'contributionDetails',
-  'contributionResolution',
-  'contributionWorkspace',
-  'dataGovernance',
-  'researchScopes',
-  'reviewArchive',
-  'reviewCases',
-  'uploadPage',
-];
 const locales = Object.fromEntries(
   languages.map((language) => [
     language,
@@ -38,22 +26,30 @@ function valueAt(value, dottedPath) {
   return dottedPath.split('.').reduce((current, key) => current?.[key], value);
 }
 
+// Every key English defines must exist in every language, and no language may
+// carry a key English lacks: a missing key shows the researcher a raw key path,
+// and an extra one is a misspelling or a leftover nothing can reach.
 const failures = [];
-for (const namespace of protectedNamespaces) {
-  const referencePaths = leafPaths(locales.en[namespace], namespace);
-  for (const language of languages.slice(1)) {
-    for (const key of referencePaths) {
-      const value = valueAt(locales[language], key);
-      if (typeof value !== 'string' || value.trim() === '') {
-        failures.push(`${language}: ${key}`);
-      }
+const referencePaths = new Set(leafPaths(locales.en));
+for (const language of languages.slice(1)) {
+  for (const key of referencePaths) {
+    const value = valueAt(locales[language], key);
+    if (typeof value !== 'string' || value.trim() === '') {
+      failures.push(`${language}: missing ${key}`);
+    }
+  }
+  for (const key of leafPaths(locales[language])) {
+    if (!referencePaths.has(key)) {
+      failures.push(`${language}: not in English ${key}`);
     }
   }
 }
 
 if (failures.length) {
-  console.error('Missing protected translations:\n' + failures.join('\n'));
+  console.error('Translation parity failed:\n' + failures.join('\n'));
   process.exit(1);
 }
 
-console.log(`Translation parity passed for: ${protectedNamespaces.join(', ')}`);
+console.log(
+  `Translation parity passed: ${referencePaths.size} keys in ${languages.join(', ')}`
+);

@@ -10,17 +10,14 @@
     "save": "Save",
     "close": "Close",
     "saving": "Saving...",
-    "or": "or",
     "loading": "Loading...",
     "retry": "Retry",
     "sending": "Sending",
     "no": "No",
     "yes_cancel": "Yes, cancel",
-    "canceling": "Canceling",
     "add": "Add",
     "adding": "Adding",
-    "remove": "Remove",
-    "removing": "Removing"
+    "remove": "Remove"
   },
   "operations": {
     "title": "System health and recovery",
@@ -96,8 +93,7 @@
         "unverified": "Latest backup unverified",
         "not_yet_run": "No backup yet",
         "not_configured": "Backups not configured",
-        "failing": "Backups failing",
-        "not_reported": "Not reported"
+        "failing": "Backups failing"
       },
       "outcomes": {
         "succeeded": "Succeeded",
@@ -114,8 +110,7 @@
         "backup_passphrase_not_configured": "No backup passphrase configured"
       },
       "owners": {
-        "installation": "This installation",
-        "deployment_operator": "Deployment operator"
+        "installation": "This installation"
       }
     },
     "boundary": {
@@ -128,12 +123,9 @@
     "401": "Unauthorized - Please log in",
     "403": "Forbidden - You don't have permission to access this resource",
     "404": "Not Found - The requested resource could not be found",
-    "422": "Unprocessable Entity - The request was well-formed but contains invalid data",
-    "429": "Too Many Requests - You have sent too many requests in a short time",
     "500": "Internal Server Error - An error occurred on the server",
     "502": "Bad Gateway - Invalid response from the upstream server",
     "503": "Service Unavailable - The server is currently unavailable",
-    "504": "Gateway Timeout - The upstream server failed to send a request in time",
     "unknown": "An unknown error occurred"
   },
   "app": {
@@ -141,11 +133,8 @@
   },
   "homePage": {
     "pageTitle": "Welcome",
-    "welcomeMessage": "Welcome to ELANORA!",
     "description": "A collaborative platform for managing and annotating linguistic corpora.",
     "instructions": "To get started, create or join a project and explore your data.",
-    "getStarted": "Get Started",
-    "viewDemo": "View Demo",
     "features": {
       "title": "Key Features",
       "collaborative_elan": {
@@ -173,25 +162,18 @@
         "description": "Export your annotations in various formats for analysis."
       }
     },
-    "platform_stats": "Platform Statistics",
     "stats": {
-      "total_projects": "Total Projects",
-      "active_users": "Active Users",
-      "elan_files": "ELAN Files",
-      "institutions": "Institutions"
+      "total_projects": "Total Projects"
     },
     "cta": {
       "title": "Ready to Collaborate?",
-      "description": "Join thousands of researchers using ELANORA for their linguistics projects.",
-      "get_started": "Get Started Now",
-      "contact_us": "Contact Us"
+      "description": "Join thousands of researchers using ELANORA for their linguistics projects."
     }
   },
   "appHeader": {
     "profile": "Profile",
     "logout": "Log out",
     "projects": "Projects",
-    "dashboard": "Dashboard",
     "operations": "System health",
     "upload": "File Upload",
     "tiers": "Tiers",
@@ -200,26 +182,14 @@
     "reviews": "Reviews",
     "projectSection": {
       "selectProject": "Select a project",
-      "noProjectAvailable": "No projects available",
       "loadError": "Failed to load projects"
     }
   },
   "appFooter": {
     "platform_description": "Collaborative linguistic annotation platform for ELAN corpora.",
     "resources": "Resources",
-    "documentation": "Documentation",
-    "api_reference": "API Reference",
-    "tutorials": "Tutorials",
-    "support": "Support",
-    "community": "Community",
-    "about": "About",
     "research": "Research",
-    "partnerships": "Partnerships",
     "contact": "Contact",
-    "legal": "Legal",
-    "privacy_policy": "Privacy Policy",
-    "terms_of_service": "Terms of Service",
-    "cookie_policy": "Cookie Policy",
     "all_rights_reserved": "All rights reserved."
   },
   "login": {
@@ -229,21 +199,15 @@
     "institution_fallback": "Institutional research workspace",
     "welcome_back": "Welcome back",
     "sign_in_instruction": "Sign in to continue to your research workspace.",
-    "connect_to_access": "Connect to access the instance: {instanceName}",
     "login_placeholder": "Enter your login",
     "password": "Password",
     "password_placeholder": "Enter your password",
-    "remember_me": "Remember me",
     "forgot_password": "Forgot password?",
     "logging_in": "Logging in...",
     "login": "Login",
-    "login_with_sso": "Login with {provider}",
-    "no_account": "No account?",
-    "request_access": "Request access",
     "have_invitation": "Have an invitation?",
     "join_project": "Join a project",
     "need_help": "Need help? Contact us",
-    "welcome_to_elanora": "Welcome to ELANORA!",
     "features": {
       "collaborative_elan": "Collaborative ELAN annotation",
       "conflict_detection": "Conflict detection",
@@ -251,32 +215,13 @@
       "project_repositories": "Project repositories",
       "secure_instance": "Secure instance"
     },
-    "stats": {
-      "active_projects": "Active projects",
-      "researchers": "Researchers",
-      "elan_files": "ELAN files"
-    },
-    "enter_email_first": "Please enter your email first.",
     "login_success": "Login successful!",
-    "login_error": "Login failed. Please check your credentials.",
-    "sso_error": "SSO login failed.",
-    "access_request_sent": "Access request sent to the instance for {email}.",
-    "access_request_error": "Failed to send access request.",
-    "retrieving_lab_info": "Retrieving lab information...",
     "email_verification_required": "Please verify your email before logging in.",
     "login_connection_error": "Login failed. Please try again."
   },
   "auth": {
     "login": "Login",
-    "request_access": "Request Access",
-    "login_success": "Login successful!",
-    "login_error": "Login failed. Check your credentials.",
-    "sso_error": "SSO login failed.",
-    "access_request_sent": "Access request sent to instance for {email}.",
-    "access_request_error": "Failed to send access request.",
-    "enter_email_first": "Please enter your email first.",
-    "logout_success": "Logout successful!",
-    "logout_error": "Logout failed. Please try again."
+    "login_success": "Login successful!"
   },
   "forgotPassword": {
     "title": "Forgot Password",
@@ -309,8 +254,7 @@
     "error": "An error occurred while resetting your password. Please try again.",
     "passwords_no_match": "Passwords do not match",
     "password_too_short": "Password must be at least 8 characters long",
-    "email_required": "Email is required to reset the password",
-    "code_6_digits": "Verification code must be 6 digits"
+    "email_required": "Email is required to reset the password"
   },
   "event_messages": {
     "already_logged_in": "You are already logged in."
@@ -488,8 +432,6 @@
     "load_error": "Failed to load projects",
     "users": {
       "title": "Users in project \"{projectName}\"",
-      "add_user": "Add User",
-      "no_users": "No users found",
       "user": "User",
       "permission": "Permission",
       "load_error": "Error loading users",
@@ -523,8 +465,6 @@
       "title": "Share project \"{projectName}\"",
       "invite_by_email": "Invite by email",
       "invite_existing_user": "Invite existing user",
-      "send_by_email": "Send by email",
-      "get_code": "Get code",
       "email_label": "Email address",
       "email_placeholder": "Enter recipient's email",
       "email_required": "Email is required",
@@ -539,28 +479,15 @@
       "message_placeholder": "Add a personal message...",
       "language_label": "Invitation language",
       "send_invitation": "Send invitation",
-      "add_user_to_project": "Add to project",
       "sending": "Sending...",
-      "adding_user": "Adding user...",
       "invitation_sent_success": "Invitation sent successfully to {email}",
       "invitation_send_error": "Error sending invitation",
       "invitation_send_error_project_not_found": "Project not found",
       "invitation_send_error_already_invited": "An active invitation already exists for this email",
       "invitation_send_error_already_member": "User is already a member of this project",
       "invitation_send_error_generic": "Failed to send invitation",
-      "user_added_success": "User added to project successfully",
-      "user_add_error": "Error adding user",
-      "user_already_in_project": "This user is already part of the project",
-      "user_already_invited": "This user has already been invited to the project",
       "user_email_not_found": "Unable to find email for selected user",
-      "error_loading_users": "Error loading users",
-      "generate_code_info": "Generate an invitation code that you can share manually",
-      "generate_code": "Generate code",
-      "generating": "Generating...",
-      "code_ready_info": "Invitation code ready to share:",
-      "code_instructions": "Share this code with the person you want to invite. They can use it to join the project.",
-      "generate_new_code": "Generate new code",
-      "code_generation_error": "Error generating code"
+      "error_loading_users": "Error loading users"
     }
   },
   "emailVerification": {
@@ -596,7 +523,6 @@
     "pageTitle": "Projects",
     "pageDescription": "Manage and collaborate on your linguistic projects",
     "title": "{instanceName}'s projects",
-    "projectListTitle": "Projects",
     "noProjects": "No current projects for this instance.\nYou can start by clicking on the button \"Create a new project\" to create one.",
     "noDescription": "No description",
     "selectedProject": "Selected project",
@@ -612,7 +538,6 @@
     "deleteConfirm": "Delete",
     "deleteCancel": "Cancel",
     "createProject": "Create a new project",
-    "folderPreview": "Folder Preview",
     "project": {
       "buttons": {
         "settings": "Project settings",
@@ -690,7 +615,6 @@
       "projectDescriptionPlaceholder": "Description (optional)",
       "dropFolder": "Drop ELAN files here or click to browse",
       "onlyEafFiles": "Drag folders to include all .eaf files, or browse for individual files",
-      "folderPreview": "Folder Preview",
       "create": "Create",
       "creating": "Creating...",
       "errors": {
@@ -699,7 +623,6 @@
         "nameExists": "A project with this name already exists.",
         "descTooLong": "Description must be at most 5000 characters.",
         "fixAbove": "Please fix the errors above.",
-        "folderDropNotSupported": "Your browser does not support folder drag & drop. Please use the \"Browse\" button.",
         "createFailed": "Failed to create project."
       }
     },
@@ -733,11 +656,8 @@
     "title": "Bulk Rename Files",
     "loading": "Loading files...",
     "noSuggestions": "No files available for renaming.",
-    "generateSuggestions": "Generate Suggestions from Media",
     "current": "Current",
     "suggested": "Modified",
-    "manual": "Manual",
-    "useSuggestion": "Use",
     "enterNewName": "Enter new filename",
     "extractedFrom": "Based on media files",
     "apply": "Apply Renames",
@@ -769,8 +689,7 @@
     "bulkMixedOneConflict": "{successful} files renamed successfully, 1 skipped due to naming conflict",
     "bulkAllConflicts": "No files were renamed - all {count} files already exist with the target names",
     "bulkAllConflictsSingular": "No file was renamed - the file already exists with the target name",
-    "error": "Failed to rename file",
-    "bulkError": "Failed to rename files"
+    "error": "Failed to rename file"
   },
   "projectSettings": {
     "pageTitle": "Project configuration",
@@ -797,13 +716,9 @@
       "name": "Protocol name",
       "required_tiers": "Required tiers (comma separated)",
       "tier_parents": "Required tier parents (JSON)",
-      "linguistic_types": "Required linguistic types (JSON)",
       "vocabularies": "Required controlled vocabularies",
       "media_required": "Require linked media",
-      "media_types": "Allowed media MIME types",
-      "create": "Create draft",
-      "publish": "Publish",
-      "pin": "Use for this project"
+      "create": "Create draft"
     },
     "members": {
       "title": "Members Management",
@@ -823,7 +738,6 @@
         "title": "Add New Member",
         "description": "Select a researcher and choose what they may do in this project. Access can be changed later.",
         "user_id": "User ID",
-        "user_id_placeholder": "Enter user ID",
         "permission": "Permission",
         "user_required": "Select a researcher before adding this member."
       },
@@ -876,9 +790,6 @@
         "expired": "Expired"
       },
       "load_error": "Failed to load invitations",
-      "no_project_error": "No project selected",
-      "invitation_sent": "Invitation sent successfully",
-      "send_error": "Failed to send invitation",
       "invitation_resent": "Invitation resent successfully",
       "resend_error": "Failed to resend invitation",
       "invitation_canceled": "Invitation canceled successfully",
@@ -905,8 +816,7 @@
       "updateFailed": "Failed to update file type.",
       "deleteSuccess": "File type deleted successfully.",
       "deleteFailed": "Failed to delete file type.",
-      "duplicateName": "A file type with this name already exists.",
-      "cannotDeleteUsed": "Cannot delete: This file type is used by a naming standard or component. Please delete the related naming standard first."
+      "duplicateName": "A file type with this name already exists."
     },
     "deleteTitle": "Delete File Type",
     "deleteMessage": "Are you sure you want to delete this file type? This action cannot be undone."
@@ -936,8 +846,6 @@
     "componentOrder": "Order",
     "noteAcceptedValues": "Note: You entered [{value}] as an accepted value. This will be saved as a single value. To save multiple accepted values, separate them with a comma or semicolon (e.g. B,A,W or B;A;W).",
     "deleteConfirm": "Are you sure you want to delete this standard? This action cannot be undone.",
-    "deleteError": "Failed to delete standard.",
-    "patternExample": "Pattern example",
     "promptExtractedValue": "The value '{value}' has been extracted for the component \"{name}\". If you wish to use the extracted value only, leave this blank and click \"OK\". However, it is recommended to enter a valid range (e.g. {example}).",
     "importModal": {
       "selectProject": "Select a project to import from:",
@@ -975,17 +883,7 @@
     "exampleFileRequired": "Please enter an example file.",
     "patternRequired": "Please enter a valid pattern.",
     "patternExampleBlockCount": "Pattern and example file do not have the same number of blocks.",
-    "invalidRange": "Invalid range \"{value}\" for \"{name}\".",
     "acceptedValuesLength": "All accepted values for \"{name}\" must be exactly {length} characters long.",
-    "invalidValue": "Invalid value \"{value}\" for \"{name}\".",
-    "invalidRegex": "Invalid regex for \"{name}\".",
-    "acceptedValueDoesNotMatch": "Accepted value \"{value}\" does not match regex \"{regex}\" for \"{name}\".",
-    "valueExceedsDigits": "Value \"{value}\" exceeds {length} digits for \"{name}\".",
-    "valuesExceedDigits": "Values in range \"{value}\" exceed {length} digits for \"{name}\".",
-    "pleaseEnterValue": "Please enter a value, range, or list.",
-    "rangeStartEnd": "Range start must be less than or equal to end.",
-    "enterSingleOrListOrRange": "Enter a single value, a comma/semicolon separated list, or a range (e.g. {example}).",
-    "invalidLength": "Invalid length for \"{name}\".",
     "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
   },
   "profile": {
@@ -1072,7 +970,6 @@
     "settings": {
       "title": "Settings",
       "description": "Manage your preferences and account settings",
-      "coming_soon": "Coming soon",
       "language": {
         "title": "Language & Localization",
         "description": "Choose your preferred language for the interface",
@@ -1083,7 +980,6 @@
     "security": {
       "title": "Security",
       "description": "Manage your password and security preferences",
-      "coming_soon": "Security settings will be available soon.",
       "change_password": {
         "title": "Change Password",
         "description": "Update your password by entering your current password and a new one.",
@@ -1149,13 +1045,11 @@
   "notificationBell": {
     "title": "Notifications",
     "unread_notifications": "{count} unread notifications",
-    "no_unread_notifications": "No unread notifications",
     "mark_all_read": "Mark all as read",
     "loading_notifications": "Loading notifications...",
     "no_notifications": "No notifications",
     "up_to_date": "You're up to date!",
     "unread_badge": "{count} unread",
-    "unread_badge_singular": "1 unread",
     "mark_as_read": "Mark as read",
     "delete": "Delete",
     "close": "Close notifications",
@@ -1185,7 +1079,6 @@
     "send": "Send Message",
     "sending": "Sending...",
     "success_message": "Your message has been sent successfully! Our administrators will review it and get back to you soon.",
-    "error_message": "Failed to send your message. Please try again later.",
     "error_message_too_short": "Your message must be at least 10 characters long.",
     "error_message_too_long": "Your message cannot exceed 5000 characters.",
     "error_message_invalid": "The format of your message is not valid.",
@@ -1227,12 +1120,9 @@
     },
     "eventMessages": {
       "fileTypeAdded": "File type \"{fileType}\" associated successfully with \"{location}\".",
-      "fileTypeAddFailed": "Failed to assocaite file type.",
       "fileTypeRemoved": "File type \"{fileType}\" no longer associated with \"{location}\".",
-      "fileTypeRemoveFailed": "Failed to remove file type association.",
       "updateSuccess": "Effective standard updated successfully.",
       "removeSuccess": "Effective standard removed successfully.",
-      "removeFailed": "Failed to remove effective standard.",
       "updateFailed": "Failed to update effective standard.",
       "loadFailed": "Failed to load effective standards."
     }
@@ -1614,31 +1504,15 @@
   "tiersPage": {
     "pageTitle": "Tier hierarchy",
     "pageDescription": "Inspect and organize the linguistic annotation layers found in this project's ELAN files.",
-    "sectionsTitle": "Corpus organization",
-    "sectionsDescription": "Group ELAN files into meaningful research sections.",
-    "newSectionName": "New section name",
-    "createSection": "Create section",
-    "renameSection": "Rename section",
-    "deleteSection": "Delete section",
-    "deleteConfirmation": "Delete the section “{name}”? Its files will return to Unsectioned.",
     "unsectioned": "Unsectioned",
     "fileCount": "{count} ELAN file(s)",
     "tierCount": "{count} root tier(s)",
-    "moveGuidance": "Drag files by the grip to move them between sections, or use the Move to control for keyboard and touch input.",
     "moveTo": "Move to",
     "dragHandle": "Drag to another section",
     "dragFile": "Drag {name} to another section",
-    "dropHere": "Drop an ELAN file here",
-    "noUnsectioned": "Every ELAN file belongs to a section.",
     "noTiers": "No tiers were found in this file.",
     "loading": "Loading tier hierarchy...",
-    "noProject": "Select a project to inspect its tier hierarchy.",
-    "loadFailed": "The tier hierarchy could not be loaded.",
-    "operationFailed": "The change could not be saved. The latest server state has been restored.",
-    "sectionCreated": "Section created.",
-    "sectionRenamed": "Section renamed.",
-    "sectionDeleted": "Section deleted.",
-    "groupMoved": "ELAN file moved."
+    "loadFailed": "The tier hierarchy could not be loaded."
   },
   "pendingUploads": {
     "title": "Contributions",
@@ -1674,12 +1548,9 @@
       "resolveConflicts": "Review Differences",
       "testMerge": "Check Compatibility",
       "testing": "Checking...",
-      "refresh": "Refresh",
-      "mergeAllReady": "Merge All Ready ({count})",
-      "mergingAll": "Merging All..."
+      "refresh": "Refresh"
     },
     "modal": {
-      "uploadDetails": "Upload Details",
       "resolveConflicts": "Resolve Upload Conflicts"
     },
     "mergeConfirmation": {
@@ -1701,9 +1572,7 @@
       "loadFailed": "Failed to load pending uploads",
       "testMergeFailed": "The contribution compatibility check failed",
       "notReadyToMerge": "This contribution cannot be merged yet. Review its differences first.",
-      "mergeFailed": "The contribution could not be accepted",
-      "noReadyUploads": "No uploads are ready to merge",
-      "batchMergeFailed": "Failed to merge uploads"
+      "mergeFailed": "The contribution could not be accepted"
     },
     "unknown": "Unknown"
   },
@@ -1715,7 +1584,6 @@
     "selectedFiles": "Selected Files ({count})",
     "addMoreFiles": "Add more files",
     "clearAllFiles": "Clear all files",
-    "removeFile": "Remove file",
     "totalSize": "Total: {size}",
     "filesExceedLimit": "Some files exceed {maxSize}",
     "noFilesSelected": "No files selected",
@@ -1790,7 +1658,6 @@
     "nonCompliantSummary": "{count} file(s) do not meet this project's naming standard.",
     "compliantSummary": "All selected filenames meet the active naming standard.",
     "submitTitle": "Submit contribution",
-    "submitDescription": "Validated files will be prepared for review before merging.",
     "complete": "Submission complete",
     "uploadingFiles": "Uploading {count} file(s)...",
     "uploadResults": "Upload Results",
@@ -1798,7 +1665,6 @@
     "resultFailed": "✗ Failed",
     "correctionLinked": "The corrected contribution was linked to its review request.",
     "errors": {
-      "failedToLoadProjects": "Failed to load projects",
       "selectProjectAndFiles": "Please select a project and files",
       "uploadFailed": "Upload failed",
       "standardsFailed": "The project's naming rules could not be loaded. Upload is paused to avoid an unchecked submission."
@@ -2251,7 +2117,6 @@
     },
     "lastUpdated": "Last changed {date}",
     "save": "Save data governance",
-    "saving": "Saving…",
-    "readOnly": "Only project administrators can change these settings."
+    "saving": "Saving…"
   }
 }

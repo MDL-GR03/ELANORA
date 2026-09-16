@@ -10,17 +10,14 @@
     "save": "Enregistrer",
     "close": "Fermer",
     "saving": "Enregistrement...",
-    "or": "ou",
     "loading": "Chargement...",
     "retry": "Réessayer",
     "sending": "Envoi",
     "no": "Non",
     "yes_cancel": "Oui, annuler",
-    "canceling": "Annulation",
     "add": "Ajouter",
     "adding": "Ajout",
-    "remove": "Supprimer",
-    "removing": "Suppression"
+    "remove": "Supprimer"
   },
   "operations": {
     "title": "État du système et récupération",
@@ -96,8 +93,7 @@
         "unverified": "Dernière sauvegarde non vérifiée",
         "not_yet_run": "Aucune sauvegarde pour l’instant",
         "not_configured": "Sauvegardes non configurées",
-        "failing": "Sauvegardes en échec",
-        "not_reported": "Non renseigné"
+        "failing": "Sauvegardes en échec"
       },
       "outcomes": {
         "succeeded": "Réussi",
@@ -114,8 +110,7 @@
         "backup_passphrase_not_configured": "Aucune phrase secrète de sauvegarde configurée"
       },
       "owners": {
-        "installation": "Cette installation",
-        "deployment_operator": "Responsable du déploiement"
+        "installation": "Cette installation"
       }
     },
     "boundary": {
@@ -128,12 +123,9 @@
     "401": "Non autorisé - Veuillez vous connecter",
     "403": "Accès interdit - Vous n'avez pas l'autorisation d'accéder à cette ressource",
     "404": "Non trouvé - La ressource demandée est introuvable",
-    "422": "Entité non traitable - La requête est bien formée mais contient des données invalides",
-    "429": "Trop de requêtes - Vous avez envoyé trop de requêtes en peu de temps",
     "500": "Erreur interne du serveur - Une erreur s'est produite sur le serveur",
     "502": "Passerelle incorrecte - Réponse invalide du serveur en amont",
     "503": "Service indisponible - Le serveur est actuellement indisponible",
-    "504": "Délai d'attente de la passerelle - Le serveur en amont n'a pas répondu dans les temps",
     "unknown": "Une erreur inconnue s'est produite"
   },
   "app": {
@@ -141,11 +133,8 @@
   },
   "homePage": {
     "pageTitle": "Bienvenue",
-    "welcomeMessage": "Bienvenue sur ELANora !",
     "description": "Une plateforme collaborative pour gérer et annoter des corpus linguistiques.",
     "instructions": "Pour commencer, créez ou rejoignez un projet et explorez vos données.",
-    "getStarted": "Commencer",
-    "viewDemo": "Voir la démo",
     "features": {
       "title": "Fonctionnalités principales",
       "collaborative_elan": {
@@ -173,19 +162,35 @@
         "description": "Exportez vos annotations dans différents formats pour l'analyse."
       }
     },
-    "platform_stats": "Statistiques de la plateforme",
     "stats": {
-      "total_projects": "Projets totaux",
-      "active_users": "Utilisateurs actifs",
-      "elan_files": "Fichiers ELAN",
-      "institutions": "Institutions"
+      "total_projects": "Projets totaux"
     },
     "cta": {
       "title": "Prêt à collaborer ?",
-      "description": "Rejoignez des milliers de chercheurs qui utilisent ELANora pour leurs projets de linguistique.",
-      "get_started": "Commencer maintenant",
-      "contact_us": "Nous contacter"
+      "description": "Rejoignez des milliers de chercheurs qui utilisent ELANora pour leurs projets de linguistique."
     }
+  },
+  "appHeader": {
+    "profile": "Profil",
+    "logout": "Déconnexion",
+    "projects": "Projets",
+    "operations": "État du système",
+    "upload": "File Upload",
+    "tiers": "Tiers",
+    "export": "Export",
+    "contribution": "Contributions",
+    "reviews": "Révisions",
+    "projectSection": {
+      "selectProject": "Sélectionnez un projet",
+      "loadError": "Échec du chargement des projets"
+    }
+  },
+  "appFooter": {
+    "platform_description": "Plateforme collaborative d'annotation linguistique pour les corpus ELAN.",
+    "resources": "Ressources",
+    "research": "Recherche",
+    "contact": "Contact",
+    "all_rights_reserved": "Tous droits réservés."
   },
   "login": {
     "platform_subtitle": "Plateforme collaborative d'annotation pour la linguistique.",
@@ -194,21 +199,15 @@
     "institution_fallback": "Espace de recherche institutionnel",
     "welcome_back": "Bon retour",
     "sign_in_instruction": "Connectez-vous pour accéder à votre espace de recherche.",
-    "connect_to_access": "Connectez-vous pour accéder à l'instance : {instanceName}",
     "login_placeholder": "Entrez votre identifiant",
     "password": "Mot de passe",
     "password_placeholder": "Entrez votre mot de passe",
-    "remember_me": "Se souvenir de moi",
     "forgot_password": "Mot de passe oublié ?",
     "logging_in": "Connexion en cours...",
     "login": "Connexion",
-    "login_with_sso": "Connexion avec {provider}",
-    "no_account": "Pas de compte ?",
-    "request_access": "Demander un accès",
     "have_invitation": "Vous avez une invitation ?",
     "join_project": "Rejoindre un projet",
     "need_help": "Besoin d'aide ? Contactez-nous",
-    "welcome_to_elanora": "Bienvenue sur ELANora !",
     "features": {
       "collaborative_elan": "Annotation ELAN collaborative",
       "conflict_detection": "Détection de conflits",
@@ -216,68 +215,13 @@
       "project_repositories": "Dépôts de projets",
       "secure_instance": "Instance sécurisée"
     },
-    "stats": {
-      "active_projects": "Projets actifs",
-      "researchers": "Chercheurs",
-      "elan_files": "Fichiers ELAN"
-    },
-    "enter_email_first": "Veuillez d'abord saisir votre e-mail.",
     "login_success": "Connexion réussie !",
-    "login_error": "Échec de la connexion. Vérifiez vos identifiants.",
-    "sso_error": "Échec de la connexion SSO.",
-    "access_request_sent": "Demande d'accès envoyée à l'instance pour {email}.",
-    "access_request_error": "Échec de l'envoi de la demande d'accès.",
-    "retrieving_lab_info": "Récupération des informations du laboratoire...",
     "email_verification_required": "Vérifiez votre email avant de vous connecter.",
     "login_connection_error": "Erreur de connexion. Veuillez réessayer."
   },
-  "appHeader": {
-    "reviews": "Révisions",
-    "projects": "Projets",
-    "dashboard": "Tableau de bord",
-    "operations": "État du système",
-    "upload": "File Upload",
-    "tiers": "Tiers",
-    "export": "Export",
-    "profile": "Profil",
-    "notifications": "Notifications",
-    "logout": "Déconnexion",
-    "contribution": "Contributions",
-    "projectSection": {
-      "selectProject": "Sélectionnez un projet",
-      "noProjectAvailable": "Aucun projet disponible",
-      "loadError": "Échec du chargement des projets"
-    }
-  },
-  "appFooter": {
-    "platform_description": "Plateforme collaborative d'annotation linguistique pour les corpus ELAN.",
-    "resources": "Ressources",
-    "documentation": "Documentation",
-    "api_reference": "Référence API",
-    "tutorials": "Tutoriels",
-    "support": "Support",
-    "community": "Communauté",
-    "about": "À propos",
-    "research": "Recherche",
-    "partnerships": "Partenariats",
-    "contact": "Contact",
-    "legal": "Légal",
-    "privacy_policy": "Politique de confidentialité",
-    "terms_of_service": "Conditions d'utilisation",
-    "cookie_policy": "Politique des cookies",
-    "all_rights_reserved": "Tous droits réservés."
-  },
   "auth": {
     "login": "Connexion",
-    "request_access": "Demander un accès",
-    "login_success": "Connexion réussie !",
-    "login_error": "Échec de la connexion. Vérifiez vos identifiants.",
-    "sso_error": "Échec de la connexion SSO.",
-    "access_request_sent": "Demande d'accès envoyée à l'instance pour {email}.",
-    "access_request_error": "Échec de l'envoi de la demande d'accès.",
-    "enter_email_first": "Veuillez d'abord saisir votre e-mail.",
-    "logout_success": "Déconnexion réussie !",
-    "logout_error": "Échec de la déconnexion. Veuillez réessayer."
+    "login_success": "Connexion réussie !"
   },
   "forgotPassword": {
     "title": "Mot de passe oublié",
@@ -310,8 +254,10 @@
     "error": "Une erreur s'est produite lors de la réinitialisation de votre mot de passe. Veuillez réessayer.",
     "passwords_no_match": "Les mots de passe ne correspondent pas",
     "password_too_short": "Le mot de passe doit contenir au moins 8 caractères",
-    "email_required": "L'email est requis pour réinitialiser le mot de passe",
-    "code_6_digits": "Le code de vérification doit contenir 6 chiffres"
+    "email_required": "L'email est requis pour réinitialiser le mot de passe"
+  },
+  "event_messages": {
+    "already_logged_in": "Vous êtes déjà connecté."
   },
   "register": {
     "title": "Créer votre compte",
@@ -410,7 +356,12 @@
     "postal_code_validation_error": "Erreur lors de la validation du code postal",
     "validating_postal_code": "Validation du code postal en cours...",
     "validating_postal_code_in_city": "Vérification du code postal dans la ville...",
+    "postal_code_city_validation_error": "Erreur lors de la validation du code postal dans la ville",
     "validating_street_in_city": "Vérification de la rue dans la ville...",
+    "validating_street_number_in_street": "Validation du numéro de rue...",
+    "street_validation_error": "Erreur lors de la validation de la rue",
+    "street_city_validation_error": "Erreur lors de la validation de la rue dans la ville",
+    "full_address_validation_error": "Erreur lors de la validation de l'adresse complète",
     "address_line2_label": "Adresse ligne 2",
     "address_line2_placeholder": "Appartement, suite, etc. (optionnel)",
     "error_loading_countries": "Erreur lors du chargement des pays. Veuillez actualiser la page.",
@@ -420,6 +371,9 @@
     "success": "Compte créé avec succès ! Vous pouvez maintenant vous connecter.",
     "success_needs_verification": "Compte créé avec succès ! Veuillez vérifier votre email pour activer votre compte.",
     "error": "Échec de la création du compte. Veuillez réessayer.",
+    "please_fix_errors": "Veuillez corriger les erreurs du formulaire avant de l'envoyer.",
+    "passwords_match": "Les mots de passe correspondent",
+    "emails_match": "Les adresses e-mail correspondent",
     "already_have_account": "Vous avez déjà un compte ?",
     "login_here": "Connectez-vous ici",
     "username_check_error": "Erreur lors de la vérification de la disponibilité du nom d'utilisateur",
@@ -434,9 +388,6 @@
     "show_password": "Afficher le mot de passe",
     "hide_password": "Masquer le mot de passe",
     "invitation_sender_unknown": "Un administrateur"
-  },
-  "event_messages": {
-    "already_logged_in": "Vous êtes déjà connecté."
   },
   "invitation": {
     "context": "Collaboration",
@@ -481,8 +432,6 @@
     "load_error": "Échec du chargement des projets",
     "users": {
       "title": "Utilisateurs du projet \"{projectName}\"",
-      "add_user": "Ajouter un utilisateur",
-      "no_users": "Aucun utilisateur trouvé",
       "user": "Utilisateur",
       "permission": "Permission",
       "load_error": "Erreur lors du chargement des utilisateurs",
@@ -516,8 +465,6 @@
       "title": "Partager le projet \"{projectName}\"",
       "invite_by_email": "Inviter par email",
       "invite_existing_user": "Inviter un utilisateur existant",
-      "send_by_email": "Envoyer par email",
-      "get_code": "Obtenir un code",
       "email_label": "Adresse email",
       "email_placeholder": "Entrez l'email du destinataire",
       "email_required": "L'email est requis",
@@ -532,28 +479,15 @@
       "message_placeholder": "Ajoutez un message d'accompagnement...",
       "language_label": "Langue de l'invitation",
       "send_invitation": "Envoyer l'invitation",
-      "add_user_to_project": "Ajouter au projet",
       "sending": "Envoi en cours...",
-      "adding_user": "Ajout en cours...",
       "invitation_sent_success": "Invitation envoyée avec succès à {email}",
       "invitation_send_error": "Erreur lors de l'envoi de l'invitation",
       "invitation_send_error_project_not_found": "Projet non trouvé",
       "invitation_send_error_already_invited": "Une invitation active existe déjà pour cette adresse email",
       "invitation_send_error_already_member": "L'utilisateur fait déjà partie de ce projet",
       "invitation_send_error_generic": "Échec de l'envoi de l'invitation",
-      "user_added_success": "Utilisateur ajouté au projet avec succès",
-      "user_add_error": "Erreur lors de l'ajout de l'utilisateur",
-      "user_already_in_project": "Cet utilisateur fait déjà partie du projet",
-      "user_already_invited": "Cet utilisateur a déjà été invité au projet",
       "user_email_not_found": "Impossible de trouver l'email de l'utilisateur sélectionné",
-      "error_loading_users": "Erreur lors du chargement des utilisateurs",
-      "generate_code_info": "Générez un code d'invitation que vous pouvez partager manuellement",
-      "generate_code": "Générer un code",
-      "generating": "Génération...",
-      "code_ready_info": "Code d'invitation prêt à partager :",
-      "code_instructions": "Partagez ce code avec la personne que vous voulez inviter. Elle pourra l'utiliser pour rejoindre le projet.",
-      "generate_new_code": "Générer un nouveau code",
-      "code_generation_error": "Erreur lors de la génération du code"
+      "error_loading_users": "Erreur lors du chargement des utilisateurs"
     }
   },
   "emailVerification": {
@@ -589,7 +523,6 @@
     "pageTitle": "Projets",
     "pageDescription": "Gérez vos projets de corpus linguistiques. Créez, ouvrez, synchronisez ou supprimez des projets.",
     "title": "Projets de {instanceName}",
-    "projectListTitle": "Projets",
     "noProjects": "Aucun projet en cours pour cette instance.\nPour commencer, veuillez créer un project en cliquant sur le bouton \"Créer un nouveau projet\".",
     "noDescription": "Pas de description",
     "selectedProject": "Projet sélectionné",
@@ -605,7 +538,6 @@
     "deleteConfirm": "Supprimer",
     "deleteCancel": "Annuler",
     "createProject": "Créer un nouveau projet",
-    "folderPreview": "Aperçu du dossier",
     "project": {
       "buttons": {
         "settings": "Paramètres du projet",
@@ -683,7 +615,6 @@
       "projectDescriptionPlaceholder": "Description (optionnelle)",
       "dropFolder": "Déposez des fichiers ELAN ici ou cliquez pour parcourir",
       "onlyEafFiles": "Glissez des dossiers pour inclure tous les fichiers .eaf, ou parcourez pour des fichiers individuels",
-      "folderPreview": "Aperçu du dossier",
       "create": "Créer",
       "creating": "Création...",
       "errors": {
@@ -692,7 +623,6 @@
         "nameExists": "Un projet avec ce nom existe déjà.",
         "descTooLong": "La description doit comporter au maximum 5000 caractères.",
         "fixAbove": "Veuillez corriger les erreurs ci-dessus.",
-        "folderDropNotSupported": "Votre navigateur ne supporte pas le glisser-déposer de dossier. Utilisez le bouton \"Parcourir\".",
         "createFailed": "Échec de la création du projet."
       }
     },
@@ -726,11 +656,8 @@
     "title": "Renommer les fichiers en lot",
     "loading": "Chargement des fichiers...",
     "noSuggestions": "Aucun fichier disponible pour le renommage.",
-    "generateSuggestions": "Générer des suggestions depuis les médias",
     "current": "Actuel",
     "suggested": "Modifié",
-    "manual": "Manuel",
-    "useSuggestion": "Utiliser",
     "enterNewName": "Entrez le nouveau nom de fichier",
     "extractedFrom": "Basé sur les fichiers média",
     "apply": "Appliquer les renommages",
@@ -762,8 +689,7 @@
     "bulkMixedOneConflict": "{successful} fichiers renommés avec succès, 1 ignoré en raison d'un conflit de nommage",
     "bulkAllConflicts": "Aucun fichier n'a été renommé - les {count} fichiers existent déjà avec les noms cibles",
     "bulkAllConflictsSingular": "Aucun fichier n'a été renommé - le fichier existe déjà avec le nom cible",
-    "error": "Échec du renommage du fichier",
-    "bulkError": "Échec du renommage des fichiers"
+    "error": "Échec du renommage du fichier"
   },
   "projectSettings": {
     "pageTitle": "Configuration du projet",
@@ -790,13 +716,9 @@
       "name": "Nom du protocole",
       "required_tiers": "Tiers obligatoires (séparés par des virgules)",
       "tier_parents": "Parents de tiers obligatoires (JSON)",
-      "linguistic_types": "Types linguistiques obligatoires (JSON)",
       "vocabularies": "Vocabulaires contrôlés obligatoires",
       "media_required": "Exiger un média lié",
-      "media_types": "Types MIME de média autorisés",
-      "create": "Créer le brouillon",
-      "publish": "Publier",
-      "pin": "Utiliser pour ce projet"
+      "create": "Créer le brouillon"
     },
     "members": {
       "title": "Gestion des membres",
@@ -816,7 +738,6 @@
         "title": "Ajouter un nouveau membre",
         "description": "Sélectionnez un chercheur et choisissez ce qu'il peut faire dans ce projet. Son accès pourra être modifié ultérieurement.",
         "user_id": "ID de l'utilisateur",
-        "user_id_placeholder": "Entrez l'ID de l'utilisateur",
         "permission": "Permission",
         "user_required": "Sélectionnez un chercheur avant d'ajouter ce membre."
       },
@@ -834,29 +755,20 @@
         "message": "Êtes-vous sûr de vouloir supprimer {username} de ce projet ?"
       }
     },
+    "permissions": {
+      "read": "Lecture",
+      "write": "Écriture",
+      "admin": "Administrateur",
+      "owner": "Propriétaire"
+    },
     "invitations": {
       "title": "Invitations en attente",
       "send_invitation": "Envoyer une invitation",
       "no_invitations": "Aucune invitation en attente",
       "no_invitations_desc": "Envoyez des invitations pour inviter de nouveaux collaborateurs",
-      "load_error": "Erreur lors du chargement des invitations",
-      "no_project_error": "Aucun projet sélectionné",
       "sent_on": "Envoyée le",
       "resend": "Renvoyer",
       "cancel": "Annuler l'invitation",
-      "invitation_sent": "Invitation envoyée avec succès",
-      "send_error": "Erreur lors de l'envoi de l'invitation",
-      "invitation_resent": "Invitation renvoyée avec succès",
-      "resend_error": "Erreur lors du renvoi de l'invitation",
-      "invitation_canceled": "Invitation annulée avec succès",
-      "cancel_error": "Erreur lors de l'annulation de l'invitation",
-      "send": "Envoyer",
-      "status": {
-        "pending": "En attente",
-        "accepted": "Acceptée",
-        "declined": "Refusée",
-        "expired": "Expirée"
-      },
       "send_modal": {
         "title": "Envoyer une invitation",
         "email": "Adresse e-mail",
@@ -865,17 +777,23 @@
         "message": "Message personnalisé (optionnel)",
         "message_placeholder": "Ajoutez un message personnel à votre invitation..."
       },
+      "send": "Envoyer",
       "cancel_modal": {
         "title": "Annuler l'invitation",
         "message": "Êtes-vous sûr de vouloir annuler l'invitation envoyée à {email} ?",
         "warning": "Cette action supprimera définitivement l'invitation et l'utilisateur ne pourra plus rejoindre le projet avec ce lien."
-      }
-    },
-    "permissions": {
-      "read": "Lecture",
-      "write": "Écriture",
-      "admin": "Administrateur",
-      "owner": "Propriétaire"
+      },
+      "status": {
+        "pending": "En attente",
+        "accepted": "Acceptée",
+        "declined": "Refusée",
+        "expired": "Expirée"
+      },
+      "load_error": "Erreur lors du chargement des invitations",
+      "invitation_resent": "Invitation renvoyée avec succès",
+      "resend_error": "Erreur lors du renvoi de l'invitation",
+      "invitation_canceled": "Invitation annulée avec succès",
+      "cancel_error": "Erreur lors de l'annulation de l'invitation"
     }
   },
   "configureFileTypes": {
@@ -898,8 +816,7 @@
       "updateFailed": "Échec de la mise à jour du type de fichier.",
       "deleteSuccess": "Type de fichier supprimé avec succès.",
       "deleteFailed": "Échec de la suppression du type de fichier.",
-      "duplicateName": "Un type de fichier avec ce nom existe déjà.",
-      "cannotDeleteUsed": "Impossible de supprimer : Ce type de fichier est utilisé par une norme de nommage ou un composant. Veuillez d'abord supprimer la norme de nommage associée."
+      "duplicateName": "Un type de fichier avec ce nom existe déjà."
     },
     "deleteTitle": "Supprimer le type de fichier",
     "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce type de fichier ? Cette action est irréversible."
@@ -929,8 +846,7 @@
     "componentOrder": "Ordre",
     "noteAcceptedValues": "Remarque : Vous avez saisi [{value}] comme valeur acceptée. Cela sera enregistré comme une seule valeur. Pour enregistrer plusieurs valeurs acceptées, séparez-les par une virgule ou un point-virgule (ex. : B,A,W ou B;A;W).",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette norme ? Cette action est irréversible.",
-    "deleteError": "Échec de la suppression de la norme.",
-    "patternExample": "Exemple de pattern",
+    "promptExtractedValue": "La valeur '{value}' a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage valide (par ex. {example}).",
     "importModal": {
       "selectProject": "Sélectionnez un projet depuis lequel importer :",
       "chooseProject": "-- Choisissez un projet --",
@@ -945,8 +861,7 @@
       "exampleFile": "Nom de fichier exemple",
       "components": "Composants",
       "toggleDetails": "{name} : afficher ou masquer les détails",
-      "importSelected": "Importer la sélection",
-      "importFailed": "Échec de l'importation des normes."
+      "importSelected": "Importer la sélection"
     },
     "eventMessages": {
       "addSuccess": "Norme de nommage ajoutée avec succès.",
@@ -955,7 +870,7 @@
       "addFailedEmptyRegex": "Standard ne peut pas être ajouté : veuillez entrer une expression régulière valide pour chaque composant.",
       "deleteSuccess": "Norme de nommage supprimée avec succès.",
       "deleteFailed": "Échec de la suppression de la norme de nommage.",
-      "importSuccessstandard": "Normes de nommage importées avec succès.",
+      "importSuccessStandard": "Normes de nommage importées avec succès.",
       "importFailedStandard": "Échec de l'importation des normes de nommage.",
       "importFailedDuplicateStandard": "Certaines normes de nommage pour le type de fichier sélectionné existent déjà sous le même nom dans ce projet. Veuillez les renommer avant d'importer.",
       "importSuccessFileType": "Type de fichier importé avec succès.",
@@ -968,19 +883,8 @@
     "exampleFileRequired": "Veuillez entrer un fichier exemple.",
     "patternRequired": "Veuillez entrer un pattern valide.",
     "patternExampleBlockCount": "Le pattern et le fichier exemple n'ont pas le même nombre de blocs.",
-    "invalidRange": "Plage invalide \"{value}\" pour \"{name}\".",
     "acceptedValuesLength": "Toutes les valeurs acceptées pour \"{name}\" doivent comporter exactement {length} caractères.",
-    "invalidValue": "Valeur invalide \"{value}\" pour \"{name}\".",
-    "invalidRegex": "Expression régulière invalide pour \"{name}\".",
-    "acceptedValueDoesNotMatch": "La valeur acceptée \"{value}\" ne correspond pas à l'expression régulière \"{regex}\" pour \"{name}\".",
-    "valueExceedsDigits": "La valeur \"{value}\" dépasse {length} chiffres pour \"{name}\".",
-    "valuesExceedDigits": "Les valeurs de la plage \"{value}\" dépassent {length} chiffres pour \"{name}\".",
-    "pleaseEnterValue": "Veuillez entrer une valeur, une plage ou une liste.",
-    "rangeStartEnd": "Le début de la plage doit être inférieur ou égal à la fin.",
-    "enterSingleOrListOrRange": "Entrez une seule valeur, une liste séparée par des virgules/points-virgules, ou une plage (ex. : {example}).",
-    "invalidLength": "Longueur invalide pour \"{name}\".",
-    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
-    "promptExtractedValue": "La valeur '{value}' a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage valide (par ex. {example})."
+    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra"
   },
   "profile": {
     "accounts": {
@@ -1066,7 +970,6 @@
     "settings": {
       "title": "Paramètres",
       "description": "Gérez vos préférences et paramètres de compte",
-      "coming_soon": "Bientôt disponible",
       "language": {
         "title": "Langue et localisation",
         "description": "Choisissez votre langue préférée pour l'interface",
@@ -1077,7 +980,6 @@
     "security": {
       "title": "Sécurité",
       "description": "Gérez votre mot de passe et préférences de sécurité",
-      "coming_soon": "Les paramètres de sécurité seront bientôt disponibles.",
       "change_password": {
         "title": "Changer le mot de passe",
         "description": "Modifiez votre mot de passe en saisissant votre mot de passe actuel et le nouveau.",
@@ -1143,13 +1045,11 @@
   "notificationBell": {
     "title": "Notifications",
     "unread_notifications": "{count} notifications non lues",
-    "no_unread_notifications": "Aucune notification non lue",
     "mark_all_read": "Tout lire",
     "loading_notifications": "Chargement des notifications...",
     "no_notifications": "Aucune notification",
     "up_to_date": "Vous êtes à jour !",
     "unread_badge": "{count} non lue{count, plural, =1 {} other {s}}",
-    "unread_badge_singular": "1 non lue",
     "mark_as_read": "Marquer comme lu",
     "delete": "Supprimer",
     "close": "Fermer les notifications",
@@ -1179,7 +1079,6 @@
     "send": "Envoyer le Message",
     "sending": "Envoi en cours...",
     "success_message": "Votre message a été envoyé avec succès ! Nos administrateurs l'examineront et vous répondront bientôt.",
-    "error_message": "Échec de l'envoi de votre message. Veuillez réessayer plus tard.",
     "error_message_too_short": "Votre message doit contenir au moins 10 caractères.",
     "error_message_too_long": "Votre message ne peut pas dépasser 5000 caractères.",
     "error_message_invalid": "Le format de votre message n'est pas valide.",
@@ -1221,13 +1120,10 @@
     },
     "eventMessages": {
       "fileTypeAdded": "Type de fichier \"{fileType}\" a été associé avec succès avec \"{location}\".",
-      "fileTypeAddFailed": "Échec de l'association du type de fichier.",
       "fileTypeRemoved": "Le type de fichier \"{fileType}\" n'est plus associé avec \"{location}\".",
-      "fileTypeRemoveFailed": "Échec de la suppression de l'association du type de fichier.",
       "updateSuccess": "Norme effective mise à jour avec succès.",
       "removeSuccess": "Norme effective supprimée avec succès.",
       "updateFailed": "Échec de la mise à jour de la norme effective.",
-      "removeFailed": "Échec de la suppression de la norme effective.",
       "loadFailed": "Échec du chargement des normes effectives."
     }
   },
@@ -1608,31 +1504,15 @@
   "tiersPage": {
     "pageTitle": "Hiérarchie des tiers",
     "pageDescription": "Inspectez et organisez les couches d'annotation linguistique présentes dans les fichiers ELAN de ce projet.",
-    "sectionsTitle": "Organisation du corpus",
-    "sectionsDescription": "Regroupez les fichiers ELAN en sections de recherche pertinentes.",
-    "newSectionName": "Nom de la nouvelle section",
-    "createSection": "Créer la section",
-    "renameSection": "Renommer la section",
-    "deleteSection": "Supprimer la section",
-    "deleteConfirmation": "Supprimer la section « {name} » ? Ses fichiers retourneront dans Sans section.",
     "unsectioned": "Sans section",
     "fileCount": "{count} fichier(s) ELAN",
     "tierCount": "{count} tier(s) racine",
-    "moveGuidance": "Faites glisser les fichiers avec la poignée entre les sections, ou utilisez le sélecteur Déplacer vers au clavier ou sur écran tactile.",
     "moveTo": "Déplacer vers",
     "dragHandle": "Faire glisser vers une autre section",
     "dragFile": "Faire glisser {name} vers une autre section",
-    "dropHere": "Déposez un fichier ELAN ici",
-    "noUnsectioned": "Chaque fichier ELAN appartient à une section.",
     "noTiers": "Aucun tier trouvé dans ce fichier.",
     "loading": "Chargement de la hiérarchie...",
-    "noProject": "Sélectionnez un projet pour inspecter sa hiérarchie de tiers.",
-    "loadFailed": "Impossible de charger la hiérarchie des tiers.",
-    "operationFailed": "La modification n'a pas pu être enregistrée. Le dernier état du serveur a été restauré.",
-    "sectionCreated": "Section créée.",
-    "sectionRenamed": "Section renommée.",
-    "sectionDeleted": "Section supprimée.",
-    "groupMoved": "Fichier ELAN déplacé."
+    "loadFailed": "Impossible de charger la hiérarchie des tiers."
   },
   "pendingUploads": {
     "title": "Contributions en attente",
@@ -1668,12 +1548,9 @@
       "resolveConflicts": "Résoudre les conflits",
       "testMerge": "Tester la fusion",
       "testing": "Test en cours...",
-      "refresh": "Actualiser",
-      "mergeAllReady": "Fusionner tous les prêts ({count})",
-      "mergingAll": "Fusion de tous en cours..."
+      "refresh": "Actualiser"
     },
     "modal": {
-      "uploadDetails": "Détails du téléchargement",
       "resolveConflicts": "Résoudre les conflits de téléchargement"
     },
     "mergeConfirmation": {
@@ -1695,9 +1572,7 @@
       "loadFailed": "Échec du chargement des téléchargements en attente",
       "testMergeFailed": "Échec du test de fusion",
       "notReadyToMerge": "Le téléchargement n'est pas prêt à être fusionné. Veuillez d'abord tester la fusion.",
-      "mergeFailed": "Échec de la fusion du téléchargement",
-      "noReadyUploads": "Aucun téléchargement n'est prêt à être fusionné",
-      "batchMergeFailed": "Échec de la fusion des téléchargements"
+      "mergeFailed": "Échec de la fusion du téléchargement"
     },
     "unknown": "Inconnu"
   },
@@ -1709,7 +1584,6 @@
     "selectedFiles": "Fichiers sélectionnés ({count})",
     "addMoreFiles": "Ajouter plus de fichiers",
     "clearAllFiles": "Effacer tous les fichiers",
-    "removeFile": "Supprimer le fichier",
     "totalSize": "Total : {size}",
     "filesExceedLimit": "Certains fichiers dépassent {maxSize}",
     "noFilesSelected": "Aucun fichier sélectionné",
@@ -1784,7 +1658,6 @@
     "nonCompliantSummary": "{count} fichier(s) ne respectent pas la norme de nommage du projet.",
     "compliantSummary": "Tous les noms sélectionnés respectent la norme active.",
     "submitTitle": "Soumettre la contribution",
-    "submitDescription": "Les fichiers validés seront préparés pour révision avant fusion.",
     "complete": "Soumission terminée",
     "uploadingFiles": "Upload de {count} fichier(s)...",
     "uploadResults": "Résultats de l'upload",
@@ -1792,7 +1665,6 @@
     "resultFailed": "✗ Échec",
     "correctionLinked": "La contribution corrigée a été associée à sa demande de révision.",
     "errors": {
-      "failedToLoadProjects": "Échec du chargement des projets",
       "selectProjectAndFiles": "Veuillez sélectionner un projet et des fichiers",
       "uploadFailed": "Échec de l'upload des fichiers.",
       "standardsFailed": "Les règles de nommage du projet n'ont pas pu être chargées. L'upload est suspendu afin d'éviter une soumission non vérifiée."
@@ -2245,7 +2117,6 @@
     },
     "lastUpdated": "Dernière modification {date}",
     "save": "Enregistrer la gouvernance des données",
-    "saving": "Enregistrement…",
-    "readOnly": "Seuls les administrateurs du projet peuvent modifier ces paramètres."
+    "saving": "Enregistrement…"
   }
 }

@@ -10,17 +10,14 @@
     "save": "保存",
     "close": "閉じる",
     "saving": "保存中...",
-    "or": "または",
     "loading": "読み込み中...",
     "retry": "再試行",
     "sending": "送信中",
     "no": "いいえ",
     "yes_cancel": "はい、キャンセル",
-    "canceling": "キャンセル中",
     "add": "追加",
     "adding": "追加中",
-    "remove": "削除",
-    "removing": "削除中"
+    "remove": "削除"
   },
   "operations": {
     "title": "システム状態と復旧",
@@ -113,8 +110,7 @@
         "backup_passphrase_not_configured": "バックアップのパスフレーズが未設定です"
       },
       "owners": {
-        "installation": "このインストール",
-        "deployment_operator": "デプロイ運用担当"
+        "installation": "このインストール"
       }
     },
     "boundary": {
@@ -122,16 +118,23 @@
       "body": "ストレージ認証情報、暗号鍵、スケジュール、復旧操作はデプロイの秘密管理と運用手順書で管理します。このページは意図的に状態のみを表示します。"
     }
   },
+  "http_status": {
+    "400": "不正なリクエストです",
+    "401": "認証が必要です。ログインしてください",
+    "403": "アクセスが拒否されました。この操作を行う権限がありません",
+    "404": "見つかりません。要求されたリソースは存在しません",
+    "500": "サーバー内部エラーが発生しました",
+    "502": "上流サーバーからの応答が不正です",
+    "503": "サービスを利用できません。サーバーは現在停止しています",
+    "unknown": "不明なエラーが発生しました"
+  },
   "app": {
     "title": "ELANORA"
   },
   "homePage": {
     "pageTitle": "ようこそ",
-    "welcomeMessage": "ELANORAへようこそ！",
     "description": "言語コーパスの管理と注釈のための協調プラットフォーム",
     "instructions": "始めるには、プロジェクトを作成または参加して、データを探索してください。",
-    "getStarted": "始める",
-    "viewDemo": "デモを見る",
     "features": {
       "title": "主要機能",
       "collaborative_elan": {
@@ -159,53 +162,34 @@
         "description": "分析のためにアノテーションを様々な形式でエクスポートします。"
       }
     },
-    "platform_stats": "プラットフォーム統計",
     "stats": {
-      "total_projects": "総プロジェクト数",
-      "active_users": "アクティブユーザー",
-      "elan_files": "ELANファイル",
-      "institutions": "機関"
+      "total_projects": "総プロジェクト数"
     },
     "cta": {
       "title": "協調の準備はできましたか？",
-      "description": "言語学プロジェクトでELANORAを使用している何千人もの研究者に参加しましょう。",
-      "get_started": "今すぐ始める",
-      "contact_us": "お問い合わせ"
+      "description": "言語学プロジェクトでELANORAを使用している何千人もの研究者に参加しましょう。"
     }
   },
   "appHeader": {
     "profile": "プロフィール",
     "logout": "ログアウト",
-    "reviews": "レビュー",
     "projects": "プロジェクト",
-    "dashboard": "ダッシュボード",
     "operations": "システム状態",
     "upload": "ファイルアップロード",
-    "contribution": "貢献",
     "tiers": "階層",
     "export": "エクスポート",
+    "contribution": "貢献",
+    "reviews": "レビュー",
     "projectSection": {
       "selectProject": "プロジェクトを選択",
-      "noProjectAvailable": "利用可能なプロジェクトがありません",
       "loadError": "プロジェクトの読み込みに失敗しました"
     }
   },
   "appFooter": {
     "platform_description": "ELANコーパスのための協調言語アノテーションプラットフォーム。",
     "resources": "リソース",
-    "documentation": "ドキュメント",
-    "api_reference": "APIリファレンス",
-    "tutorials": "チュートリアル",
-    "support": "サポート",
-    "community": "コミュニティ",
-    "about": "概要",
     "research": "研究",
-    "partnerships": "パートナーシップ",
     "contact": "連絡先",
-    "legal": "法的事項",
-    "privacy_policy": "プライバシーポリシー",
-    "terms_of_service": "利用規約",
-    "cookie_policy": "クッキーポリシー",
     "all_rights_reserved": "全著作権所有。"
   },
   "login": {
@@ -215,21 +199,15 @@
     "institution_fallback": "機関研究ワークスペース",
     "welcome_back": "おかえりなさい",
     "sign_in_instruction": "研究ワークスペースに進むにはログインしてください。",
-    "connect_to_access": "インスタンスへのアクセス：{instanceName}",
     "login_placeholder": "ログイン名を入力",
     "password": "パスワード",
     "password_placeholder": "パスワードを入力",
-    "remember_me": "ログイン状態を保持",
     "forgot_password": "パスワードを忘れましたか？",
     "logging_in": "ログイン中...",
     "login": "ログイン",
-    "login_with_sso": "{provider}でログイン",
-    "no_account": "アカウントをお持ちでないですか？",
-    "request_access": "アクセスを申請",
     "have_invitation": "招待状をお持ちですか？",
     "join_project": "プロジェクトに参加",
     "need_help": "ヘルプが必要ですか？お問い合わせください",
-    "welcome_to_elanora": "ELANORAへようこそ！",
     "features": {
       "collaborative_elan": "協調ELANアノテーション",
       "conflict_detection": "競合検出",
@@ -237,32 +215,13 @@
       "project_repositories": "プロジェクトリポジトリ",
       "secure_instance": "セキュアインスタンス"
     },
-    "stats": {
-      "active_projects": "アクティブプロジェクト",
-      "researchers": "研究者",
-      "elan_files": "ELANファイル"
-    },
-    "enter_email_first": "まずメールアドレスを入力してください。",
     "login_success": "ログインに成功しました！",
-    "login_error": "ログインに失敗しました。認証情報を確認してください。",
-    "sso_error": "SSOログインに失敗しました。",
-    "access_request_sent": "{email}のインスタンスにアクセス申請を送信しました。",
-    "access_request_error": "アクセス申請の送信に失敗しました。",
-    "retrieving_lab_info": "ラボ情報を取得中...",
     "email_verification_required": "メール確認が必要です。メールを確認し、アカウントを有効化する手順に従ってください。",
     "login_connection_error": "ログインに失敗しました。接続と認証情報を確認してください。"
   },
   "auth": {
     "login": "ログイン",
-    "request_access": "アクセス申請",
-    "login_success": "ログインに成功しました！",
-    "login_error": "ログインに失敗しました。認証情報を確認してください。",
-    "sso_error": "SSOログインに失敗しました。",
-    "access_request_sent": "{email}のインスタンスにアクセス申請を送信しました。",
-    "access_request_error": "アクセス申請の送信に失敗しました。",
-    "enter_email_first": "まずメールアドレスを入力してください。",
-    "logout_success": "ログアウトに成功しました！",
-    "logout_error": "ログアウトに失敗しました。もう一度お試しください。"
+    "login_success": "ログインに成功しました！"
   },
   "forgotPassword": {
     "title": "パスワードを忘れた場合",
@@ -295,8 +254,7 @@
     "error": "パスワードのリセット中にエラーが発生しました。もう一度お試しください。",
     "passwords_no_match": "パスワードが一致しません",
     "password_too_short": "パスワードは8文字以上である必要があります",
-    "email_required": "パスワードをリセットするにはメールアドレスが必要です",
-    "code_6_digits": "確認コードは6桁である必要があります"
+    "email_required": "パスワードをリセットするにはメールアドレスが必要です"
   },
   "event_messages": {
     "already_logged_in": "既にログインしています。"
@@ -432,6 +390,7 @@
     "invitation_sender_unknown": "管理者"
   },
   "invitation": {
+    "context": "共同研究",
     "send_title": "招待を送信",
     "send_description": "ELANORAの特定のプロジェクトにユーザーを招待",
     "email_label": "メールアドレス",
@@ -446,14 +405,33 @@
     "sending": "送信中...",
     "success": "招待の送信が完了しました！",
     "error": "招待の送信に失敗しました",
-    "invalid_email": "有効なメールアドレスを入力してください"
+    "invalid_email": "有効なメールアドレスを入力してください",
+    "loading_invitation": "招待の詳細を読み込み中...",
+    "decision_title": "プロジェクトへの招待",
+    "review_invitation": "この招待をご確認ください",
+    "invited_you_to_join": "さんがあなたをプロジェクトに招待しました",
+    "personal_message": "メッセージ:",
+    "expires_at": "有効期限",
+    "expires_in_days": "この招待はあと{days}日で失効します。",
+    "accept": "承諾する",
+    "reject": "辞退する",
+    "processing": "処理中...",
+    "error_title": "エラー",
+    "load_error": "招待の詳細を読み込めませんでした",
+    "accept_error": "招待を承諾できませんでした",
+    "reject_error": "招待を辞退できませんでした",
+    "accept_success_title": "招待を承諾しました",
+    "reject_success_title": "招待を辞退しました",
+    "accept_success_message": "プロジェクトに参加しました。ようこそ。",
+    "reject_success_message": "この招待を辞退しました。",
+    "go_to_projects": "プロジェクトへ移動",
+    "back_to_home": "ホームに戻る",
+    "general_error": "予期しないエラーが発生しました"
   },
   "project": {
     "load_error": "プロジェクトの読み込みに失敗しました",
     "users": {
       "title": "プロジェクト \"{projectName}\" のユーザー",
-      "add_user": "ユーザーを追加",
-      "no_users": "ユーザーが見つかりません",
       "user": "ユーザー",
       "permission": "権限",
       "load_error": "ユーザーの読み込みエラー",
@@ -487,8 +465,6 @@
       "title": "プロジェクト \"{projectName}\" を共有",
       "invite_by_email": "メールで招待",
       "invite_existing_user": "既存ユーザーを招待",
-      "send_by_email": "メールで送信",
-      "get_code": "コードを取得",
       "email_label": "メールアドレス",
       "email_placeholder": "受信者のメールアドレスを入力",
       "email_required": "メールアドレスが必要です",
@@ -503,28 +479,15 @@
       "message_placeholder": "個人メッセージを追加...",
       "language_label": "招待言語",
       "send_invitation": "招待を送信",
-      "add_user_to_project": "プロジェクトに追加",
       "sending": "送信中...",
-      "adding_user": "ユーザーを追加中...",
       "invitation_sent_success": "{email}への招待送信が完了しました",
       "invitation_send_error": "招待送信エラー",
       "invitation_send_error_project_not_found": "プロジェクトが見つかりません",
       "invitation_send_error_already_invited": "このメールアドレスには既にアクティブな招待があります",
       "invitation_send_error_already_member": "ユーザーは既にこのプロジェクトのメンバーです",
       "invitation_send_error_generic": "招待の送信に失敗しました",
-      "user_added_success": "プロジェクトへのユーザー追加が完了しました",
-      "user_add_error": "ユーザー追加エラー",
-      "user_already_in_project": "このユーザーは既にプロジェクトの一部です",
-      "user_already_invited": "このユーザーは既にプロジェクトに招待されています",
       "user_email_not_found": "選択したユーザーのメールアドレスが見つかりません",
-      "error_loading_users": "ユーザーの読み込みエラー",
-      "generate_code_info": "手動で共有できる招待コードを生成します",
-      "generate_code": "コードを生成",
-      "generating": "生成中...",
-      "code_ready_info": "共有可能な招待コード：",
-      "code_instructions": "このコードを招待したい人と共有してください。このコードを使用してプロジェクトに参加できます。",
-      "generate_new_code": "新しいコードを生成",
-      "code_generation_error": "コード生成エラー"
+      "error_loading_users": "ユーザーの読み込みエラー"
     }
   },
   "emailVerification": {
@@ -560,7 +523,6 @@
     "pageTitle": "プロジェクト",
     "pageDescription": "言語研究プロジェクトを管理し、共同作業を行います",
     "title": "{instanceName}のプロジェクト",
-    "projectListTitle": "プロジェクト",
     "noProjects": "このインスタンスには現在のプロジェクトがありません。\n「新しいプロジェクトを作成」ボタンをクリックして作成を開始できます。",
     "noDescription": "説明なし",
     "selectedProject": "選択中のプロジェクト",
@@ -576,7 +538,6 @@
     "deleteConfirm": "削除",
     "deleteCancel": "キャンセル",
     "createProject": "新しいプロジェクトを作成",
-    "folderPreview": "フォルダープレビュー",
     "project": {
       "buttons": {
         "settings": "プロジェクト設定",
@@ -625,6 +586,7 @@
       "added": "追加済み",
       "modified": "変更済み",
       "deleted": "削除済み",
+      "renamed": "名称変更済み",
       "restoreFromBackup": "バックアップから復元",
       "deleteProject": "プロジェクトを削除",
       "deleteConfirm": "このプロジェクトを削除してもよろしいですか？この操作は元に戻せません。",
@@ -653,7 +615,6 @@
       "projectDescriptionPlaceholder": "説明（オプション）",
       "dropFolder": "ここにフォルダーをドロップするか、クリックして参照",
       "onlyEafFiles": ".eafファイルのみが含まれます",
-      "folderPreview": "フォルダープレビュー",
       "create": "作成",
       "creating": "作成中...",
       "errors": {
@@ -662,7 +623,6 @@
         "nameExists": "この名前のプロジェクトは既に存在します。",
         "descTooLong": "説明は5000文字以内にする必要があります。",
         "fixAbove": "上記のエラーを修正してください。",
-        "folderDropNotSupported": "お使いのブラウザはフォルダーのドラッグ＆ドロップをサポートしていません。「参照」ボタンを使用してください。",
         "createFailed": "プロジェクトの作成に失敗しました。"
       }
     },
@@ -682,7 +642,29 @@
         "fixAbove": "上記のエラーを修正してください。",
         "editFailed": "プロジェクトの編集に失敗しました。"
       }
+    },
+    "infoBanner": {
+      "nonCompliant": "{count}件のファイルが命名規則に従っていません。",
+      "allCompliant": "すべてのファイルが命名規則に従っています。",
+      "noEffectiveStandard1": "現在、適用中の命名規則はありません。",
+      "noEffectiveStandard2": "プロジェクト設定",
+      "noEffectiveStandard3": "から作成してください。",
+      "bulkRename": "一括で名称変更する。"
     }
+  },
+  "bulkRenameDialog": {
+    "title": "ファイルの一括名称変更",
+    "loading": "ファイルを読み込み中...",
+    "noSuggestions": "名称変更できるファイルがありません。",
+    "current": "現在",
+    "suggested": "変更後",
+    "enterNewName": "新しいファイル名を入力",
+    "extractedFrom": "メディアファイルに基づく",
+    "apply": "名称変更を適用",
+    "renameAll": "すべて名称変更",
+    "renaming": "名称変更中...",
+    "notCompliant": "このファイル名は命名規則に従っていません",
+    "complianceRequired": "すべての名称変更は命名規則に従う必要があります"
   },
   "fileRenameSuggestion": {
     "title": "ファイル名の変更",
@@ -707,10 +689,10 @@
     "bulkMixedOneConflict": "{successful}個のファイル名が正常に変更されました。1個は名前の競合のためスキップされました",
     "bulkAllConflicts": "ファイル名は変更されませんでした - {count}個すべてのファイルが対象の名前で既に存在しています",
     "bulkAllConflictsSingular": "ファイル名は変更されませんでした - そのファイルは対象の名前で既に存在しています",
-    "error": "ファイル名の変更に失敗しました",
-    "bulkError": "ファイル名の変更に失敗しました"
+    "error": "ファイル名の変更に失敗しました"
   },
   "projectSettings": {
+    "pageTitle": "プロジェクト設定",
     "title": "{projectName}プロジェクトを設定",
     "subtitle": "プロジェクト設定をカスタマイズ",
     "sectionNames": {
@@ -734,13 +716,9 @@
       "name": "プロトコル名",
       "required_tiers": "必須階層（カンマ区切り）",
       "tier_parents": "必須の親階層（JSON）",
-      "linguistic_types": "必須言語タイプ（JSON）",
       "vocabularies": "必須統制語彙",
       "media_required": "リンクされたメディアを必須にする",
-      "media_types": "許可するメディアMIMEタイプ",
-      "create": "下書きを作成",
-      "publish": "公開",
-      "pin": "このプロジェクトで使用"
+      "create": "下書きを作成"
     },
     "members": {
       "title": "メンバー管理",
@@ -760,7 +738,6 @@
         "title": "新しいメンバーを追加",
         "description": "研究者を選択し、このプロジェクトで許可する操作を設定します。アクセス権は後から変更できます。",
         "user_id": "ユーザーID",
-        "user_id_placeholder": "ユーザーIDを入力",
         "permission": "権限",
         "user_required": "メンバーを追加する前に研究者を選択してください。"
       },
@@ -813,9 +790,6 @@
         "expired": "期限切れ"
       },
       "load_error": "招待の読み込みに失敗しました",
-      "no_project_error": "プロジェクトが選択されていません",
-      "invitation_sent": "招待の送信が完了しました",
-      "send_error": "招待の送信に失敗しました",
       "invitation_resent": "招待の再送信が完了しました",
       "resend_error": "招待の再送信に失敗しました",
       "invitation_canceled": "招待のキャンセルが完了しました",
@@ -824,8 +798,7 @@
   },
   "configureFileTypes": {
     "title": "プロジェクトのファイル形式を管理",
-    "defaultFileTypes": "デフォルトのファイルタイプ",
-    "customFileTypes": "カスタムファイルタイプ",
+    "FileTypes": "ファイル種別",
     "loading": "ファイル形式を読み込み中...",
     "empty": "ファイル形式が見つかりません。最初のファイル形式を作成しましょう！",
     "createFileType": "追加",
@@ -843,8 +816,7 @@
       "updateFailed": "ファイル形式の更新に失敗しました。",
       "deleteSuccess": "ファイル形式の削除が完了しました。",
       "deleteFailed": "ファイル形式の削除に失敗しました。",
-      "duplicateName": "この名前のファイル形式は既に存在します。",
-      "cannotDeleteUsed": "削除できません：このファイル形式は命名規則またはコンポーネントによって使用されています。まず関連する命名規則を削除してください。"
+      "duplicateName": "この名前のファイル形式は既に存在します。"
     },
     "deleteTitle": "ファイル形式を削除",
     "deleteMessage": "このファイル形式を削除してもよろしいですか？この操作は取り消せません。"
@@ -874,8 +846,7 @@
     "componentOrder": "順序",
     "noteAcceptedValues": "注意：[{value}]を使用可能な値として入力しました。これは単一の値として保存されます。複数の使用可能な値を保存するには、カンマまたはセミコロンで区切ってください（例：B,A,W または B;A;W）。",
     "deleteConfirm": "この規則を削除してもよろしいですか？この操作は取り消せません。",
-    "deleteError": "規則の削除に失敗しました。",
-    "patternExample": "パターン例",
+    "promptExtractedValue": "コンポーネント「{name}」に対して値「{value}」が抽出されました。抽出された値のみを使用する場合は、空欄のまま「OK」をクリックしてください。ただし、有効な範囲（例: {example}）の入力を推奨します。",
     "importModal": {
       "selectProject": "インポート元のプロジェクトを選択：",
       "chooseProject": "-- プロジェクトを選択 --",
@@ -912,17 +883,7 @@
     "exampleFileRequired": "サンプルファイルを入力してください。",
     "patternRequired": "有効なパターンを入力してください。",
     "patternExampleBlockCount": "パターンとサンプルファイルのブロック数が一致しません。",
-    "invalidRange": "\"{name}\"の無効な範囲\"{value}\"。",
     "acceptedValuesLength": "\"{name}\"のすべての使用可能な値は正確に{length}文字である必要があります。",
-    "invalidValue": "\"{name}\"の無効な値\"{value}\"。",
-    "invalidRegex": "\"{name}\"の無効な正規表現。",
-    "acceptedValueDoesNotMatch": "使用可能な値\"{value}\"が\"{name}\"の正規表現\"{regex}\"と一致しません。",
-    "valueExceedsDigits": "値\"{value}\"が\"{name}\"の{length}桁を超えています。",
-    "valuesExceedDigits": "範囲\"{value}\"の値が\"{name}\"の{length}桁を超えています。",
-    "pleaseEnterValue": "値、範囲、またはリストを入力してください。",
-    "rangeStartEnd": "範囲の開始は終了以下である必要があります。",
-    "enterSingleOrListOrRange": "単一の値、カンマ/セミコロン区切りのリスト、または範囲を入力してください（例：{example}）。",
-    "invalidLength": "\"{name}\"の無効な長さ。",
     "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
   },
   "profile": {
@@ -1009,7 +970,6 @@
     "settings": {
       "title": "設定",
       "description": "設定とアカウント設定を管理",
-      "coming_soon": "近日公開",
       "language": {
         "title": "言語・地域化",
         "description": "インターフェースの優先言語を選択",
@@ -1020,7 +980,6 @@
     "security": {
       "title": "セキュリティ",
       "description": "パスワードとセキュリティ設定を管理",
-      "coming_soon": "セキュリティ設定は近日利用可能になります。",
       "change_password": {
         "title": "パスワード変更",
         "description": "現在のパスワードと新しいパスワードを入力してパスワードを更新します。",
@@ -1086,13 +1045,11 @@
   "notificationBell": {
     "title": "通知",
     "unread_notifications": "{count}件の未読通知",
-    "no_unread_notifications": "未読通知なし",
     "mark_all_read": "すべて既読にする",
     "loading_notifications": "通知を読み込み中...",
     "no_notifications": "通知がありません",
     "up_to_date": "最新の状態です！",
     "unread_badge": "{count}件未読",
-    "unread_badge_singular": "1件未読",
     "mark_as_read": "既読にする",
     "delete": "削除",
     "close": "通知を閉じる",
@@ -1122,7 +1079,6 @@
     "send": "メッセージを送信",
     "sending": "送信中...",
     "success_message": "メッセージは正常に送信されました！管理者が確認し、すぐにご連絡いたします。",
-    "error_message": "メッセージの送信に失敗しました。後でもう一度お試しください。",
     "error_message_too_short": "メッセージは10文字以上である必要があります。",
     "error_message_too_long": "メッセージは5000文字を超えることはできません。",
     "error_message_invalid": "メッセージの形式が無効です。",
@@ -1139,9 +1095,7 @@
     "error_payload_too_large": "メッセージが大きすぎます。メッセージのサイズを小さくしてください。",
     "error_unknown": "予期しないエラーが発生しました。後でもう一度お試しください。",
     "response_note": "提供されたメールアドレスに返信が届きます。",
-    "back_to_site": "サイトに戻る",
-    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle",
-    "promptExtractedValue": "コンポーネント「{name}」に対して値{value}が抽出されました。抽出された値のみを使用する場合は、これを空白のままにして「OK」をクリックしてください。ただし、有効な範囲（例：{example}）を入力することをお勧めします。"
+    "back_to_site": "サイトに戻る"
   },
   "configureEffectiveStandards": {
     "title": "有効な命名基準を構成する",
@@ -1166,179 +1120,11 @@
     },
     "eventMessages": {
       "fileTypeAdded": "ファイルタイプ「{fileType}」が「{location}」に正常に関連付けられました。",
-      "fileTypeAddFailed": "ファイルタイプの関連付けに失敗しました。",
       "fileTypeRemoved": "ファイルタイプ「{fileType}」が「{location}」との関連付けを解除されました。",
-      "fileTypeRemoveFailed": "ファイルタイプの関連付け解除に失敗しました。",
-      "loadFailed": "有効な基準の読み込みに失敗しました。",
       "updateSuccess": "有効な基準が正常に更新されました。",
-      "updateFailed": "有効な基準の更新に失敗しました。",
       "removeSuccess": "有効な基準が正常に削除されました。",
-      "removeFailed": "有効な基準の削除に失敗しました。"
-    }
-  },
-  "pendingUploads": {
-    "title": "保留中の投稿",
-    "pageDescription": "投稿内容を確認し、競合を調査して、検証済みの注釈作業を統合します。",
-    "queueTitle": "投稿レビューキュー",
-    "queueDescription": "共有研究プロジェクトへ統合する前に、受信した作業をテストします。",
-    "loading": "保留中の投稿を読み込み中...",
-    "noProjectSelected": {
-      "title": "プロジェクトが選択されていません",
-      "message": "保留中の投稿を表示するプロジェクトを選択してください。",
-      "selectProject": "プロジェクトを選択"
-    },
-    "noUploads": {
-      "title": "保留中の投稿はありません",
-      "message": "このプロジェクトの投稿はすべて処理済みです。"
-    },
-    "summary": {
-      "totalPending": "保留中の合計",
-      "readyToMerge": "統合可能",
-      "needResolution": "解決が必要"
-    },
-    "uploadedBy": "投稿者：{user}",
-    "fileTypes": {
-      "new": "新規",
-      "modified": "変更",
-      "deleted": "削除"
-    },
-    "conflictedFiles": "競合ファイル",
-    "actions": {
-      "viewDetails": "詳細を表示",
-      "mergeNow": "今すぐ統合",
-      "merging": "統合中...",
-      "resolveConflicts": "競合を解決",
-      "testMerge": "統合をテスト",
-      "testing": "テスト中...",
-      "refresh": "更新",
-      "mergeAllReady": "統合可能な項目をすべて統合（{count}件）",
-      "mergingAll": "すべて統合中..."
-    },
-    "modal": {
-      "uploadDetails": "投稿の詳細",
-      "resolveConflicts": "投稿の競合を解決"
-    },
-    "mergeConfirmation": {
-      "title": "投稿を統合しますか？",
-      "message": "{branch}を共有プロジェクトへ統合し、プロジェクト履歴を変更します。"
-    },
-    "status": {
-      "readyToMerge": "統合可能",
-      "needsResolution": "解決が必要",
-      "error": "エラー",
-      "pendingReview": "レビュー待ち"
-    },
-    "uploadTypes": {
-      "newFiles": "新規ファイル",
-      "withModifications": "変更あり",
-      "withDeletions": "削除あり"
-    },
-    "errors": {
-      "loadFailed": "保留中の投稿を読み込めませんでした",
-      "testMergeFailed": "統合テストに失敗しました",
-      "notReadyToMerge": "投稿はまだ統合できません。先に統合をテストしてください。",
-      "mergeFailed": "投稿の統合に失敗しました",
-      "noReadyUploads": "統合可能な投稿はありません",
-      "batchMergeFailed": "投稿の一括統合に失敗しました"
-    },
-    "unknown": "不明"
-  },
-  "upload": {
-    "selectedFiles": "選択したファイル（{count}件）",
-    "addMoreFiles": "ファイルを追加",
-    "clearAllFiles": "すべて消去",
-    "removeFile": "ファイルを削除",
-    "removeNamedFile": "{name}を削除",
-    "chooseFiles": "ファイルを選択",
-    "chooseFolder": "フォルダーを選択",
-    "totalSize": "合計：{size}",
-    "filesExceedLimit": "一部のファイルが{maxSize}を超えています",
-    "noFilesSelected": "ファイルが選択されていません",
-    "filesSkipped": ".eaf以外のファイル{count}件を除外しました",
-    "noEafFiles": ".eafファイルがありません",
-    "filesTooLarge": "サイズ制限（{maxSize}）を超えるファイル：{files}",
-    "duplicatesSkipped": "重複ファイル{count}件を除外しました",
-    "noNewFiles": "追加できる新しいファイルがありません",
-    "filesAddedFromFolder": "フォルダーから{count}件追加しました",
-    "fileAdded": "追加：{fileName}",
-    "filesAdded": "{count}件追加しました",
-    "zone": {
-      "title": "ELANファイルをドロップするか選択してください",
-      "subtitle": ".eafファイルのみ使用できます"
-    }
-  },
-  "uploadPage": {
-    "title": "ELANファイルのアップロード",
-    "pageDescription": "プロジェクトへ提出する前に命名規則とELAN構造を検証します。",
-    "projectSelection": {
-      "label": "プロジェクト",
-      "placeholder": "プロジェクトを選択..."
-    },
-    "uploadZone": {
-      "title": "ELANファイルをここにドロップ",
-      "subtitle": ".eafファイルのみ（1件50MBまで）"
-    },
-    "projectStep": {
-      "title": "プロジェクトを選択",
-      "description": "提出先の研究プロジェクトを選びます。"
-    },
-    "filesStep": {
-      "title": "ELANファイルを選択・検証",
-      "description": "共同レビューに入る前にファイルを検査します。"
-    },
-    "correction": {
-      "title": "修正済みの貢献",
-      "description": "以下に指定されたファイルだけをアップロードしてください。依頼されていないファイルはプロジェクト内で変更されないため、再提出は不要です。",
-      "viewDiscussion": "議論を見る",
-      "addFiles": "依頼された修正済みファイルを追加",
-      "uploadHint": "プロジェクト全体を再アップロードする必要はありません。",
-      "stillRequired": "未提出",
-      "finishLink": "この貢献を修正依頼に関連付ける"
-    },
-    "context": {
-      "title": "貢献内容を説明",
-      "description": "レビュー担当者が意図を推測せずに作業を検証できるよう、研究上の背景を記入してください。",
-      "copyDetected": "研究用コピーを検出しました",
-      "customScope": "カスタム階層範囲",
-      "editableTiers": "編集可能な階層：{count}件",
-      "scopeCheckHint": "宣言された階層範囲と、このアップロードの変更内容が自動的に照合されます。",
-      "topic": "研究トピック",
-      "topicPlaceholder": "既存のトピックを選ぶか、新しく提案",
-      "topicHint": "最も近い既存トピックを選択してください。新しい提案はレビュー前に類似した綴りがないか確認されます。",
-      "suggestedName": "提案するトピック名",
-      "suggestedNamePlaceholder": "例：プロソディー",
-      "suggestedNameHint": "管理者はこの提案を既存トピックに関連付けたり、名前を修正して承認したりできます。",
-      "similarTopic": "類似するトピックがあります",
-      "similarTopicMessage": "「{proposed}」は既存のトピック「{existing}」に似ています。",
-      "useTopic": "{topic}を使用",
-      "summary": "どのような作業をしましたか？",
-      "required": "必須",
-      "summaryPlaceholder": "研究作業と、レビュー担当者が確認すべき変更を要約してください",
-      "summaryHint": "簡潔かつ具体的に記入してください。注釈と階層の差分は自動計算されます。",
-      "reviewEvidence": "申告内容とELANORAが計算した変更情報は、レビュー時にまとめて表示されます。",
-      "addFilesFirst": "先に貢献ファイルを追加してください。",
-      "viewContribution": "貢献 #{id} を見る"
-    },
-    "ready": "準備完了",
-    "selectedCount": "{count}件選択",
-    "selectProjectFirst": "先にプロジェクトを選択してください。",
-    "nonCompliantSummary": "{count}件のファイル名が命名規則に違反しています。",
-    "compliantSummary": "選択したファイル名はすべて命名規則に適合しています。",
-    "submitTitle": "貢献を提出",
-    "submitDescription": "検証済みファイルはマージ前のレビューに送られます。",
-    "uploadButton": "ファイルをアップロード",
-    "uploadingFiles": "{count}件をアップロード中...",
-    "complete": "提出完了",
-    "uploadResults": "アップロード結果",
-    "resultSuccess": "成功",
-    "resultFailed": "失敗",
-    "correctionLinked": "修正済みの貢献をレビュー依頼に関連付けました。",
-    "complianceWarning": "命名規則に違反するファイルがあります。",
-    "errors": {
-      "failedToLoadProjects": "プロジェクトの読み込みに失敗しました",
-      "selectProjectAndFiles": "プロジェクトとファイルを選択してください",
-      "uploadFailed": "アップロードに失敗しました",
-      "standardsFailed": "命名規則を読み込めないため、未検証の提出を防ぐ目的でアップロードを停止しました。"
+      "updateFailed": "有効な基準の更新に失敗しました。",
+      "loadFailed": "有効な基準の読み込みに失敗しました。"
     }
   },
   "contributionResolution": {
@@ -1718,31 +1504,172 @@
   "tiersPage": {
     "pageTitle": "階層",
     "pageDescription": "プロジェクトのELANファイルに含まれる注釈階層を確認・整理します。",
-    "sectionsTitle": "コーパスの整理",
-    "sectionsDescription": "ELANファイルを研究用のセクションに分類します。",
-    "newSectionName": "新しいセクション名",
-    "createSection": "セクションを作成",
-    "renameSection": "セクション名を変更",
-    "deleteSection": "セクションを削除",
-    "deleteConfirmation": "セクション「{name}」を削除しますか？ファイルは未分類に戻ります。",
     "unsectioned": "未分類",
     "fileCount": "ELANファイル {count}件",
     "tierCount": "ルート階層 {count}件",
-    "moveGuidance": "グリップをドラッグしてセクション間を移動できます。キーボードやタッチ操作では移動先メニューも使用できます。",
     "moveTo": "移動先",
     "dragHandle": "別のセクションへドラッグ",
     "dragFile": "{name}を別のセクションへドラッグ",
-    "dropHere": "ここにELANファイルをドロップ",
-    "noUnsectioned": "すべてのELANファイルがセクションに所属しています。",
     "noTiers": "このファイルには階層がありません。",
     "loading": "階層を読み込んでいます...",
-    "noProject": "階層を確認するプロジェクトを選択してください。",
-    "loadFailed": "階層を読み込めませんでした。",
-    "operationFailed": "変更を保存できませんでした。サーバーの最新状態に戻しました。",
-    "sectionCreated": "セクションを作成しました。",
-    "sectionRenamed": "セクション名を変更しました。",
-    "sectionDeleted": "セクションを削除しました。",
-    "groupMoved": "ELANファイルを移動しました。"
+    "loadFailed": "階層を読み込めませんでした。"
+  },
+  "pendingUploads": {
+    "title": "保留中の投稿",
+    "pageDescription": "投稿内容を確認し、競合を調査して、検証済みの注釈作業を統合します。",
+    "queueTitle": "投稿レビューキュー",
+    "queueDescription": "共有研究プロジェクトへ統合する前に、受信した作業をテストします。",
+    "loading": "保留中の投稿を読み込み中...",
+    "noProjectSelected": {
+      "title": "プロジェクトが選択されていません",
+      "message": "保留中の投稿を表示するプロジェクトを選択してください。",
+      "selectProject": "プロジェクトを選択"
+    },
+    "noUploads": {
+      "title": "保留中の投稿はありません",
+      "message": "このプロジェクトの投稿はすべて処理済みです。"
+    },
+    "summary": {
+      "totalPending": "保留中の合計",
+      "readyToMerge": "統合可能",
+      "needResolution": "解決が必要"
+    },
+    "uploadedBy": "投稿者：{user}",
+    "fileTypes": {
+      "new": "新規",
+      "modified": "変更",
+      "deleted": "削除"
+    },
+    "conflictedFiles": "競合ファイル",
+    "actions": {
+      "viewDetails": "詳細を表示",
+      "mergeNow": "今すぐ統合",
+      "merging": "統合中...",
+      "resolveConflicts": "競合を解決",
+      "testMerge": "統合をテスト",
+      "testing": "テスト中...",
+      "refresh": "更新"
+    },
+    "modal": {
+      "resolveConflicts": "投稿の競合を解決"
+    },
+    "mergeConfirmation": {
+      "title": "投稿を統合しますか？",
+      "message": "{branch}を共有プロジェクトへ統合し、プロジェクト履歴を変更します。"
+    },
+    "status": {
+      "readyToMerge": "統合可能",
+      "needsResolution": "解決が必要",
+      "error": "エラー",
+      "pendingReview": "レビュー待ち"
+    },
+    "uploadTypes": {
+      "newFiles": "新規ファイル",
+      "withModifications": "変更あり",
+      "withDeletions": "削除あり"
+    },
+    "errors": {
+      "loadFailed": "保留中の投稿を読み込めませんでした",
+      "testMergeFailed": "統合テストに失敗しました",
+      "notReadyToMerge": "投稿はまだ統合できません。先に統合をテストしてください。",
+      "mergeFailed": "投稿の統合に失敗しました"
+    },
+    "unknown": "不明"
+  },
+  "upload": {
+    "zone": {
+      "title": "ELANファイルをドロップするか選択してください",
+      "subtitle": ".eafファイルのみ使用できます"
+    },
+    "selectedFiles": "選択したファイル（{count}件）",
+    "addMoreFiles": "ファイルを追加",
+    "clearAllFiles": "すべて消去",
+    "totalSize": "合計：{size}",
+    "filesExceedLimit": "一部のファイルが{maxSize}を超えています",
+    "noFilesSelected": "ファイルが選択されていません",
+    "filesSkipped": ".eaf以外のファイル{count}件を除外しました",
+    "noEafFiles": ".eafファイルがありません",
+    "filesTooLarge": "サイズ制限（{maxSize}）を超えるファイル：{files}",
+    "duplicatesSkipped": "重複ファイル{count}件を除外しました",
+    "noNewFiles": "追加できる新しいファイルがありません",
+    "filesAddedFromFolder": "フォルダーから{count}件追加しました",
+    "fileAdded": "追加：{fileName}",
+    "filesAdded": "{count}件追加しました",
+    "chooseFiles": "ファイルを選択",
+    "chooseFolder": "フォルダーを選択",
+    "removeNamedFile": "{name}を削除"
+  },
+  "uploadPage": {
+    "title": "ELANファイルのアップロード",
+    "pageDescription": "プロジェクトへ提出する前に命名規則とELAN構造を検証します。",
+    "projectSelection": {
+      "label": "プロジェクト",
+      "placeholder": "プロジェクトを選択..."
+    },
+    "uploadZone": {
+      "title": "ELANファイルをここにドロップ",
+      "subtitle": ".eafファイルのみ（1件50MBまで）"
+    },
+    "uploadButton": "ファイルをアップロード",
+    "projectStep": {
+      "title": "プロジェクトを選択",
+      "description": "提出先の研究プロジェクトを選びます。"
+    },
+    "filesStep": {
+      "title": "ELANファイルを選択・検証",
+      "description": "共同レビューに入る前にファイルを検査します。"
+    },
+    "correction": {
+      "title": "修正済みの貢献",
+      "description": "以下に指定されたファイルだけをアップロードしてください。依頼されていないファイルはプロジェクト内で変更されないため、再提出は不要です。",
+      "viewDiscussion": "議論を見る",
+      "addFiles": "依頼された修正済みファイルを追加",
+      "uploadHint": "プロジェクト全体を再アップロードする必要はありません。",
+      "stillRequired": "未提出",
+      "finishLink": "この貢献を修正依頼に関連付ける"
+    },
+    "context": {
+      "title": "貢献内容を説明",
+      "description": "レビュー担当者が意図を推測せずに作業を検証できるよう、研究上の背景を記入してください。",
+      "copyDetected": "研究用コピーを検出しました",
+      "customScope": "カスタム階層範囲",
+      "editableTiers": "編集可能な階層：{count}件",
+      "scopeCheckHint": "宣言された階層範囲と、このアップロードの変更内容が自動的に照合されます。",
+      "topic": "研究トピック",
+      "topicPlaceholder": "既存のトピックを選ぶか、新しく提案",
+      "topicHint": "最も近い既存トピックを選択してください。新しい提案はレビュー前に類似した綴りがないか確認されます。",
+      "suggestedName": "提案するトピック名",
+      "suggestedNamePlaceholder": "例：プロソディー",
+      "suggestedNameHint": "管理者はこの提案を既存トピックに関連付けたり、名前を修正して承認したりできます。",
+      "similarTopic": "類似するトピックがあります",
+      "similarTopicMessage": "「{proposed}」は既存のトピック「{existing}」に似ています。",
+      "useTopic": "{topic}を使用",
+      "summary": "どのような作業をしましたか？",
+      "required": "必須",
+      "summaryPlaceholder": "研究作業と、レビュー担当者が確認すべき変更を要約してください",
+      "summaryHint": "簡潔かつ具体的に記入してください。注釈と階層の差分は自動計算されます。",
+      "reviewEvidence": "申告内容とELANORAが計算した変更情報は、レビュー時にまとめて表示されます。",
+      "addFilesFirst": "先に貢献ファイルを追加してください。",
+      "viewContribution": "貢献 #{id} を見る"
+    },
+    "ready": "準備完了",
+    "selectedCount": "{count}件選択",
+    "selectProjectFirst": "先にプロジェクトを選択してください。",
+    "nonCompliantSummary": "{count}件のファイル名が命名規則に違反しています。",
+    "compliantSummary": "選択したファイル名はすべて命名規則に適合しています。",
+    "submitTitle": "貢献を提出",
+    "complete": "提出完了",
+    "uploadingFiles": "{count}件をアップロード中...",
+    "uploadResults": "アップロード結果",
+    "resultSuccess": "成功",
+    "resultFailed": "失敗",
+    "correctionLinked": "修正済みの貢献をレビュー依頼に関連付けました。",
+    "errors": {
+      "selectProjectAndFiles": "プロジェクトとファイルを選択してください",
+      "uploadFailed": "アップロードに失敗しました",
+      "standardsFailed": "命名規則を読み込めないため、未検証の提出を防ぐ目的でアップロードを停止しました。"
+    },
+    "complianceWarning": "命名規則に違反するファイルがあります。"
   },
   "reviewArchive": {
     "eyebrow": "レビューのアーカイブ",
@@ -2190,7 +2117,6 @@
     },
     "lastUpdated": "最終変更 {date}",
     "save": "データガバナンスを保存",
-    "saving": "保存しています…",
-    "readOnly": "これらの設定を変更できるのはプロジェクト管理者のみです。"
+    "saving": "保存しています…"
   }
 }
