@@ -82,19 +82,47 @@
     },
     "recovery": {
       "context": "Disaster recovery",
-      "title": "Backup evidence",
-      "explanation": "Backups are controlled outside ELANORA so they remain available if this application or server fails.",
-      "owner": "Responsible party",
-      "command": "Deployment operators can prove the complete restore procedure with",
-      "states": { "not_reported": "Not reported to ELANORA" },
-      "owners": { "deployment_operator": "Deployment operator" }
+      "title": "Backups",
+      "explanation": "This installation takes its own encrypted backup of the database, project storage and institution assets, verifies the newest one, and applies each project's retention policy.",
+      "notConfigured": "No backup passphrase is configured, so this installation has no backup it could restore from. Run the setup command to generate one.",
+      "lastBackup": "Last backup",
+      "lastVerified": "Last verified",
+      "never": "Never",
+      "diskUsed": "{percent}% of the disk used",
+      "projectsPurged": "no project purged | {count} project purged | {count} projects purged",
+      "command": "The complete restore procedure can be rehearsed with",
+      "states": {
+        "healthy": "Backups healthy",
+        "unverified": "Latest backup unverified",
+        "not_yet_run": "No backup yet",
+        "not_configured": "Backups not configured",
+        "failing": "Backups failing",
+        "not_reported": "Not reported"
+      },
+      "outcomes": {
+        "succeeded": "Succeeded",
+        "failed": "Failed",
+        "skipped": "Skipped"
+      },
+      "jobs": {
+        "backup": "Backup",
+        "backup_verification": "Backup verification",
+        "retention_purge": "Retention purge",
+        "storage_capacity": "Disk capacity"
+      },
+      "reasons": {
+        "backup_passphrase_not_configured": "No backup passphrase configured"
+      },
+      "owners": {
+        "installation": "This installation",
+        "deployment_operator": "Deployment operator"
+      }
     },
     "boundary": {
       "title": "Why configuration is not editable here",
       "body": "Storage credentials, encryption keys, schedules, and restores belong in the deployment secret manager and infrastructure runbook. This page deliberately exposes status only."
     }
   },
-
   "http_status": {
     "400": "Bad Request",
     "401": "Unauthorized - Please log in",
@@ -108,7 +136,6 @@
     "504": "Gateway Timeout - The upstream server failed to send a request in time",
     "unknown": "An unknown error occurred"
   },
-
   "app": {
     "title": "ELANORA"
   },
@@ -543,7 +570,6 @@
       "resendFailed": "Failed to send verification code"
     }
   },
-
   "projectsPage": {
     "pagination": {
       "pageNumberLabel": "Page number"
@@ -684,7 +710,6 @@
       "bulkRename": "Bulk rename."
     }
   },
-
   "bulkRenameDialog": {
     "title": "Bulk Rename Files",
     "loading": "Loading files...",
@@ -702,7 +727,6 @@
     "notCompliant": "This filename doesn't comply with the naming standard",
     "complianceRequired": "All renames must comply with the naming standard"
   },
-
   "fileRenameSuggestion": {
     "title": "Rename File",
     "enterNewName": "Enter new filename",
@@ -711,7 +735,6 @@
     "basedOnMediaFiles": "Based on media files",
     "notCompliant": "This filename doesn't comply with the naming standard"
   },
-
   "rename": {
     "conflict": "A file with this name already exists in the project",
     "conflictMultiple": "{count} files couldn't be renamed because they already exist under the same name in the project",
@@ -730,7 +753,6 @@
     "error": "Failed to rename file",
     "bulkError": "Failed to rename files"
   },
-
   "projectSettings": {
     "pageTitle": "Project configuration",
     "title": "Configure the {projectName} project",
@@ -844,7 +866,6 @@
       "cancel_error": "Failed to cancel invitation"
     }
   },
-
   "configureFileTypes": {
     "title": "Manage file types for your project",
     "FileTypes": "File Types",
@@ -871,7 +892,6 @@
     "deleteTitle": "Delete File Type",
     "deleteMessage": "Are you sure you want to delete this file type? This action cannot be undone."
   },
-
   "configureNamingStandards": {
     "title": "Configure naming standards for your project",
     "loading": "Loading naming standards...",
@@ -949,7 +969,6 @@
     "invalidLength": "Invalid length for \"{name}\".",
     "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
   },
-
   "profile": {
     "accounts": {
       "menu": "Accounts",
@@ -960,7 +979,10 @@
       "loading": "Loading institution accounts…",
       "empty": "No matching accounts found.",
       "load_error": "Institution accounts could not be loaded.",
-      "roles": { "admin": "Administrator", "public": "Researcher" },
+      "roles": {
+        "admin": "Administrator",
+        "public": "Researcher"
+      },
       "active": "Active",
       "suspended": "Suspended",
       "you": "Your account",
@@ -1105,7 +1127,6 @@
       "load_failed": "Failed to load profile information. Please try again."
     }
   },
-
   "notificationBell": {
     "title": "Notifications",
     "unread_notifications": "{count} unread notifications",
@@ -1121,7 +1142,6 @@
     "close": "Close notifications",
     "view_all_notifications": "View all notifications"
   },
-
   "contact": {
     "title": "Contact Us",
     "subtitle": "Have a question or need help? We're here to assist you.",
@@ -1165,7 +1185,6 @@
     "response_note": "You will receive a response at the email address you provided.",
     "back_to_site": "Back to Site"
   },
-
   "configureEffectiveStandards": {
     "title": "Configure Effective Naming Standards",
     "fileType": "File Type",
@@ -1199,7 +1218,6 @@
       "loadFailed": "Failed to load effective standards."
     }
   },
-
   "contributionResolution": {
     "title": "Reviewing submitted differences",
     "summary": "{count} file overlaps with the current accepted project version and needs a decision. | {count} files overlap with the current accepted project version and need a decision.",
@@ -1312,7 +1330,10 @@
     "back": "Back",
     "contribution": "Contribution #{id}",
     "updatedVersion": "Version {version} · updated after correction",
-    "summary": { "all": "All active", "corrections": "Awaiting corrections" },
+    "summary": {
+      "all": "All active",
+      "corrections": "Awaiting corrections"
+    },
     "search": {
       "label": "Search incoming work",
       "placeholder": "Contribution number, contributor, or filename",
@@ -1353,7 +1374,9 @@
       "statusDecision": "Topic decision needed",
       "statusMissing": "Context missing"
     },
-    "collision": { "title": "Same annotation edited elsewhere" },
+    "collision": {
+      "title": "Same annotation edited elsewhere"
+    },
     "protocolWarnings": {
       "summary": "{count} protocol warning | {count} protocol warnings",
       "intro": "The project protocol treats these rules as warnings. The files may still be accepted, but they do not fully follow the protocol."

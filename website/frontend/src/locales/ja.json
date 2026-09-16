@@ -82,19 +82,46 @@
     },
     "recovery": {
       "context": "災害復旧",
-      "title": "バックアップ証跡",
-      "explanation": "アプリケーションやサーバーの障害時にも利用できるよう、バックアップはELANORAの外部で管理されます。",
-      "owner": "担当者",
-      "command": "運用担当者は次のコマンドで完全な復旧手順を検証できます",
-      "states": { "not_reported": "ELANORAに報告されていません" },
-      "owners": { "deployment_operator": "デプロイ運用担当者" }
+      "title": "バックアップ",
+      "explanation": "このインストールは、データベース、プロジェクトのストレージ、機関のアセットを自ら暗号化してバックアップし、最新のものを検証し、各プロジェクトの保存ポリシーを適用します。",
+      "notConfigured": "バックアップのパスフレーズが設定されていないため、このインストールには復元できるバックアップがありません。セットアップコマンドを実行して生成してください。",
+      "lastBackup": "最終バックアップ",
+      "lastVerified": "最終検証",
+      "never": "なし",
+      "diskUsed": "ディスク使用率 {percent}%",
+      "projectsPurged": "消去したプロジェクト {count} 件",
+      "command": "復元手順全体は次のコマンドで演習できます",
+      "states": {
+        "healthy": "バックアップは正常",
+        "unverified": "最新バックアップは未検証",
+        "not_yet_run": "バックアップはまだありません",
+        "not_configured": "バックアップが未設定",
+        "failing": "バックアップが失敗しています"
+      },
+      "outcomes": {
+        "succeeded": "成功",
+        "failed": "失敗",
+        "skipped": "スキップ"
+      },
+      "jobs": {
+        "backup": "バックアップ",
+        "backup_verification": "バックアップの検証",
+        "retention_purge": "保存期限による消去",
+        "storage_capacity": "ディスク容量"
+      },
+      "reasons": {
+        "backup_passphrase_not_configured": "バックアップのパスフレーズが未設定です"
+      },
+      "owners": {
+        "installation": "このインストール",
+        "deployment_operator": "デプロイ運用担当"
+      }
     },
     "boundary": {
       "title": "ここで設定を変更できない理由",
       "body": "ストレージ認証情報、暗号鍵、スケジュール、復旧操作はデプロイの秘密管理と運用手順書で管理します。このページは意図的に状態のみを表示します。"
     }
   },
-
   "app": {
     "title": "ELANORA"
   },
@@ -507,7 +534,6 @@
       "resendFailed": "確認コードの送信に失敗しました"
     }
   },
-
   "projectsPage": {
     "pagination": {
       "pageNumberLabel": "ページ番号"
@@ -639,7 +665,6 @@
       }
     }
   },
-
   "fileRenameSuggestion": {
     "title": "ファイル名の変更",
     "enterNewName": "新しいファイル名を入力",
@@ -648,7 +673,6 @@
     "basedOnMediaFiles": "メディアファイルに基づく",
     "notCompliant": "このファイル名は命名規則に準拠していません"
   },
-
   "rename": {
     "conflict": "この名前のファイルがプロジェクトに既に存在しています",
     "conflictMultiple": "{count}個のファイルは、プロジェクト内で同じ名前で既に存在するため、名前を変更できませんでした",
@@ -667,7 +691,6 @@
     "error": "ファイル名の変更に失敗しました",
     "bulkError": "ファイル名の変更に失敗しました"
   },
-
   "projectSettings": {
     "title": "{projectName}プロジェクトを設定",
     "subtitle": "プロジェクト設定をカスタマイズ",
@@ -780,7 +803,6 @@
       "cancel_error": "招待のキャンセルに失敗しました"
     }
   },
-
   "configureFileTypes": {
     "title": "プロジェクトのファイル形式を管理",
     "defaultFileTypes": "デフォルトのファイルタイプ",
@@ -808,7 +830,6 @@
     "deleteTitle": "ファイル形式を削除",
     "deleteMessage": "このファイル形式を削除してもよろしいですか？この操作は取り消せません。"
   },
-
   "configureNamingStandards": {
     "title": "プロジェクトの命名規則を設定",
     "loading": "命名規則を読み込み中...",
@@ -885,7 +906,6 @@
     "invalidLength": "\"{name}\"の無効な長さ。",
     "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
   },
-
   "profile": {
     "accounts": {
       "menu": "アカウント",
@@ -896,7 +916,10 @@
       "loading": "機関アカウントを読み込み中…",
       "empty": "一致するアカウントはありません。",
       "load_error": "機関アカウントを読み込めませんでした。",
-      "roles": { "admin": "管理者", "public": "研究者" },
+      "roles": {
+        "admin": "管理者",
+        "public": "研究者"
+      },
       "active": "有効",
       "suspended": "停止中",
       "you": "自分のアカウント",
@@ -1041,7 +1064,6 @@
       "load_failed": "プロフィール情報の読み込みに失敗しました。もう一度お試しください。"
     }
   },
-
   "notificationBell": {
     "title": "通知",
     "unread_notifications": "{count}件の未読通知",
@@ -1102,7 +1124,6 @@
     "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle",
     "promptExtractedValue": "コンポーネント「{name}」に対して値{value}が抽出されました。抽出された値のみを使用する場合は、これを空白のままにして「OK」をクリックしてください。ただし、有効な範囲（例：{example}）を入力することをお勧めします。"
   },
-
   "configureEffectiveStandards": {
     "title": "有効な命名基準を構成する",
     "fileType": "ファイルタイプ",
@@ -1136,7 +1157,6 @@
       "removeFailed": "有効な基準の削除に失敗しました。"
     }
   },
-
   "pendingUploads": {
     "title": "保留中の投稿",
     "pageDescription": "投稿内容を確認し、競合を調査して、検証済みの注釈作業を統合します。",
@@ -1158,7 +1178,11 @@
       "needResolution": "解決が必要"
     },
     "uploadedBy": "投稿者：{user}",
-    "fileTypes": { "new": "新規", "modified": "変更", "deleted": "削除" },
+    "fileTypes": {
+      "new": "新規",
+      "modified": "変更",
+      "deleted": "削除"
+    },
     "conflictedFiles": "競合ファイル",
     "actions": {
       "viewDetails": "詳細を表示",
@@ -1410,7 +1434,10 @@
     "back": "戻る",
     "contribution": "貢献 #{id}",
     "updatedVersion": "バージョン {version} · 修正後に更新",
-    "summary": { "all": "すべての処理中項目", "corrections": "修正待ち" },
+    "summary": {
+      "all": "すべての処理中項目",
+      "corrections": "修正待ち"
+    },
     "search": {
       "label": "受信した作業を検索",
       "placeholder": "貢献番号、投稿者、またはファイル名",
@@ -1451,7 +1478,9 @@
       "statusDecision": "トピックの判断が必要",
       "statusMissing": "コンテキストなし"
     },
-    "collision": { "title": "同じ注釈が別の場所でも編集されています" },
+    "collision": {
+      "title": "同じ注釈が別の場所でも編集されています"
+    },
     "protocolWarnings": {
       "summary": "プロトコル警告 {count} 件",
       "intro": "プロジェクトのプロトコルでは、これらのルールは警告として扱われます。ファイルは承認できますが、プロトコルに完全には準拠していません。"
@@ -1550,7 +1579,10 @@
     "title": "研究範囲",
     "description": "目的に合ったELAN作業用コピーを作成し、再利用可能な研究トピックを管理します。",
     "workspaceLabel": "研究範囲ワークスペース",
-    "tabs": { "prepare": "研究用コピーを作成", "topics": "研究トピック" },
+    "tabs": {
+      "prepare": "研究用コピーを作成",
+      "topics": "研究トピック"
+    },
     "loading": "研究範囲を読み込み中…",
     "matchingFiles": "該当ファイル：{count}件",
     "searchFiles": "ELANファイルを検索",

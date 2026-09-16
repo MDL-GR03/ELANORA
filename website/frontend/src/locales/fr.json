@@ -82,19 +82,47 @@
     },
     "recovery": {
       "context": "Reprise après sinistre",
-      "title": "Preuves de sauvegarde",
-      "explanation": "Les sauvegardes sont contrôlées hors d'ELANORA afin de rester disponibles si l'application ou le serveur tombe en panne.",
-      "owner": "Responsable",
-      "command": "Les opérateurs peuvent tester la procédure complète de restauration avec",
-      "states": { "not_reported": "Non communiqué à ELANORA" },
-      "owners": { "deployment_operator": "Opérateur du déploiement" }
+      "title": "Sauvegardes",
+      "explanation": "Cette installation réalise elle-même une sauvegarde chiffrée de la base de données, du stockage des projets et des ressources de l’institution, vérifie la plus récente et applique la politique de conservation de chaque projet.",
+      "notConfigured": "Aucune phrase secrète de sauvegarde n’est configurée : cette installation n’a donc aucune sauvegarde restaurable. Lancez la commande d’installation pour en générer une.",
+      "lastBackup": "Dernière sauvegarde",
+      "lastVerified": "Dernière vérification",
+      "never": "Jamais",
+      "diskUsed": "{percent} % du disque utilisé",
+      "projectsPurged": "aucun projet purgé | {count} projet purgé | {count} projets purgés",
+      "command": "La procédure complète de restauration peut être répétée avec",
+      "states": {
+        "healthy": "Sauvegardes saines",
+        "unverified": "Dernière sauvegarde non vérifiée",
+        "not_yet_run": "Aucune sauvegarde pour l’instant",
+        "not_configured": "Sauvegardes non configurées",
+        "failing": "Sauvegardes en échec",
+        "not_reported": "Non renseigné"
+      },
+      "outcomes": {
+        "succeeded": "Réussi",
+        "failed": "Échec",
+        "skipped": "Ignoré"
+      },
+      "jobs": {
+        "backup": "Sauvegarde",
+        "backup_verification": "Vérification de la sauvegarde",
+        "retention_purge": "Purge de conservation",
+        "storage_capacity": "Capacité disque"
+      },
+      "reasons": {
+        "backup_passphrase_not_configured": "Aucune phrase secrète de sauvegarde configurée"
+      },
+      "owners": {
+        "installation": "Cette installation",
+        "deployment_operator": "Responsable du déploiement"
+      }
     },
     "boundary": {
       "title": "Pourquoi la configuration n'est pas modifiable ici",
       "body": "Les identifiants de stockage, clés de chiffrement, calendriers et restaurations appartiennent au gestionnaire de secrets et au guide d'exploitation. Cette page n'expose volontairement que l'état."
     }
   },
-
   "http_status": {
     "400": "Requête incorrecte",
     "401": "Non autorisé - Veuillez vous connecter",
@@ -108,7 +136,6 @@
     "504": "Délai d'attente de la passerelle - Le serveur en amont n'a pas répondu dans les temps",
     "unknown": "Une erreur inconnue s'est produite"
   },
-
   "app": {
     "title": "ELANora"
   },
@@ -204,7 +231,6 @@
     "email_verification_required": "Vérifiez votre email avant de vous connecter.",
     "login_connection_error": "Erreur de connexion. Veuillez réessayer."
   },
-
   "appHeader": {
     "reviews": "Révisions",
     "projects": "Projets",
@@ -532,7 +558,6 @@
       "resendFailed": "Échec de l'envoi du code de vérification"
     }
   },
-
   "projectsPage": {
     "pagination": {
       "pageNumberLabel": "Numéro de page"
@@ -673,7 +698,6 @@
       "bulkRename": "Renommer les fichiers."
     }
   },
-
   "bulkRenameDialog": {
     "title": "Renommer les fichiers en lot",
     "loading": "Chargement des fichiers...",
@@ -691,7 +715,6 @@
     "notCompliant": "Ce nom de fichier ne respecte pas le standard de nommage",
     "complianceRequired": "Tous les renommages doivent respecter le standard de nommage"
   },
-
   "fileRenameSuggestion": {
     "title": "Renommer le fichier",
     "enterNewName": "Entrez le nouveau nom",
@@ -700,7 +723,6 @@
     "basedOnMediaFiles": "Basé sur les fichiers média",
     "notCompliant": "Ce nom de fichier ne respecte pas le standard de nommage"
   },
-
   "rename": {
     "conflict": "Un fichier avec ce nom existe déjà dans le projet",
     "conflictMultiple": "{count} fichiers n'ont pas pu être renommés car ils existent déjà sous le même nom dans le projet",
@@ -719,7 +741,6 @@
     "error": "Échec du renommage du fichier",
     "bulkError": "Échec du renommage des fichiers"
   },
-
   "projectSettings": {
     "pageTitle": "Configuration du projet",
     "title": "Configuration du projet {projectName}",
@@ -833,7 +854,6 @@
       "owner": "Propriétaire"
     }
   },
-
   "configureFileTypes": {
     "title": "Gérer les types de fichiers pour votre projet",
     "FileTypes": "Types de fichiers",
@@ -860,7 +880,6 @@
     "deleteTitle": "Supprimer le type de fichier",
     "deleteMessage": "Êtes-vous sûr de vouloir supprimer ce type de fichier ? Cette action est irréversible."
   },
-
   "configureNamingStandards": {
     "title": "Configurer les normes de nommage pour votre projet",
     "loading": "Chargement des normes de nommage...",
@@ -939,7 +958,6 @@
     "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
     "promptExtractedValue": "La valeur '{value}' a été extraite pour le composant \"{name}\". Si vous souhaitez utiliser uniquement la valeur extraite, laissez ce champ vide et cliquez sur \"OK\". Cependant, il est recommandé d'entrer une plage valide (par ex. {example})."
   },
-
   "profile": {
     "accounts": {
       "menu": "Comptes",
@@ -950,7 +968,10 @@
       "loading": "Chargement des comptes…",
       "empty": "Aucun compte correspondant.",
       "load_error": "Impossible de charger les comptes de l’institution.",
-      "roles": { "admin": "Administrateur", "public": "Chercheur" },
+      "roles": {
+        "admin": "Administrateur",
+        "public": "Chercheur"
+      },
       "active": "Actif",
       "suspended": "Suspendu",
       "you": "Votre compte",
@@ -1095,7 +1116,6 @@
       "load_failed": "Échec du chargement des informations de profil. Veuillez réessayer."
     }
   },
-
   "notificationBell": {
     "title": "Notifications",
     "unread_notifications": "{count} notifications non lues",
@@ -1111,7 +1131,6 @@
     "close": "Fermer les notifications",
     "view_all_notifications": "Voir toutes les notifications"
   },
-
   "contact": {
     "title": "Nous Contacter",
     "subtitle": "Vous avez une question ou besoin d'aide ? Nous sommes là pour vous aider.",
@@ -1155,7 +1174,6 @@
     "response_note": "Vous recevrez une réponse à l'adresse email que vous avez fournie.",
     "back_to_site": "Retour au Site"
   },
-
   "configureEffectiveStandards": {
     "title": "Configurer les normes effectives de nommage",
     "fileType": "Type de fichier",
@@ -1189,7 +1207,6 @@
       "loadFailed": "Échec du chargement des normes effectives."
     }
   },
-
   "contributionResolution": {
     "title": "Examen des différences soumises",
     "summary": "{count} fichier chevauche la version acceptée actuelle du projet et nécessite une décision. | {count} fichiers chevauchent la version acceptée actuelle du projet et nécessitent une décision.",
@@ -1346,7 +1363,9 @@
       "statusDecision": "Décision sur le sujet requise",
       "statusMissing": "Contexte manquant"
     },
-    "collision": { "title": "La même annotation a été modifiée ailleurs" },
+    "collision": {
+      "title": "La même annotation a été modifiée ailleurs"
+    },
     "protocolWarnings": {
       "summary": "{count} avertissement du protocole | {count} avertissements du protocole",
       "intro": "Le protocole du projet traite ces règles comme des avertissements. Les fichiers peuvent être acceptés, mais ne respectent pas entièrement le protocole."

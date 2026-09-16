@@ -215,14 +215,40 @@
             <p class="eyebrow">{{ t('operations.recovery.context') }}</p>
             <h2>{{ t('operations.recovery.title') }}</h2>
           </div>
-          <span class="status-pill warning">{{ recoveryState }}</span>
+          <span :class="['status-pill', recoveryPill]">{{
+            recoveryState
+          }}</span>
         </div>
         <div class="recovery-copy">
           <p>{{ t('operations.recovery.explanation') }}</p>
-          <p>
-            <strong>{{ t('operations.recovery.owner') }}:</strong>
-            {{ recoveryOwner }}
+          <p
+            v-if="status.recovery.state === 'not_configured'"
+            class="recovery-alert"
+            role="alert"
+          >
+            {{ t('operations.recovery.notConfigured') }}
           </p>
+          <dl class="facts">
+            <div>
+              <dt>{{ t('operations.recovery.lastBackup') }}</dt>
+              <dd>{{ formatMoment(status.recovery.latest_backup_at) }}</dd>
+            </div>
+            <div>
+              <dt>{{ t('operations.recovery.lastVerified') }}</dt>
+              <dd>
+                {{ formatMoment(status.recovery.latest_verified_backup_at) }}
+              </dd>
+            </div>
+          </dl>
+          <ul v-if="status.recovery.jobs.length" class="maintenance-jobs">
+            <li v-for="job in status.recovery.jobs" :key="job.job">
+              <span>{{ t(`operations.recovery.jobs.${job.job}`) }}</span>
+              <span :class="['status-pill', jobPill(job.outcome)]">
+                {{ t(`operations.recovery.outcomes.${job.outcome}`) }}
+              </span>
+              <small>{{ jobSummary(job) }}</small>
+            </li>
+          </ul>
           <p>
             {{ t('operations.recovery.command') }}
             <code>make test-recovery</code>
@@ -274,9 +300,41 @@ const storagePolicy = computed(() =>
 const recoveryState = computed(() =>
   t(`operations.recovery.states.${status.value?.recovery.state}`)
 );
-const recoveryOwner = computed(() =>
-  t(`operations.recovery.owners.${status.value?.recovery.responsibility}`)
+const RECOVERY_PILLS = {
+  healthy: 'healthy',
+  unverified: 'warning',
+  not_yet_run: 'warning',
+  not_configured: 'unhealthy',
+  failing: 'unhealthy',
+};
+const recoveryPill = computed(
+  () => RECOVERY_PILLS[status.value?.recovery.state] || 'warning'
 );
+
+function jobPill(outcome) {
+  return { succeeded: 'healthy', failed: 'unhealthy' }[outcome] || 'warning';
+}
+
+function formatMoment(value) {
+  return value ? formatDate(value) : t('operations.recovery.never');
+}
+
+// The detail a job records differs by job; show the part worth acting on.
+function jobSummary(job) {
+  const detail = job.detail || {};
+  if (detail.reason) {
+    return t(`operations.recovery.reasons.${detail.reason}`);
+  }
+  if (typeof detail.used_percent === 'number') {
+    return t('operations.recovery.diskUsed', { percent: detail.used_percent });
+  }
+  if (typeof detail.projects_purged === 'number') {
+    return t('operations.recovery.projectsPurged', {
+      count: detail.projects_purged,
+    });
+  }
+  return formatDate(job.started_at);
+}
 const integrityNeedsAttention = computed(
   () =>
     Boolean(status.value?.integrity.unhealthy_projects) ||
@@ -508,6 +566,37 @@ onMounted(loadStatus);
 .recovery-copy {
   color: #40506a;
   line-height: 1.55;
+}
+
+.recovery-alert {
+  border: 1px solid #fecaca;
+  border-radius: 0.6rem;
+  background: #fff1f2;
+  padding: 0.7rem 0.9rem;
+  color: #b91c1c;
+  font-weight: 650;
+}
+
+.maintenance-jobs {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.9rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.maintenance-jobs li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.maintenance-jobs small {
+  color: #64748b;
 }
 
 code {

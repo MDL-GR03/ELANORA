@@ -57,9 +57,27 @@ function baseStatus() {
       retention_days: 30,
     },
     recovery: {
-      responsibility: 'deployment_operator',
+      responsibility: 'installation',
+      latest_backup_at: '2026-09-16T02:00:00Z',
+      latest_verified_backup_at: '2026-09-15T03:00:00Z',
       latest_drill_at: null,
-      state: 'not_reported',
+      state: 'healthy',
+      jobs: [
+        {
+          job: 'backup',
+          outcome: 'succeeded',
+          started_at: '2026-09-16T02:00:00Z',
+          finished_at: '2026-09-16T02:01:00Z',
+          detail: { key: 'backups/elanora-20260916T020000Z.elanora' },
+        },
+        {
+          job: 'storage_capacity',
+          outcome: 'succeeded',
+          started_at: '2026-09-16T02:05:00Z',
+          finished_at: '2026-09-16T02:05:00Z',
+          detail: { used_percent: 42.5 },
+        },
+      ],
     },
   };
 }
@@ -80,7 +98,7 @@ describe('OperationsPage', () => {
     expect(wrapper.text()).toContain('Needs attention');
     expect(wrapper.text()).toContain('Publication queue');
     expect(wrapper.text()).toContain('Review needed');
-    expect(wrapper.text()).toContain('Not reported to ELANORA');
+    expect(wrapper.text()).toContain('Backups healthy');
 
     await wrapper.get('button').trigger('click');
     await flushPromises();
@@ -115,5 +133,46 @@ describe('OperationsPage', () => {
 
     expect(wrapper.text()).toContain('Email delivery');
     expect(wrapper.text()).toContain('\u2014');
+  });
+
+  it('reports what the installation itself last backed up', async () => {
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Backups healthy');
+    expect(wrapper.text()).toContain('Last backup');
+    expect(wrapper.text()).toContain('Last verified');
+    expect(wrapper.text()).toContain('42.5% of the disk used');
+    expect(wrapper.find('.recovery-alert').exists()).toBe(false);
+  });
+
+  it('warns plainly when no backup could be restored', async () => {
+    const status = baseStatus();
+    status.recovery = {
+      responsibility: 'installation',
+      latest_backup_at: null,
+      latest_verified_backup_at: null,
+      latest_drill_at: null,
+      state: 'not_configured',
+      jobs: [
+        {
+          job: 'backup',
+          outcome: 'skipped',
+          started_at: '2026-09-16T02:00:00Z',
+          finished_at: '2026-09-16T02:00:00Z',
+          detail: { reason: 'backup_passphrase_not_configured' },
+        },
+      ],
+    };
+    getStatus.mockResolvedValue(status);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Backups not configured');
+    expect(wrapper.get('.recovery-alert').text()).toContain(
+      'no backup it could restore from'
+    );
+    expect(wrapper.text()).toContain('No backup passphrase configured');
+    expect(wrapper.text()).toContain('Never');
   });
 });
