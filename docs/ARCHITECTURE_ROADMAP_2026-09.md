@@ -251,9 +251,34 @@ before a blanket exclusion constraint is introduced.
   day, met by nightly encrypted off-host backups of the database and project
   storage, with a scheduled restore drill.
 
-Implement encrypted off-host backups, restore drills, metrics, structured audit
-export and storage-capacity alarms to meet those targets before identifiable
-corpora are admitted.
+**Item 8 completed, 16 September 2026.** ELANORA is distributed to
+institutions that install it themselves, so the product performs its own
+operations rather than assuming a platform team:
+
+- A `maintenance-worker` service in the shipped composition backs the
+  installation up daily, verifies the newest backup weekly, applies each
+  project's retention policy daily and watches disk capacity hourly. The
+  schedule is decided from runs recorded in PostgreSQL, so restarts neither
+  repeat nor skip work, and one advisory lock keeps concurrent workers from
+  backing up at once.
+- The administrator operations page reports what actually happened — last
+  backup, last verification, per-job outcome, disk usage — instead of the
+  previous fixed "not reported to ELANORA".
+- `elanora-setup` generates every secret, including the backup passphrase, and
+  never rotates an existing one. `installer/install.sh` installs an institution
+  with three answers (address, institution, first administrator) and is safe to
+  re-run; it is tested against a stand-in for Docker.
+- `elanora-export-audit` exports the audit trail as JSON or CSV for a
+  compliance request.
+
+Metrics are deliberately served by the product's own operations page rather
+than an external monitoring stack: an institution installing this should not
+have to run Prometheus to learn whether its backups work. The outbox already
+purges permanently failed records on its configured retention.
+
+What remains before identifiable corpora are admitted is not software: an
+accessibility review with Deaf and disabled researchers, and the sanitized
+pilot corpus (item 9).
 
 Existing-user invitations, account verification and password resets now use the
 transactional PostgreSQL outbox and a separate worker. Verification and reset
