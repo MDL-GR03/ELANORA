@@ -1,17 +1,17 @@
 // @vitest-environment jsdom
 
 import { mount } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
+import { createI18n } from 'vue-i18n';
+
+import messages from '@/locales/en.json';
 import ContributionCardBody from './ContributionCardBody.vue';
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key, count) => (typeof count === 'number' ? `${key}:${count}` : key),
-  }),
-}));
-
 const global = {
+  plugins: [
+    createI18n({ legacy: false, locale: 'en', messages: { en: messages } }),
+  ],
   stubs: { 'font-awesome-icon': { template: '<span />' } },
 };
 
@@ -117,9 +117,7 @@ describe('ContributionCardBody', () => {
     });
 
     const warnings = wrapper.get('.protocol-warnings');
-    expect(warnings.get('summary').text()).toBe(
-      'contributionWorkspace.protocolWarnings.summary:1'
-    );
+    expect(warnings.get('summary').text()).toBe('1 protocol warning');
     expect(warnings.text()).toContain('session-12.eaf');
     expect(warnings.text()).toContain('2 annotations without a value');
   });

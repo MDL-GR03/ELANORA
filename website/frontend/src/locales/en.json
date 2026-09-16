@@ -798,6 +798,24 @@
       "resend_error": "Failed to resend invitation",
       "invitation_canceled": "Invitation canceled successfully",
       "cancel_error": "Failed to cancel invitation"
+    },
+    "sectionDescriptions": {
+      "protocols": "Define and validate the linguistic structure expected across ELAN files.",
+      "filetypes": "Manage the kinds of research files accepted by this project.",
+      "naming": "Create readable filename conventions for consistent corpus organization.",
+      "effectiveStandards": "Choose which naming convention applies to each file type and location.",
+      "contributionAutomation": "Control when safe new-file contributions may be merged without manual review.",
+      "members": "Manage collaborators, access levels, and delegated responsibilities.",
+      "invitations": "Invite researchers and follow invitations that are awaiting a response."
+    },
+    "navigation": {
+      "label": "Project settings",
+      "expand_label": "Expand settings navigation",
+      "collapse_label": "Collapse settings navigation",
+      "expand": "Expand navigation",
+      "collapse": "Collapse navigation",
+      "title": "Configure your workspace",
+      "description": "Choose an area to manage without losing your place."
     }
   },
   "configureFileTypes": {
@@ -1301,6 +1319,50 @@
     "protocolWarnings": {
       "summary": "{count} protocol warning | {count} protocol warnings",
       "intro": "The project protocol treats these rules as warnings. The files may still be accepted, but they do not fully follow the protocol."
+    },
+    "card": {
+      "collision": "{count} annotation also has a different proposal in {contributions}. Review both before accepting either one. | {count} annotations also have a different proposal in {contributions}. Review both before accepting either one.",
+      "contribution": "contribution #{id}",
+      "updated_for": "This contribution was updated in response to {request}.",
+      "correction_request": "a correction request",
+      "history": "Contribution history · {count} versions",
+      "version": "Version {number} · contribution #{id}",
+      "current_version": "Current version",
+      "duplicate": "Same submitted content as contribution #{id}. Only the original can be accepted.",
+      "superseded": "Superseded by contribution #{id}. This version is retained as history and cannot be accepted.",
+      "quality_checks": "Submission quality checks",
+      "valid_files": "Valid ELAN files",
+      "naming_passed": "Naming rules passed",
+      "semantic_summary": "Semantic annotation summary",
+      "annotation_changes": "{n} annotation change | {n} annotation changes",
+      "added": "+{count} added",
+      "removed": "−{count} removed",
+      "value_changed": "{count} value changed",
+      "timing_changed": "{count} timing changed",
+      "tier_changed": "{count} tier changed",
+      "media_changed": "Linked media changed",
+      "protocol": {
+        "passed": "Project protocol passed",
+        "recheck_required": "Protocol changed — acceptance will recheck this contribution",
+        "not_configured": "No project protocol configured",
+        "not_recorded": "Protocol check not recorded for this older contribution"
+      }
+    },
+    "mutations": {
+      "topicAssigned": "Research topic assigned.",
+      "topicAssignFailed": "The research topic could not be assigned.",
+      "topicCreated": "Research topic created and assigned.",
+      "topicMatched": "Matched and assigned the existing topic “{name}”.",
+      "topicCreateFailed": "The research topic could not be created.",
+      "testCompleted": "Compatibility check completed.",
+      "merged": "Contribution merged into the project.",
+      "dismissTitle": "Dismiss contribution #{id}?",
+      "dismissMessage": "It contains exactly the same project content as contribution #{id}. Its redundant Git branch will be removed, while the dismissal remains in the audit history.",
+      "dismissConfirm": "Dismiss duplicate",
+      "dismissed": "Duplicate contribution dismissed.",
+      "dismissFailed": "The duplicate contribution could not be dismissed.",
+      "declined": "Contribution declined and archived.",
+      "declineFailed": "The contribution could not be declined."
     }
   },
   "contributionDetails": {
@@ -1573,12 +1635,21 @@
       "readyToMerge": "Ready to merge",
       "needsResolution": "Review Needed",
       "error": "Error",
-      "pendingReview": "Pending Review"
+      "pendingReview": "Pending Review",
+      "underReview": "Under review",
+      "changesRequested": "Waiting for corrections",
+      "reviewRequired": "Correction ready for review",
+      "duplicate": "Duplicate submission",
+      "superseded": "Superseded"
     },
     "uploadTypes": {
       "newFiles": "New Files",
       "withModifications": "With Modifications",
-      "withDeletions": "With Deletions"
+      "withDeletions": "With Deletions",
+      "mixed": "Mixed file changes",
+      "new": "New files",
+      "modified": "Modified files",
+      "deleted": "Deleted files"
     },
     "errors": {
       "loadFailed": "Failed to load pending uploads",
@@ -2529,5 +2600,18 @@
       "recurring": "Recurring",
       "limited": "Limited evidence"
     }
+  },
+  "contributionAutomation": {
+    "eyebrow": "Incoming contributions",
+    "title": "Automatically merge safe new-file contributions",
+    "description": "When enabled, a contribution is merged without manual review only if it contains valid new files and does not modify or remove any current project file.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "boundary": "Modified files, removed files, validation failures, {corrections}, and conflicts always remain in {incoming} for an administrator decision.",
+    "corrections": "correction requests",
+    "incoming": "Incoming work",
+    "saved_enabled": "Automatic merging enabled for safe new-file contributions.",
+    "saved_disabled": "Automatic merging disabled. Every contribution now requires a merge decision.",
+    "save_failed": "The automation policy could not be saved."
   }
 }

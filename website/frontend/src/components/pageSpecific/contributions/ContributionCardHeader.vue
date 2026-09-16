@@ -191,11 +191,11 @@ function formatStatus(status) {
       needs_resolution: t('pendingUploads.status.needsResolution'),
       error: t('pendingUploads.status.error'),
       pending_admin_approval: t('pendingUploads.status.pendingReview'),
-      under_review: 'Under review',
-      changes_requested: 'Waiting for corrections',
-      review_required: 'Correction ready for review',
-      duplicate: 'Duplicate submission',
-      superseded: 'Superseded',
+      under_review: t('pendingUploads.status.underReview'),
+      changes_requested: t('pendingUploads.status.changesRequested'),
+      review_required: t('pendingUploads.status.reviewRequired'),
+      duplicate: t('pendingUploads.status.duplicate'),
+      superseded: t('pendingUploads.status.superseded'),
     }[status] || status
   );
 }
@@ -204,10 +204,8 @@ function formatUploadType(upload) {
   const kinds = ['new', 'modified', 'deleted'].filter(
     (kind) => upload.files?.[kind]?.length
   );
-  if (kinds.length > 1) return 'Mixed file changes';
-  if (kinds[0] === 'modified') return 'Modified files';
-  if (kinds[0] === 'deleted') return 'Deleted files';
-  if (kinds[0] === 'new') return 'New files';
+  if (kinds.length > 1) return t('pendingUploads.uploadTypes.mixed');
+  if (kinds.length === 1) return t(`pendingUploads.uploadTypes.${kinds[0]}`);
   return (
     {
       pending_upload: t('pendingUploads.uploadTypes.newFiles'),

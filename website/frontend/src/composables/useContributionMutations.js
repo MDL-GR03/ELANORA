@@ -50,10 +50,16 @@ export function useContributionMutations({
         { topic_id: selectedId, new_topic_name: null }
       );
       await fetchPendingUploads(false);
-      notify('Research topic assigned.', 'success');
+      notify(
+        translate('contributionWorkspace.mutations.topicAssigned'),
+        'success'
+      );
       return true;
     } catch (requestError) {
-      fail(requestError, 'The research topic could not be assigned.');
+      fail(
+        requestError,
+        translate('contributionWorkspace.mutations.topicAssignFailed')
+      );
       return false;
     } finally {
       topicDecisionBusy.value = false;
@@ -74,13 +80,18 @@ export function useContributionMutations({
       await Promise.all([fetchPendingUploads(false), loadResearchTopics()]);
       notify(
         context.declared_topic_name === topicName
-          ? 'Research topic created and assigned.'
-          : `Matched and assigned the existing topic “${context.declared_topic_name}”.`,
+          ? translate('contributionWorkspace.mutations.topicCreated')
+          : translate('contributionWorkspace.mutations.topicMatched', {
+              name: context.declared_topic_name,
+            }),
         'success'
       );
       return true;
     } catch (requestError) {
-      fail(requestError, 'The research topic could not be created.');
+      fail(
+        requestError,
+        translate('contributionWorkspace.mutations.topicCreateFailed')
+      );
       return false;
     } finally {
       topicDecisionBusy.value = false;
@@ -108,7 +119,10 @@ export function useContributionMutations({
           tested_at: response.tested_at,
         };
       }
-      notify('Compatibility check completed.', 'success');
+      notify(
+        translate('contributionWorkspace.mutations.testCompleted'),
+        'success'
+      );
       return true;
     } catch (requestError) {
       fail(requestError, translate('pendingUploads.errors.testMergeFailed'));
@@ -145,7 +159,7 @@ export function useContributionMutations({
         (item) => item.upload_id !== upload.upload_id
       );
       await fetchPendingUploads(false);
-      notify('Contribution merged into the project.', 'success');
+      notify(translate('contributionWorkspace.mutations.merged'), 'success');
       return true;
     } catch (requestError) {
       fail(requestError, translate('pendingUploads.errors.mergeFailed'));
@@ -157,9 +171,13 @@ export function useContributionMutations({
 
   async function dismissDuplicate(upload) {
     const confirmed = await confirmAction({
-      title: `Dismiss contribution #${upload.upload_id}?`,
-      message: `It contains exactly the same project content as contribution #${upload.duplicate_of_upload_id}. Its redundant Git branch will be removed, while the dismissal remains in the audit history.`,
-      confirmText: 'Dismiss duplicate',
+      title: translate('contributionWorkspace.mutations.dismissTitle', {
+        id: upload.upload_id,
+      }),
+      message: translate('contributionWorkspace.mutations.dismissMessage', {
+        id: upload.duplicate_of_upload_id,
+      }),
+      confirmText: translate('contributionWorkspace.mutations.dismissConfirm'),
       cancelText: translate('common.cancel'),
     });
     if (!confirmed) return false;
@@ -175,10 +193,13 @@ export function useContributionMutations({
         (item) => item.upload_id !== upload.upload_id
       );
       await fetchPendingUploads(false);
-      notify('Duplicate contribution dismissed.', 'success');
+      notify(translate('contributionWorkspace.mutations.dismissed'), 'success');
       return true;
     } catch (requestError) {
-      fail(requestError, 'The duplicate contribution could not be dismissed.');
+      fail(
+        requestError,
+        translate('contributionWorkspace.mutations.dismissFailed')
+      );
       return false;
     } finally {
       dismissing.value = null;
@@ -200,10 +221,13 @@ export function useContributionMutations({
         (item) => item.upload_id !== upload.upload_id
       );
       await Promise.all([fetchPendingUploads(false), fetchReviewCount()]);
-      notify('Contribution declined and archived.', 'success');
+      notify(translate('contributionWorkspace.mutations.declined'), 'success');
       return true;
     } catch (requestError) {
-      fail(requestError, 'The contribution could not be declined.');
+      fail(
+        requestError,
+        translate('contributionWorkspace.mutations.declineFailed')
+      );
       return false;
     } finally {
       dismissing.value = null;

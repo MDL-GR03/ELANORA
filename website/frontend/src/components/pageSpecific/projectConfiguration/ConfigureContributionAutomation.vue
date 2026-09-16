@@ -2,15 +2,11 @@
   <section class="automation-settings" aria-labelledby="automation-title">
     <div class="policy-card">
       <div>
-        <span class="policy-eyebrow">Incoming contributions</span>
-        <h3 id="automation-title">
-          Automatically merge safe new-file contributions
-        </h3>
-        <p>
-          When enabled, a contribution is merged without manual review only if
-          it contains valid new files and does not modify or remove any current
-          project file.
-        </p>
+        <span class="policy-eyebrow">{{
+          t('contributionAutomation.eyebrow')
+        }}</span>
+        <h3 id="automation-title">{{ t('contributionAutomation.title') }}</h3>
+        <p>{{ t('contributionAutomation.description') }}</p>
       </div>
       <button
         type="button"
@@ -21,19 +17,28 @@
         @click="save(!enabled)"
       >
         <span aria-hidden="true"></span>
-        {{ enabled ? 'Enabled' : 'Disabled' }}
+        {{
+          enabled
+            ? t('contributionAutomation.enabled')
+            : t('contributionAutomation.disabled')
+        }}
       </button>
     </div>
 
     <div class="policy-boundary">
       <font-awesome-icon icon="fa-solid fa-shield-halved" />
-      <p>
-        Modified files, removed files, validation failures,
-        <router-link :to="correctionsRoute">correction requests</router-link>,
-        and conflicts always remain in
-        <router-link :to="incomingWorkRoute">Incoming work</router-link> for an
-        administrator decision.
-      </p>
+      <i18n-t :keypath="'contributionAutomation.boundary'" tag="p">
+        <template #corrections>
+          <router-link :to="correctionsRoute">{{
+            t('contributionAutomation.corrections')
+          }}</router-link>
+        </template>
+        <template #incoming>
+          <router-link :to="incomingWorkRoute">{{
+            t('contributionAutomation.incoming')
+          }}</router-link>
+        </template>
+      </i18n-t>
     </div>
 
     <p
@@ -48,10 +53,13 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
 import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import gitService from '@/api/service/gitService';
 import { useProjectStore } from '@/stores/project';
+
+const { t } = useI18n();
 
 const route = useRoute();
 const projectStore = useProjectStore();
@@ -95,13 +103,13 @@ async function save(value) {
       projectStore.setCurrentProject(updated);
     }
     message.value = value
-      ? 'Automatic merging enabled for safe new-file contributions.'
-      : 'Automatic merging disabled. Every contribution now requires a merge decision.';
+      ? t('contributionAutomation.saved_enabled')
+      : t('contributionAutomation.saved_disabled');
   } catch (requestError) {
     error.value = true;
     message.value =
       requestError?.response?.data?.detail ||
-      'The automation policy could not be saved.';
+      t('contributionAutomation.save_failed');
   } finally {
     saving.value = false;
   }

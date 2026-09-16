@@ -798,6 +798,24 @@
       "resend_error": "Erreur lors du renvoi de l'invitation",
       "invitation_canceled": "Invitation annulée avec succès",
       "cancel_error": "Erreur lors de l'annulation de l'invitation"
+    },
+    "sectionDescriptions": {
+      "protocols": "Définissez et validez la structure linguistique attendue dans les fichiers ELAN.",
+      "filetypes": "Gérez les types de fichiers de recherche acceptés par ce projet.",
+      "naming": "Créez des conventions de nommage lisibles pour organiser le corpus de façon cohérente.",
+      "effectiveStandards": "Choisissez la convention de nommage appliquée à chaque type de fichier et emplacement.",
+      "contributionAutomation": "Contrôlez quand les contributions sûres de nouveaux fichiers peuvent être intégrées sans revue manuelle.",
+      "members": "Gérez les collaborateurs, les niveaux d'accès et les responsabilités déléguées.",
+      "invitations": "Invitez des chercheurs et suivez les invitations en attente de réponse."
+    },
+    "navigation": {
+      "label": "Paramètres du projet",
+      "expand_label": "Déplier la navigation des paramètres",
+      "collapse_label": "Replier la navigation des paramètres",
+      "expand": "Déplier la navigation",
+      "collapse": "Replier la navigation",
+      "title": "Configurer votre espace",
+      "description": "Choisissez une rubrique à gérer sans perdre votre place."
     }
   },
   "configureFileTypes": {
@@ -1301,6 +1319,50 @@
     "protocolWarnings": {
       "summary": "{count} avertissement du protocole | {count} avertissements du protocole",
       "intro": "Le protocole du projet traite ces règles comme des avertissements. Les fichiers peuvent être acceptés, mais ne respectent pas entièrement le protocole."
+    },
+    "card": {
+      "collision": "{count} annotation a aussi une autre proposition dans {contributions}. Examinez les deux avant d'accepter l'une ou l'autre. | {count} annotations ont aussi une autre proposition dans {contributions}. Examinez les deux avant d'accepter l'une ou l'autre.",
+      "contribution": "contribution n° {id}",
+      "updated_for": "Cette contribution a été mise à jour en réponse à {request}.",
+      "correction_request": "une demande de correction",
+      "history": "Historique de la contribution · {count} versions",
+      "version": "Version {number} · contribution n° {id}",
+      "current_version": "Version actuelle",
+      "duplicate": "Contenu identique à la contribution n° {id}. Seul l'original peut être accepté.",
+      "superseded": "Remplacée par la contribution n° {id}. Cette version est conservée dans l'historique et ne peut pas être acceptée.",
+      "quality_checks": "Vérifications de qualité de la soumission",
+      "valid_files": "Fichiers ELAN valides",
+      "naming_passed": "Règles de nommage respectées",
+      "semantic_summary": "Résumé sémantique des annotations",
+      "annotation_changes": "{n} modification d'annotation | {n} modifications d'annotation",
+      "added": "+{count} ajoutées",
+      "removed": "−{count} supprimées",
+      "value_changed": "{count} valeurs modifiées",
+      "timing_changed": "{count} minutages modifiés",
+      "tier_changed": "{count} tiers modifiés",
+      "media_changed": "Média lié modifié",
+      "protocol": {
+        "passed": "Protocole du projet respecté",
+        "recheck_required": "Protocole modifié — cette contribution sera revérifiée à l'acceptation",
+        "not_configured": "Aucun protocole de projet configuré",
+        "not_recorded": "Vérification du protocole non enregistrée pour cette ancienne contribution"
+      }
+    },
+    "mutations": {
+      "topicAssigned": "Thème de recherche attribué.",
+      "topicAssignFailed": "Le thème de recherche n'a pas pu être attribué.",
+      "topicCreated": "Thème de recherche créé et attribué.",
+      "topicMatched": "Le thème existant « {name} » a été reconnu et attribué.",
+      "topicCreateFailed": "Le thème de recherche n'a pas pu être créé.",
+      "testCompleted": "Vérification de compatibilité terminée.",
+      "merged": "Contribution intégrée au projet.",
+      "dismissTitle": "Écarter la contribution n° {id} ?",
+      "dismissMessage": "Elle contient exactement le même contenu que la contribution n° {id}. Sa branche Git redondante sera supprimée, et l'écartement restera dans l'historique d'audit.",
+      "dismissConfirm": "Écarter le doublon",
+      "dismissed": "Contribution en double écartée.",
+      "dismissFailed": "La contribution en double n'a pas pu être écartée.",
+      "declined": "Contribution refusée et archivée.",
+      "declineFailed": "La contribution n'a pas pu être refusée."
     }
   },
   "contributionDetails": {
@@ -1573,12 +1635,21 @@
       "readyToMerge": "Prêt à fusionner",
       "needsResolution": "Nécessite une résolution",
       "error": "Erreur",
-      "pendingReview": "En attente de révision"
+      "pendingReview": "En attente de révision",
+      "underReview": "En cours de revue",
+      "changesRequested": "En attente de corrections",
+      "reviewRequired": "Correction prête pour la revue",
+      "duplicate": "Soumission en double",
+      "superseded": "Remplacée"
     },
     "uploadTypes": {
       "newFiles": "Nouveaux fichiers",
       "withModifications": "Avec modifications",
-      "withDeletions": "Avec suppressions"
+      "withDeletions": "Avec suppressions",
+      "mixed": "Modifications de fichiers mixtes",
+      "new": "Nouveaux fichiers",
+      "modified": "Fichiers modifiés",
+      "deleted": "Fichiers supprimés"
     },
     "errors": {
       "loadFailed": "Échec du chargement des téléchargements en attente",
@@ -2529,5 +2600,18 @@
       "recurring": "Récurrent",
       "limited": "Preuves limitées"
     }
+  },
+  "contributionAutomation": {
+    "eyebrow": "Contributions entrantes",
+    "title": "Intégrer automatiquement les contributions sûres de nouveaux fichiers",
+    "description": "Lorsque cette option est activée, une contribution est intégrée sans revue manuelle uniquement si elle contient des nouveaux fichiers valides et ne modifie ni ne supprime aucun fichier existant du projet.",
+    "enabled": "Activé",
+    "disabled": "Désactivé",
+    "boundary": "Les fichiers modifiés, les fichiers supprimés, les échecs de validation, les {corrections} et les conflits restent toujours dans {incoming} pour une décision d'un administrateur.",
+    "corrections": "demandes de correction",
+    "incoming": "Travaux entrants",
+    "saved_enabled": "Intégration automatique activée pour les contributions sûres de nouveaux fichiers.",
+    "saved_disabled": "Intégration automatique désactivée. Chaque contribution nécessite désormais une décision d'intégration.",
+    "save_failed": "La règle d'automatisation n'a pas pu être enregistrée."
   }
 }

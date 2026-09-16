@@ -12,22 +12,27 @@
         class="settings-workspace"
         :class="{ 'navigation-collapsed': navigationCollapsed }"
       >
-        <aside class="settings-navigation" aria-label="Project settings">
+        <aside
+          class="settings-navigation"
+          :aria-label="t('projectSettings.navigation.label')"
+        >
           <div class="settings-navigation-intro">
             <div class="settings-navigation-intro-top">
-              <span class="eyebrow">Project settings</span>
+              <span class="eyebrow">{{
+                t('projectSettings.navigation.label')
+              }}</span>
               <button
                 type="button"
                 class="settings-navigation-toggle"
                 :aria-label="
                   navigationCollapsed
-                    ? 'Expand settings navigation'
-                    : 'Collapse settings navigation'
+                    ? t('projectSettings.navigation.expand_label')
+                    : t('projectSettings.navigation.collapse_label')
                 "
                 :title="
                   navigationCollapsed
-                    ? 'Expand navigation'
-                    : 'Collapse navigation'
+                    ? t('projectSettings.navigation.expand')
+                    : t('projectSettings.navigation.collapse')
                 "
                 @click="toggleNavigation"
               >
@@ -41,8 +46,8 @@
               </button>
             </div>
             <div class="settings-navigation-intro-copy">
-              <h2>Configure your workspace</h2>
-              <p>Choose an area to manage without losing your place.</p>
+              <h2>{{ t('projectSettings.navigation.title') }}</h2>
+              <p>{{ t('projectSettings.navigation.description') }}</p>
             </div>
           </div>
 
@@ -65,7 +70,7 @@
                 </span>
                 <span>
                   <strong>{{ t(section.titleKey) }}</strong>
-                  <small>{{ section.description }}</small>
+                  <small>{{ t(section.descriptionKey) }}</small>
                 </span>
                 <font-awesome-icon
                   class="settings-navigation-chevron"
@@ -84,7 +89,7 @@
             <div>
               <span class="eyebrow">{{ activeGroupTitle }}</span>
               <h2>{{ t(activeSection.titleKey) }}</h2>
-              <p>{{ activeSection.description }}</p>
+              <p>{{ t(activeSection.descriptionKey) }}</p>
             </div>
           </header>
           <div class="settings-section-body">
@@ -188,16 +193,14 @@ const allSectionGroups = [
         titleKey: 'projectSettings.sectionNames.sections.subsections.protocols',
         component: ConfigureProtocols,
         icon: 'fa-solid fa-file-code',
-        description:
-          'Define and validate the linguistic structure expected across ELAN files.',
+        descriptionKey: 'projectSettings.sectionDescriptions.protocols',
       },
       {
         key: 'filetypes',
         titleKey: 'projectSettings.sectionNames.sections.subsections.fileTypes',
         component: ConfigureFileTypes,
         icon: 'fa-solid fa-file',
-        description:
-          'Manage the kinds of research files accepted by this project.',
+        descriptionKey: 'projectSettings.sectionDescriptions.filetypes',
       },
       {
         key: 'naming',
@@ -205,8 +208,7 @@ const allSectionGroups = [
           'projectSettings.sectionNames.sections.subsections.namingStandards',
         component: ConfigureNamingStandards,
         icon: 'fa-solid fa-tag',
-        description:
-          'Create readable filename conventions for consistent corpus organization.',
+        descriptionKey: 'projectSettings.sectionDescriptions.naming',
       },
       {
         key: 'effectiveStandards',
@@ -214,8 +216,8 @@ const allSectionGroups = [
           'projectSettings.sectionNames.sections.subsections.effectiveStandards',
         component: ConfigureEffectiveStandards,
         icon: 'fa-solid fa-gears',
-        description:
-          'Choose which naming convention applies to each file type and location.',
+        descriptionKey:
+          'projectSettings.sectionDescriptions.effectiveStandards',
       },
     ],
   },
@@ -229,8 +231,8 @@ const allSectionGroups = [
           'projectSettings.sectionNames.sections.subsections.contributionAutomation',
         component: ConfigureContributionAutomation,
         icon: 'fa-solid fa-code-merge',
-        description:
-          'Control when safe new-file contributions may be merged without manual review.',
+        descriptionKey:
+          'projectSettings.sectionDescriptions.contributionAutomation',
       },
     ],
   },
@@ -243,7 +245,7 @@ const allSectionGroups = [
         titleKey: 'dataGovernance.section',
         component: ConfigureDataGovernance,
         icon: 'fa-solid fa-shield-halved',
-        description: t('dataGovernance.sectionDescription'),
+        descriptionKey: 'dataGovernance.sectionDescription',
       },
     ],
   },
@@ -256,8 +258,7 @@ const allSectionGroups = [
         titleKey: 'projectSettings.sectionNames.sections.subsections.members',
         component: ConfigureProjectMembers,
         icon: 'fa-solid fa-circle-user',
-        description:
-          'Manage collaborators, access levels, and delegated responsibilities.',
+        descriptionKey: 'projectSettings.sectionDescriptions.members',
       },
       {
         key: 'invitations',
@@ -265,8 +266,7 @@ const allSectionGroups = [
           'projectSettings.sectionNames.sections.subsections.invitations',
         component: ConfigurePendingInvitations,
         icon: 'fa-solid fa-inbox',
-        description:
-          'Invite researchers and follow invitations that are awaiting a response.',
+        descriptionKey: 'projectSettings.sectionDescriptions.invitations',
       },
     ],
   },

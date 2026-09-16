@@ -40,7 +40,8 @@ function setup(overrides = {}) {
     fetchPendingUploads,
     fetchReviewCount,
     loadResearchTopics,
-    translate: (key) => key,
+    translate: (key, params) =>
+      params ? `${key}:${JSON.stringify(params)}` : key,
     confirmAction,
     eventMessages,
     gitClient,
@@ -69,7 +70,7 @@ describe('useContributionMutations', () => {
     );
     expect(fetchPendingUploads).toHaveBeenCalledWith(false);
     expect(eventMessages.addMessage).toHaveBeenCalledWith(
-      'Research topic assigned.',
+      'contributionWorkspace.mutations.topicAssigned',
       'success'
     );
   });
@@ -82,7 +83,7 @@ describe('useContributionMutations', () => {
     ).toBe(true);
     expect(loadResearchTopics).toHaveBeenCalledOnce();
     expect(eventMessages.addMessage).toHaveBeenCalledWith(
-      'Matched and assigned the existing topic “Prosody”.',
+      'contributionWorkspace.mutations.topicMatched:{"name":"Prosody"}',
       'success'
     );
   });

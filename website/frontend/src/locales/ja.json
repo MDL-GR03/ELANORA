@@ -798,6 +798,24 @@
       "resend_error": "招待の再送信に失敗しました",
       "invitation_canceled": "招待のキャンセルが完了しました",
       "cancel_error": "招待のキャンセルに失敗しました"
+    },
+    "sectionDescriptions": {
+      "protocols": "ELANファイル全体で期待する言語構造を定義し、検証します。",
+      "filetypes": "このプロジェクトが受け付ける研究ファイルの種類を管理します。",
+      "naming": "コーパスを一貫して整理するための、読みやすいファイル名の規則を作成します。",
+      "effectiveStandards": "ファイルの種類と場所ごとに適用する命名規則を選びます。",
+      "contributionAutomation": "安全な新規ファイルの提出物を手動レビューなしで統合できる条件を設定します。",
+      "members": "共同研究者、アクセス権限、委任された役割を管理します。",
+      "invitations": "研究者を招待し、返答待ちの招待を確認します。"
+    },
+    "navigation": {
+      "label": "プロジェクト設定",
+      "expand_label": "設定のナビゲーションを展開",
+      "collapse_label": "設定のナビゲーションを折りたたむ",
+      "expand": "ナビゲーションを展開",
+      "collapse": "ナビゲーションを折りたたむ",
+      "title": "ワークスペースを設定",
+      "description": "現在の位置を保ったまま、管理する項目を選べます。"
     }
   },
   "configureFileTypes": {
@@ -1301,6 +1319,50 @@
     "protocolWarnings": {
       "summary": "プロトコル警告 {count} 件",
       "intro": "プロジェクトのプロトコルでは、これらのルールは警告として扱われます。ファイルは承認できますが、プロトコルに完全には準拠していません。"
+    },
+    "card": {
+      "collision": "{count}件の注釈には{contributions}にも別の提案があります。どちらかを承認する前に両方を確認してください。 | {count}件の注釈には{contributions}にも別の提案があります。どちらかを承認する前に両方を確認してください。",
+      "contribution": "提出物 #{id}",
+      "updated_for": "この提出物は{request}に応じて更新されました。",
+      "correction_request": "修正依頼",
+      "history": "提出物の履歴 · {count}バージョン",
+      "version": "バージョン{number} · 提出物 #{id}",
+      "current_version": "現在のバージョン",
+      "duplicate": "提出物 #{id}と同じ内容です。承認できるのは元の提出物だけです。",
+      "superseded": "提出物 #{id}に置き換えられました。このバージョンは履歴として残り、承認できません。",
+      "quality_checks": "提出物の品質確認",
+      "valid_files": "有効なELANファイル",
+      "naming_passed": "命名規則に合格",
+      "semantic_summary": "注釈の意味的な概要",
+      "annotation_changes": "注釈の変更{n}件 | 注釈の変更{n}件",
+      "added": "+{count}件追加",
+      "removed": "−{count}件削除",
+      "value_changed": "値の変更{count}件",
+      "timing_changed": "タイミングの変更{count}件",
+      "tier_changed": "層の変更{count}件",
+      "media_changed": "リンクされたメディアの変更",
+      "protocol": {
+        "passed": "プロジェクトのプロトコルに合格",
+        "recheck_required": "プロトコルが変更されました — 承認時にこの提出物を再確認します",
+        "not_configured": "プロジェクトのプロトコルは設定されていません",
+        "not_recorded": "この古い提出物にはプロトコル確認の記録がありません"
+      }
+    },
+    "mutations": {
+      "topicAssigned": "研究テーマを割り当てました。",
+      "topicAssignFailed": "研究テーマを割り当てられませんでした。",
+      "topicCreated": "研究テーマを作成して割り当てました。",
+      "topicMatched": "既存のテーマ「{name}」と一致したため、割り当てました。",
+      "topicCreateFailed": "研究テーマを作成できませんでした。",
+      "testCompleted": "互換性の確認が完了しました。",
+      "merged": "提出物をプロジェクトに統合しました。",
+      "dismissTitle": "提出物 #{id}を取り下げますか？",
+      "dismissMessage": "提出物 #{id}とまったく同じ内容です。重複したGitブランチは削除されますが、取り下げの記録は監査履歴に残ります。",
+      "dismissConfirm": "重複を取り下げる",
+      "dismissed": "重複した提出物を取り下げました。",
+      "dismissFailed": "重複した提出物を取り下げられませんでした。",
+      "declined": "提出物を却下してアーカイブしました。",
+      "declineFailed": "提出物を却下できませんでした。"
     }
   },
   "contributionDetails": {
@@ -1573,12 +1635,21 @@
       "readyToMerge": "統合可能",
       "needsResolution": "解決が必要",
       "error": "エラー",
-      "pendingReview": "レビュー待ち"
+      "pendingReview": "レビュー待ち",
+      "underReview": "レビュー中",
+      "changesRequested": "修正待ち",
+      "reviewRequired": "修正のレビュー待ち",
+      "duplicate": "重複した提出",
+      "superseded": "置き換え済み"
     },
     "uploadTypes": {
       "newFiles": "新規ファイル",
       "withModifications": "変更あり",
-      "withDeletions": "削除あり"
+      "withDeletions": "削除あり",
+      "mixed": "複数種類のファイル変更",
+      "new": "新しいファイル",
+      "modified": "変更されたファイル",
+      "deleted": "削除されたファイル"
     },
     "errors": {
       "loadFailed": "保留中の投稿を読み込めませんでした",
@@ -2529,5 +2600,18 @@
       "recurring": "頻出",
       "limited": "根拠が限定的"
     }
+  },
+  "contributionAutomation": {
+    "eyebrow": "受け取る提出物",
+    "title": "安全な新規ファイルの提出物を自動で統合する",
+    "description": "有効にすると、有効な新規ファイルだけを含み、既存のプロジェクトファイルを変更・削除しない提出物に限り、手動レビューなしで統合します。",
+    "enabled": "有効",
+    "disabled": "無効",
+    "boundary": "変更・削除されたファイル、検証の失敗、{corrections}、競合は、管理者が判断するまで常に{incoming}に残ります。",
+    "corrections": "修正依頼",
+    "incoming": "受け取った作業",
+    "saved_enabled": "安全な新規ファイルの提出物の自動統合を有効にしました。",
+    "saved_disabled": "自動統合を無効にしました。すべての提出物に統合の判断が必要になります。",
+    "save_failed": "自動化の設定を保存できませんでした。"
   }
 }
