@@ -174,11 +174,35 @@ cross-project IDs and filename collisions.
 ### P1 — frontend decomposition
 
 Several Vue single-file components contain between 900 and 2,370 lines. In
-particular, naming-standard configuration, profile overview and registration
-mix API access, state transitions, validation, markup and extensive local CSS.
-Extract feature composables, Pinia stores, request schemas, small dialogs and
-shared form controls. Keep pages responsible for composition rather than domain
-logic.
+particular, naming-standard configuration and profile overview mix API access,
+state transitions, validation, markup and extensive local CSS. Extract feature
+composables, Pinia stores, request schemas, small dialogs and shared form
+controls. Keep pages responsible for composition rather than domain logic.
+
+**Registration split completed 16 September 2026.** `RegisterPage.vue` was
+1,807 lines with no test at all, although creating an account is the first
+thing any researcher does here. It is now 368 lines of composition over
+`registrationValidation` (the field rules, as pure functions),
+`useAddressVerification` (the checks against the location service, including
+the rule that a street or postal code is only cross-checked against a city the
+service has confirmed), `useAvailabilityCheck` (shared by the username and
+email questions) and `useInvitationRegistration` (validating the code and
+creating the account), with the markup in four field components. Seventy-two
+tests now cover it, where none did.
+
+Splitting it exposed that a dozen messages were written in English inside the
+markup — every password requirement, the username rules, the length limits on
+names and affiliations — so a French or Japanese researcher was told
+"First name must be less than 50 characters" whatever language they had
+chosen. All of them now come from the locale files in all three languages.
+Each input also names the element carrying its message, so an error is
+announced rather than only shown.
+
+The shared field stylesheet is confined to the page by a `.register-page`
+prefix rather than scoped per component: a scoped style does not reach into a
+child component, and importing the sheet in each of the five would have shipped
+it five times over, which measurably inflated the page's CSS before it was
+corrected.
 
 Two unused `ProjectUsersManager.vue` prototypes and their routed test page were
 removed after reference analysis; `ConfigureProjectMembers.vue` is the active
