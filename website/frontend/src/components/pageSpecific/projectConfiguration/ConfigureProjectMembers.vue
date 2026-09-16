@@ -476,6 +476,7 @@ const confirmRemoveUser = async (user) => {
       username: user.username,
     }),
     confirmText: t('common.remove'),
+    tone: 'danger',
     cancelText: t('common.cancel'),
   });
 

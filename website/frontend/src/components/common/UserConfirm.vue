@@ -20,14 +20,16 @@
           <FontAwesomeIcon :icon="toneIcon" />
         </span>
         <div class="confirm-heading">
-          <span class="confirm-eyebrow">Confirmation required</span>
+          <span class="confirm-eyebrow">{{
+            t('dialogs.confirmationRequired')
+          }}</span>
           <h2 v-if="title" :id="titleId">{{ title }}</h2>
         </div>
         <button
           type="button"
           class="confirm-close"
-          aria-label="Cancel and close"
-          title="Cancel"
+          :aria-label="t('dialogs.cancelAndClose')"
+          :title="t('common.cancel')"
           @click="cancel"
         >
           <FontAwesomeIcon :icon="faXmark" />
@@ -45,11 +47,11 @@
           class="confirm-button secondary"
           @click="cancel"
         >
-          {{ cancelText }}
+          {{ cancelText || t('common.cancel') }}
         </button>
         <button type="button" class="confirm-button primary" @click="confirm">
           <FontAwesomeIcon :icon="toneIcon" />
-          {{ confirmText }}
+          {{ confirmText || t('common.confirm') }}
         </button>
       </footer>
     </dialog>
@@ -57,6 +59,7 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
 import { computed, ref, useId, watch } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
@@ -67,12 +70,14 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useModalDialog } from '@/composables/useModalDialog';
 
+const { t } = useI18n();
+
 const props = defineProps({
   modelValue: Boolean,
   message: { type: String, required: true },
   title: { type: String, default: '' },
-  confirmText: { type: String, default: 'Confirm' },
-  cancelText: { type: String, default: 'Cancel' },
+  confirmText: { type: String, default: '' },
+  cancelText: { type: String, default: '' },
   tone: {
     type: String,
     default: 'auto',

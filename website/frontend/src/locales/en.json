@@ -183,7 +183,15 @@
     "projectSection": {
       "selectProject": "Select a project",
       "loadError": "Failed to load projects"
-    }
+    },
+    "navigation": {
+      "close": "Close navigation",
+      "home": "ELANORA home",
+      "toggle": "Toggle navigation",
+      "primary": "Primary navigation"
+    },
+    "userMenuFor": "User menu for {name}",
+    "userMenu": "User menu"
   },
   "appFooter": {
     "platform_description": "Collaborative linguistic annotation platform for ELAN corpora.",
@@ -217,7 +225,8 @@
     },
     "login_success": "Login successful!",
     "email_verification_required": "Please verify your email before logging in.",
-    "login_connection_error": "Login failed. Please try again."
+    "login_connection_error": "Login failed. Please try again.",
+    "capabilities": "Platform capabilities"
   },
   "auth": {
     "login": "Login",
@@ -491,7 +500,10 @@
       "invitation_send_error_already_member": "User is already a member of this project",
       "invitation_send_error_generic": "Failed to send invitation",
       "user_email_not_found": "Unable to find email for selected user",
-      "error_loading_users": "Error loading users"
+      "error_loading_users": "Error loading users",
+      "eyebrow": "Project access",
+      "intro": "Invite a researcher and choose the access they need.",
+      "method": "Invitation method"
     }
   },
   "emailVerification": {
@@ -883,7 +895,9 @@
       "exampleFile": "Example filename",
       "components": "Components",
       "toggleDetails": "{name}: toggle details",
-      "importSelected": "Import Selected"
+      "importSelected": "Import Selected",
+      "eyebrow": "Reuse configuration",
+      "heading": "Import naming standards"
     },
     "eventMessages": {
       "addSuccess": "Naming standard added successfully.",
@@ -906,7 +920,14 @@
     "patternRequired": "Please enter a valid pattern.",
     "patternExampleBlockCount": "Pattern and example file do not have the same number of blocks.",
     "acceptedValuesLength": "All accepted values for \"{name}\" must be exactly {length} characters long.",
-    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
+    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle",
+    "regex": "Regular expression",
+    "componentExamples": "Pattern component examples",
+    "lengthRequired": "Please enter a length.",
+    "lengthNotNumber": "Please enter a whole number.",
+    "lengthTooSmall": "The length must be at least 1.",
+    "lengthTooLarge": "The length must not exceed {max}.",
+    "acceptedValues": "Accepted values"
   },
   "profile": {
     "accounts": {
@@ -1070,6 +1091,11 @@
       "fix_errors": "Please fix the errors before saving.",
       "saved": "Professional information updated.",
       "save_failed": "The professional information could not be updated."
+    },
+    "institution": {
+      "menu": "Institution",
+      "title": "Institution identity",
+      "description": "Manage the workspace name, research identity, colors, and logo."
     }
   },
   "notificationBell": {
@@ -1125,7 +1151,9 @@
     "error_payload_too_large": "The message is too large. Please reduce the size of your message.",
     "error_unknown": "An unexpected error occurred. Please try again later.",
     "response_note": "You will receive a response at the email address you provided.",
-    "back_to_site": "Back to Site"
+    "back_to_site": "Back to Site",
+    "characterCount": "{count} / {max} characters",
+    "characterMinimum": "(minimum: {min})"
   },
   "configureEffectiveStandards": {
     "title": "Configure Effective Naming Standards",
@@ -1558,7 +1586,10 @@
       "searchInTopic": "Search files in {topic}",
       "moreTiers": "+{count} more tier(s)",
       "coverageAria": "{available} of {total} tiers available",
-      "showMoreFiles": "Show {count} more file(s)"
+      "showMoreFiles": "Show {count} more file(s)",
+      "tierCount": "{count} research tier | {count} research tiers",
+      "fileCount": "{count} matching file | {count} matching files",
+      "coverage": "{count} of {total} EAF files contain at least one selected tier"
     },
     "messages": {
       "selectProject": "Select a project to work with its research scopes.",
@@ -1709,7 +1740,9 @@
       "addFiles": "Add the requested corrected files",
       "uploadHint": "You do not need to upload the complete project again.",
       "stillRequired": "Still required",
-      "finishLink": "Finish linking this contribution to the correction request"
+      "finishLink": "Finish linking this contribution to the correction request",
+      "unavailable": "This correction request is no longer available for resubmission.",
+      "loadFailed": "The correction request could not be loaded."
     },
     "context": {
       "title": "Describe your contribution",
@@ -1752,7 +1785,12 @@
       "uploadFailed": "Upload failed",
       "standardsFailed": "The project's naming rules could not be loaded. Upload is paused to avoid an unchecked submission."
     },
-    "complianceWarning": "Some files don't comply with the naming standard. Please verify the file names and try again."
+    "complianceWarning": "Some files don't comply with the naming standard. Please verify the file names and try again.",
+    "topics": {
+      "general": "General or cross-topic work",
+      "propose": "Suggest a new research topic…",
+      "loadFailed": "Research topics could not be loaded. Try again before submitting."
+    }
   },
   "reviewArchive": {
     "eyebrow": "Review archive",
@@ -2613,5 +2651,39 @@
     "saved_enabled": "Automatic merging enabled for safe new-file contributions.",
     "saved_disabled": "Automatic merging disabled. Every contribution now requires a merge decision.",
     "save_failed": "The automation policy could not be saved."
+  },
+  "fileTree": {
+    "filterExtension": "Filter files by extension",
+    "filterExtensionPlaceholder": "Filter by extension (e.g., .eaf)",
+    "filterDate": "Filter by modified date",
+    "filename": "Filename",
+    "extension": "Extension",
+    "size": "Size",
+    "modified": "Last Modified",
+    "updatedBy": "Updated By",
+    "elanFile": "ELAN file"
+  },
+  "adminInvitations": {
+    "recent": "Recently sent invitations",
+    "loading": "Loading invitations…",
+    "empty": "No invitations sent yet."
+  },
+  "dialogs": {
+    "informationRequired": "Information required",
+    "cancelAndClose": "Cancel and close",
+    "saveValue": "Save value",
+    "confirmationRequired": "Confirmation required"
+  },
+  "tierSelection": {
+    "protectedContext": "Protected context",
+    "baselineCorrection": "Baseline correction",
+    "requiredParent": "Required parent",
+    "related": "{count} related"
+  },
+  "pageLoader": {
+    "loading": "Loading workspace…"
+  },
+  "notifications": {
+    "close": "Close notification"
   }
 }

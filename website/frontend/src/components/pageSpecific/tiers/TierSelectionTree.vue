@@ -26,13 +26,13 @@
           v-if="contextNames.has(tier.tier_name)"
           class="tier-selection-option__automatic"
         >
-          Protected context
+          {{ t('tierSelection.protectedContext') }}
         </span>
         <span
           v-else-if="correctionNames.has(tier.tier_name)"
           class="tier-selection-option__correction"
         >
-          Baseline correction
+          {{ t('tierSelection.baselineCorrection') }}
         </span>
         <span
           v-else-if="
@@ -41,10 +41,10 @@
           "
           class="tier-selection-option__automatic"
         >
-          Required parent
+          {{ t('tierSelection.requiredParent') }}
         </span>
         <span v-if="tier.children?.length" class="tier-selection-option__meta">
-          {{ tier.children.length }} related
+          {{ t('tierSelection.related', { count: tier.children.length }) }}
         </span>
       </label>
       <TierSelectionTree
@@ -61,6 +61,9 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 defineOptions({ name: 'TierSelectionTree' });
 defineProps({
   tiers: { type: Array, required: true },

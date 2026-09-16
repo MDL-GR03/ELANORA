@@ -3,11 +3,18 @@
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import { describe, expect, it } from 'vitest';
+import { createI18n } from 'vue-i18n';
+
+import messages from '@/locales/en.json';
+
+const i18n = () =>
+  createI18n({ legacy: false, locale: 'en', messages: { en: messages } });
 import UserConfirm from './UserConfirm.vue';
 
 describe('UserConfirm', () => {
   it('renders its semantic icon without relying on global app components', () => {
     const wrapper = mount(UserConfirm, {
+      global: { plugins: [i18n()] },
       props: {
         modelValue: true,
         title: 'Mark this review as resolved?',
@@ -28,6 +35,7 @@ describe('UserConfirm', () => {
     document.body.append(opener);
     opener.focus();
     const wrapper = mount(UserConfirm, {
+      global: { plugins: [i18n()] },
       props: {
         modelValue: true,
         title: 'Confirm action',

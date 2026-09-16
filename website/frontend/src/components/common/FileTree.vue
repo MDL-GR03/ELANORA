@@ -3,14 +3,14 @@
     <div v-if="showFilters" class="filetree-filters">
       <input
         v-model="filterType"
-        aria-label="Filter files by extension"
-        placeholder="Filter by extension (e.g., .eaf)"
+        :aria-label="t('fileTree.filterExtension')"
+        :placeholder="t('fileTree.filterExtensionPlaceholder')"
       />
       <input
         v-model="filterDate"
         type="date"
-        aria-label="Filter files by modified date"
-        placeholder="Filter by modified date"
+        :aria-label="t('fileTree.filterDate')"
+        :placeholder="t('fileTree.filterDate')"
       />
     </div>
 
@@ -18,7 +18,7 @@
       <thead>
         <tr>
           <th class="sortable-header" @click="sortBy('name')">
-            <span class="header-text">Filename</span>
+            <span class="header-text">{{ t('fileTree.filename') }}</span>
             <span class="sort-icon-placeholder">
               <font-awesome-icon
                 v-if="sortKey === 'name'"
@@ -32,7 +32,7 @@
             </span>
           </th>
           <th class="sortable-header" @click="sortBy('extension')">
-            <span class="header-text">Extension</span>
+            <span class="header-text">{{ t('fileTree.extension') }}</span>
             <span class="sort-icon-placeholder">
               <font-awesome-icon
                 v-if="sortKey === 'extension'"
@@ -46,7 +46,7 @@
             </span>
           </th>
           <th class="sortable-header" @click="sortBy('size')">
-            <span class="header-text">Size</span>
+            <span class="header-text">{{ t('fileTree.size') }}</span>
             <span class="sort-icon-placeholder">
               <font-awesome-icon
                 v-if="sortKey === 'size'"
@@ -60,7 +60,7 @@
             </span>
           </th>
           <th class="sortable-header" @click="sortBy('lastModified')">
-            <span class="header-text">Last Modified</span>
+            <span class="header-text">{{ t('fileTree.modified') }}</span>
             <span class="sort-icon-placeholder">
               <font-awesome-icon
                 v-if="sortKey === 'lastModified'"
@@ -74,7 +74,7 @@
             </span>
           </th>
           <th class="sortable-header" @click="sortBy('lastUpdatedBy')">
-            <span class="header-text">Updated By</span>
+            <span class="header-text">{{ t('fileTree.updatedBy') }}</span>
             <span class="sort-icon-placeholder">
               <font-awesome-icon
                 v-if="sortKey === 'lastUpdatedBy'"
@@ -181,6 +181,7 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
 import FileRenameSuggestion from '@components/common/FileRenameSuggestion.vue';
 import {
@@ -189,6 +190,8 @@ import {
 } from '@/utils/filenameFromMediaFile';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { reportClientError } from '@/utils/errorDiagnostics';
+
+const { t } = useI18n();
 
 const props = defineProps({
   files: { type: Array, required: true },

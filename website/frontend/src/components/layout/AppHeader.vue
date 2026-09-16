@@ -4,7 +4,7 @@
       v-if="menuOpen"
       type="button"
       class="mobile-menu-backdrop"
-      aria-label="Close navigation"
+      :aria-label="t('appHeader.navigation.close')"
       tabindex="-1"
       @click="closeMenu(true)"
     ></button>
@@ -13,7 +13,7 @@
         <router-link
           to="/homePage"
           class="elanora-header-logo-link"
-          aria-label="ELANORA home"
+          :aria-label="t('appHeader.navigation.home')"
         >
           <img
             src="@logos/ELANora-logo.png"
@@ -28,7 +28,7 @@
           type="button"
           :aria-expanded="menuOpen"
           aria-controls="primary-navigation"
-          aria-label="Toggle navigation"
+          :aria-label="t('appHeader.navigation.toggle')"
           @click="toggleMenu"
         >
           <span></span><span></span><span></span>
@@ -36,7 +36,7 @@
         <nav
           id="primary-navigation"
           class="elanora-header-nav"
-          aria-label="Primary navigation"
+          :aria-label="t('appHeader.navigation.primary')"
           :class="{ open: menuOpen }"
         >
           <router-link to="/projects" class="elanora-header-menu-link">

@@ -172,10 +172,9 @@ const menuItems = computed(() => [
     ? [
         {
           id: 'institution',
-          label: 'Institution',
-          title: 'Institution identity',
-          description:
-            'Manage the workspace name, research identity, colors, and logo.',
+          label: t('profile.institution.menu'),
+          title: t('profile.institution.title'),
+          description: t('profile.institution.description'),
           icon: '🏛️',
         },
         {

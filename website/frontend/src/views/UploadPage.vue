@@ -472,8 +472,8 @@ const researchTopicOptions = computed(() => [
     value: String(topic.topic_id),
     label: topic.name,
   })),
-  { value: '__general__', label: 'General or cross-topic work' },
-  { value: '__propose__', label: 'Suggest a new research topic…' },
+  { value: '__general__', label: t('uploadPage.topics.general') },
+  { value: '__propose__', label: t('uploadPage.topics.propose') },
 ]);
 const suggestedExistingTopic = computed(() => {
   if (
@@ -618,8 +618,7 @@ async function loadResearchTopics() {
   try {
     researchTopics.value = await fetchResearchTopics(selectedProject.value);
   } catch {
-    error.value =
-      'Research topics could not be loaded. Try again before submitting.';
+    error.value = t('uploadPage.topics.loadFailed');
   } finally {
     researchTopicsLoading.value = false;
   }
@@ -704,13 +703,12 @@ async function loadCorrectionContext() {
         (item) => item.case_id === caseId && item.state === 'changes_requested'
       ) || null;
     if (!correctionCase.value) {
-      error.value =
-        'This correction request is no longer available for resubmission.';
+      error.value = t('uploadPage.correction.unavailable');
     }
   } catch (requestError) {
     error.value =
       requestError?.response?.data?.detail ||
-      'The correction request could not be loaded.';
+      t('uploadPage.correction.loadFailed');
   }
 }
 

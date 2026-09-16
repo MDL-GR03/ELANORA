@@ -134,7 +134,7 @@
               <td>
                 <input
                   v-model="component.name"
-                  placeholder="Component name"
+                  :placeholder="t('configureNamingStandards.componentName')"
                   readonly
                   class="configure-naming-components-table-prefix-disabled"
                   :tabindex="isPrefix(component, index) ? -1 : 0"
@@ -143,7 +143,7 @@
               <td>
                 <input
                   v-model="component.regex"
-                  placeholder="Regex"
+                  :placeholder="t('configureNamingStandards.regex')"
                   :readonly="isPrefix(component, index)"
                   :class="{
                     'configure-naming-components-table-prefix-disabled':
@@ -155,7 +155,7 @@
               <td>
                 <input
                   v-model="component.description"
-                  placeholder="Description"
+                  :placeholder="t('configureNamingStandards.description')"
                 />
               </td>
               <td>

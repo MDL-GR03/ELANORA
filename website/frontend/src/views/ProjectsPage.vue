@@ -640,6 +640,7 @@ async function deleteProject(projectName) {
     title: t('projectsPage.deleteTitle'),
     message: t('projectsPage.deleteMessage', { projectName }),
     confirmText: t('projectsPage.deleteConfirm'),
+    tone: 'danger',
     cancelText: t('projectsPage.deleteCancel'),
   });
   if (!confirmed) return;

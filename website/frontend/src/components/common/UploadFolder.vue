@@ -106,7 +106,7 @@
           >
             <img
               src="/images/icons/ELAN.svg"
-              alt="ELAN file"
+              :alt="t('fileTree.elanFile')"
               class="file-icon"
             />
             <div class="file-details">

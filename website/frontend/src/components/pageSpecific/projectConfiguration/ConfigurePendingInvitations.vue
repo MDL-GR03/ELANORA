@@ -228,6 +228,7 @@ const confirmCancelInvitation = async (invitation) => {
       email: invitation.receiver_email,
     }),
     confirmText: t('common.yes_cancel'),
+    tone: 'danger',
     cancelText: t('common.no'),
   });
 

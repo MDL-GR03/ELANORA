@@ -576,17 +576,30 @@
                   {{ topic.description || t('researchScopes.noDescription') }}
                 </p>
                 <div class="topic-card__metrics">
-                  <span
-                    ><strong>{{ topic.tier_names.length }}</strong> research
-                    tier(s)</span
-                  ><span
-                    ><strong>{{ matchingFileCount(topic) }}</strong> matching
-                    file(s)</span
-                  ><span
-                    ><strong>{{ matchingFileCount(topic) }}</strong> of
-                    {{ tierGroups.length }} EAF files contain at least one
-                    selected tier</span
+                  <i18n-t
+                    keypath="researchScopes.topics.tierCount"
+                    :plural="topic.tier_names.length"
+                    tag="span"
                   >
+                    <template #count
+                      ><strong>{{ topic.tier_names.length }}</strong></template
+                    >
+                  </i18n-t>
+                  <i18n-t
+                    keypath="researchScopes.topics.fileCount"
+                    :plural="matchingFileCount(topic)"
+                    tag="span"
+                  >
+                    <template #count
+                      ><strong>{{ matchingFileCount(topic) }}</strong></template
+                    >
+                  </i18n-t>
+                  <i18n-t keypath="researchScopes.topics.coverage" tag="span">
+                    <template #count
+                      ><strong>{{ matchingFileCount(topic) }}</strong></template
+                    >
+                    <template #total>{{ tierGroups.length }}</template>
+                  </i18n-t>
                 </div>
               </div>
               <div class="topic-card__actions">

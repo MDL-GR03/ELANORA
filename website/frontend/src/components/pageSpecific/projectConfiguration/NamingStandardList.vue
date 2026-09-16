@@ -37,7 +37,10 @@
             <code>{{ standard.pattern }}</code>
           </section>
         </div>
-        <div class="breakdown" aria-label="Pattern component examples">
+        <div
+          class="breakdown"
+          :aria-label="t('configureNamingStandards.componentExamples')"
+        >
           <span
             v-for="component in getPatternOrderedComponents(standard)"
             :key="component.id || component.name"

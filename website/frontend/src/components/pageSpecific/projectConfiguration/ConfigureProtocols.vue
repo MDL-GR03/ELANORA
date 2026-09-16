@@ -520,6 +520,7 @@ const removeDraft = async (protocol, version) => {
       name: protocol.name,
     }),
     confirmText: t('protocols.delete_draft'),
+    tone: 'danger',
     cancelText: t('protocols.confirm.delete_draft.cancel'),
   });
   if (!confirmed) return;
@@ -543,6 +544,7 @@ const archiveVersion = async (protocol, version) => {
       name: protocol.name,
     }),
     confirmText: t('protocols.confirm.archive.confirm'),
+    tone: 'danger',
     cancelText: t('protocols.confirm.archive.cancel'),
   });
   if (!confirmed) return;
@@ -566,6 +568,7 @@ const purgeVersion = async (protocol, version) => {
       name: protocol.name,
     }),
     confirmText: t('protocols.delete_permanently'),
+    tone: 'danger',
     cancelText: t('protocols.confirm.purge.cancel'),
   });
   if (!confirmed) return;

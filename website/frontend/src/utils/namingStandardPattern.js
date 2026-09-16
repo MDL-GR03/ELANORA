@@ -210,11 +210,17 @@ export async function inferPatternComponents({
         const componentsLeft = componentNames.length - componentIndex;
         const validator = (input) => {
           const normalized = (input ?? '').toString().trim();
-          if (!normalized) return 'Please enter a correct numbered value.';
-          if (!/^\d+$/.test(normalized)) return 'Please enter a valid number.';
+          if (!normalized)
+            return translate('configureNamingStandards.lengthRequired');
+          if (!/^\d+$/.test(normalized))
+            return translate('configureNamingStandards.lengthNotNumber');
           const number = Number.parseInt(normalized, 10);
-          if (number < 1) return 'Length must be at least 1.';
-          if (number > remaining) return `Length must not exceed ${remaining}.`;
+          if (number < 1)
+            return translate('configureNamingStandards.lengthTooSmall');
+          if (number > remaining)
+            return translate('configureNamingStandards.lengthTooLarge', {
+              max: remaining,
+            });
           return false;
         };
         const promptedLength = await showPrompt(
@@ -312,8 +318,9 @@ export async function inferPatternComponents({
   return { components, error: null };
 }
 
-export function acceptedValuesPlaceholder(regex) {
-  if (!regex) return 'Accepted Values';
+export function acceptedValuesPlaceholder(regex, translate = (key) => key) {
+  const fallback = translate('configureNamingStandards.acceptedValues');
+  if (!regex) return fallback;
 
   const letterMatch = regex.match(/\\p\{L\}\{(\d+)\}/u);
   if (letterMatch) {
@@ -332,5 +339,5 @@ export function acceptedValuesPlaceholder(regex) {
     return `e.g. ${'0'.repeat(length - 1)}1, ${'9'.repeat(length)}`;
   }
 
-  return 'Accepted Values';
+  return fallback;
 }

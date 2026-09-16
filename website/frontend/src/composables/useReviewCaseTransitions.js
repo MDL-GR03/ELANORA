@@ -46,11 +46,13 @@ export function useReviewCaseTransitions({
           item.state === 'resubmitted'
             ? t('reviewCases.confirm.approveConfirm')
             : t('reviewCases.confirm.closeConfirm'),
+        tone: 'success',
       },
       open: {
         title: t('reviewCases.confirm.reopenTitle'),
         message: t('reviewCases.confirm.reopenMessage'),
         confirmText: t('reviewCases.confirm.reopenConfirm'),
+        tone: 'success',
       },
     }[state];
   }

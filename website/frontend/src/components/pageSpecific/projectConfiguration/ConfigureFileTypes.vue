@@ -242,6 +242,7 @@ async function deleteFileType(id) {
       t('configureFileTypes.deleteMessage'),
     title: t('configureFileTypes.deleteTitle'),
     confirmText: t('common.confirm'),
+    tone: 'danger',
     cancelText: t('common.cancel'),
   });
   if (!ok) return;

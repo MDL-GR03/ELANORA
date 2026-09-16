@@ -92,6 +92,7 @@ export function useNamingStandardMutations({
     const confirmed = await confirmAction({
       message: translate('configureNamingStandards.deleteConfirm'),
       confirmText: translate('common.confirm'),
+      tone: 'danger',
       cancelText: translate('common.cancel'),
     });
     if (!confirmed) return false;

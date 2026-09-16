@@ -19,11 +19,13 @@
           <font-awesome-icon icon="fa-regular fa-share-from-square" />
         </span>
         <div>
-          <span class="share-modal-eyebrow">Project access</span>
+          <span class="share-modal-eyebrow">{{
+            t('project.share.eyebrow')
+          }}</span>
           <h2 id="share-project-title">
             {{ t('project.share.title', { projectName }) }}
           </h2>
-          <p>Invite a researcher and choose the access they need.</p>
+          <p>{{ t('project.share.intro') }}</p>
         </div>
         <button
           type="button"
@@ -37,7 +39,11 @@
 
       <div class="share-options">
         <!-- Tab Selector -->
-        <div class="tab-selector" role="tablist" aria-label="Invitation method">
+        <div
+          class="tab-selector"
+          role="tablist"
+          :aria-label="t('project.share.method')"
+        >
           <button
             id="invite-by-email-tab"
             type="button"

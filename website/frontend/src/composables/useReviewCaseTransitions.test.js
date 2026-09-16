@@ -67,6 +67,7 @@ describe('useReviewCaseTransitions', () => {
       message: expect.stringContaining('does not merge the contribution'),
       confirmText: 'Approve correction and close review',
       cancelText: 'Cancel',
+      tone: 'success',
     });
     expect(reviewService.transition).toHaveBeenCalledWith(
       12,

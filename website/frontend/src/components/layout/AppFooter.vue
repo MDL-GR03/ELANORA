@@ -8,7 +8,7 @@
         </div>
 
         <div class="footer-section">
-          <h4>Workspace</h4>
+          <h4>{{ t('home.workspace') }}</h4>
           <ul class="footer-links">
             <li>
               <router-link to="/projects">{{

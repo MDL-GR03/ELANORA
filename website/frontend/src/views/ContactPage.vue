@@ -55,10 +55,15 @@
                     contactForm.message.length <= 4500,
                 }"
               >
-                {{ contactForm.message.length }} / 5000 caractères
-                <span v-if="contactForm.message.length < 10"
-                  >(minimum: 10)</span
-                >
+                {{
+                  t('contact.characterCount', {
+                    count: contactForm.message.length,
+                    max: 5000,
+                  })
+                }}
+                <span v-if="contactForm.message.length < 10">{{
+                  t('contact.characterMinimum', { min: 10 })
+                }}</span>
               </span>
             </div>
           </div>

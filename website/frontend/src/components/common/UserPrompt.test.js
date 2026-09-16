@@ -3,6 +3,12 @@
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import { describe, expect, it } from 'vitest';
+import { createI18n } from 'vue-i18n';
+
+import messages from '@/locales/en.json';
+
+const i18n = () =>
+  createI18n({ legacy: false, locale: 'en', messages: { en: messages } });
 
 import UserPrompt from './UserPrompt.vue';
 
@@ -12,6 +18,7 @@ describe('UserPrompt', () => {
     document.body.append(opener);
     opener.focus();
     const wrapper = mount(UserPrompt, {
+      global: { plugins: [i18n()] },
       attachTo: document.body,
       props: {
         modelValue: true,
@@ -36,6 +43,7 @@ describe('UserPrompt', () => {
 
   it('announces validation and blocks invalid submission', async () => {
     const wrapper = mount(UserPrompt, {
+      global: { plugins: [i18n()] },
       props: {
         modelValue: true,
         message: 'Number of components',

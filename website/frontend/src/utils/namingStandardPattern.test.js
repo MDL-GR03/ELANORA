@@ -123,6 +123,8 @@ describe('naming standard pattern utilities', () => {
   it('provides examples appropriate to letter and numeric regex widths', () => {
     expect(acceptedValuesPlaceholder('\\p{L}{2}')).toBe('e.g. AB, ÉZ, ZA');
     expect(acceptedValuesPlaceholder('\\p{N}{3}')).toBe('e.g. 001, 999');
-    expect(acceptedValuesPlaceholder('.+')).toBe('Accepted Values');
+    expect(acceptedValuesPlaceholder('.+', (key) => `t:${key}`)).toBe(
+      't:configureNamingStandards.acceptedValues'
+    );
   });
 });

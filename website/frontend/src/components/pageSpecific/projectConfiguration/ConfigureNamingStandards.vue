@@ -602,7 +602,7 @@ const shouldShowAcceptedValuesWarning = computed(
 );
 
 function getAcceptedValuesPlaceholder(comp) {
-  return acceptedValuesPlaceholder(comp.regex);
+  return acceptedValuesPlaceholder(comp.regex, t);
 }
 
 // Import modal

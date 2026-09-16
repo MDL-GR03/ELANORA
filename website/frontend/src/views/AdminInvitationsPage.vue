@@ -82,14 +82,14 @@
 
       <!-- Sent Invitations List -->
       <div class="sent-invitations-card">
-        <h2 class="section-title">Recently Sent Invitations</h2>
+        <h2 class="section-title">{{ t('adminInvitations.recent') }}</h2>
 
         <div v-if="loadingInvitations" class="loading-message">
-          Loading invitations...
+          {{ t('adminInvitations.loading') }}
         </div>
 
         <div v-else-if="sentInvitations.length === 0" class="empty-message">
-          No invitations sent yet.
+          {{ t('adminInvitations.empty') }}
         </div>
 
         <div v-else class="invitations-list">

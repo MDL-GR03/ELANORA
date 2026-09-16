@@ -1,7 +1,7 @@
 <template>
   <div class="page-loader" role="status" aria-live="polite">
     <span class="page-loader-mark" aria-hidden="true"></span
-    ><span>Loading workspace…</span>
+    ><span>{{ $t('pageLoader.loading') }}</span>
   </div>
 </template>
 <style scoped>

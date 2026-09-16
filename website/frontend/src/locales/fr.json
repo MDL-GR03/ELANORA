@@ -183,7 +183,15 @@
     "projectSection": {
       "selectProject": "Sélectionnez un projet",
       "loadError": "Échec du chargement des projets"
-    }
+    },
+    "navigation": {
+      "close": "Fermer la navigation",
+      "home": "Accueil d'ELANORA",
+      "toggle": "Afficher ou masquer la navigation",
+      "primary": "Navigation principale"
+    },
+    "userMenuFor": "Menu utilisateur de {name}",
+    "userMenu": "Menu utilisateur"
   },
   "appFooter": {
     "platform_description": "Plateforme collaborative d'annotation linguistique pour les corpus ELAN.",
@@ -217,7 +225,8 @@
     },
     "login_success": "Connexion réussie !",
     "email_verification_required": "Vérifiez votre email avant de vous connecter.",
-    "login_connection_error": "Erreur de connexion. Veuillez réessayer."
+    "login_connection_error": "Erreur de connexion. Veuillez réessayer.",
+    "capabilities": "Fonctionnalités de la plateforme"
   },
   "auth": {
     "login": "Connexion",
@@ -491,7 +500,10 @@
       "invitation_send_error_already_member": "L'utilisateur fait déjà partie de ce projet",
       "invitation_send_error_generic": "Échec de l'envoi de l'invitation",
       "user_email_not_found": "Impossible de trouver l'email de l'utilisateur sélectionné",
-      "error_loading_users": "Erreur lors du chargement des utilisateurs"
+      "error_loading_users": "Erreur lors du chargement des utilisateurs",
+      "eyebrow": "Accès au projet",
+      "intro": "Invitez un chercheur et choisissez l'accès dont il a besoin.",
+      "method": "Méthode d'invitation"
     }
   },
   "emailVerification": {
@@ -883,7 +895,9 @@
       "exampleFile": "Nom de fichier exemple",
       "components": "Composants",
       "toggleDetails": "{name} : afficher ou masquer les détails",
-      "importSelected": "Importer la sélection"
+      "importSelected": "Importer la sélection",
+      "eyebrow": "Réutiliser une configuration",
+      "heading": "Importer des normes de nommage"
     },
     "eventMessages": {
       "addSuccess": "Norme de nommage ajoutée avec succès.",
@@ -906,7 +920,14 @@
     "patternRequired": "Veuillez entrer un pattern valide.",
     "patternExampleBlockCount": "Le pattern et le fichier exemple n'ont pas le même nombre de blocs.",
     "acceptedValuesLength": "Toutes les valeurs acceptées pour \"{name}\" doivent comporter exactement {length} caractères.",
-    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra"
+    "exampleCommaPattern": "session,tâche,question_réponse,_,lettre_signeur,numéro_signeur,_,angle_caméra",
+    "regex": "Expression régulière",
+    "componentExamples": "Exemples de composants du modèle",
+    "lengthRequired": "Veuillez indiquer une longueur.",
+    "lengthNotNumber": "Veuillez indiquer un nombre entier.",
+    "lengthTooSmall": "La longueur doit être au moins de 1.",
+    "lengthTooLarge": "La longueur ne doit pas dépasser {max}.",
+    "acceptedValues": "Valeurs acceptées"
   },
   "profile": {
     "accounts": {
@@ -1070,6 +1091,11 @@
       "fix_errors": "Veuillez corriger les erreurs avant d'enregistrer.",
       "saved": "Informations professionnelles mises à jour.",
       "save_failed": "Les informations professionnelles n'ont pas pu être mises à jour."
+    },
+    "institution": {
+      "menu": "Institution",
+      "title": "Identité de l'institution",
+      "description": "Gérez le nom de l'espace, l'identité de recherche, les couleurs et le logo."
     }
   },
   "notificationBell": {
@@ -1125,7 +1151,9 @@
     "error_payload_too_large": "Le message est trop volumineux. Veuillez réduire la taille de votre message.",
     "error_unknown": "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
     "response_note": "Vous recevrez une réponse à l'adresse email que vous avez fournie.",
-    "back_to_site": "Retour au Site"
+    "back_to_site": "Retour au Site",
+    "characterCount": "{count} / {max} caractères",
+    "characterMinimum": "(minimum : {min})"
   },
   "configureEffectiveStandards": {
     "title": "Configurer les normes effectives de nommage",
@@ -1558,7 +1586,10 @@
       "searchInTopic": "Rechercher des fichiers dans {topic}",
       "moreTiers": "+{count} tier(s) supplémentaire(s)",
       "coverageAria": "{available} tier(s) disponible(s) sur {total}",
-      "showMoreFiles": "Afficher {count} fichier(s) supplémentaire(s)"
+      "showMoreFiles": "Afficher {count} fichier(s) supplémentaire(s)",
+      "tierCount": "{count} tier de recherche | {count} tiers de recherche",
+      "fileCount": "{count} fichier correspondant | {count} fichiers correspondants",
+      "coverage": "{count} fichiers EAF sur {total} contiennent au moins un tier sélectionné"
     },
     "messages": {
       "selectProject": "Sélectionnez un projet pour utiliser ses périmètres de recherche.",
@@ -1709,7 +1740,9 @@
       "addFiles": "Ajouter les fichiers corrigés demandés",
       "uploadHint": "Il n'est pas nécessaire de renvoyer le projet complet.",
       "stillRequired": "Encore requis",
-      "finishLink": "Associer cette contribution à la demande de correction"
+      "finishLink": "Associer cette contribution à la demande de correction",
+      "unavailable": "Cette demande de correction n'est plus disponible pour une nouvelle soumission.",
+      "loadFailed": "La demande de correction n'a pas pu être chargée."
     },
     "context": {
       "title": "Décrire votre contribution",
@@ -1752,7 +1785,12 @@
       "uploadFailed": "Échec de l'upload des fichiers.",
       "standardsFailed": "Les règles de nommage du projet n'ont pas pu être chargées. L'upload est suspendu afin d'éviter une soumission non vérifiée."
     },
-    "complianceWarning": "Certains fichiers ne respectent pas la norme de nommage. Veuillez vérifier les noms des fichiers et réessayer."
+    "complianceWarning": "Certains fichiers ne respectent pas la norme de nommage. Veuillez vérifier les noms des fichiers et réessayer.",
+    "topics": {
+      "general": "Travail général ou transversal",
+      "propose": "Proposer un nouveau thème de recherche…",
+      "loadFailed": "Les thèmes de recherche n'ont pas pu être chargés. Réessayez avant de soumettre."
+    }
   },
   "reviewArchive": {
     "eyebrow": "Archive des revues",
@@ -2613,5 +2651,39 @@
     "saved_enabled": "Intégration automatique activée pour les contributions sûres de nouveaux fichiers.",
     "saved_disabled": "Intégration automatique désactivée. Chaque contribution nécessite désormais une décision d'intégration.",
     "save_failed": "La règle d'automatisation n'a pas pu être enregistrée."
+  },
+  "fileTree": {
+    "filterExtension": "Filtrer les fichiers par extension",
+    "filterExtensionPlaceholder": "Filtrer par extension (par ex. .eaf)",
+    "filterDate": "Filtrer par date de modification",
+    "filename": "Nom du fichier",
+    "extension": "Extension",
+    "size": "Taille",
+    "modified": "Dernière modification",
+    "updatedBy": "Modifié par",
+    "elanFile": "Fichier ELAN"
+  },
+  "adminInvitations": {
+    "recent": "Invitations envoyées récemment",
+    "loading": "Chargement des invitations…",
+    "empty": "Aucune invitation envoyée pour l'instant."
+  },
+  "dialogs": {
+    "informationRequired": "Information requise",
+    "cancelAndClose": "Annuler et fermer",
+    "saveValue": "Enregistrer la valeur",
+    "confirmationRequired": "Confirmation requise"
+  },
+  "tierSelection": {
+    "protectedContext": "Contexte protégé",
+    "baselineCorrection": "Correction de la base",
+    "requiredParent": "Parent requis",
+    "related": "{count} liés"
+  },
+  "pageLoader": {
+    "loading": "Chargement de l'espace…"
+  },
+  "notifications": {
+    "close": "Fermer la notification"
   }
 }

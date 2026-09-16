@@ -143,6 +143,7 @@ export function useContributionMutations({
         branch: `contribution #${upload.upload_id}`,
       }),
       confirmText: translate('pendingUploads.actions.mergeNow'),
+      tone: 'success',
       cancelText: translate('common.cancel'),
     });
     if (!confirmed) return false;
@@ -178,6 +179,7 @@ export function useContributionMutations({
         id: upload.duplicate_of_upload_id,
       }),
       confirmText: translate('contributionWorkspace.mutations.dismissConfirm'),
+      tone: 'danger',
       cancelText: translate('common.cancel'),
     });
     if (!confirmed) return false;

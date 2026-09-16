@@ -20,7 +20,7 @@
       </div>
       <button
         class="event-message-close"
-        aria-label="Close notification"
+        :aria-label="t('notifications.close')"
         @click="closeMessage"
       >
         <span aria-hidden="true">×</span>

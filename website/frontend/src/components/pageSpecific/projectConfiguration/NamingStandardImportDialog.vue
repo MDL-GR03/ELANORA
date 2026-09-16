@@ -13,8 +13,10 @@
           <font-awesome-icon icon="fa-solid fa-arrow-down" />
         </span>
         <div>
-          <span>Reuse configuration</span>
-          <h2 id="import-standards-title">Import naming standards</h2>
+          <span>{{ t('configureNamingStandards.importModal.eyebrow') }}</span>
+          <h2 id="import-standards-title">
+            {{ t('configureNamingStandards.importModal.heading') }}
+          </h2>
         </div>
       </header>
       <button

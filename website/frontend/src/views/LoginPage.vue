@@ -22,7 +22,7 @@
           </div>
         </div>
 
-        <ul class="feature-list" aria-label="Platform capabilities">
+        <ul class="feature-list" :aria-label="t('login.capabilities')">
           <li v-for="feature in features" :key="feature">
             <span aria-hidden="true">✓</span>{{ feature }}
           </li>

@@ -17,13 +17,15 @@
           ><FontAwesomeIcon :icon="faPenToSquare"
         /></span>
         <div>
-          <span class="prompt-eyebrow">Information required</span>
+          <span class="prompt-eyebrow">{{
+            t('dialogs.informationRequired')
+          }}</span>
           <h2 :id="titleId">{{ title }}</h2>
         </div>
         <button
           type="button"
           class="prompt-close"
-          aria-label="Cancel and close"
+          :aria-label="t('dialogs.cancelAndClose')"
           @click="cancel"
         >
           <FontAwesomeIcon :icon="faXmark" />
@@ -47,10 +49,10 @@
         </div>
         <footer class="prompt-actions">
           <button type="button" class="prompt-button secondary" @click="cancel">
-            Cancel
+            {{ t('common.cancel') }}
           </button>
           <button type="submit" class="prompt-button primary">
-            Save value
+            {{ t('dialogs.saveValue') }}
           </button>
         </footer>
       </form>
@@ -59,6 +61,7 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
 import { ref, useId, watch } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
@@ -67,6 +70,8 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { useModalDialog } from '@/composables/useModalDialog';
+
+const { t } = useI18n();
 
 const props = defineProps({
   modelValue: Boolean,

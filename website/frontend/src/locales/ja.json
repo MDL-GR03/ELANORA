@@ -183,7 +183,15 @@
     "projectSection": {
       "selectProject": "プロジェクトを選択",
       "loadError": "プロジェクトの読み込みに失敗しました"
-    }
+    },
+    "navigation": {
+      "close": "ナビゲーションを閉じる",
+      "home": "ELANORAホーム",
+      "toggle": "ナビゲーションの表示切替",
+      "primary": "メインナビゲーション"
+    },
+    "userMenuFor": "{name}のユーザーメニュー",
+    "userMenu": "ユーザーメニュー"
   },
   "appFooter": {
     "platform_description": "ELANコーパスのための協調言語アノテーションプラットフォーム。",
@@ -217,7 +225,8 @@
     },
     "login_success": "ログインに成功しました！",
     "email_verification_required": "メール確認が必要です。メールを確認し、アカウントを有効化する手順に従ってください。",
-    "login_connection_error": "ログインに失敗しました。接続と認証情報を確認してください。"
+    "login_connection_error": "ログインに失敗しました。接続と認証情報を確認してください。",
+    "capabilities": "プラットフォームの機能"
   },
   "auth": {
     "login": "ログイン",
@@ -491,7 +500,10 @@
       "invitation_send_error_already_member": "ユーザーは既にこのプロジェクトのメンバーです",
       "invitation_send_error_generic": "招待の送信に失敗しました",
       "user_email_not_found": "選択したユーザーのメールアドレスが見つかりません",
-      "error_loading_users": "ユーザーの読み込みエラー"
+      "error_loading_users": "ユーザーの読み込みエラー",
+      "eyebrow": "プロジェクトへのアクセス",
+      "intro": "研究者を招待し、必要なアクセス権を選びます。",
+      "method": "招待の方法"
     }
   },
   "emailVerification": {
@@ -861,7 +873,7 @@
     "exampleCommaPatternDesc": "例：{example}",
     "acceptedSeparators": "使用可能な区切り文字",
     "componentsTable": "コンポーネント",
-    "componentName": "コンポーネント名",
+    "componentName": "構成要素の名前",
     "componentRegex": "正規表現",
     "componentDescription": "説明",
     "componentAcceptedValues": "使用可能な値",
@@ -883,7 +895,9 @@
       "exampleFile": "サンプルファイル名",
       "components": "コンポーネント",
       "toggleDetails": "{name}：詳細を切り替える",
-      "importSelected": "選択したものをインポート"
+      "importSelected": "選択したものをインポート",
+      "eyebrow": "設定を再利用",
+      "heading": "命名規則をインポート"
     },
     "eventMessages": {
       "addSuccess": "命名規則の追加が完了しました。",
@@ -906,7 +920,14 @@
     "patternRequired": "有効なパターンを入力してください。",
     "patternExampleBlockCount": "パターンとサンプルファイルのブロック数が一致しません。",
     "acceptedValuesLength": "\"{name}\"のすべての使用可能な値は正確に{length}文字である必要があります。",
-    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle"
+    "exampleCommaPattern": "session,task,question_answer,_,signer_letter,signer_digits,_,camera_angle",
+    "regex": "正規表現",
+    "componentExamples": "パターン構成要素の例",
+    "lengthRequired": "長さを入力してください。",
+    "lengthNotNumber": "整数を入力してください。",
+    "lengthTooSmall": "長さは1以上にしてください。",
+    "lengthTooLarge": "長さは{max}以下にしてください。",
+    "acceptedValues": "使用可能な値"
   },
   "profile": {
     "accounts": {
@@ -1070,6 +1091,11 @@
       "fix_errors": "保存する前にエラーを修正してください。",
       "saved": "所属情報を更新しました。",
       "save_failed": "所属情報を更新できませんでした。"
+    },
+    "institution": {
+      "menu": "機関",
+      "title": "機関の外観",
+      "description": "ワークスペース名、研究機関としての表示、色、ロゴを管理します。"
     }
   },
   "notificationBell": {
@@ -1125,7 +1151,9 @@
     "error_payload_too_large": "メッセージが大きすぎます。メッセージのサイズを小さくしてください。",
     "error_unknown": "予期しないエラーが発生しました。後でもう一度お試しください。",
     "response_note": "提供されたメールアドレスに返信が届きます。",
-    "back_to_site": "サイトに戻る"
+    "back_to_site": "サイトに戻る",
+    "characterCount": "{count} / {max}文字",
+    "characterMinimum": "（最低{min}文字）"
   },
   "configureEffectiveStandards": {
     "title": "有効な命名基準を構成する",
@@ -1558,7 +1586,10 @@
       "searchInTopic": "{topic} 内のファイルを検索",
       "moreTiers": "+{count} 個の階層",
       "coverageAria": "全 {total} 階層中 {available} 階層が利用可能",
-      "showMoreFiles": "さらに {count} ファイルを表示"
+      "showMoreFiles": "さらに {count} ファイルを表示",
+      "tierCount": "研究用の層{count}件 | 研究用の層{count}件",
+      "fileCount": "該当ファイル{count}件 | 該当ファイル{count}件",
+      "coverage": "EAFファイル{total}件中{count}件に、選択した層が1つ以上含まれています"
     },
     "messages": {
       "selectProject": "研究範囲を使用するプロジェクトを選択してください。",
@@ -1709,7 +1740,9 @@
       "addFiles": "依頼された修正済みファイルを追加",
       "uploadHint": "プロジェクト全体を再アップロードする必要はありません。",
       "stillRequired": "未提出",
-      "finishLink": "この貢献を修正依頼に関連付ける"
+      "finishLink": "この貢献を修正依頼に関連付ける",
+      "unavailable": "この修正依頼は再提出できなくなりました。",
+      "loadFailed": "修正依頼を読み込めませんでした。"
     },
     "context": {
       "title": "貢献内容を説明",
@@ -1752,7 +1785,12 @@
       "uploadFailed": "アップロードに失敗しました",
       "standardsFailed": "命名規則を読み込めないため、未検証の提出を防ぐ目的でアップロードを停止しました。"
     },
-    "complianceWarning": "命名規則に違反するファイルがあります。"
+    "complianceWarning": "命名規則に違反するファイルがあります。",
+    "topics": {
+      "general": "全般・テーマ横断の作業",
+      "propose": "新しい研究テーマを提案…",
+      "loadFailed": "研究テーマを読み込めませんでした。提出する前にもう一度お試しください。"
+    }
   },
   "reviewArchive": {
     "eyebrow": "レビューのアーカイブ",
@@ -2613,5 +2651,39 @@
     "saved_enabled": "安全な新規ファイルの提出物の自動統合を有効にしました。",
     "saved_disabled": "自動統合を無効にしました。すべての提出物に統合の判断が必要になります。",
     "save_failed": "自動化の設定を保存できませんでした。"
+  },
+  "fileTree": {
+    "filterExtension": "拡張子でファイルを絞り込む",
+    "filterExtensionPlaceholder": "拡張子で絞り込む（例：.eaf）",
+    "filterDate": "更新日で絞り込む",
+    "filename": "ファイル名",
+    "extension": "拡張子",
+    "size": "サイズ",
+    "modified": "最終更新",
+    "updatedBy": "更新者",
+    "elanFile": "ELANファイル"
+  },
+  "adminInvitations": {
+    "recent": "最近送信した招待",
+    "loading": "招待を読み込み中…",
+    "empty": "まだ招待は送信されていません。"
+  },
+  "dialogs": {
+    "informationRequired": "情報が必要です",
+    "cancelAndClose": "キャンセルして閉じる",
+    "saveValue": "値を保存",
+    "confirmationRequired": "確認が必要です"
+  },
+  "tierSelection": {
+    "protectedContext": "保護されたコンテキスト",
+    "baselineCorrection": "ベースラインの修正",
+    "requiredParent": "必須の親",
+    "related": "関連{count}件"
+  },
+  "pageLoader": {
+    "loading": "ワークスペースを読み込み中…"
+  },
+  "notifications": {
+    "close": "通知を閉じる"
   }
 }

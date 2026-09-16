@@ -159,7 +159,9 @@ const localizedOptions = computed(() =>
   }))
 );
 const userLabel = computed(() =>
-  fullIdentity.value ? `User menu for ${fullIdentity.value}` : 'User menu'
+  fullIdentity.value
+    ? t('appHeader.userMenuFor', { name: fullIdentity.value })
+    : t('appHeader.userMenu')
 );
 
 const dropdownOpen = ref(false);
