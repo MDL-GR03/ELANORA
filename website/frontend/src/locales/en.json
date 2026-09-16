@@ -1056,6 +1056,16 @@
       "unconfirmed": "This address could not be confirmed. Please check it.",
       "saved": "Address updated.",
       "save_failed": "The address could not be updated."
+    },
+    "no_changes": "No changes to save.",
+    "username": {
+      "saved": "Username updated.",
+      "save_failed": "The username could not be updated."
+    },
+    "professional": {
+      "fix_errors": "Please fix the errors before saving.",
+      "saved": "Professional information updated.",
+      "save_failed": "The professional information could not be updated."
     }
   },
   "notificationBell": {

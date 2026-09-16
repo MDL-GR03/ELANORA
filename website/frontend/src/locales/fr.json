@@ -1056,6 +1056,16 @@
       "unconfirmed": "Cette adresse n'a pas pu être confirmée. Veuillez la vérifier.",
       "saved": "Adresse mise à jour.",
       "save_failed": "L'adresse n'a pas pu être mise à jour."
+    },
+    "no_changes": "Aucune modification à enregistrer.",
+    "username": {
+      "saved": "Nom d'utilisateur mis à jour.",
+      "save_failed": "Le nom d'utilisateur n'a pas pu être mis à jour."
+    },
+    "professional": {
+      "fix_errors": "Veuillez corriger les erreurs avant d'enregistrer.",
+      "saved": "Informations professionnelles mises à jour.",
+      "save_failed": "Les informations professionnelles n'ont pas pu être mises à jour."
     }
   },
   "notificationBell": {

@@ -79,7 +79,7 @@
                   valid: professionalValidation.affiliation.isValid === true,
                 }"
                 :disabled="savingProfessional"
-                placeholder="Votre affiliation"
+                :placeholder="t('register.affiliation_placeholder')"
                 @blur="validateProfessionalField('affiliation')"
               />
               <div
@@ -107,7 +107,7 @@
                   valid: professionalValidation.department.isValid === true,
                 }"
                 :disabled="savingProfessional"
-                placeholder="Votre département"
+                :placeholder="t('register.department_placeholder')"
                 @blur="validateProfessionalField('department')"
               />
               <div

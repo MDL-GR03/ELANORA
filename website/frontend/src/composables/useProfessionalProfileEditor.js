@@ -1,5 +1,7 @@
 import { ref, toValue } from 'vue';
 
+import { validateRegistrationField } from '@/utils/registrationValidation';
+
 const emptyValidation = () => ({
   affiliation: { isValid: null, message: '' },
   department: { isValid: null, message: '' },
@@ -26,28 +28,13 @@ export function useProfessionalProfileEditor({
   };
 
   function validateProfessionalField(fieldName) {
-    const value = editedProfessional.value[fieldName];
-    const requiredKey =
-      fieldName === 'affiliation'
-        ? 'register.affiliation_required'
-        : 'register.department_required';
-    const label = fieldName === 'affiliation' ? 'Affiliation' : 'Department';
-    let validation = { isValid: true, message: '' };
-    if (!value) {
-      validation = { isValid: false, message: translate(requiredKey) };
-    } else if (value.length < 2) {
-      validation = {
-        isValid: false,
-        message: `${label} must be at least 2 characters`,
-      };
-    } else if (value.length > 100) {
-      validation = {
-        isValid: false,
-        message: `${label} must be less than 100 characters`,
-      };
-    }
-    professionalValidation.value[fieldName] = validation;
-    return validation.isValid;
+    const message = validateRegistrationField(
+      fieldName,
+      editedProfessional.value,
+      translate
+    );
+    professionalValidation.value[fieldName] = { isValid: !message, message };
+    return !message;
   }
 
   function startEditProfessional() {
@@ -69,7 +56,7 @@ export function useProfessionalProfileEditor({
       professionalValidation.value.department.isValid === false
     ) {
       emit('show-message', {
-        text: 'Veuillez corriger les erreurs avant de sauvegarder',
+        text: translate('profile.professional.fix_errors'),
         type: 'error',
       });
       return false;
@@ -85,7 +72,7 @@ export function useProfessionalProfileEditor({
     }
     if (Object.keys(profileData).length === 0) {
       emit('show-message', {
-        text: 'Aucune modification détectée',
+        text: translate('profile.no_changes'),
         type: 'info',
       });
       editProfessionalMode.value = false;
@@ -97,22 +84,19 @@ export function useProfessionalProfileEditor({
       const response = await updateProfile(profileData);
       if (!response.data) return false;
       emit('show-message', {
-        text: 'Informations professionnelles mises à jour avec succès',
+        text: translate('profile.professional.saved'),
         type: 'success',
       });
       emit('profile-updated');
       editProfessionalMode.value = false;
       return true;
     } catch (error) {
-      let errorMessage =
-        'Erreur lors de la mise à jour des informations professionnelles';
-      if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error.response?.status === 400) {
-        errorMessage =
-          'Données invalides. Veuillez vérifier les informations saisies.';
-      }
-      emit('show-message', { text: errorMessage, type: 'error' });
+      emit('show-message', {
+        text:
+          error.response?.data?.detail ||
+          translate('profile.professional.save_failed'),
+        type: 'error',
+      });
       return false;
     } finally {
       savingProfessional.value = false;

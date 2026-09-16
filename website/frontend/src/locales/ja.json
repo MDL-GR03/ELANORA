@@ -1056,6 +1056,16 @@
       "unconfirmed": "この住所を確認できませんでした。内容をご確認ください。",
       "saved": "住所を更新しました。",
       "save_failed": "住所を更新できませんでした。"
+    },
+    "no_changes": "保存する変更はありません。",
+    "username": {
+      "saved": "ユーザー名を更新しました。",
+      "save_failed": "ユーザー名を更新できませんでした。"
+    },
+    "professional": {
+      "fix_errors": "保存する前にエラーを修正してください。",
+      "saved": "所属情報を更新しました。",
+      "save_failed": "所属情報を更新できませんでした。"
     }
   },
   "notificationBell": {

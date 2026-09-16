@@ -1,6 +1,11 @@
 import { ref, toValue } from 'vue';
 
-export function useUsernameProfileEditor({ profile, updateProfile, emit }) {
+export function useUsernameProfileEditor({
+  profile,
+  updateProfile,
+  emit,
+  translate,
+}) {
   const editUsernameMode = ref(false);
   const editedUsername = ref('');
   const savingUsername = ref(false);
@@ -26,7 +31,7 @@ export function useUsernameProfileEditor({ profile, updateProfile, emit }) {
     const username = editedUsername.value.trim();
     if (!username) {
       emit('show-message', {
-        text: "Le nom d'utilisateur ne peut pas être vide",
+        text: translate('register.username_required'),
         type: 'error',
       });
       return false;
@@ -41,20 +46,19 @@ export function useUsernameProfileEditor({ profile, updateProfile, emit }) {
       const response = await updateProfile({ username });
       if (!response.data) return false;
       emit('show-message', {
-        text: "Nom d'utilisateur mis à jour avec succès",
+        text: translate('profile.username.saved'),
         type: 'success',
       });
       emit('profile-updated');
       editUsernameMode.value = false;
       return true;
     } catch (error) {
-      let errorMessage = "Erreur lors de la mise à jour du nom d'utilisateur";
-      if (error.response?.data?.detail?.includes('already taken')) {
-        errorMessage = "Ce nom d'utilisateur est déjà pris";
-      } else if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
+      const detail = error.response?.data?.detail;
+      let text = detail || translate('profile.username.save_failed');
+      if (detail?.includes('already taken')) {
+        text = translate('register.username_taken');
       }
-      emit('show-message', { text: errorMessage, type: 'error' });
+      emit('show-message', { text, type: 'error' });
       editedUsername.value = currentUsername();
       return false;
     } finally {

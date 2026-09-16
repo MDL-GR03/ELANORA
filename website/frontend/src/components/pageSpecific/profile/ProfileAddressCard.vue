@@ -84,7 +84,7 @@
                   loading: addressValidation.city.loading,
                 }"
                 :disabled="!editedAddress.countryId || savingAddress"
-                placeholder="Nom de la ville"
+                :placeholder="t('register.city_placeholder')"
                 @blur="validateCityField"
                 @input="onCityChange"
               />
@@ -111,7 +111,7 @@
                   loading: addressValidation.postalCode.loading,
                 }"
                 :disabled="!editedAddress.countryId || savingAddress"
-                placeholder="Code postal"
+                :placeholder="t('register.postal_code_placeholder')"
                 @blur="validatePostalCodeField"
                 @input="onPostalCodeChange"
               />
@@ -138,7 +138,7 @@
                   loading: addressValidation.streetInCity.loading,
                 }"
                 :disabled="savingAddress"
-                placeholder="Nom de rue"
+                :placeholder="t('register.street_name_placeholder')"
                 @blur="validateStreetNameField"
                 @input="onStreetNameChange"
               />
@@ -159,7 +159,7 @@
                 v-model="editedAddress.streetNumber"
                 class="modern-input"
                 :disabled="savingAddress"
-                placeholder="Numéro de rue (optionnel)"
+                :placeholder="t('register.street_number_placeholder')"
               />
             </div>
 
@@ -172,7 +172,7 @@
                 v-model="editedAddress.addressLine2"
                 class="modern-input"
                 :disabled="savingAddress"
-                placeholder="Complément d'adresse (optionnel)"
+                :placeholder="t('register.address_line2_placeholder')"
               />
             </div>
           </div>

@@ -10,6 +10,7 @@ function createEditor() {
     profile: computed(() => profile.value),
     updateProfile,
     emit,
+    translate: (key) => `translated:${key}`,
   });
   return { profile, updateProfile, emit, editor };
 }
@@ -66,7 +67,7 @@ describe('useUsernameProfileEditor', () => {
     await expect(editor.saveUsername()).resolves.toBe(false);
     expect(editor.editedUsername.value).toBe('researcher');
     expect(emit).toHaveBeenCalledWith('show-message', {
-      text: "Ce nom d'utilisateur est déjà pris",
+      text: 'translated:register.username_taken',
       type: 'error',
     });
     expect(editor.savingUsername.value).toBe(false);

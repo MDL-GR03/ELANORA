@@ -123,7 +123,7 @@
                     v-model="editedUsername"
                     class="modern-input"
                     :disabled="saving"
-                    placeholder="Nom d'utilisateur"
+                    :placeholder="t('register.username_placeholder')"
                     @keyup.enter="saveUsername"
                     @keyup.escape="cancelEditUsername"
                   />

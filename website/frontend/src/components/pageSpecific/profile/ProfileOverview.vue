@@ -115,6 +115,7 @@ const {
   profile: computed(() => props.userProfile),
   updateProfile: updateUserProfile,
   emit,
+  translate: t,
 });
 
 const {
