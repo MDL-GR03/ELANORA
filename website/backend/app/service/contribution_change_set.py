@@ -18,7 +18,7 @@ from app.model.enums import Status
 from app.model.pending_upload import PendingUpload
 from app.model.project import Project
 from app.service.git import GitService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.storage.paths import safe_project_path
 
 MAX_PUBLICATION_ATTEMPTS = 10

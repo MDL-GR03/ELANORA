@@ -7,8 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import auth_registration
 from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
-from app.service.invitation import InvitationService
-from app.service.user import UserService
+from app.service import (
+    invitation_decisions,
+    invitation_notifications,
+    invitation_queries,
+    user_registration,
+)
 
 
 @pytest.mark.asyncio
@@ -22,7 +26,7 @@ async def test_registration_rolls_back_when_invitation_cannot_be_redeemed(
         receiver_email="researcher@example.org",
     )
     monkeypatch.setattr(
-        InvitationService,
+        invitation_queries,
         "validate_invitation",
         AsyncMock(return_value=SimpleNamespace(valid=True, invitation=invitation)),
     )
@@ -38,9 +42,9 @@ async def test_registration_rolls_back_when_invitation_cannot_be_redeemed(
             email="researcher@example.org",
         )
     )
-    monkeypatch.setattr(UserService, "create_user", creator)
+    monkeypatch.setattr(user_registration, "create_user", creator)
     accepter = AsyncMock(return_value=False)
-    monkeypatch.setattr(InvitationService, "accept_invitation", accepter)
+    monkeypatch.setattr(invitation_decisions, "accept_invitation", accepter)
     request = RegisterWithInvitationRequest(
         invitation_code="valid-code",
         first_name="Ada",
@@ -73,7 +77,7 @@ async def test_registration_commits_user_and_invitation_together(
         receiver_email="researcher@example.org",
     )
     monkeypatch.setattr(
-        InvitationService,
+        invitation_queries,
         "validate_invitation",
         AsyncMock(return_value=SimpleNamespace(valid=True, invitation=invitation)),
     )
@@ -83,7 +87,7 @@ async def test_registration_commits_user_and_invitation_together(
         AsyncMock(return_value=SimpleNamespace(instance_id=2)),
     )
     monkeypatch.setattr(
-        UserService,
+        user_registration,
         "create_user",
         AsyncMock(
             return_value=SimpleNamespace(
@@ -94,11 +98,11 @@ async def test_registration_commits_user_and_invitation_together(
         ),
     )
     monkeypatch.setattr(
-        InvitationService, "accept_invitation", AsyncMock(return_value=True)
+        invitation_decisions, "accept_invitation", AsyncMock(return_value=True)
     )
     notifier = AsyncMock()
     monkeypatch.setattr(
-        InvitationService, "notify_project_admins_member_joined", notifier
+        invitation_notifications, "notify_project_admins_member_joined", notifier
     )
     request = RegisterWithInvitationRequest(
         invitation_code="valid-code",

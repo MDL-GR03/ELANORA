@@ -28,16 +28,17 @@ from app.model.project_revision import ProjectRevision
 from app.model.refresh_session import RefreshSession
 from app.model.user import User
 from app.schema.common.token import TokenData
+from app.service import user_account_status, user_sessions
 from app.service.contribution_change_set import ContributionChangeSetCoordinator
 from app.service.git import GitService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.service.outbox import (
     OutboxDispatcher,
     enqueue_existing_user_invitation_email,
 )
 from app.service.project_revision import append_project_revision
 from app.service.refresh_session import create_refresh_session
-from app.service.user import AdministratorNoLongerActiveError, UserService
+from app.service.user_errors import AdministratorNoLongerActiveError
 
 Factory = async_sessionmaker[AsyncSession]
 
@@ -388,7 +389,7 @@ async def test_a_refresh_token_replayed_concurrently_is_honoured_once(
 
     async def refresh() -> dict[str, Any]:
         async with session_factory() as db:
-            return await UserService.refresh_user_tokens(db, token)
+            return await user_sessions.refresh_user_tokens(db, token)
 
     outcomes = await race(
         session_factory,
@@ -417,7 +418,7 @@ async def test_administrators_suspending_each_other_keep_one_administrator(
     def suspend(actor: User, target: User) -> Callable[[], Awaitable[User]]:
         async def worker() -> User:
             async with session_factory() as db:
-                return await UserService.set_account_active(
+                return await user_account_status.set_account_active(
                     db,
                     actor=actor,
                     target_user_id=target.user_id,

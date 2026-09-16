@@ -25,7 +25,7 @@ from app.service.contribution_intake import (
     DuplicatePendingContributionError,
 )
 from app.service.git import GitService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 
 EAF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
 BASELINE = EAF_FIXTURE.read_bytes()

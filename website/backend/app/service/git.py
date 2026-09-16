@@ -34,9 +34,7 @@ from app.service.contribution_review import ContributionReviewService
 from app.service.contribution_submission import ContributionSubmissionService
 from app.service.elan import ElanService
 from app.service.file_rename import FileRenameService
-from app.service.git_operations import (
-    GitCommandRunner,
-)
+from app.service.git_command_runner import GitCommandRunner
 from app.service.project_filesystem_sync import ProjectFilesystemSyncService
 from app.service.project_history import ProjectHistoryService, ProjectRestoreCommand
 from app.service.project_integrity import ProjectIntegrityService

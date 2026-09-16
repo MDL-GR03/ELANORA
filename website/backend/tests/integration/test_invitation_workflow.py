@@ -18,9 +18,14 @@ from app.model.notification_preference import NotificationPreference
 from app.model.project import Project
 from app.model.user import User
 from app.schema.requests.invitation import InvitationSendRequest
-from app.service.invitation import InvitationService
+from app.service import (
+    invitation_decisions,
+    invitation_issuing,
+    invitation_queries,
+    user_registration,
+)
+from app.service.email import EmailService
 from app.service.outbox import EXISTING_USER_INVITATION_EMAIL
-from app.service.user import UserService
 
 
 def _institution() -> Instance:
@@ -71,7 +76,7 @@ async def test_new_user_and_invitation_can_roll_back_as_one_transaction(
     invitation_id = invitation.invitation_id
     project_id = project.project_id
 
-    user = await UserService.create_user(
+    user = await user_registration.create_user(
         session,
         username="new-researcher",
         email="new-researcher@external.example",
@@ -84,7 +89,7 @@ async def test_new_user_and_invitation_can_roll_back_as_one_transaction(
         is_verified=True,
         commit=False,
     )
-    assert await InvitationService().accept_invitation(
+    assert await invitation_decisions.accept_invitation(
         session,
         invitation_id,
         user.user_id,
@@ -131,7 +136,7 @@ async def test_validation_preview_does_not_grant_existing_user_access(
         project_permission=ProjectPermission.WRITE,
     )
 
-    result = await InvitationService().validate_invitation(session, raw_code)
+    result = await invitation_queries.validate_invitation(session, raw_code)
     await session.refresh(invitation)
 
     assert result.valid is True
@@ -202,7 +207,7 @@ async def test_accept_invitation_atomically_grants_requested_permission(
         ProjectPermission.WRITE,
     )
 
-    assert await InvitationService().accept_invitation(
+    assert await invitation_decisions.accept_invitation(
         session, invitation.invitation_id, recipient.user_id
     )
     await session.refresh(invitation)
@@ -232,13 +237,12 @@ async def test_accept_invitation_rejects_wrong_or_expired_recipient(
     invitation, _ = await create_invitation(
         session, sender.user_id, recipient.email, project.project_id
     )
-    service = InvitationService()
-    assert not await service.accept_invitation(
+    assert not await invitation_decisions.accept_invitation(
         session, invitation.invitation_id, stranger.user_id
     )
     invitation.expires_at = datetime.now() - timedelta(minutes=1)
     await session.commit()
-    assert not await service.accept_invitation(
+    assert not await invitation_decisions.accept_invitation(
         session, invitation.invitation_id, recipient.user_id
     )
     await session.refresh(invitation)
@@ -274,7 +278,7 @@ async def test_membership_failure_does_not_consume_invitation(
         "app.service.invitation_decisions.add_user_to_project", fail_membership
     )
 
-    assert not await InvitationService().accept_invitation(
+    assert not await invitation_decisions.accept_invitation(
         session, invitation.invitation_id, recipient_id
     )
     await session.refresh(invitation)
@@ -301,8 +305,9 @@ async def test_existing_user_invitation_and_email_request_commit_together(
     session.add(NotificationPreference(user_id=recipient.user_id, email_enabled=True))
     await session.commit()
 
-    result = await InvitationService().send_invitation(
+    result = await invitation_issuing.send_invitation(
         session,
+        EmailService(),
         sender.user_id,
         InvitationSendRequest(
             receiver_email=recipient.email,
@@ -341,10 +346,11 @@ async def test_new_user_email_failure_does_not_leave_unusable_invitation(
     async def fail_delivery(*args: object, **kwargs: object) -> bool:
         return False
 
-    service = InvitationService()
-    monkeypatch.setattr(service.email_service, "send_invitation_email", fail_delivery)
-    result = await service.send_invitation(
+    email_service = EmailService()
+    monkeypatch.setattr(email_service, "send_invitation_email", fail_delivery)
+    result = await invitation_issuing.send_invitation(
         session,
+        email_service,
         sender.user_id,
         InvitationSendRequest(
             receiver_email="new.researcher@external.example",

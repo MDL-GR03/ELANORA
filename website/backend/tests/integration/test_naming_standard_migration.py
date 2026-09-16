@@ -28,7 +28,7 @@ from app.schema.protocol import ProtocolRules
 from app.service.naming_standard_migration import (
     copy_naming_standards_into_protocol_drafts,
 )
-from app.service.protocol import (
+from app.service.protocol_administration import (
     create_protocol,
     pin_protocol_version,
     publish_protocol_version,

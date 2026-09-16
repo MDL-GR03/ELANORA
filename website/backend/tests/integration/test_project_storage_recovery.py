@@ -15,7 +15,7 @@ from app.model.instance import Instance
 from app.model.project import Project
 from app.model.user import User
 from app.service.git import GitService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.utils.project_backup import update_backup
 
 EAF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"

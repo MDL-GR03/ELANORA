@@ -14,7 +14,7 @@ from app.model.file_content import FileContent
 from app.model.instance import Instance
 from app.model.project import Project
 from app.service.file_rename import FileRenameService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 
 EAF_FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
 PROJECT_NAME = "rename-corpus"

@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 
 
 def test_git_commands_trust_only_the_resolved_project_directory(

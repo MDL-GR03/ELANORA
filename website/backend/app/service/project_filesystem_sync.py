@@ -18,7 +18,7 @@ from app.elan.validation import validate_eaf
 from app.schema.responses.git import FileStatus, ProjectSyncCheckResponse
 from app.service.database_rename_handler import DatabaseRenameHandler
 from app.service.elan import ElanService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.service.git_status_parser import GitFileStatusAnalyzer, GitStatusParser
 from app.storage.paths import safe_project_path
 

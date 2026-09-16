@@ -27,7 +27,14 @@ from app.schema.protocol import (
     UpdateProtocolDraftRequest,
     ValidationRunResponse,
 )
-from app.service import protocol as protocol_service
+from app.service import (
+    protocol_administration,
+    protocol_capabilities,
+    protocol_compliance,
+    protocol_errors,
+    protocol_suggestions,
+    protocol_validation_runs,
+)
 
 router = APIRouter()
 
@@ -37,7 +44,7 @@ def _domain_http_error(error: Exception) -> HTTPException:
     # is a fault in ELANORA, not a conflicting request.
     if isinstance(error, PydanticValidationError):
         raise error
-    if isinstance(error, protocol_service.ProtocolNotFoundError):
+    if isinstance(error, protocol_errors.ProtocolNotFoundError):
         return HTTPException(status_code=404, detail="Protocol not found")
     return HTTPException(status_code=409, detail="Protocol state conflict")
 
@@ -47,7 +54,7 @@ async def list_protocols(
     access: ProjectAccess = get_project_read_dep,
     db: AsyncSession = get_db_dep,
 ) -> list[ProtocolResponse]:
-    protocols = await protocol_service.list_protocols(db, access.project)
+    protocols = await protocol_administration.list_protocols(db, access.project)
     return [ProtocolResponse.model_validate(item) for item in protocols]
 
 
@@ -60,7 +67,7 @@ async def suggest_protocol(
     db: AsyncSession = get_db_dep,
 ) -> CorpusProtocolSuggestionResponse:
     """Infer an advisory draft from each file's latest accepted revision."""
-    return await protocol_service.suggest_protocol_from_corpus(db, access.project)
+    return await protocol_suggestions.suggest_protocol_from_corpus(db, access.project)
 
 
 @router.post(
@@ -74,7 +81,7 @@ async def create_protocol(
     db: AsyncSession = get_db_dep,
 ) -> ProtocolResponse:
     try:
-        protocol = await protocol_service.create_protocol(
+        protocol = await protocol_administration.create_protocol(
             db,
             project=access.project,
             name=request.name,
@@ -104,7 +111,7 @@ async def create_version(
     db: AsyncSession = get_db_dep,
 ) -> ProtocolVersionResponse:
     try:
-        version = await protocol_service.create_protocol_version(
+        version = await protocol_administration.create_protocol_version(
             db,
             project=access.project,
             protocol_id=protocol_id,
@@ -129,7 +136,7 @@ async def update_draft(
     db: AsyncSession = get_db_dep,
 ) -> ProtocolVersionResponse:
     try:
-        version = await protocol_service.update_draft(
+        version = await protocol_administration.update_draft(
             db,
             project=access.project,
             protocol_version_id=protocol_version_id,
@@ -152,7 +159,7 @@ async def publish_version(
     db: AsyncSession = get_db_dep,
 ) -> ProtocolVersionResponse:
     try:
-        version = await protocol_service.publish_protocol_version(
+        version = await protocol_administration.publish_protocol_version(
             db,
             project=access.project,
             protocol_version_id=protocol_version_id,
@@ -175,7 +182,7 @@ async def pin_version(
     db: AsyncSession = get_db_dep,
 ) -> ProtocolVersionResponse:
     try:
-        version = await protocol_service.pin_protocol_version(
+        version = await protocol_administration.pin_protocol_version(
             db,
             project=access.project,
             protocol_version_id=protocol_version_id,
@@ -199,7 +206,7 @@ async def delete_draft_version(
 ) -> Response:
     """Permanently delete only an unpublished draft."""
     try:
-        await protocol_service.delete_protocol_draft(
+        await protocol_administration.delete_protocol_draft(
             db,
             project=access.project,
             protocol_version_id=protocol_version_id,
@@ -224,7 +231,7 @@ async def archive_published_version(
 ) -> ProtocolVersionResponse:
     """Withdraw a published version while retaining immutable evidence."""
     try:
-        version = await protocol_service.archive_protocol_version(
+        version = await protocol_administration.archive_protocol_version(
             db,
             project=access.project,
             protocol_version_id=protocol_version_id,
@@ -249,7 +256,7 @@ async def purge_archived_version(
 ) -> Response:
     """Purge an unused archived mistake and its disposable preview evidence."""
     try:
-        await protocol_service.purge_archived_protocol_version(
+        await protocol_administration.purge_archived_protocol_version(
             db,
             project=access.project,
             protocol_version_id=protocol_version_id,
@@ -272,7 +279,7 @@ async def validate_revision(
     db: AsyncSession = get_db_dep,
 ) -> ValidationRunResponse:
     try:
-        run = await protocol_service.validate_revision(
+        run = await protocol_validation_runs.validate_revision(
             db, project=access.project, revision_id=revision_id
         )
         await db.commit()
@@ -291,8 +298,8 @@ async def get_compliance_scans(
     db: AsyncSession = get_db_dep,
 ) -> list[ComplianceScanResponse]:
     """List recent project-wide protocol scans for project members."""
-    scans = await protocol_service.list_compliance_scans(db, project=access.project)
-    return [protocol_service.compliance_scan_response(scan) for scan in scans]
+    scans = await protocol_compliance.list_compliance_scans(db, project=access.project)
+    return [protocol_compliance.compliance_scan_response(scan) for scan in scans]
 
 
 @router.post(
@@ -308,7 +315,7 @@ async def post_compliance_scan(
 ) -> ComplianceScanResponse:
     """Scan latest accepted files; preview never changes the pinned protocol."""
     try:
-        created = await protocol_service.run_compliance_scan(
+        created = await protocol_compliance.run_compliance_scan(
             db,
             project=access.project,
             protocol_version_id=protocol_version_id,
@@ -316,11 +323,11 @@ async def post_compliance_scan(
             trigger="preview" if preview else "manual",
         )
         await db.commit()
-        scans = await protocol_service.list_compliance_scans(
+        scans = await protocol_compliance.list_compliance_scans(
             db, project=access.project, limit=20
         )
         scan = next(item for item in scans if item.scan_id == created.scan_id)
-        return protocol_service.compliance_scan_response(scan)
+        return protocol_compliance.compliance_scan_response(scan)
     except (LookupError, ValueError) as error:
         await db.rollback()
         raise _domain_http_error(error) from error
@@ -336,7 +343,7 @@ async def grant_protocol_manager(
     db: AsyncSession = get_db_dep,
 ) -> CapabilityGrantResponse:
     try:
-        grant = await protocol_service.grant_protocol_manager(
+        grant = await protocol_capabilities.grant_protocol_manager(
             db,
             project=access.project,
             user_id=user_id,
@@ -362,7 +369,7 @@ async def revoke_protocol_manager(
     access: ProjectAccess = get_project_admin_dep,
     db: AsyncSession = get_db_dep,
 ) -> Response:
-    await protocol_service.revoke_protocol_manager(
+    await protocol_capabilities.revoke_protocol_manager(
         db,
         project=access.project,
         user_id=user_id,

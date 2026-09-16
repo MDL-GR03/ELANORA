@@ -30,7 +30,7 @@ from app.schema.review import (
     ReviewTaskResponse,
     ReviewTaskUpdate,
 )
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 
 ALLOWED_TRANSITIONS: dict[ReviewCaseState, frozenset[ReviewCaseState]] = {
     ReviewCaseState.OPEN: frozenset(

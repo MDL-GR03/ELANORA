@@ -22,14 +22,14 @@ from app.schema.responses.user import (
     UserProfileResponse,
     UserResponse,
 )
+from app.service import user_account_status, user_passwords, user_profile
 from app.service.address import AddressService
-from app.service.user import (
+from app.service.user_errors import (
     AccountNotFoundError,
     AdministratorNoLongerActiveError,
     LastAdministratorError,
     RedundantAccountStatusError,
     SelfAccountStatusError,
-    UserService,
 )
 from app.utils.database import DatabaseUtils
 
@@ -133,7 +133,7 @@ async def update_current_user_profile(
 ) -> ProfileUpdateResponse:
     """Update the current user's profile."""
     try:
-        result = await UserService.update_user_profile(db, user, profile_data)
+        result = await user_profile.update_profile(db, user, profile_data)
 
         if result["success"]:
             return ProfileUpdateResponse(
@@ -270,7 +270,7 @@ async def set_institution_account_status(
 ) -> UserResponse:
     """Suspend or restore an account without deleting its research history."""
     try:
-        updated = await UserService.set_account_active(
+        updated = await user_account_status.set_account_active(
             db,
             actor=user,
             target_user_id=user_id,
@@ -309,8 +309,8 @@ async def change_user_password(
 ) -> dict[str, str]:
     """Change the current user's password."""
     try:
-        # Use UserService to change password with verification
-        result = await UserService.change_password(
+        # Change the password after verifying the current one
+        result = await user_passwords.change_password(
             db=db,
             user=user,
             current_password=request.current_password,

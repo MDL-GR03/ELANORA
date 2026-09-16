@@ -12,7 +12,7 @@ from app.model.instance_asset import InstanceAsset
 from app.model.project import Project
 from app.model.user import User
 from app.service.elan import ElanService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.service.project_revision import append_project_revision
 
 

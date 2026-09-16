@@ -9,8 +9,12 @@ from app.crud.project import get_project_by_id
 from app.dependency.database import get_db_dep
 from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
 from app.schema.responses.user import RegistrationResponse
-from app.service.invitation import InvitationService
-from app.service.user import UserService
+from app.service import (
+    invitation_decisions,
+    invitation_notifications,
+    invitation_queries,
+    user_registration,
+)
 
 router = APIRouter()
 
@@ -36,11 +40,9 @@ async def register(
         HTTPException: If the invitation code is invalid or expired, or if user creation fails.
 
     """
-    invitation_service = InvitationService()
-    user_service = UserService()
 
     # 1. Validate the invitation code
-    invitation_validation = await invitation_service.validate_invitation(
+    invitation_validation = await invitation_queries.validate_invitation(
         db, request.invitation_code
     )
     if not invitation_validation.valid or not invitation_validation.invitation:
@@ -72,8 +74,8 @@ async def register(
     # successful redemption is itself proof of control of the invited address.
     is_verified = True
 
-    # Create user using UserService
-    user = await user_service.create_user(
+    # Create the account
+    user = await user_registration.create_user(
         db=db,
         username=request.username,
         email=request.email,
@@ -89,7 +91,7 @@ async def register(
         commit=False,
     )
     # 3. Accept the invitation
-    accepted = await invitation_service.accept_invitation(
+    accepted = await invitation_decisions.accept_invitation(
         db,
         invitation_info.invitation_id,
         user.user_id,
@@ -102,7 +104,7 @@ async def register(
             detail="Invitation could not be redeemed. No account was created.",
         )
     await db.commit()
-    await invitation_service.notify_project_admins_member_joined(
+    await invitation_notifications.notify_project_admins_member_joined(
         db, invitation_info.project_id, user
     )
 
@@ -123,7 +125,7 @@ async def check_username_availability(
 ) -> dict[str, Any]:
     """Check if a username is available for registration."""
     try:
-        available = await UserService.check_username_availability(db, username)
+        available = await user_registration.check_username_availability(db, username)
         return {
             "available": available,
             "message": "Username is available"
@@ -143,7 +145,7 @@ async def check_email_availability(
 ) -> dict[str, Any]:
     """Check if an email is available for registration."""
     try:
-        available = await UserService.check_email_availability(db, email)
+        available = await user_registration.check_email_availability(db, email)
         return {
             "available": available,
             "message": "Email is available" if available else "Email is already in use",

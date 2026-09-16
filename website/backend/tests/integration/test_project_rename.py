@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.model.instance import Instance
 from app.model.project import Project
 from app.service.git import GitService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 
 
 @pytest.fixture

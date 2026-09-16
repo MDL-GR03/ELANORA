@@ -14,14 +14,15 @@ from app.model.instance import Instance
 from app.model.refresh_session import RefreshSession
 from app.model.user import User
 from app.schema.common.token import TokenData
+from app.service import user_account_status, user_sessions
 from app.service.refresh_session import create_refresh_session
-from app.service.user import (
+from app.service.user_errors import (
     AccountNotFoundError,
     AdministratorNoLongerActiveError,
     RedundantAccountStatusError,
     SelfAccountStatusError,
-    UserService,
 )
+from app.utils import password_hashing
 
 RESEARCHER_PASSWORD = "researcher-password-123"  # noqa: S105
 
@@ -46,7 +47,7 @@ def _user(
     return User(
         username=username,
         email=f"{username}@example.org",
-        hashed_password=UserService.hash_password(RESEARCHER_PASSWORD),
+        hashed_password=password_hashing.hash_password(RESEARCHER_PASSWORD),
         first_name="Ada",
         last_name=username.capitalize(),
         affiliation="Institute",
@@ -83,7 +84,7 @@ async def test_suspension_signs_the_account_out_everywhere(
         tokens.append(token)
     await session.commit()
 
-    updated = await UserService.set_account_active(
+    updated = await user_account_status.set_account_active(
         session,
         actor=admin,
         target_user_id=researcher.user_id,
@@ -93,7 +94,7 @@ async def test_suspension_signs_the_account_out_everywhere(
 
     assert updated.is_active is False
     for token in tokens:
-        assert (await UserService.refresh_user_tokens(session, token))[
+        assert (await user_sessions.refresh_user_tokens(session, token))[
             "success"
         ] is False
     revoked = (
@@ -117,12 +118,12 @@ async def test_suspended_account_cannot_log_in_with_valid_password(
 ) -> None:
     _, admin, researcher = await _seed(session)
 
-    before = await UserService.login_user(
+    before = await user_sessions.login_user(
         session, researcher.username, RESEARCHER_PASSWORD
     )
     assert before["success"] is True
 
-    await UserService.set_account_active(
+    await user_account_status.set_account_active(
         session,
         actor=admin,
         target_user_id=researcher.user_id,
@@ -130,7 +131,7 @@ async def test_suspended_account_cannot_log_in_with_valid_password(
         reason="Offboarding",
     )
 
-    refused = await UserService.login_user(
+    refused = await user_sessions.login_user(
         session, researcher.username, RESEARCHER_PASSWORD
     )
     assert refused["success"] is False
@@ -141,7 +142,7 @@ async def test_suspended_account_cannot_log_in_with_valid_password(
 @pytest.mark.asyncio
 async def test_restoration_allows_login_again(session: AsyncSession) -> None:
     _, admin, researcher = await _seed(session)
-    await UserService.set_account_active(
+    await user_account_status.set_account_active(
         session,
         actor=admin,
         target_user_id=researcher.user_id,
@@ -149,7 +150,7 @@ async def test_restoration_allows_login_again(session: AsyncSession) -> None:
         reason="Temporary leave",
     )
 
-    restored = await UserService.set_account_active(
+    restored = await user_account_status.set_account_active(
         session,
         actor=admin,
         target_user_id=researcher.user_id,
@@ -158,7 +159,7 @@ async def test_restoration_allows_login_again(session: AsyncSession) -> None:
     )
 
     assert restored.is_active is True
-    allowed = await UserService.login_user(
+    allowed = await user_sessions.login_user(
         session, researcher.username, RESEARCHER_PASSWORD
     )
     assert allowed["success"] is True
@@ -169,14 +170,14 @@ async def test_status_changes_are_recorded_in_the_audit_log(
     session: AsyncSession,
 ) -> None:
     _, admin, researcher = await _seed(session)
-    await UserService.set_account_active(
+    await user_account_status.set_account_active(
         session,
         actor=admin,
         target_user_id=researcher.user_id,
         is_active=False,
         reason="  Policy violation  ",
     )
-    await UserService.set_account_active(
+    await user_account_status.set_account_active(
         session,
         actor=admin,
         target_user_id=researcher.user_id,
@@ -210,7 +211,7 @@ async def test_administrators_cannot_suspend_themselves(session: AsyncSession) -
     _, admin, _ = await _seed(session)
 
     with pytest.raises(SelfAccountStatusError):
-        await UserService.set_account_active(
+        await user_account_status.set_account_active(
             session,
             actor=admin,
             target_user_id=admin.user_id,
@@ -233,7 +234,7 @@ async def test_an_administrator_suspended_mid_request_cannot_complete_it(
     session.add(deputy)
     await session.commit()
 
-    await UserService.set_account_active(
+    await user_account_status.set_account_active(
         session,
         actor=admin,
         target_user_id=deputy.user_id,
@@ -243,7 +244,7 @@ async def test_an_administrator_suspended_mid_request_cannot_complete_it(
 
     # `deputy` is the object the request guard loaded before the suspension.
     with pytest.raises(AdministratorNoLongerActiveError):
-        await UserService.set_account_active(
+        await user_account_status.set_account_active(
             session,
             actor=deputy,
             target_user_id=researcher.user_id,
@@ -264,7 +265,7 @@ async def test_the_institution_keeps_an_administrator_after_any_suspension(
     session.add(deputy)
     await session.commit()
 
-    await UserService.set_account_active(
+    await user_account_status.set_account_active(
         session,
         actor=admin,
         target_user_id=deputy.user_id,
@@ -285,7 +286,7 @@ async def test_repeating_the_current_status_is_rejected(session: AsyncSession) -
     _, admin, researcher = await _seed(session)
 
     with pytest.raises(RedundantAccountStatusError):
-        await UserService.set_account_active(
+        await user_account_status.set_account_active(
             session,
             actor=admin,
             target_user_id=researcher.user_id,
@@ -308,7 +309,7 @@ async def test_listing_and_status_changes_stay_inside_the_installation(
     assert await get_all_users(session, institution.instance_id + 1) == []
 
     with pytest.raises(AccountNotFoundError):
-        await UserService.set_account_active(
+        await user_account_status.set_account_active(
             session,
             actor=admin,
             target_user_id=999_999,
@@ -322,7 +323,7 @@ async def test_suspended_accounts_are_listed_but_excluded_from_active_users(
     session: AsyncSession,
 ) -> None:
     institution, admin, researcher = await _seed(session)
-    await UserService.set_account_active(
+    await user_account_status.set_account_active(
         session,
         actor=admin,
         target_user_id=researcher.user_id,

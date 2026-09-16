@@ -80,8 +80,8 @@ def test_durable_workflow_failures_never_copy_caught_exception_text() -> None:
 
 def test_invitation_logs_exclude_personal_data_and_tracebacks() -> None:
     source_root = Path(__file__).parents[2] / "app"
-    source_path = source_root / "service/invitation.py"
-    tree = ast.parse(source_path.read_text(encoding="utf-8"))
+    invitation_modules = sorted((source_root / "service").glob("invitation_*.py"))
+    assert invitation_modules, "invitation use cases moved; update this guard"
     forbidden_extra_keys = {
         "admin_user_id",
         "email",
@@ -97,19 +97,31 @@ def test_invitation_logs_exclude_personal_data_and_tracebacks() -> None:
     }
     violations: list[str] = []
 
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
-            continue
-        if not isinstance(node.func.value, ast.Name) or node.func.value.id != "logger":
-            continue
-        for keyword in node.keywords:
-            if keyword.arg == "exc_info":
-                violations.append(f"traceback:{node.lineno}")
-            if keyword.arg != "extra" or not isinstance(keyword.value, ast.Dict):
+    for source_path in invitation_modules:
+        tree = ast.parse(source_path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(
+                node.func, ast.Attribute
+            ):
                 continue
-            for key in keyword.value.keys:
-                if isinstance(key, ast.Constant) and key.value in forbidden_extra_keys:
-                    violations.append(f"{key.value}:{node.lineno}")
+            if (
+                not isinstance(node.func.value, ast.Name)
+                or node.func.value.id != "logger"
+            ):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg == "exc_info":
+                    violations.append(f"{source_path.name}:traceback:{node.lineno}")
+                if keyword.arg != "extra" or not isinstance(keyword.value, ast.Dict):
+                    continue
+                for key in keyword.value.keys:
+                    if (
+                        isinstance(key, ast.Constant)
+                        and key.value in forbidden_extra_keys
+                    ):
+                        violations.append(
+                            f"{source_path.name}:{key.value}:{node.lineno}"
+                        )
 
     assert violations == []
 
@@ -136,7 +148,6 @@ def test_operational_logs_do_not_serialize_exception_payloads() -> None:
         "service/notification.py",
         "service/project_lifecycle.py",
         "service/project_naming_standard.py",
-        "service/user.py",
         "service/user_account_status.py",
         "service/user_passwords.py",
         "service/user_profile.py",

@@ -5,7 +5,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from app.elan import AnnotationChangeKind, compare_eaf, parse_eaf
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
 

@@ -7,7 +7,7 @@ from typing import Any
 from app.core.centralized_logging import get_logger
 from app.elan.validation import EafValidationError
 from app.service.eaf_review import EafReviewUnavailableError, compare_repository_eaf
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.storage.paths import safe_project_path
 
 logger = get_logger()

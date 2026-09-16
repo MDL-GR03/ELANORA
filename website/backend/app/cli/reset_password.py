@@ -11,7 +11,7 @@ from app.cli.bootstrap import MINIMUM_BOOTSTRAP_PASSWORD_LENGTH
 from app.db.database import close_database, get_session_maker, init_database
 from app.model.user import User
 from app.service.refresh_session import revoke_all_refresh_sessions
-from app.service.user import UserService
+from app.utils import password_hashing
 
 
 async def reset_password(db: AsyncSession, username: str, password: str) -> User:
@@ -23,7 +23,7 @@ async def reset_password(db: AsyncSession, username: str, password: str) -> User
     user = await db.scalar(select(User).where(User.username == username))
     if user is None:
         raise ValueError(f"user {username!r} does not exist")
-    user.hashed_password = UserService.hash_password(password)
+    user.hashed_password = password_hashing.hash_password(password)
     await revoke_all_refresh_sessions(db, user.user_id)
     await db.commit()
     await db.refresh(user)

@@ -27,7 +27,6 @@ def test_the_fingerprint_covers_every_source_that_decides_an_outcome() -> None:
 def test_protocol_administration_code_is_not_part_of_the_fingerprint() -> None:
     """Editing unrelated service code must not halt validation everywhere."""
     administration = (
-        "protocol.py",
         "protocol_administration.py",
         "protocol_capabilities.py",
         "protocol_compliance.py",

@@ -7,7 +7,8 @@ from fastapi import HTTPException
 
 import app.api.v1.user as user_api
 from app.schema.requests.user import AccountStatusRequest
-from app.service.user import (
+from app.service import user_account_status
+from app.service.user_errors import (
     AccountNotFoundError,
     AdministratorNoLongerActiveError,
     LastAdministratorError,
@@ -40,7 +41,7 @@ async def test_status_refusals_never_publish_exception_text(
     expected_detail: str,
 ) -> None:
     monkeypatch.setattr(
-        user_api.UserService,
+        user_account_status,
         "set_account_active",
         AsyncMock(side_effect=raised(SENSITIVE_VALUE)),
     )

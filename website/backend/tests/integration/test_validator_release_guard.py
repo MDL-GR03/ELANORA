@@ -5,12 +5,13 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.model.protocol import ValidatorRelease
-from app.service.protocol import ProtocolConflictError, _validator_release
+from app.service.protocol_errors import ProtocolConflictError
 from app.service.protocol_evaluation import (
     VALIDATOR_NAME,
     VALIDATOR_VERSION,
     validator_checksum,
 )
+from app.service.protocol_validation_runs import _validator_release
 
 
 @pytest.mark.asyncio

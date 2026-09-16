@@ -16,7 +16,7 @@ from app.model.file_content import FileContent
 from app.model.instance import Instance
 from app.model.project import Project
 from app.model.user import User
-from app.service.git_operations import (
+from app.service.git_command_runner import (
     GitCommandRunner,
     WorkingTreeOffAcceptedBranchError,
 )

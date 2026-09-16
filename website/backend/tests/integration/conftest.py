@@ -150,7 +150,7 @@ async def institution_accounts(session: AsyncSession) -> InstitutionAccounts:
     from app.model.enums import UserRole  # noqa: PLC0415
     from app.model.instance import Instance  # noqa: PLC0415
     from app.model.user import User  # noqa: PLC0415
-    from app.service.user import UserService  # noqa: PLC0415
+    from app.utils.password_hashing import hash_password  # noqa: PLC0415
 
     instance = Instance(
         instance_name="HTTP Lab",
@@ -159,7 +159,7 @@ async def institution_accounts(session: AsyncSession) -> InstitutionAccounts:
         domain="http.example",
         timezone="UTC",
     )
-    hashed = UserService.hash_password(ACCOUNT_PASSWORD)
+    hashed = hash_password(ACCOUNT_PASSWORD)
     users = {
         name: User(
             username=name,

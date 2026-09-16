@@ -23,12 +23,9 @@ from app.model.audit_event import AuditEvent
 from app.model.project import Project
 from app.model.protocol import Protocol, ProtocolVersion
 from app.schema.protocol import FilenameStandardRule, ProtocolRules
-from app.service.protocol import (
-    ProtocolConflictError,
-    create_protocol,
-    create_protocol_version,
-    get_pinned_protocol_version,
-)
+from app.service.protocol_administration import create_protocol, create_protocol_version
+from app.service.protocol_errors import ProtocolConflictError
+from app.service.protocol_shared import get_pinned_protocol_version
 from app.service.upload_naming_compliance import UPLOAD_LOCATION_NAME
 
 PROTOCOL_NAME_SUFFIX = " filename standard"

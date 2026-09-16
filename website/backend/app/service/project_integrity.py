@@ -26,7 +26,7 @@ from app.model.project_integrity import ProjectIntegrityStatus
 from app.model.project_revision import ProjectRevision
 from app.model.user import User
 from app.service.elan import ElanService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.service.project_revision import verify_project_revision_manifest
 from app.storage.paths import safe_project_path
 

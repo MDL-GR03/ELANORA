@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 
 
 class PreviewRunner(GitCommandRunner):

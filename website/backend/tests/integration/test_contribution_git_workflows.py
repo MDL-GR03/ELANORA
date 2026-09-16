@@ -23,9 +23,9 @@ from app.schema.protocol import ProtocolRules
 from app.service.contribution_change_set import ContributionChangeSetCoordinator
 from app.service.elan import ElanService
 from app.service.git import GitService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.service.project_revision import verify_project_revision_manifest
-from app.service.protocol import (
+from app.service.protocol_administration import (
     create_protocol,
     pin_protocol_version,
     publish_protocol_version,

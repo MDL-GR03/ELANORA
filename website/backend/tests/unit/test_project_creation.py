@@ -6,7 +6,7 @@ import pytest
 from fastapi import UploadFile
 
 from app.service.git import GitService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 
 
 def eaf_upload(filename: str = "session.eaf") -> UploadFile:

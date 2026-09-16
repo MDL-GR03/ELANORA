@@ -18,7 +18,7 @@ from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
 from app.crud.project import delete_project_db
 from app.model.project import Project
-from app.service.git_operations import delete_project_folder
+from app.service.git_command_runner import delete_project_folder
 from app.service.project_filesystem_sync import ProjectFilesystemSyncService
 from app.storage.paths import safe_project_path
 from app.utils.project_backup import (

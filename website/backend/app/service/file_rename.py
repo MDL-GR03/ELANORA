@@ -28,7 +28,7 @@ from app.schema.responses.git import (
     FileRenameResponse,
     RenameResult,
 )
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.storage.paths import safe_project_path
 
 logger = get_logger()

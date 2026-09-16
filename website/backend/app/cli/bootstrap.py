@@ -13,7 +13,7 @@ from app.db.database import close_database, get_session_maker, init_database
 from app.model.enums import UserRole
 from app.model.instance import Instance
 from app.model.user import User
-from app.service.user import UserService
+from app.utils import password_hashing
 
 MINIMUM_BOOTSTRAP_PASSWORD_LENGTH = 12
 
@@ -66,7 +66,7 @@ async def bootstrap(
     user = User(
         username=config.admin_username,
         email=config.admin_email,
-        hashed_password=UserService.hash_password(password),
+        hashed_password=password_hashing.hash_password(password),
         first_name=config.admin_first_name,
         last_name=config.admin_last_name,
         affiliation=config.admin_affiliation,

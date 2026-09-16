@@ -12,7 +12,7 @@ import app.utils.database as database_module
 import app.utils.file_processing as file_processing_module
 import app.utils.validation as validation_module
 from app.model.accepted_value import AcceptedValue
-from app.service.user import UserService
+from app.service import user_sessions
 from app.utils.database import DatabaseUtils
 from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
 from app.utils.validation import ValidationUtils
@@ -129,7 +129,7 @@ async def test_authentication_logs_exclude_login_identifier(monkeypatch) -> None
         AsyncMock(return_value=None),
     )
 
-    result = await UserService.authenticate_user(
+    result = await user_sessions.authenticate_user(
         SimpleNamespace(), SENSITIVE_VALUE, "unused-password"
     )
 

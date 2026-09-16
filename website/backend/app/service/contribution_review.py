@@ -19,14 +19,12 @@ from app.model.research_topic import ResearchTopic, ResearchTopicTier
 from app.model.review import ReviewCase
 from app.service.contribution_inspection import ContributionInspectionService
 from app.service.eaf_review import validate_repository_eafs
-from app.service.git_operations import GitCommandRunner
-from app.service.protocol import (
-    get_pinned_protocol_version,
-)
+from app.service.git_command_runner import GitCommandRunner
 from app.service.protocol_evaluation import (
     blocking_findings,
     validate_content_against_protocol,
 )
+from app.service.protocol_shared import get_pinned_protocol_version
 from app.service.research_topics import require_distinct_topic_name
 from app.storage.paths import safe_project_path
 

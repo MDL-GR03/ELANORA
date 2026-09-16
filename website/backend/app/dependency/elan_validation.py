@@ -15,14 +15,12 @@ from app.schema.responses.git import (
     EafValidationIssueResponse,
     RejectedEafFileResponse,
 )
-from app.service.protocol import (
-    ProtocolConflictError,
-    get_pinned_protocol_version,
-)
+from app.service.protocol_errors import ProtocolConflictError
 from app.service.protocol_evaluation import (
     blocking_findings,
     validate_content_against_protocol,
 )
+from app.service.protocol_shared import get_pinned_protocol_version
 
 logger = get_logger()
 MAX_RETURNED_ISSUES = 20

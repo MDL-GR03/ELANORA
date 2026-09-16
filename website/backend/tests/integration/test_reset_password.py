@@ -11,8 +11,9 @@ from app.cli.reset_password import reset_password
 from app.core.jwt import create_refresh_token
 from app.model.refresh_session import RefreshSession
 from app.schema.common.token import TokenData
+from app.service import user_sessions
 from app.service.refresh_session import create_refresh_session
-from app.service.user import UserService
+from app.utils import password_hashing
 
 
 @pytest.mark.asyncio
@@ -44,12 +45,14 @@ async def test_reset_password_replaces_hash_and_preserves_account(
     updated = await reset_password(session, "administrator", "new-password-456")
 
     assert updated.user_id == original.user_id
-    assert UserService.verify_password("new-password-456", updated.hashed_password)
-    assert not UserService.verify_password("old-password-123", updated.hashed_password)
+    assert password_hashing.verify_password("new-password-456", updated.hashed_password)
+    assert not password_hashing.verify_password(
+        "old-password-123", updated.hashed_password
+    )
     stored_session = await session.scalar(
         select(RefreshSession).where(RefreshSession.session_id == session_id)
     )
     assert stored_session is not None
     assert stored_session.revoked_at is not None
-    rejected = await UserService.refresh_user_tokens(session, refresh_token)
+    rejected = await user_sessions.refresh_user_tokens(session, refresh_token)
     assert rejected["success"] is False

@@ -32,22 +32,24 @@ from app.model.protocol import ProjectComplianceScan, ProtocolVersion, Validatio
 from app.model.user import User
 from app.schema.protocol import ProtocolRules
 from app.schema.review import ReviewCaseCreate
-from app.service.protocol import (
-    ProtocolConflictError,
+from app.service.protocol_administration import (
     archive_protocol_version,
-    compliance_scan_response,
     create_protocol,
     delete_protocol_draft,
-    grant_protocol_manager,
-    list_compliance_scans,
     pin_protocol_version,
     publish_protocol_version,
     purge_archived_protocol_version,
-    run_compliance_scan,
-    suggest_protocol_from_corpus,
     update_draft,
-    validate_revision,
 )
+from app.service.protocol_capabilities import grant_protocol_manager
+from app.service.protocol_compliance import (
+    compliance_scan_response,
+    list_compliance_scans,
+    run_compliance_scan,
+)
+from app.service.protocol_errors import ProtocolConflictError
+from app.service.protocol_suggestions import suggest_protocol_from_corpus
+from app.service.protocol_validation_runs import validate_revision
 from app.service.review import create_case
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"

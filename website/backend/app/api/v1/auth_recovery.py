@@ -13,11 +13,11 @@ from app.schema.requests.user import (
     SendVerificationEmailRequest,
     VerifyEmailRequest,
 )
+from app.service import user_registration, user_verification
 from app.service.outbox import (
     enqueue_account_verification_email,
     enqueue_password_reset_email,
 )
-from app.service.user import UserService
 
 router = APIRouter()
 
@@ -52,12 +52,12 @@ async def forgot_password(
     """
     try:
         # Check if user exists
-        user = await UserService.get_user_by_email(db, body.email)
+        user = await user_registration.get_user_by_email(db, body.email)
 
         if user:
             # Generate verification code
-            verification_code = UserService._generate_verification_code()
-            hashed_code = UserService._hash_verification_code(verification_code)
+            verification_code = user_verification.generate_verification_code()
+            hashed_code = user_verification.hash_verification_code(verification_code)
 
             # Store the hash and encrypted delivery request atomically.
             user.activation_code = hashed_code
@@ -110,7 +110,7 @@ async def reset_password(
     """
     try:
         # Reset password using the service
-        result = await UserService.reset_password(
+        result = await user_verification.reset_password(
             db=db,
             email=body.email,
             reset_code=body.code,
@@ -161,7 +161,7 @@ async def send_verification_email(
     """
     try:
         # Check if user exists
-        user = await UserService.get_user_by_email(db, body.email)
+        user = await user_registration.get_user_by_email(db, body.email)
 
         if not user:
             raise HTTPException(status_code=404, detail="User not found.")
@@ -170,8 +170,8 @@ async def send_verification_email(
             raise HTTPException(status_code=400, detail="Account is already verified.")
 
         # Generate verification code
-        verification_code = UserService._generate_verification_code()
-        hashed_code = UserService._hash_verification_code(verification_code)
+        verification_code = user_verification.generate_verification_code()
+        hashed_code = user_verification.hash_verification_code(verification_code)
 
         # Store the hash and encrypted delivery request atomically.
         user.activation_code = hashed_code
@@ -225,7 +225,7 @@ async def verify_email(
     """
     try:
         # Verify email using the service
-        result = await UserService.verify_account(
+        result = await user_verification.verify_account(
             db=db,
             email=body.email,
             verification_code=body.code,

@@ -24,7 +24,7 @@ from app.crud.pending_upload import get_pending_uploads
 from app.crud.project import get_project_by_name
 from app.model.research_topic import ProjectBaselineTier
 from app.service.contribution_inspection import ContributionInspectionService
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.storage.paths import safe_project_path
 
 logger = get_logger()

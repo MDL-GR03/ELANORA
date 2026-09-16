@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.service.project_history import ProjectHistoryService
 
 

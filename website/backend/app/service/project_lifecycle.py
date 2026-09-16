@@ -20,7 +20,7 @@ from app.crud.project import (
 )
 from app.model.project import Project
 from app.service.elan import ElanService
-from app.service.git_operations import GitCommandRunner, delete_project_folder
+from app.service.git_command_runner import GitCommandRunner, delete_project_folder
 from app.service.project_revision import append_project_revision
 from app.storage.paths import safe_project_path
 from app.utils.project_backup import (

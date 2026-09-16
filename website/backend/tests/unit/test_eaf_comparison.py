@@ -9,7 +9,7 @@ from app.service.eaf_review import (
     EafReviewUnavailableError,
     compare_repository_eaf,
 )
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "eaf" / "complete-valid.eaf"
 

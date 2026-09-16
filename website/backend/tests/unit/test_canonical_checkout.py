@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.service.git_operations import (
+from app.service.git_command_runner import (
     GitCommandRunner,
     WorkingTreeOffAcceptedBranchError,
 )

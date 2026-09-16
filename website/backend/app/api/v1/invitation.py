@@ -16,7 +16,12 @@ from app.schema.responses.invitation import (
     InvitationSendResponse,
     InvitationValidationResponse,
 )
-from app.service.invitation import InvitationService
+from app.service import (
+    invitation_decisions,
+    invitation_issuing,
+    invitation_queries,
+)
+from app.service.email import EmailService
 
 router = APIRouter()
 
@@ -48,10 +53,10 @@ async def send_invitation(
             detail="Only an institution administrator can invite project administrators",
         )
 
-    invitation_service = InvitationService()
     try:
-        result = await invitation_service.send_invitation(
+        result = await invitation_issuing.send_invitation(
             db=db,
+            email_service=EmailService(),
             sender_id=user.user_id,
             request=request,
         )
@@ -70,8 +75,7 @@ async def validate_invitation(
     db: AsyncSession = get_db_dep,
 ) -> InvitationValidationResponse:
     """Validate an invitation code (Public endpoint for registration)."""
-    invitation_service = InvitationService()
-    return await invitation_service.validate_invitation(
+    return await invitation_queries.validate_invitation(
         db=db,
         invitation_code=invitation_code,
     )
@@ -90,8 +94,7 @@ async def get_sent_invitations(
             detail="Only administrators can view sent invitations",
         )
 
-    invitation_service = InvitationService()
-    return await invitation_service.get_sent_invitations(
+    return await invitation_queries.sent_invitations(
         db=db,
         sender_id=user.user_id,
     )
@@ -111,8 +114,7 @@ async def get_received_invitations(
             detail="You can only view your own invitations",
         )
 
-    invitation_service = InvitationService()
-    return await invitation_service.get_user_invitations(
+    return await invitation_queries.user_invitations(
         db=db,
         email=email,
     )
@@ -127,8 +129,7 @@ async def get_project_invitations(
     """Get invitations for a specific project (Admin only)."""
     await authorize_project(db, user, ProjectPermission.ADMIN, project_id=project_id)
 
-    invitation_service = InvitationService()
-    return await invitation_service.get_project_invitations(
+    return await invitation_queries.project_invitations(
         db=db,
         project_id=project_id,
     )
@@ -141,8 +142,7 @@ async def get_invitation_details(
     db: AsyncSession = get_db_dep,
 ) -> dict[str, Any]:
     """Get invitation details for the decision page (for authenticated users)."""
-    invitation_service = InvitationService()
-    return await invitation_service.get_invitation_details_for_user(
+    return await invitation_queries.invitation_details_for_user(
         db=db,
         invitation_id=invitation_id,
         user_id=user.user_id,
@@ -156,8 +156,7 @@ async def accept_invitation(
     db: AsyncSession = get_db_dep,
 ) -> dict[str, Any]:
     """Accept an invitation (for existing users)."""
-    invitation_service = InvitationService()
-    return await invitation_service.accept_invitation_by_user(
+    return await invitation_decisions.accept_invitation_by_user(
         db=db,
         invitation_id=invitation_id,
         user_id=user.user_id,
@@ -171,8 +170,7 @@ async def reject_invitation(
     db: AsyncSession = get_db_dep,
 ) -> dict[str, Any]:
     """Reject an invitation (for existing users)."""
-    invitation_service = InvitationService()
-    return await invitation_service.reject_invitation_by_user(
+    return await invitation_decisions.reject_invitation_by_user(
         db=db,
         invitation_id=invitation_id,
         user_id=user.user_id,
@@ -193,9 +191,9 @@ async def resend_invitation(
             detail="Only administrators can resend invitations",
         )
 
-    invitation_service = InvitationService()
-    return await invitation_service.resend_invitation(
+    return await invitation_issuing.resend_invitation(
         db=db,
+        email_service=EmailService(),
         invitation_id=invitation_id,
         sender_id=user.user_id,
     )
@@ -215,8 +213,7 @@ async def cancel_invitation(
             detail="Only administrators can cancel invitations",
         )
 
-    invitation_service = InvitationService()
-    return await invitation_service.cancel_invitation(
+    return await invitation_issuing.cancel_invitation(
         db=db,
         invitation_id=invitation_id,
         sender_id=user.user_id,

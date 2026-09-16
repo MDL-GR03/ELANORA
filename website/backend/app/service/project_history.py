@@ -19,7 +19,7 @@ from app.model.notification import Notification
 from app.model.project_revision import ProjectRevision
 from app.model.review import ReviewCase
 from app.model.user import User
-from app.service.git_operations import GitCommandRunner
+from app.service.git_command_runner import GitCommandRunner
 from app.service.project_revision import append_project_revision
 from app.storage.paths import safe_project_path
 from app.utils.project_backup import update_backup

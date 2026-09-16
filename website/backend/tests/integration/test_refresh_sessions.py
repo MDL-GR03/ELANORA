@@ -11,12 +11,13 @@ from app.model.instance import Instance
 from app.model.refresh_session import RefreshSession
 from app.model.user import User
 from app.schema.common.token import TokenData
+from app.service import user_passwords, user_sessions
 from app.service.refresh_session import (
     create_refresh_session,
     delete_expired_refresh_sessions,
     revoke_refresh_session,
 )
-from app.service.user import UserService
+from app.utils import password_hashing
 
 
 @pytest.mark.asyncio
@@ -52,15 +53,15 @@ async def test_refresh_token_rotation_rejects_replay_and_revocation(
     await create_refresh_session(session, user.user_id, session_id, original)
     await session.commit()
 
-    first = await UserService.refresh_user_tokens(session, original)
+    first = await user_sessions.refresh_user_tokens(session, original)
     assert first["success"] is True
 
-    replay = await UserService.refresh_user_tokens(session, original)
+    replay = await user_sessions.refresh_user_tokens(session, original)
     assert replay["success"] is False
 
     rotated = str(first["refresh_token"])
     await revoke_refresh_session(session, session_id)
-    revoked = await UserService.refresh_user_tokens(session, rotated)
+    revoked = await user_sessions.refresh_user_tokens(session, rotated)
     assert revoked["success"] is False
 
 
@@ -78,7 +79,7 @@ async def test_password_change_revokes_every_active_refresh_session(
     user = User(
         username="researcher",
         email="researcher@example.org",
-        hashed_password=UserService.hash_password("old-password-123"),
+        hashed_password=password_hashing.hash_password("old-password-123"),
         first_name="Ada",
         last_name="Researcher",
         affiliation="Institute",
@@ -101,7 +102,7 @@ async def test_password_change_revokes_every_active_refresh_session(
         tokens.append(token)
     await session.commit()
 
-    changed = await UserService.change_password(
+    changed = await user_passwords.change_password(
         session, user, "old-password-123", "new-password-456"
     )
 
@@ -113,7 +114,7 @@ async def test_password_change_revokes_every_active_refresh_session(
     ).scalars()
     assert all(item.revoked_at is not None for item in stored_sessions)
     for token in tokens:
-        rejected = await UserService.refresh_user_tokens(session, token)
+        rejected = await user_sessions.refresh_user_tokens(session, token)
         assert rejected["success"] is False
 
 

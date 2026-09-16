@@ -12,12 +12,9 @@ from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
 from app.crud.pending_upload import get_pending_uploads, save_pending_upload
 from app.crud.project import get_project_by_name
-from app.service.git_operations import (
-    FileUploadResult,
-    GitBranchManager,
-    GitCommandRunner,
-    GitDiffAnalyzer,
-)
+from app.service.git_branches import GitBranchManager, GitDiffAnalyzer
+from app.service.git_command_runner import GitCommandRunner
+from app.service.git_results import FileUploadResult
 
 logger = get_logger()
 

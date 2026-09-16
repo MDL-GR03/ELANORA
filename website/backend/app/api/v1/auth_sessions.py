@@ -25,11 +25,11 @@ from app.schema.requests.user import (
     LoginRequest,
 )
 from app.schema.responses.user import LoginResponse, UserResponse
+from app.service import user_sessions
 from app.service.refresh_session import (
     create_refresh_session,
     revoke_refresh_session,
 )
-from app.service.user import UserService
 
 router = APIRouter()
 
@@ -52,7 +52,7 @@ async def login(
 ) -> LoginResponse:
     """Handle user login and set JWT tokens as HTTP-only cookies."""
     # Use service layer for authentication
-    login_result = await UserService.login_user(
+    login_result = await user_sessions.login_user(
         db=db,
         login_or_email=body.login,
         password=body.password,
@@ -153,7 +153,7 @@ async def refresh_tokens(
 
     try:
         # Use service layer for token refresh
-        refresh_result = await UserService.refresh_user_tokens(db, refresh_token)
+        refresh_result = await user_sessions.refresh_user_tokens(db, refresh_token)
 
         if not refresh_result["success"]:
             raise HTTPException(

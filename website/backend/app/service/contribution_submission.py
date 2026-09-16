@@ -24,13 +24,10 @@ from app.service.contribution_intake import (
     DuplicatePendingContributionError,
     SubmissionContext,
 )
-from app.service.git_operations import (
-    FileUploadProcessor,
-    GitBranchManager,
-    GitCommandRunner,
-    GitDiffAnalyzer,
-)
-from app.service.protocol import get_pinned_protocol_version
+from app.service.git_branches import GitBranchManager, GitDiffAnalyzer
+from app.service.git_command_runner import GitCommandRunner
+from app.service.git_uploads import FileUploadProcessor
+from app.service.protocol_shared import get_pinned_protocol_version
 from app.service.upload_naming_compliance import enforce_upload_naming_standard
 from app.storage.paths import safe_project_path
 

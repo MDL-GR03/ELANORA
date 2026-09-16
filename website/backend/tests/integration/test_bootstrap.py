@@ -11,7 +11,8 @@ from app.db.database import get_db
 from app.main import app
 from app.model.enums import UserRole
 from app.model.user import User
-from app.service.user import UserService
+from app.service import user_sessions
+from app.utils import password_hashing
 
 
 @pytest.mark.asyncio
@@ -40,7 +41,7 @@ async def test_bootstrap_creates_one_verified_tenant_admin_atomically(
     assert instance.primary_color == "#2563eb"
     assert user.role == UserRole.ADMIN
     assert user.is_verified_account is True
-    assert UserService.verify_password(
+    assert password_hashing.verify_password(
         "correct horse battery staple", user.hashed_password
     )
     with pytest.raises(RuntimeError, match="already exists"):
@@ -67,7 +68,7 @@ async def test_successful_login_records_timezone_aware_timestamp(
     )
     _, user = await bootstrap(session, config, "correct horse battery staple")
 
-    result = await UserService.login_user(
+    result = await user_sessions.login_user(
         session,
         "administrator",
         "correct horse battery staple",
