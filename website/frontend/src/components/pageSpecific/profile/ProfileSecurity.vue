@@ -44,7 +44,7 @@
           />
           <div v-if="passwordValidation.show" class="password-requirements">
             <div class="requirements-title">
-              {{ t('profile.security.change_password.requirements.title') }}
+              {{ t('passwordPolicy.title') }}
             </div>
             <div
               v-for="requirement in passwordRequirements"
@@ -105,6 +105,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { passwordRequirementList } from '@/utils/passwordPolicy';
 import { changePassword } from '@/api/service/userService.js';
 import { reportClientError } from '@/utils/errorDiagnostics';
 
@@ -124,33 +125,9 @@ const passwordValidation = ref({
 });
 
 // Password validation
-const passwordRequirements = computed(() => [
-  {
-    key: 'length',
-    text: t('profile.security.change_password.requirements.length'),
-    valid: form.value.newPassword.length >= 8,
-  },
-  {
-    key: 'uppercase',
-    text: t('profile.security.change_password.requirements.uppercase'),
-    valid: /[A-Z]/.test(form.value.newPassword),
-  },
-  {
-    key: 'lowercase',
-    text: t('profile.security.change_password.requirements.lowercase'),
-    valid: /[a-z]/.test(form.value.newPassword),
-  },
-  {
-    key: 'number',
-    text: t('profile.security.change_password.requirements.number'),
-    valid: /\d/.test(form.value.newPassword),
-  },
-  {
-    key: 'special',
-    text: t('profile.security.change_password.requirements.special'),
-    valid: /[!@#$%^&*(),.?":{}|<>]/.test(form.value.newPassword),
-  },
-]);
+const passwordRequirements = computed(() =>
+  passwordRequirementList(form.value.newPassword, t)
+);
 
 const passwordsMatch = computed(() => {
   return form.value.newPassword === form.value.confirmPassword;

@@ -56,7 +56,7 @@
 
       <div v-if="requirementsVisible" class="password-requirements">
         <div class="requirements-title">
-          {{ t('register.password_requirements_title') }}
+          {{ t('passwordPolicy.title') }}
         </div>
         <div
           v-for="requirement in REQUIREMENTS"
@@ -65,7 +65,7 @@
           :class="{ met: checks[requirement] }"
         >
           <span class="check-icon">{{ checks[requirement] ? '✓' : '✗' }}</span>
-          {{ t(`register.password_requirement_${requirement}`) }}
+          {{ t(`passwordPolicy.${requirement}`) }}
         </div>
       </div>
 
@@ -131,11 +131,10 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import {
+  PASSWORD_REQUIREMENTS as REQUIREMENTS,
   passwordChecksOf,
   passwordStrengthOf,
-} from '@/utils/registrationValidation';
-
-const REQUIREMENTS = ['length', 'lowercase', 'uppercase', 'number', 'special'];
+} from '@/utils/passwordPolicy';
 
 const STRENGTH_WIDTH = { weak: '33%', medium: '66%', strong: '100%' };
 

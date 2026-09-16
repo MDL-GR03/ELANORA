@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   REGISTRATION_FIELDS,
-  passwordChecksOf,
-  passwordStrengthOf,
   registrationFieldValue,
   validateRegistrationField,
   validateRegistrationForm,
@@ -94,6 +92,7 @@ describe('registrationValidation', () => {
     ['', 'register.password_required'],
     ['Ab1!', 'register.password_too_short'],
     ['alllowercase', 'register.password_weak'],
+    ['Analytical12', 'register.password_weak'],
     ['Analytical1!', ''],
   ])('judges the password %j', (password, expected) => {
     const form = completeForm({ password, confirmPassword: password });
@@ -159,32 +158,5 @@ describe('registrationValidation', () => {
     expect(
       validateRegistrationField('nickname', completeForm(), translate)
     ).toBe('');
-  });
-
-  it.each([
-    ['', 'weak'],
-    ['short', 'weak'],
-    ['lowercaseonly', 'weak'],
-    ['Lowercase1', 'medium'],
-    ['Analytical1!', 'strong'],
-  ])('rates the password %j as %s', (password, expected) => {
-    expect(passwordStrengthOf(password)).toBe(expected);
-  });
-
-  it('reports which password requirements are met', () => {
-    expect(passwordChecksOf('Analytical1!')).toEqual({
-      length: true,
-      lowercase: true,
-      uppercase: true,
-      number: true,
-      special: true,
-    });
-    expect(passwordChecksOf('')).toEqual({
-      length: false,
-      lowercase: false,
-      uppercase: false,
-      number: false,
-      special: false,
-    });
   });
 });

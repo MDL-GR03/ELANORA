@@ -1,5 +1,6 @@
-from pydantic import EmailStr, Field, field_validator
+from pydantic import EmailStr, Field
 
+from app.core.password_policy import NewPassword
 from app.schema.common.base import CustomBaseModel
 
 
@@ -22,38 +23,6 @@ class LoginRequest(CustomBaseModel):
     password: str
 
 
-class RegistrationRequest(CustomBaseModel):
-    """RegistrationRequest schema for user registration."""
-
-    username: str
-    password: str
-    confirm_password: str
-    first_name: str
-    last_name: str
-    email: EmailStr
-    confirm_email: EmailStr
-    phone_number: str | None = None
-    affiliation: str
-    department: str
-    address: AddressRequest | None = None
-
-    @field_validator("confirm_password")
-    @classmethod
-    def passwords_match(cls, v, values):
-        """Ensure that the confirmed password matches the original password."""
-        if "password" in values.data and v != values.data["password"]:
-            raise ValueError("Passwords do not match")
-        return v
-
-    @field_validator("confirm_email")
-    @classmethod
-    def emails_match(cls, v, values):
-        """Ensure that the confirmed email matches the original email."""
-        if "email" in values.data and v != values.data["email"]:
-            raise ValueError("Emails do not match")
-        return v
-
-
 class ProfileUpdateRequest(CustomBaseModel):
     """Schema for updating user profile information."""
 
@@ -67,13 +36,6 @@ class ProfileUpdateRequest(CustomBaseModel):
     address: AddressRequest | None = None
 
 
-class PasswordUpdateRequest(CustomBaseModel):
-    """Schema for updating user password."""
-
-    current_password: str
-    new_password: str
-
-
 class ForgotPasswordRequest(CustomBaseModel):
     """Schema for requesting a password reset email."""
 
@@ -81,21 +43,12 @@ class ForgotPasswordRequest(CustomBaseModel):
     language: str = "en"
 
 
-class ContactForm(CustomBaseModel):
-    """Schema for contact form submission."""
-
-    email: EmailStr
-    category: str
-    subject: str
-    message: str
-
-
 class ResetPasswordRequest(CustomBaseModel):
     """Schema for resetting a user's password."""
 
     email: str
     code: str
-    new_password: str
+    new_password: NewPassword
 
 
 class SendVerificationEmailRequest(CustomBaseModel):
@@ -116,7 +69,7 @@ class ChangePasswordRequest(CustomBaseModel):
     """Schema for changing user password."""
 
     current_password: str
-    new_password: str
+    new_password: NewPassword
 
 
 class AccountStatusRequest(CustomBaseModel):

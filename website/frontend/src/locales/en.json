@@ -379,12 +379,6 @@
     "username_check_error": "Error checking username availability",
     "email_check_error": "Error checking email availability",
     "username_requirements": "• 3-20 characters • Letters, numbers, and underscores only",
-    "password_requirements_title": "Password requirements:",
-    "password_requirement_length": "At least 8 characters",
-    "password_requirement_lowercase": "One lowercase letter",
-    "password_requirement_uppercase": "One uppercase letter",
-    "password_requirement_number": "One number",
-    "password_requirement_special": "One special character",
     "show_password": "Show password",
     "hide_password": "Hide password",
     "invitation_sender_unknown": "An administrator",
@@ -999,14 +993,6 @@
         "new_password_placeholder": "Enter your new password",
         "confirm_password": "Confirm New Password",
         "confirm_password_placeholder": "Confirm your new password",
-        "requirements": {
-          "title": "Password must contain:",
-          "length": "At least 8 characters",
-          "uppercase": "At least one uppercase letter",
-          "lowercase": "At least one lowercase letter",
-          "number": "At least one number",
-          "special": "At least one special character"
-        },
         "passwords_no_match": "Passwords do not match",
         "form_invalid": "Please fix form errors",
         "updating": "Updating...",
@@ -2144,5 +2130,13 @@
     "lastUpdated": "Last changed {date}",
     "save": "Save data governance",
     "saving": "Saving…"
+  },
+  "passwordPolicy": {
+    "title": "Password must contain:",
+    "length": "At least 8 characters",
+    "uppercase": "At least one uppercase letter",
+    "lowercase": "At least one lowercase letter",
+    "number": "At least one number",
+    "special": "At least one special character"
   }
 }

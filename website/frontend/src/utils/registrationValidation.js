@@ -8,7 +8,10 @@
  * written in English in the middle of the markup.
  */
 
-export const PASSWORD_MINIMUM_LENGTH = 8;
+import {
+  PASSWORD_MINIMUM_LENGTH,
+  meetsPasswordPolicy,
+} from '@/utils/passwordPolicy';
 
 const NAME_PATTERN = /^[a-zA-ZÀ-ÿ\s-']+$/;
 const USERNAME_PATTERN = /^\w+$/;
@@ -64,28 +67,6 @@ export function registrationFieldValue(form, fieldName) {
   return source?.[fieldName] ?? '';
 }
 
-/** Rate a password from the variety and length of what was typed. */
-export function passwordStrengthOf(password) {
-  if (!password) return 'weak';
-  const checks = passwordChecksOf(password);
-  const score = Object.values(checks).filter(Boolean).length;
-  if (score < 3) return 'weak';
-  if (score < 5) return 'medium';
-  return 'strong';
-}
-
-/** Which password requirements the typed password currently meets. */
-export function passwordChecksOf(password) {
-  const typed = password || '';
-  return {
-    length: typed.length >= PASSWORD_MINIMUM_LENGTH,
-    lowercase: /[a-z]/.test(typed),
-    uppercase: /[A-Z]/.test(typed),
-    number: /\d/.test(typed),
-    special: /[^A-Za-z0-9]/.test(typed),
-  };
-}
-
 function personName(value, translate, prefix) {
   if (!value) return translate(`register.${prefix}_required`);
   if (value.length < 2) return translate(`register.${prefix}_too_short`);
@@ -132,8 +113,7 @@ const RULES = {
     if (!value) return translate('register.password_required');
     if (value.length < PASSWORD_MINIMUM_LENGTH)
       return translate('register.password_too_short');
-    if (passwordStrengthOf(value) === 'weak')
-      return translate('register.password_weak');
+    if (!meetsPasswordPolicy(value)) return translate('register.password_weak');
     return '';
   },
   confirmPassword: (form, translate) => {

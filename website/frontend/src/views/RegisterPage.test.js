@@ -149,12 +149,8 @@ describe('RegisterPage', () => {
 
     const password = wrapper.find('#password');
     await password.trigger('focus');
-    expect(wrapper.text()).toContain(
-      messages.register.password_requirements_title
-    );
-    expect(wrapper.text()).toContain(
-      messages.register.password_requirement_uppercase
-    );
+    expect(wrapper.text()).toContain(messages.passwordPolicy.title);
+    expect(wrapper.text()).toContain(messages.passwordPolicy.uppercase);
 
     await password.setValue('Analytical1!');
     expect(wrapper.text()).toContain(

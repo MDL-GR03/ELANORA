@@ -379,12 +379,6 @@
     "username_check_error": "ユーザー名の可用性確認エラー",
     "email_check_error": "メールアドレスの可用性確認エラー",
     "username_requirements": "• 3〜20文字 • 英数字とアンダースコアのみ",
-    "password_requirements_title": "パスワードの要件:",
-    "password_requirement_length": "8文字以上",
-    "password_requirement_lowercase": "小文字を1文字",
-    "password_requirement_uppercase": "大文字を1文字",
-    "password_requirement_number": "数字を1文字",
-    "password_requirement_special": "特殊文字を1文字",
     "show_password": "パスワードを表示",
     "hide_password": "パスワードを非表示",
     "invitation_sender_unknown": "管理者",
@@ -999,14 +993,6 @@
         "new_password_placeholder": "新しいパスワードを入力",
         "confirm_password": "新しいパスワード（確認）",
         "confirm_password_placeholder": "新しいパスワードを確認",
-        "requirements": {
-          "title": "パスワードの要件：",
-          "length": "8文字以上",
-          "uppercase": "大文字を1文字以上",
-          "lowercase": "小文字を1文字以上",
-          "number": "数字を1文字以上",
-          "special": "特殊文字を1文字以上"
-        },
         "passwords_no_match": "パスワードが一致しません",
         "form_invalid": "フォームのエラーを修正してください",
         "updating": "更新中...",
@@ -2144,5 +2130,13 @@
     "lastUpdated": "最終変更 {date}",
     "save": "データガバナンスを保存",
     "saving": "保存しています…"
+  },
+  "passwordPolicy": {
+    "title": "パスワードの要件：",
+    "length": "8文字以上",
+    "uppercase": "大文字を1文字以上",
+    "lowercase": "小文字を1文字以上",
+    "number": "数字を1文字以上",
+    "special": "特殊文字を1文字以上"
   }
 }
