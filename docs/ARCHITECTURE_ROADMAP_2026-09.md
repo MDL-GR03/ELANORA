@@ -148,12 +148,23 @@ projection version rather than changing research history.
 
 ### P1 — service and API boundaries
 
-Several backend modules are too large: `invitation.py` exceeds 1,100 lines,
-`git_operations.py` exceeds 700, `user.py` exceeds 600 and `auth.py` approaches
-600. They contain repeated broad exception handling and dictionaries used as
-implicit result types. Split by use case and replace stable dictionary contracts
-with dataclasses or Pydantic models. Domain services should raise typed domain
-errors; one API exception mapper should produce safe HTTP responses.
+**Split completed 16 September 2026:** every oversized backend module is now
+divided by use case, each keeping the import surface its callers already use:
+
+| Was | Now |
+| --- | --- |
+| `service/invitation.py`, 887 lines | issuing, decisions, queries, notifications |
+| `service/user.py`, 743 lines | sessions, registration, verification, passwords, profile, account status, errors, and one shared password hashing context |
+| `service/git_operations.py`, 971 lines | command runner, branches, merge, uploads, results, and one backup hook |
+| `service/protocol.py`, 1008 lines | administration, capabilities, validation runs, compliance, suggestions, shared reads, errors |
+| `api/v1/git.py`, 1163 lines and 32 routes | projects, contributions, history, synchronization, renames, with shared services in `git_shared` |
+| `api/v1/auth.py`, 601 lines and 10 routes | sessions, registration, recovery |
+
+Route inventories were compared before and after, so no path or method changed.
+Guardrail tests that read a named source file now read the module that holds the
+code, rather than a re-export that holds none. What remains here is replacing
+the dictionaries still used as implicit result types with typed models, and
+raising typed domain errors so one API mapper produces safe HTTP responses.
 
 Authorization must also exist at the use-case boundary. Route dependencies are
 helpful but insufficient if a service can later be called from a worker or CLI
