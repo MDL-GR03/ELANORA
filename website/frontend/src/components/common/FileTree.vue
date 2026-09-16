@@ -122,7 +122,7 @@
               <img
                 v-if="isEafFile(file.name)"
                 src="/images/icons/ELAN.svg"
-                alt="ELAN file"
+                :alt="t('fileTree.elanFile')"
                 class="file-icon"
               />
               <span

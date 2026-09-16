@@ -400,7 +400,8 @@
       "postal_code_belongs_to": "この郵便番号の地域: {cities}",
       "postal_code_not_in_city": "この郵便番号はこの市区町村と一致しません",
       "postal_code_not_found": "郵便番号が見つかりません"
-    }
+    },
+    "logo_alt": "ELANORAのロゴ"
   },
   "invitation": {
     "context": "共同研究",

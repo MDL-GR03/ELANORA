@@ -400,7 +400,8 @@
       "postal_code_belongs_to": "This postal code belongs to: {cities}",
       "postal_code_not_in_city": "This postal code does not match this city",
       "postal_code_not_found": "Postal code not found"
-    }
+    },
+    "logo_alt": "ELANORA logo"
   },
   "invitation": {
     "context": "Collaboration",

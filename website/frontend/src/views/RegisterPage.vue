@@ -4,7 +4,7 @@
       <div class="register-header">
         <img
           src="@logos/ELANora-logo.png"
-          alt="ELANORA Logo"
+          :alt="t('register.logo_alt')"
           class="register-logo"
         />
         <h1 class="register-title">{{ t('register.title') }}</h1>
