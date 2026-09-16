@@ -5,7 +5,7 @@ from fastapi import HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
-from app.api.v1.auth import logout, refresh_tokens
+from app.api.v1.auth_sessions import logout, refresh_tokens
 from app.core.config import (
     ACCESS_TOKEN_COOKIE_NAME,
     CSRF_TOKEN_NAME,

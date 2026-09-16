@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1 import auth
+from app.api.v1 import auth_registration
 from app.schema.requests.register_with_invitation import RegisterWithInvitationRequest
 from app.service.invitation import InvitationService
 from app.service.user import UserService
@@ -27,7 +27,7 @@ async def test_registration_rolls_back_when_invitation_cannot_be_redeemed(
         AsyncMock(return_value=SimpleNamespace(valid=True, invitation=invitation)),
     )
     monkeypatch.setattr(
-        auth,
+        auth_registration,
         "get_project_by_id",
         AsyncMock(return_value=SimpleNamespace(instance_id=2)),
     )
@@ -53,7 +53,7 @@ async def test_registration_rolls_back_when_invitation_cannot_be_redeemed(
     )
 
     with pytest.raises(HTTPException) as caught:
-        await auth.register(request, db)
+        await auth_registration.register(request, db)
 
     assert caught.value.status_code == 409
     assert creator.await_args.kwargs["commit"] is False
@@ -78,7 +78,7 @@ async def test_registration_commits_user_and_invitation_together(
         AsyncMock(return_value=SimpleNamespace(valid=True, invitation=invitation)),
     )
     monkeypatch.setattr(
-        auth,
+        auth_registration,
         "get_project_by_id",
         AsyncMock(return_value=SimpleNamespace(instance_id=2)),
     )
@@ -111,7 +111,7 @@ async def test_registration_commits_user_and_invitation_together(
         department="Linguistics",
     )
 
-    response = await auth.register(request, db)
+    response = await auth_registration.register(request, db)
 
     assert response.user_id == 7
     assert response.requires_activation is False
