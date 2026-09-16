@@ -21,6 +21,13 @@ const PASSWORD_RULES = new Set([
   'breached',
 ]);
 
+/** Codes that say nothing the caller's own fallback does not say better. */
+const GENERIC_CODES = new Set([
+  'internal_error',
+  'request_failed',
+  'validation_error',
+]);
+
 function translated(translate, key, params) {
   const text = translate(key, params);
   return text && text !== key ? text : null;
@@ -48,7 +55,8 @@ export function passwordRefusal(error) {
 /**
  * The message to show for a failed request: the translation of its code when
  * this interface knows it, the server's own sentence otherwise, and the
- * fallback when there is neither.
+ * fallback when there is neither. A generic code such as `internal_error`
+ * yields to the caller's fallback, which names what actually failed.
  */
 export function apiErrorMessage(error, translate, fallback) {
   const rule = passwordRefusal(error);
@@ -61,6 +69,7 @@ export function apiErrorMessage(error, translate, fallback) {
     );
   }
   const body = error?.response?.data;
+  if (fallback && GENERIC_CODES.has(body?.code)) return fallback;
   if (typeof body?.code === 'string') {
     const message = translated(
       translate,

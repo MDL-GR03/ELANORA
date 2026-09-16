@@ -38,6 +38,17 @@ describe('apiErrorMessage', () => {
     );
   });
 
+  it("prefers the caller's fallback to a generic server failure", () => {
+    const error = failure({
+      detail: 'Internal server error occurred.',
+      code: 'internal_error',
+    });
+    expect(apiErrorMessage(error, translator('fr'), 'précis')).toBe('précis');
+    expect(apiErrorMessage(error, translator('fr'))).toBe(
+      fr.apiErrors.internal_error
+    );
+  });
+
   it('falls back when the request never reached the server', () => {
     expect(apiErrorMessage(new Error('offline'), translator('en'), 'x')).toBe(
       'x'

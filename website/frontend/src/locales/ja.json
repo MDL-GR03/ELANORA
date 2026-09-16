@@ -1602,23 +1602,11 @@
       "downloadFailed": "研究用コピーを準備できませんでした。",
       "topicSaved": "研究トピックを保存しました。",
       "topicSaveFailed": "研究トピックを保存できませんでした。",
+      "topicDeleteFailed": "研究トピックを削除できませんでした。",
       "deleteTitle": "「{topic}」を削除しますか？",
       "deleteText": "トピック定義を削除します。ELANファイルとダウンロード済みコピーは変更されません。",
       "topicDeleted": "研究トピックを削除しました。"
     }
-  },
-  "tiersPage": {
-    "pageTitle": "階層",
-    "pageDescription": "プロジェクトのELANファイルに含まれる注釈階層を確認・整理します。",
-    "unsectioned": "未分類",
-    "fileCount": "ELANファイル {count}件",
-    "tierCount": "ルート階層 {count}件",
-    "moveTo": "移動先",
-    "dragHandle": "別のセクションへドラッグ",
-    "dragFile": "{name}を別のセクションへドラッグ",
-    "noTiers": "このファイルには階層がありません。",
-    "loading": "階層を読み込んでいます...",
-    "loadFailed": "階層を読み込めませんでした。"
   },
   "pendingUploads": {
     "title": "保留中の投稿",

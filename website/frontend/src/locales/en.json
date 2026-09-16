@@ -1602,23 +1602,11 @@
       "downloadFailed": "The research copy could not be prepared.",
       "topicSaved": "Research topic saved.",
       "topicSaveFailed": "The research topic could not be saved.",
+      "topicDeleteFailed": "The research topic could not be deleted.",
       "deleteTitle": "Delete “{topic}”?",
       "deleteText": "The topic definition will be deleted. ELAN files and downloaded copies are not changed.",
       "topicDeleted": "Research topic deleted."
     }
-  },
-  "tiersPage": {
-    "pageTitle": "Tier hierarchy",
-    "pageDescription": "Inspect and organize the linguistic annotation layers found in this project's ELAN files.",
-    "unsectioned": "Unsectioned",
-    "fileCount": "{count} ELAN file(s)",
-    "tierCount": "{count} root tier(s)",
-    "moveTo": "Move to",
-    "dragHandle": "Drag to another section",
-    "dragFile": "Drag {name} to another section",
-    "noTiers": "No tiers were found in this file.",
-    "loading": "Loading tier hierarchy...",
-    "loadFailed": "The tier hierarchy could not be loaded."
   },
   "pendingUploads": {
     "title": "Contributions",

@@ -1602,23 +1602,11 @@
       "downloadFailed": "Impossible de préparer la copie de recherche.",
       "topicSaved": "Sujet de recherche enregistré.",
       "topicSaveFailed": "Impossible d'enregistrer le sujet de recherche.",
+      "topicDeleteFailed": "Impossible de supprimer le sujet de recherche.",
       "deleteTitle": "Supprimer « {topic} » ?",
       "deleteText": "La définition du sujet sera supprimée. Les fichiers ELAN et les copies téléchargées ne seront pas modifiés.",
       "topicDeleted": "Sujet de recherche supprimé."
     }
-  },
-  "tiersPage": {
-    "pageTitle": "Hiérarchie des tiers",
-    "pageDescription": "Inspectez et organisez les couches d'annotation linguistique présentes dans les fichiers ELAN de ce projet.",
-    "unsectioned": "Sans section",
-    "fileCount": "{count} fichier(s) ELAN",
-    "tierCount": "{count} tier(s) racine",
-    "moveTo": "Déplacer vers",
-    "dragHandle": "Faire glisser vers une autre section",
-    "dragFile": "Faire glisser {name} vers une autre section",
-    "noTiers": "Aucun tier trouvé dans ce fichier.",
-    "loading": "Chargement de la hiérarchie...",
-    "loadFailed": "Impossible de charger la hiérarchie des tiers."
   },
   "pendingUploads": {
     "title": "Contributions en attente",
