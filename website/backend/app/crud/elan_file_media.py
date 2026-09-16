@@ -125,16 +125,6 @@ async def create_or_get_media_in_db(
     return await create_media_in_db(db, media_url, mime_type, relative_media_url)
 
 
-async def get_media_by_id(db: AsyncSession, media_id: int) -> ElanFileMedia | None:
-    """Retrieve a media file by its ID."""
-    return await DatabaseUtils.get_by_id(db, ElanFileMedia, "media_id", media_id)
-
-
-async def get_all_media(db: AsyncSession) -> list[ElanFileMedia]:
-    """Get all media files."""
-    return await DatabaseUtils.get_all(db, ElanFileMedia)
-
-
 async def delete_orphaned_media(db: AsyncSession) -> int:
     """Delete all media files that are not referenced in ELAN_FILE_TO_MEDIA.
 

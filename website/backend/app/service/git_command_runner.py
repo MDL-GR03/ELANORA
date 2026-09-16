@@ -114,38 +114,11 @@ class GitCommandRunner:
             raise RuntimeError("Git could not inspect the contribution")
         return MergeReadiness("needs_resolution", conflicted_files)
 
-    def stage_all_changes(self) -> None:
-        """Stage all changes to enable rename detection."""
-        self.run(["add", "-A"], check=True)
-
-    def get_status_with_renames(self) -> str:
-        """Get status after staging changes to detect renames."""
-        self.stage_all_changes()
-        return self.get_status()
-
-    def get_log(self, count: int = 5) -> str:
-        return self.run(
-            ["log", f"-{count}", "--pretty=format:%h|%an|%ad|%s", "--date=iso"]
-        ).stdout
-
     def get_conflicted_files(self) -> list[str]:
         result = self.run(["diff", "--name-only", "--diff-filter=U"])
         return [
             line.strip() for line in result.stdout.strip().split("\n") if line.strip()
         ]
-
-    def get_conflict_details(self, filename: str) -> dict[str, Any]:
-        file_path = self.project_path / filename
-        if file_path.exists():
-            with open(file_path, encoding="utf-8", errors="ignore") as f:
-                content = f.read()
-            conflict_markers = content.count("<<<<<<< HEAD")
-            return {
-                "conflict_markers_count": conflict_markers,
-                "file_size": len(content),
-                "has_binary_conflict": "<<<<<<< HEAD" not in content,
-            }
-        return {"error": "File not found"}
 
     def configure_user(self, instance_name: str):
         """Configure Git user using the instance name."""
@@ -241,10 +214,6 @@ class GitCommandRunner:
         self.run(["config", "user.email", "system@elanora.local"], check=True)
         self._update_backup()
 
-    def add_file(self, filepath: str):
-        self.run(["add", filepath], check=True)
-        self._update_backup()
-
     def merge(self, branch_name: str, message: str, no_ff: bool = True):
         args = ["merge", branch_name]
         if no_ff:
@@ -252,11 +221,6 @@ class GitCommandRunner:
         args += ["-m", message]
         self.run(args, check=True)
         self._update_backup()
-
-    def diff_stat(self, branch_name: str) -> str:
-        return self.run(
-            ["diff", f"{self.canonical_branch()}...{branch_name}", "--stat"]
-        ).stdout
 
     def delete_branch_localy(self, branch_name: str):
         self.run(["branch", "-D", branch_name], check=False)
@@ -346,34 +310,6 @@ class GitCommandRunner:
             "resolution_strategy": resolution_strategy,
             "status": "resolved",
         }
-
-    def cleanup_on_error(self, branch_name: str | None = None):
-        """Cleanup on error and return to the repository's accepted branch."""
-        try:
-            self.run(["checkout", self.canonical_branch()], check=False)
-            if branch_name:
-                self.run(["branch", "-D", branch_name], check=False)
-            git_backup.update_backup(self.project_path.name, self.project_path.parent)
-        except Exception as error:
-            logger.error(
-                "Git cleanup failed; error_type=%s", safe_exception_type(error)
-            )
-
-    def detect_merge_conflicts(self) -> list[dict[str, str]]:
-        result = self.run(["diff", "--name-only", "--diff-filter=U"])
-        conflicts = []
-        if result.stdout:
-            for filename in result.stdout.strip().split("\n"):
-                if filename.strip():
-                    conflict_details = self.get_conflict_details(filename.strip())
-                    conflicts.append(
-                        {
-                            "filename": filename.strip(),
-                            "type": "content_conflict",
-                            "details": conflict_details,
-                        }
-                    )
-        return conflicts
 
     def get_current_branch(self) -> str:
         """Get the current branch name."""

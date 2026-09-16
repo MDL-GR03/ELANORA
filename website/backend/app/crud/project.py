@@ -40,13 +40,6 @@ async def create_project_db(
     return project
 
 
-async def get_project_name_by_id(db: AsyncSession, project_id: int) -> str | None:
-    project = await DatabaseUtils.get_by_id(db, Project, "project_id", project_id)
-    if project:
-        return project.project_name
-    return None
-
-
 async def get_project_by_name(db: AsyncSession, project_name: str) -> Project | None:
     filters = {"project_name": project_name, "deleted_at": None}
     return await DatabaseUtils.get_one_by_filter(db, Project, filters)

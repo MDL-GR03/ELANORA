@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 from typing import Any
 
@@ -497,44 +496,6 @@ class GitService:
 
         except Exception as e:
             raise RuntimeError("Failed to get branches") from e
-
-    def _create_readme(self, project_name: str) -> str:
-        """Generate README content for a new project."""
-        return f"# {project_name}\n\nThis is the ELAN project '{project_name}'.\n"
-
-    def _parse_git_status(self, status_output: str) -> list[dict[str, str]]:
-        """Parse the output of 'git status --porcelain'."""
-        files = []
-        pattern = re.compile(r"^([ MADRCU\?]{1,2})\s+(.*)$")
-        for line in status_output.strip().splitlines():
-            if not line:
-                continue
-            match = pattern.match(line)
-            if match:
-                status = match.group(1).strip()
-                filename = match.group(2).strip()
-                files.append({"filename": filename, "status": status})
-        return files
-
-    def _get_recent_commits(
-        self, project_path: Path, count: int = 5
-    ) -> list[dict[str, str]]:
-        """Get recent commits for the project."""
-        runner = GitCommandRunner(project_path)
-        result = runner.get_log(count)
-        commits = []
-        for line in result.strip().splitlines():
-            parts = line.split("|", 3)
-            if len(parts) == EXPECTED_LOG_FIELDS:
-                commits.append(
-                    {
-                        "hash": parts[0],
-                        "author": parts[1],
-                        "date": parts[2],
-                        "message": parts[3],
-                    }
-                )
-        return commits
 
     async def list_project_files(
         self, project_name: str, db: AsyncSession, include_media: bool = False

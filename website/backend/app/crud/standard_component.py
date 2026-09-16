@@ -25,17 +25,6 @@ async def link_standard_to_component(
     return link
 
 
-async def unlink_standard_from_component(
-    db: AsyncSession, naming_standard_id: int, component_template_id: int
-) -> int:
-    return await DatabaseUtils.delete_by_filter(
-        db,
-        StandardComponent,
-        naming_standard_id=naming_standard_id,
-        component_template_id=component_template_id,
-    )
-
-
 async def get_components_by_standard(
     db: AsyncSession, naming_standard_id: int
 ) -> list[StandardComponent]:
@@ -49,12 +38,4 @@ async def get_components_by_standard(
                 ComponentTemplate.accepted_values
             )
         ],
-    )
-
-
-async def get_by_standard(
-    db: AsyncSession, standard_id: int
-) -> list[StandardComponent]:
-    return await DatabaseUtils.get_by_filter(
-        db, StandardComponent, {"naming_standard_id": standard_id}
     )

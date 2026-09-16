@@ -108,18 +108,6 @@ class ElanFileProcessor:
         return info
 
     @staticmethod
-    def extract_time_slots(root: etree._Element) -> dict[str, int]:
-        """Extract time slots from ELAN XML root."""
-        time_slots = {}
-        for time_slot in root.findall(".//TIME_SLOT", namespaces=None):
-            slot_id = time_slot.get("TIME_SLOT_ID", None)
-            time_value = int(time_slot.get("TIME_VALUE", 0))
-            if slot_id:
-                time_slots[slot_id] = time_value
-        logger.debug(f"Extracted {len(time_slots)} time slots")
-        return time_slots
-
-    @staticmethod
     def safe_get_text(element: etree._Element | None) -> str | None:
         """Safely get text from XML element."""
         if element is None or not element.text:
@@ -136,58 +124,9 @@ class ElanFileProcessor:
         logger.debug(f"convert_time_to_decimal: {time_value}ms -> {decimal_time}s")
         return decimal_time
 
-    @staticmethod
-    def find_files_in_directory(
-        directory_path: str, pattern: str = "*.eaf"
-    ) -> list[Path]:
-        """Find all ELAN files in flat directory (no recursion)."""
-        directory = Path(directory_path)
-        logger.info("Searching a project directory for ELAN files")
-        if not directory.exists():
-            logger.error("ELAN directory scan failed: directory not found")
-            raise FileNotFoundError(f"Directory not found: {directory_path}")
-        files = list(directory.glob(pattern))
-        logger.info(f"Found {len(files)} ELAN files in directory")
-        return files
-
-    @staticmethod
-    def extract_media_descriptors(root: etree._Element) -> list[dict]:
-        """Extract all MEDIA_DESCRIPTOR elements from ELAN XML root."""
-        media_descriptors = []
-        for media_elem in root.findall(".//MEDIA_DESCRIPTOR", namespaces=None):
-            media_info = {
-                "media_url": media_elem.get("MEDIA_URL"),
-                "mime_type": media_elem.get("MIME_TYPE"),
-                "relative_media_url": media_elem.get("RELATIVE_MEDIA_URL"),
-            }
-            media_descriptors.append(media_info)
-        logger.info(f"Extracted {len(media_descriptors)} media descriptors")
-        return media_descriptors
-
 
 class XmlAttributeExtractor:
     """Utilities for extracting attributes from XML elements."""
-
-    @staticmethod
-    def get_tier_attributes(tier_element: etree._Element) -> dict:
-        """Extract tier attributes from XML element."""
-        attrs = {
-            "tier_name": tier_element.get("TIER_ID", None),
-            "parent_tier_name": tier_element.get("PARENT_REF", None),
-        }
-        logger.debug("Extracted tier relationship attributes")
-        return attrs
-
-    @staticmethod
-    def get_annotation_attributes(annotation: etree._Element) -> dict:
-        """Extract annotation attributes from XML element."""
-        attrs = {
-            "annotation_id": annotation.get("ANNOTATION_ID", None),
-            "time_slot_ref1": annotation.get("TIME_SLOT_REF1", None),
-            "time_slot_ref2": annotation.get("TIME_SLOT_REF2", None),
-        }
-        logger.debug("Extracted annotation timing references")
-        return attrs
 
     @staticmethod
     def get_alignable_annotation_attributes(
@@ -230,14 +169,3 @@ class XmlAttributeExtractor:
         }
         logger.debug("Extracted reference annotation")
         return attrs
-
-
-def list_untracked_contents(folder_path: Path, parent_path: Path) -> list:
-    items = []
-    for path in folder_path.rglob("*"):
-        rel_path = str(path.relative_to(parent_path))
-        if path.is_dir():
-            items.append({"filename": rel_path + "/", "status": "untracked"})
-        else:
-            items.append({"filename": rel_path, "status": "untracked"})
-    return items

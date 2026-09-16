@@ -1,18 +1,14 @@
 """ELAN Service - Simplified using utilities."""
 
 import time
-from decimal import Decimal
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
-from app.core.error_diagnostics import safe_exception_type, safe_failure_summary
+from app.core.error_diagnostics import safe_exception_type
 from app.crud.annotation import (
     bulk_create_annotations,
-    delete_annotations_by_tier,
-    get_annotations_by_tier,
-    get_annotations_by_time_range,
 )
 from app.crud.annotation_value import bulk_get_or_create_annotation_values
 from app.crud.association import (
@@ -21,9 +17,7 @@ from app.crud.association import (
 from app.crud.eaf_revision import append_eaf_revision
 from app.crud.elan_file import (
     delete_elan_file_full,
-    get_all_elan_files,
     get_elan_file_by_filename_and_project,
-    get_elan_files_by_user,
     store_elan_file_data_in_db,
     sync_elan_file_to_tiers,
 )
@@ -31,15 +25,12 @@ from app.crud.project import get_project_by_name
 from app.crud.tier import (
     create_tier_in_db,
     delete_tiers_for_elan_file,
-    get_all_tier_names_with_annotations,
     get_tier_by_name,
     get_tier_statistics,
-    get_tiers_with_annotations,
     update_parent_tier,
 )
 from app.crud.tier_group import delete_tier_groups_for_project_and_elan
 from app.elan import PersistedEafFile, document_to_persistence, parse_eaf_path
-from app.model.tier import Tier
 from app.utils.file_processing import ElanFileProcessor
 
 # Get logger for this module
@@ -64,13 +55,6 @@ class ElanService:
         total_time = time.perf_counter() - t0
         logger.info(f"Total parse_elan_file time: {total_time:.3f}s")
         return file_info
-
-    def get_files_in_directory(self, directory_path: str) -> list[Path]:
-        """Get all ELAN files in a flat directory using utility."""
-        logger.info("Scanning a project directory for ELAN files")
-        files = ElanFileProcessor.find_files_in_directory(directory_path, "*.eaf")
-        logger.info(f"Found {len(files)} ELAN files in directory")
-        return files
 
     # ==================== STORAGE METHODS ====================
 
@@ -316,140 +300,7 @@ class ElanService:
         logger.info("Successfully updated one ELAN file")
         return {"status": "updated", "filename": filename, "elan_id": elan_id}
 
-    async def process_directory(
-        self, directory_path: str, user_id: int, project_name: str
-    ) -> dict[str, dict]:
-        """Process all ELAN files in a flat directory for the given project."""
-        logger.info("Starting ELAN project directory processing")
-        eaf_files = self.get_files_in_directory(directory_path)
-
-        logger.info("Found %d ELAN files in the project directory", len(eaf_files))
-
-        results = {}
-        processed_count = 0
-        skipped_count = 0
-        failed_count = 0
-
-        for eaf_file in eaf_files:
-            try:
-                logger.debug("Processing an ELAN file")
-                result = await self.process_single_file(
-                    str(eaf_file), user_id, project_name
-                )
-                results[eaf_file.name] = result
-
-                if result["status"] == "processed":
-                    processed_count += 1
-                    logger.debug("Successfully processed an ELAN file")
-                elif result["status"] == "skipped":
-                    skipped_count += 1
-                    logger.debug("Skipped an existing ELAN file")
-
-            except Exception as e:
-                logger.error(
-                    "ELAN file processing failed; error_type=%s",
-                    safe_exception_type(e),
-                )
-                results[eaf_file.name] = {
-                    "status": "failed",
-                    "filename": eaf_file.name,
-                    "error": safe_failure_summary(
-                        e, operation="ELAN file processing failed"
-                    ),
-                }
-                failed_count += 1
-
-        logger.info(
-            "Directory processing completed. Processed: %d, Skipped: %d, Failed: %d",
-            processed_count,
-            skipped_count,
-            failed_count,
-        )
-
-        if skipped_count > 0:
-            skipped_files = [
-                result["filename"]
-                for result in results.values()
-                if result["status"] == "skipped"
-            ]
-            logger.info(
-                "Skipped %d files already represented in the database",
-                len(skipped_files),
-            )
-
-        return results
-
     # ==================== QUERY METHODS ====================
-
-    async def get_all_files_with_tiers(self) -> dict[str, list[str]]:
-        """Get all files with their associated tier names."""
-        logger.debug("Retrieving all files with their tier names")
-
-        tier_names = await get_all_tier_names_with_annotations(self.db)
-        files = await get_all_elan_files(self.db)
-
-        logger.debug(
-            f"Found {len(files)} files with {len(tier_names)} unique tier types"
-        )
-
-        return {f.filename: tier_names for f in files}
-
-    async def get_file_structure(self, filename: str, project_id: int) -> dict | None:
-        """Get complete structure for a specific file."""
-        logger.debug("Retrieving an ELAN file structure")
-
-        # Get file using CRUD
-        elan_file_obj = await get_elan_file_by_filename_and_project(
-            self.db, filename, project_id
-        )
-
-        if not elan_file_obj:
-            logger.warning("Requested ELAN file was not found in the database")
-            return None
-
-        # Get all tiers with annotations
-        tiers_with_annotations = await self._get_tiers_with_annotations()
-
-        file_structure = {
-            "elan_id": elan_file_obj.elan_id,
-            "filename": elan_file_obj.filename,
-            "file_path": elan_file_obj.file_path,
-            "file_size": elan_file_obj.file_size,
-            "tiers": [],
-        }
-
-        total_annotations = 0
-        for tier_obj in tiers_with_annotations:
-            # Get annotations using CRUD
-            annotations_list = await get_annotations_by_tier(self.db, tier_obj.tier_id)
-            tier_data = {
-                "tier_id": tier_obj.tier_id,
-                "tier_name": tier_obj.tier_name,
-                "parent_tier_id": tier_obj.parent_tier_id,
-                "annotation_count": len(annotations_list),
-                "annotations": [
-                    {
-                        "annotation_id": ann.annotation_id,
-                        "annotation_value": ann.annotation_value,
-                        "start_time": float(ann.start_time),
-                        "end_time": float(ann.end_time),
-                    }
-                    for ann in annotations_list
-                ],
-            }
-            file_structure["tiers"].append(tier_data)
-            total_annotations += len(annotations_list)
-
-        logger.debug(
-            f"Retrieved structure for {filename}: {len(file_structure['tiers'])} tiers, {total_annotations} annotations"
-        )
-        return file_structure
-
-    async def _get_tiers_with_annotations(self) -> list[Tier]:
-        """Get all tiers that have at least one annotation."""
-        tiers = await get_tiers_with_annotations(self.db)
-        logger.debug(f"Found {len(tiers)} tiers with annotations")
-        return tiers
 
     async def get_tier_statistics(self) -> dict:
         """Get statistics about tiers across all files."""
@@ -467,60 +318,6 @@ class ElanService:
             f"Generated statistics for {len(stats['tier_statistics'])} tier types"
         )
         return stats
-
-    async def get_user_files(self, user_id: int) -> list[dict]:
-        """Get all ELAN files for a specific user."""
-        logger.debug("Retrieving ELAN files for a user")
-
-        # Use CRUD function
-        files = await get_elan_files_by_user(self.db, user_id)
-
-        logger.debug("Found %s ELAN files for a user", len(files))
-
-        return [
-            {
-                "elan_id": f.elan_id,
-                "filename": f.filename,
-                "file_path": f.file_path,
-                "file_size": f.file_size,
-            }
-            for f in files
-        ]
-
-    async def get_annotations_in_time_range(
-        self, tier_id: int, start_time: Decimal, end_time: Decimal
-    ) -> list[dict]:
-        """Get annotations within a specific time range for a tier."""
-        logger.debug(
-            f"Retrieving annotations for tier {tier_id} in time range: {start_time}-{end_time}"
-        )
-
-        # Use CRUD function
-        annotations_list = await get_annotations_by_time_range(
-            self.db, tier_id, start_time, end_time
-        )
-
-        logger.debug(f"Found {len(annotations_list)} annotations in time range")
-
-        return [
-            {
-                "annotation_id": ann.annotation_id,
-                "annotation_value": ann.annotation_value,
-                "start_time": float(ann.start_time),
-                "end_time": float(ann.end_time),
-            }
-            for ann in annotations_list
-        ]
-
-    async def delete_tier_annotations(self, tier_id: int) -> int:
-        """Delete all annotations for a specific tier."""
-        logger.info("Deleting all annotations for a tier")
-
-        # Use CRUD function
-        deleted_count = await delete_annotations_by_tier(self.db, tier_id)
-
-        logger.info("Deleted %s annotations for a tier", deleted_count)
-        return deleted_count
 
     async def delete_elan_files_from_db(
         self, filename: str, project_name: str, *, commit_changes: bool = True

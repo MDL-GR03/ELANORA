@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.centralized_logging import get_logger
-from app.model.elan_file import ElanFile
 from app.model.file_content import FileContent
 from app.utils.database import DatabaseUtils
 from app.utils.file_processing import make_path_absolute_from_projects
@@ -35,13 +34,6 @@ async def get_file_content_by_hash(
     stmt = select(FileContent).where(FileContent.content_hash == content_hash)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
-
-
-async def get_file_content_by_id(
-    db: AsyncSession, content_id: int
-) -> FileContent | None:
-    """Get file content by ID."""
-    return await DatabaseUtils.get_by_id(db, FileContent, "content_id", content_id)
 
 
 async def create_file_content(
@@ -99,45 +91,3 @@ async def get_or_create_file_content(
 
     # Create new content record
     return await create_file_content(db, filename, file_size, content_hash, user_id)
-
-
-async def delete_file_content(db: AsyncSession, content_id: int) -> bool:
-    """Delete file content by ID."""
-    deleted = await DatabaseUtils.delete_by_id(
-        db, FileContent, "content_id", content_id
-    )
-    if deleted:
-        logger.info("Deleted one file-content record")
-    return deleted
-
-
-async def get_file_contents_by_user(
-    db: AsyncSession, user_id: int
-) -> list[FileContent]:
-    """Get all file contents created by a specific user."""
-    filters = {"user_id": user_id}
-    return await DatabaseUtils.get_by_filter(db, FileContent, filters)
-
-
-async def get_orphaned_file_contents(db: AsyncSession) -> list[FileContent]:
-    """Get file contents that are not referenced by any ELAN files."""
-    stmt = select(FileContent).where(
-        ~FileContent.content_id.in_(select(ElanFile.content_id).distinct())
-    )
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
-
-
-async def cleanup_orphaned_file_contents(db: AsyncSession) -> int:
-    """Delete file contents that are not referenced by any ELAN files."""
-    orphaned_contents = await get_orphaned_file_contents(db)
-    deleted_count = 0
-
-    for content in orphaned_contents:
-        if await delete_file_content(db, content.content_id):
-            deleted_count += 1
-
-    if deleted_count > 0:
-        logger.info(f"Cleaned up {deleted_count} orphaned file contents")
-
-    return deleted_count

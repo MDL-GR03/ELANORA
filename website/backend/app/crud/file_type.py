@@ -11,10 +11,6 @@ async def get_file_type_by_id(db: AsyncSession, file_type_id: int) -> FileType |
     return await DatabaseUtils.get_by_id(db, FileType, "id", file_type_id)
 
 
-async def get_file_type_by_name(db: AsyncSession, name: str) -> FileType | None:
-    return await DatabaseUtils.get_one_by_filter(db, FileType, {"name": name})
-
-
 async def get_file_type_by_extension(
     db: AsyncSession, extension: str
 ) -> FileType | None:

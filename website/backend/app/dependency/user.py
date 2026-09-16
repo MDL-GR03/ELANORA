@@ -137,45 +137,6 @@ class AdminGuard(BaseGuard):
         return user
 
 
-class PublicOrAdminGuard(BaseGuard):
-    """Dependency that allows both public and admin users (minimum public role)."""
-
-    async def __call__(self, request: Request, db: AsyncSession = get_db_dep) -> User:
-        """Authenticate user for public or admin access."""
-        user = await self.authenticate_user(request, db)
-        self.check_role(user, ROLE_PUBLIC, min_role=True)
-        return user
-
-
-# Utility functions for role checking
-def is_admin(user: User) -> bool:
-    """Check if user has admin role."""
-    return user.role == UserRole.ADMIN
-
-
-def is_public(user: User) -> bool:
-    """Check if user has public role."""
-    return user.role == UserRole.PUBLIC
-
-
-def has_role(user: User, role: UserRole) -> bool:
-    """Check if user has specific role."""
-    return user.role == role
-
-
-def has_minimum_role(user: User, minimum_role: UserRole) -> bool:
-    """Check if user has at least the minimum role level."""
-    role_hierarchy = {
-        UserRole.PUBLIC: 1,
-        UserRole.ADMIN: 2,
-    }
-
-    user_level = role_hierarchy.get(user.role, 0)
-    min_level = role_hierarchy.get(minimum_role, 0)
-
-    return user_level >= min_level
-
-
 # Instantiate the guards for easy reuse
 user_guard = UserGuard()
 admin_guard = AdminGuard()

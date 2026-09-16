@@ -29,17 +29,6 @@ async def link_component_to_accepted_value(
     return link
 
 
-async def unlink_component_from_accepted_value(
-    db: AsyncSession, component_template_id: int, accepted_value_id: int
-) -> int:
-    return await DatabaseUtils.delete_by_filter(
-        db,
-        ComponentAcceptedValue,
-        component_template_id=component_template_id,
-        accepted_value_id=accepted_value_id,
-    )
-
-
 async def delete_for_orphaned_templates(db: AsyncSession) -> int:
     try:
         logger.info(

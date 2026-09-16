@@ -7,10 +7,6 @@ from app.model.instance import Instance
 from app.utils.database import DatabaseUtils
 
 
-async def get_instance_count(db: AsyncSession) -> int:
-    return await DatabaseUtils.count(db, Instance, None)
-
-
 async def create_instance(db: AsyncSession, data: dict[str, Any]) -> Instance:
     instance = Instance(**data)
     return await DatabaseUtils.create(db, instance)
@@ -19,11 +15,6 @@ async def create_instance(db: AsyncSession, data: dict[str, Any]) -> Instance:
 async def get_installation_profile(db: AsyncSession) -> Instance | None:
     """Return the only institution profile configured for this installation."""
     return await db.scalar(select(Instance))
-
-
-async def get_first_instance(db: AsyncSession) -> Instance | None:
-    """Compatibility alias while callers adopt installation terminology."""
-    return await get_installation_profile(db)
 
 
 async def update_instance(

@@ -76,18 +76,6 @@ class AddressService:
             raise
 
     @classmethod
-    async def get_address_by_id(
-        cls,
-        db: AsyncSession,
-        address_id: int,
-    ) -> Address | None:
-        """Get an address by its ID."""
-        result = await db.execute(
-            select(Address).where(Address.address_id == address_id)
-        )
-        return result.scalar_one_or_none()
-
-    @classmethod
     async def update_address(
         cls,
         db: AsyncSession,

@@ -113,21 +113,6 @@ class FileTypeService:
         return await get_project_file_types(db, project_id)
 
     @staticmethod
-    async def add_existing_file_type_to_project(
-        db: AsyncSession, file_type_id: int, project_id: int, name: str
-    ) -> FileType:
-        file_type = await get_file_type_by_id(db, file_type_id)
-        if not file_type:
-            raise HTTPException(status_code=404, detail="File type not found")
-        try:
-            await add_project_file_type(db, project_id, name, file_type_id)
-            await db.commit()
-            return file_type
-        except Exception:
-            await db.rollback()
-            raise
-
-    @staticmethod
     async def import_project_file_type(
         db: AsyncSession, target_project_id: int, name: str, file_type_id: int
     ) -> ProjectFileType:

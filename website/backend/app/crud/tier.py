@@ -42,36 +42,6 @@ async def delete_tiers_for_elan_file(db: AsyncSession, elan_id: int) -> None:
         raise
 
 
-async def get_tier_by_id(db: AsyncSession, tier_id: int) -> Tier | None:
-    """Retrieve a tier by ID."""
-    return await DatabaseUtils.get_by_id(db, Tier, "tier_id", tier_id)
-
-
-async def get_all_tiers(db: AsyncSession) -> list[Tier]:
-    """Get all tiers."""
-    return await DatabaseUtils.get_all(db, Tier)
-
-
-async def get_child_tiers(db: AsyncSession, parent_tier_id: int) -> list[Tier]:
-    """Get all child tiers of a parent tier."""
-    filters = {"parent_tier_id": parent_tier_id}
-    return await DatabaseUtils.get_by_filter(db, Tier, filters)
-
-
-async def get_root_tiers(db: AsyncSession) -> list[Tier]:
-    """Get all root tiers (no parent)."""
-    filters = {"parent_tier_id": None}
-    return await DatabaseUtils.get_by_filter(db, Tier, filters)
-
-
-async def get_tier_id_by_name(
-    db: AsyncSession, tier_name: str, elan_id: int
-) -> int | None:
-    filters = {"tier_name": tier_name, "elan_id": elan_id}
-    tier = await DatabaseUtils.get_one_by_filter(db, Tier, filters)
-    return tier.tier_id if tier else None
-
-
 async def get_tier_by_name(
     db: AsyncSession, tier_name: str, elan_id: int
 ) -> Tier | None:
@@ -106,11 +76,6 @@ async def get_tiers_by_elan_id(db: AsyncSession, elan_id: int) -> list[Tier]:
     return list(result.scalars().all())
 
 
-async def check_tier_exists(db: AsyncSession, tier_id: int) -> bool:
-    """Check if a tier exists by tier_id."""
-    return await DatabaseUtils.exists(db, Tier, "tier_id", tier_id)
-
-
 async def update_parent_tier(
     db: AsyncSession, tier_id: int, parent_tier_id: int
 ) -> None:
@@ -119,18 +84,6 @@ async def update_parent_tier(
     update_fields = {"parent_tier_id": parent_tier_id}
     await DatabaseUtils.update_by_filter(db, Tier, filters, update_fields)
     await db.flush()
-
-
-async def get_all_tier_names_with_annotations(db: AsyncSession) -> list[str]:
-    """Get all unique tier names that have annotations."""
-    result = await db.execute(select(Tier.tier_name).join(Annotation).distinct())
-    return [row[0] for row in result]
-
-
-async def get_tiers_with_annotations(db: AsyncSession) -> list[Tier]:
-    """Get all tiers that have at least one annotation."""
-    result = await db.execute(select(Tier).join(Annotation).distinct())
-    return list(result.scalars().all())
 
 
 async def get_tier_statistics(db: AsyncSession) -> list[tuple[str, int]]:
@@ -145,10 +98,3 @@ async def get_tier_statistics(db: AsyncSession) -> list[tuple[str, int]]:
         .order_by(func.count(Annotation.annotation_id).desc())
     )
     return [tuple(row) for row in result]
-
-
-async def get_tiers_by_ids(db: AsyncSession, tier_ids: list[int]) -> list[Tier]:
-    """Get all tiers for a list of tier_ids."""
-    if not tier_ids:
-        return []
-    return await DatabaseUtils.get_by_filter(db, Tier, {"tier_id": tier_ids})

@@ -185,26 +185,6 @@ class ProjectNamingStandardService:
             raise
 
     @staticmethod
-    async def delete_all_standards_by_project(
-        db: AsyncSession, project_id: int
-    ) -> None:
-        try:
-            standard_ids = await project_naming_standard.get_standards_ids_by_project(
-                db, project_id
-            )
-            for standard_id in standard_ids:
-                await ProjectNamingStandardService._delete_standard_and_cleanup(
-                    db, standard_id
-                )
-            logger.info("Bulk delete and cleanup committed successfully.")
-        except Exception as e:
-            logger.error(
-                "Failed to delete project naming standards; error_type=%s",
-                safe_exception_type(e),
-            )
-            raise
-
-    @staticmethod
     async def get_unique_component_names_by_project(
         db: AsyncSession, project_id: int
     ) -> list[str]:

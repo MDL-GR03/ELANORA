@@ -44,25 +44,6 @@ async def add_elan_file_to_media(db: AsyncSession, elan_id: int, media_id: int) 
         await db.flush()
 
 
-async def remove_elan_file_from_media(
-    db: AsyncSession, elan_id: int, media_id: int
-) -> None:
-    await DatabaseUtils.delete_by_filter(
-        db, ElanFileToMedia, elan_id=elan_id, media_id=media_id
-    )
-
-
-async def update_elan_file_media(
-    db: AsyncSession, elan_id: int, old_media_id: int, new_media_id: int
-) -> None:
-    await DatabaseUtils.update_by_filter(
-        db,
-        ElanFileToMedia,
-        {"elan_id": elan_id, "media_id": old_media_id},
-        {"media_id": new_media_id},
-    )
-
-
 # --- ElanFileToTier ---
 
 
@@ -72,25 +53,6 @@ async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int) ->
     if not exists:
         assoc = ElanFileToTier(elan_id=elan_id, tier_id=tier_id)
         await DatabaseUtils.create(db, assoc)
-
-
-async def remove_elan_file_from_tier(
-    db: AsyncSession, elan_id: int, tier_id: int
-) -> None:
-    await DatabaseUtils.delete_by_filter(
-        db, ElanFileToTier, elan_id=elan_id, tier_id=tier_id
-    )
-
-
-async def update_elan_file_tier(
-    db: AsyncSession, elan_id: int, old_tier_id: int, new_tier_id: int
-) -> None:
-    await DatabaseUtils.update_by_filter(
-        db,
-        ElanFileToTier,
-        {"elan_id": elan_id, "tier_id": old_tier_id},
-        {"tier_id": new_tier_id},
-    )
 
 
 # --- ProjectAnnotStandard ---
@@ -106,31 +68,6 @@ async def add_project_annot_standard(
         await DatabaseUtils.create(db, assoc)
 
 
-async def remove_project_annot_standard(
-    db: AsyncSession, project_id: int, standard_id: str
-) -> None:
-    await DatabaseUtils.delete_by_filter(
-        db,
-        ProjectAnnotStandard,
-        project_id=project_id,
-        standard_id=standard_id,
-    )
-
-
-async def update_project_annot_standard(
-    db: AsyncSession,
-    project_id: int,
-    old_standard_id: str,
-    new_standard_id: str,
-) -> None:
-    await DatabaseUtils.update_by_filter(
-        db,
-        ProjectAnnotStandard,
-        {"project_id": project_id, "standard_id": old_standard_id},
-        {"standard_id": new_standard_id},
-    )
-
-
 # --- UserToProject ---
 
 
@@ -140,17 +77,6 @@ async def add_user_to_project(db: AsyncSession, user_id: int, project_id: int) -
     if not exists:
         assoc = UserToProject(user_id=user_id, project_id=project_id)
         await DatabaseUtils.create(db, assoc)
-
-
-async def update_user_project(
-    db: AsyncSession, user_id: int, old_project_id: int, new_project_id: int
-) -> None:
-    await DatabaseUtils.update_by_filter(
-        db,
-        UserToProject,
-        {"user_id": user_id, "project_id": old_project_id},
-        {"project_id": new_project_id},
-    )
 
 
 # --- ProjectFileType ---
@@ -316,14 +242,6 @@ async def get_elan_ids_for_project(db: AsyncSession, project_id: int) -> list[in
         db, ElanFile, {"project_id": project_id}
     )
     return [r.elan_id for r in records]
-
-
-async def get_tier_ids_for_elan_file(db: AsyncSession, elan_id: int) -> list[int]:
-    """Get all tier IDs associated with an ELAN file."""
-    records = await DatabaseUtils.get_by_filter(
-        db, ElanFileToTier, {"elan_id": elan_id}
-    )
-    return [r.tier_id for r in records]
 
 
 async def get_project_users(

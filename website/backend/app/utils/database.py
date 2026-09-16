@@ -283,35 +283,6 @@ class DatabaseUtils:
         return total
 
     @staticmethod
-    async def get_orphaned_by_association(
-        db: AsyncSession,
-        main_model: type[ModelType],
-        assoc_model: type[ModelType],
-        main_id_field: str,
-        assoc_main_id_field: str,
-        assoc_parent_field: str,
-        parent_id: int,
-    ) -> list[ModelType]:
-        """Fetch instances from main_model that are linked in assoc_model
-        only to the given parent_id (via assoc_parent_field), and to no other parent.
-        """
-        main_id_col = getattr(main_model, main_id_field)
-        assoc_main_id_col = getattr(assoc_model, assoc_main_id_field)
-        assoc_parent_col = getattr(assoc_model, assoc_parent_field)
-
-        stmt = (
-            select(main_model)
-            .join(assoc_model, assoc_main_id_col == main_id_col)
-            .group_by(main_id_col)
-            .having(
-                func.count(assoc_parent_col) == 1,
-                func.max(assoc_parent_col) == parent_id,
-            )
-        )
-        result = await db.execute(stmt)
-        return list(result.scalars().all())
-
-    @staticmethod
     async def get_fully_orphaned(
         db: AsyncSession,
         main_model: type[ModelType],

@@ -196,24 +196,6 @@ class NotificationService:
     # Helper methods for creating common notification types
 
     @staticmethod
-    async def create_project_invitation_notification(
-        db: AsyncSession,
-        user_id: int,
-        project_name: str,
-        inviter_name: str,
-        project_id: int,
-    ) -> NotificationResponse:
-        """Create a notification for project invitation."""
-        notification_data = NotificationCreateRequest(
-            user_id=user_id,
-            title="Nouvelle invitation au projet",
-            message=f"{inviter_name} vous a invité à rejoindre le projet '{project_name}'.",
-            action_url="/projects",
-        )
-
-        return await NotificationService.create_notification(db, notification_data)
-
-    @staticmethod
     async def create_project_role_change_notification(
         db: AsyncSession,
         user_id: int,
@@ -246,42 +228,6 @@ class NotificationService:
             title="Nouveau membre dans le projet",
             message=f"{new_member_name} a rejoint le projet '{project_name}'.",
             action_url=f"/projects/{project_id}/configuration",
-        )
-
-        return await NotificationService.create_notification(db, notification_data)
-
-    @staticmethod
-    async def create_comment_notification(
-        db: AsyncSession,
-        user_id: int,
-        commenter_name: str,
-        project_name: str,
-        project_id: int,
-    ) -> NotificationResponse:
-        """Create a notification for new comment."""
-        notification_data = NotificationCreateRequest(
-            user_id=user_id,
-            title="Nouveau commentaire",
-            message=f"{commenter_name} a ajouté un commentaire dans le projet '{project_name}'.",
-            action_url="/projects",
-        )
-
-        return await NotificationService.create_notification(db, notification_data)
-
-    @staticmethod
-    async def create_conflict_resolution_notification(
-        db: AsyncSession,
-        user_id: int,
-        resolver_name: str,
-        project_name: str,
-        project_id: int,
-    ) -> NotificationResponse:
-        """Create a notification for conflict resolution."""
-        notification_data = NotificationCreateRequest(
-            user_id=user_id,
-            title="Conflit résolu",
-            message=f"{resolver_name} a résolu un conflit dans le projet '{project_name}'.",
-            action_url="/conflicts",
         )
 
         return await NotificationService.create_notification(db, notification_data)

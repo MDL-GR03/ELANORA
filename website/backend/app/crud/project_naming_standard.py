@@ -19,17 +19,6 @@ async def get_standards_by_project(
     )
 
 
-async def get_standards_ids_by_project(db: AsyncSession, project_id: int) -> list[int]:
-    standards = await get_standards_by_project(db, project_id)
-    return [standard.id for standard in standards]
-
-
-async def get_standard_by_id(
-    db: AsyncSession, standard_id: int
-) -> ProjectNamingStandard | None:
-    return await DatabaseUtils.get_by_id(db, ProjectNamingStandard, "id", standard_id)
-
-
 async def create_standard(
     db: AsyncSession,
     project_id: int,
@@ -72,17 +61,6 @@ async def get_projects_with_standards(db: AsyncSession) -> list[Project]:
             related_field="project_id",
             model_field="project_id",
         )
-    except Exception as e:
-        await db.rollback()
-        raise e
-
-
-async def get_standards_by_ids(
-    db: AsyncSession, ids: list[int]
-) -> list[ProjectNamingStandard]:
-    """Returns all ProjectNamingStandard objects matching the given ids."""
-    try:
-        return await DatabaseUtils.get_by_filter(db, ProjectNamingStandard, {"id": ids})
     except Exception as e:
         await db.rollback()
         raise e

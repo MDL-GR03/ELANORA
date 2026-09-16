@@ -2,7 +2,6 @@
 
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import cast
 
 from passlib.context import CryptContext
 from sqlalchemy import select
@@ -137,18 +136,6 @@ async def update_invitation_status(
     return True
 
 
-async def check_invitation_exists_and_valid(
-    db: AsyncSession, invitation_id: int
-) -> bool:
-    """Check if invitation exists and is still valid."""
-    invitation = await get_invitation_by_id(db, invitation_id)
-    return (
-        invitation is not None
-        and invitation.status == InvitationStatus.PENDING
-        and invitation.expires_at > datetime.now(UTC)
-    )
-
-
 async def get_invitations_by_sender(
     db: AsyncSession, sender_id: int
 ) -> list[Invitation]:
@@ -165,36 +152,6 @@ async def get_invitations_by_project(
         select(Invitation).filter(Invitation.project_id == project_id)
     )
     return list(result.scalars().all())
-
-
-async def expire_old_invitations(db: AsyncSession) -> int:
-    """Mark expired invitations as expired and return count."""
-    result = await db.execute(
-        select(Invitation)
-        .filter(Invitation.status == InvitationStatus.PENDING)
-        .filter(Invitation.expires_at <= datetime.now(UTC))
-    )
-    expired_invitations = list(result.scalars().all())
-    if not expired_invitations:
-        return 0
-
-    updates = [
-        {"invitation_id": inv.invitation_id, "status": InvitationStatus.EXPIRED}
-        for inv in expired_invitations
-    ]
-    await DatabaseUtils.bulk_update(db, Invitation, updates, pk_field="invitation_id")
-    return len(updates)
-
-
-async def verify_invitation_code(
-    db: AsyncSession, invitation_id: int, raw_code: str
-) -> bool:
-    """Verify if the provided code matches the invitation's hashed code."""
-    invitation = await get_invitation_by_id(db, invitation_id)
-    if not invitation:
-        return False
-
-    return cast("bool", pwd_context.verify(raw_code, invitation.hashed_code))
 
 
 async def get_invitation_by_code(db: AsyncSession, raw_code: str) -> Invitation | None:

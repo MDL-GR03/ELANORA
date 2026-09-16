@@ -8,29 +8,6 @@ from app.utils.database import DatabaseUtils
 logger = get_logger()
 
 
-async def get_or_create_annotation_value(
-    db: AsyncSession, value: str
-) -> AnnotationValue:
-    """Get the annotation value object, or create it if it doesn't exist."""
-    filters = {"annotation_value": value}
-    annotation_value = await DatabaseUtils.get_one_by_filter(
-        db, AnnotationValue, filters
-    )
-    if annotation_value:
-        return annotation_value
-    annotation_value = AnnotationValue(annotation_value=value)
-    await DatabaseUtils.create(db, annotation_value)
-    return annotation_value
-
-
-async def get_annotation_value_by_id(db: AsyncSession, value_id: int) -> str | None:
-    """Get the annotation value string by its ID."""
-    annotation_value = await DatabaseUtils.get_by_id(
-        db, AnnotationValue, "value_id", value_id
-    )
-    return annotation_value.annotation_value if annotation_value else None
-
-
 async def bulk_get_or_create_annotation_values(
     db: AsyncSession, tiers_data: list[PersistedTier]
 ) -> dict[str, int]:

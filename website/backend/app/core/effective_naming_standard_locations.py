@@ -23,10 +23,3 @@ def get_location_id_by_name(name: str) -> int | None:
         if loc["label"] == name:
             return loc["id"]
     return None
-
-
-def get_location_name_by_id(location_id: int) -> str | None:
-    for loc in EFFECTIVE_NAMING_STANDARD_LOCATIONS:
-        if loc["id"] == location_id:
-            return loc["label"]
-    return None

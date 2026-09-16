@@ -12,14 +12,6 @@ async def create_tier_section(
     return await DatabaseUtils.create(db, section)
 
 
-async def get_tier_section_by_id(
-    db: AsyncSession, tier_section_id: int
-) -> TierSection | None:
-    return await DatabaseUtils.get_by_id(
-        db, TierSection, "tier_section_id", tier_section_id
-    )
-
-
 async def get_tier_sections_by_project(
     db: AsyncSession, project_id: int
 ) -> list[TierSection]:

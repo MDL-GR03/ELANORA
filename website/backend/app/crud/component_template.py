@@ -29,14 +29,6 @@ async def get_or_create_component_template(
     return template
 
 
-async def get_component_templates_by_file_type(
-    db: AsyncSession, file_type_id: int
-) -> list[ComponentTemplate]:
-    return await DatabaseUtils.get_by_filter(
-        db, ComponentTemplate, {"file_type_id": file_type_id}
-    )
-
-
 async def get_unique_component_names_by_project(
     db: AsyncSession, project_id: int
 ) -> list[str]:

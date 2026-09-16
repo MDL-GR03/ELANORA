@@ -85,13 +85,6 @@ async def update_user_profile(
         return False
 
 
-async def validate_user_exists_and_active(db: AsyncSession, user_id: int) -> bool:
-    """Validate that a user exists and has an active account."""
-    filters = {"user_id": user_id, "is_active": True}
-    user = await DatabaseUtils.get_one_by_filter(db, User, filters)
-    return user is not None
-
-
 async def get_admin_emails(db: AsyncSession) -> list[str]:
     """Get email addresses of all site administrators."""
     filters = {"role": ROLE_ADMIN, "is_active": True}

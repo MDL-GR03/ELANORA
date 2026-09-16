@@ -60,19 +60,6 @@ def init_database(database_url: str | None = None) -> AsyncEngine:
     return _engine
 
 
-def get_engine(
-    database_url: str | None = None, echo: bool | None = None
-) -> AsyncEngine:
-    """Return the application engine or a caller-owned engine for an explicit URL."""
-    if database_url is not None:
-        return create_async_engine(
-            database_url,
-            echo=get_settings().db_echo if echo is None else echo,
-            pool_pre_ping=True,
-        )
-    return init_database()
-
-
 def get_session_maker(
     engine: AsyncEngine | None = None,
 ) -> async_sessionmaker[AsyncSession]:

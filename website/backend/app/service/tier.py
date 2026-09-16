@@ -6,9 +6,7 @@ from app.crud.elan_file import get_elan_file_by_id
 from app.crud.project import get_project_by_id, get_project_id_by_name
 from app.crud.tier import get_tiers_by_elan_id
 from app.crud.tier_group import (
-    create_tier_group,
     get_tier_groups_by_project,
-    get_tier_groups_by_section,
     update_tier_group_section,
 )
 from app.crud.tier_section import (
@@ -18,7 +16,6 @@ from app.crud.tier_section import (
     update_tier_section_name,
 )
 from app.model.tier import Tier
-from app.model.tier_group import TierGroup
 from app.model.tier_section import TierSection
 from app.schema.responses.tier import (
     SectionInfo,
@@ -120,12 +117,6 @@ class TierSectionService:
             raise
 
     @staticmethod
-    async def get_sections_for_project(
-        db: AsyncSession, project_id: int
-    ) -> list[TierSection]:
-        return await get_tier_sections_by_project(db, project_id)
-
-    @staticmethod
     async def get_sections_and_groups(
         db: AsyncSession, project_id: int
     ) -> SectionsAndGroupsResponse:
@@ -169,24 +160,3 @@ class TierGroupService:
         except Exception:
             await db.rollback()
             raise
-
-    @staticmethod
-    async def create_group(
-        db: AsyncSession,
-        section_id: int | None,
-        project_id: int,
-        elan_file_name: str,
-    ) -> TierGroup:
-        try:
-            group = await create_tier_group(db, section_id, project_id, elan_file_name)
-            await db.commit()
-            return group
-        except Exception:
-            await db.rollback()
-            raise
-
-    @staticmethod
-    async def get_groups_for_section(
-        db: AsyncSession, section_id: int
-    ) -> list[TierGroup]:
-        return await get_tier_groups_by_section(db, section_id)

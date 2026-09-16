@@ -27,19 +27,6 @@ from app.utils.validation import ValidationUtils
 logger = get_logger()
 
 
-async def get_orphan_elan_files_by_project(
-    db: AsyncSession, project_id: int
-) -> list[ElanFile]:
-    """Get ELAN files that belong directly to a project via project_id FK."""
-    logger.info("Fetching ELAN files for project_id=%s", project_id)
-    filters = {"project_id": project_id}
-    elan_files = await DatabaseUtils.get_by_filter(
-        db, ElanFile, filters, options=[selectinload(ElanFile.file_content)]
-    )
-    logger.info("Found %d ELAN files for project_id=%s", len(elan_files), project_id)
-    return elan_files
-
-
 async def delete_elan_file_associations(db: AsyncSession, elan_id: int) -> None:
     """Delete ELAN file associations - now only handles media/tier links since project link is direct FK."""
     logger.info("Attempting to delete ELAN file associations for elan_id=%s", elan_id)
@@ -67,37 +54,6 @@ async def get_elan_file_by_id(db: AsyncSession, elan_id: int) -> ElanFile | None
     return await DatabaseUtils.get_by_id(
         db, ElanFile, "elan_id", elan_id, options=[selectinload(ElanFile.file_content)]
     )
-
-
-async def get_elan_file_by_filename(db: AsyncSession, filename: str) -> ElanFile | None:
-    """Retrieve an ELAN file by filename."""
-    stmt = (
-        select(ElanFile)
-        .join(FileContent)
-        .where(ElanFile.filename == filename)
-        .options(selectinload(ElanFile.file_content))
-    )
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def get_elan_files_by_user(db: AsyncSession, user_id: int) -> list[ElanFile]:
-    """Get all ELAN files for a specific user."""
-    stmt = (
-        select(ElanFile)
-        .join(FileContent)
-        .where(FileContent.user_id == user_id)
-        .options(selectinload(ElanFile.file_content))
-    )
-    result = await db.execute(stmt)
-    return list(result.scalars().all())
-
-
-async def check_elan_file_exists_by_filename(db: AsyncSession, filename: str) -> bool:
-    """Check if an ELAN file with the given filename exists."""
-    stmt = select(ElanFile).where(ElanFile.filename == filename)
-    result = await db.execute(stmt)
-    return result.scalar_one_or_none() is not None
 
 
 async def get_elan_file_by_filename_and_project(
@@ -163,23 +119,6 @@ async def create_elan_file_in_db(
     return elan_file
 
 
-async def delete_elan_file_by_id(db: AsyncSession, elan_id: int) -> bool:
-    """Delete an ELAN file by ID."""
-    try:
-        count = await DatabaseUtils.delete_by_filter(db, ElanFile, elan_id=elan_id)
-        return count > 0
-    except Exception:
-        await db.rollback()
-        return False
-
-
-async def get_all_elan_files(db: AsyncSession) -> list[ElanFile]:
-    """Get all ELAN files."""
-    return await DatabaseUtils.get_all(
-        db, ElanFile, options=[selectinload(ElanFile.file_content)]
-    )
-
-
 # --- ELAN_FILE_TO_TIER ASSOCIATION CRUD ---
 
 
@@ -197,17 +136,6 @@ async def add_elan_file_to_tier(db: AsyncSession, elan_id: int, tier_id: int) ->
     if not exists:
         assoc = ElanFileToTier(elan_id=elan_id, tier_id=tier_id)
         await DatabaseUtils.create(db, assoc)
-
-
-async def remove_elan_file_to_tier(
-    db: AsyncSession, elan_id: int, tier_id: int
-) -> None:
-    """Remove association between ELAN file and tier."""
-    await DatabaseUtils.bulk_delete(
-        db,
-        ElanFileToTier,
-        (ElanFileToTier.elan_id == elan_id) & (ElanFileToTier.tier_id == tier_id),
-    )
 
 
 async def sync_elan_file_to_tiers(
