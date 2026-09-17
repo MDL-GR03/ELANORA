@@ -554,6 +554,7 @@
     "deleteMessage": "Are you sure you want to delete project \"{projectName}\"? This cannot be undone.",
     "deleteConfirm": "Delete",
     "deleteCancel": "Cancel",
+    "deleteFailed": "The project could not be deleted.",
     "createProject": "Create a new project",
     "project": {
       "buttons": {

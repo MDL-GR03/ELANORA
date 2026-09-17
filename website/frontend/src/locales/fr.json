@@ -554,6 +554,7 @@
     "deleteMessage": "Êtes-vous sûr de vouloir supprimer le projet \"{projectName}\" ? Cette action est irréversible.",
     "deleteConfirm": "Supprimer",
     "deleteCancel": "Annuler",
+    "deleteFailed": "Le projet n'a pas pu être supprimé.",
     "createProject": "Créer un nouveau projet",
     "project": {
       "buttons": {

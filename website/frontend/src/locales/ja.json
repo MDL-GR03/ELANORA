@@ -554,6 +554,7 @@
     "deleteMessage": "プロジェクト「{projectName}」を削除してもよろしいですか？この操作は元に戻せません。",
     "deleteConfirm": "削除",
     "deleteCancel": "キャンセル",
+    "deleteFailed": "プロジェクトを削除できませんでした。",
     "createProject": "新しいプロジェクトを作成",
     "project": {
       "buttons": {
