@@ -447,26 +447,23 @@ defineExpose({
 </script>
 
 <style scoped>
-.upload-folder-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 
+
+<style scoped>
 :where(.upload-zone) {
-  border: 2px dashed #1976d2;
-  border-radius: 12px;
+  border: 2px dashed var(--color-primary);
+  border-radius: var(--radius-lg);
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: #fafafa;
+  background: var(--color-surface-subtle);
   min-height: 140px;
   position: relative;
 }
 
 :where(.upload-zone:hover) {
-  border-color: #1565c0;
-  background: #eee;
+  border-color: var(--color-primary-dark);
+  background: color-mix(in srgb, var(--color-primary) 4%, white);
 }
 
 .upload-zone.compact {
@@ -475,10 +472,10 @@ defineExpose({
 }
 
 :where(.upload-zone.dragover) {
-  border-color: #388e3c;
-  background: #e8f5e9;
+  border-color: var(--color-secondary);
+  background: var(--color-secondary-bg);
   transform: scale(1.02);
-  box-shadow: 0 4px 12px rgb(56 142 60 / 20%);
+  box-shadow: 0 4px 12px rgb(15 118 110 / 20%);
 }
 
 :where(.upload-zone.has-files) {
@@ -490,8 +487,8 @@ defineExpose({
 }
 
 .upload-zone.has-files:hover {
-  border-color: #1976d2;
-  background: #fafafa;
+  border-color: var(--color-primary);
+  background: var(--color-surface-subtle);
 }
 
 .upload-zone.has-files .preview-header,
@@ -505,18 +502,20 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  max-width: 42rem;
+  gap: 0.45rem;
 }
 
 :where(.upload-content h3) {
   margin: 0;
-  color: #333;
+  color: var(--color-text);
   font-weight: 600;
   font-size: 1.1rem;
 }
 
 :where(.upload-content p) {
   margin: 0;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
 }
 
@@ -532,12 +531,12 @@ defineExpose({
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .preview-header h4 {
   margin: 0;
-  color: #333;
+  color: var(--color-text);
   font-weight: 600;
 }
 
@@ -552,23 +551,23 @@ defineExpose({
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: all 0.2s;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .action-btn:hover {
-  background: #f5f5f5;
-  border-color: #1976d2;
-  color: #1976d2;
+  background: var(--color-surface-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .action-btn.clear:hover {
-  border-color: #d32f2f;
-  color: #d32f2f;
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 :where(.files-list) {
@@ -585,7 +584,7 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .file-item:last-child {
@@ -608,7 +607,7 @@ defineExpose({
 
 :where(.file-name) {
   font-weight: 500;
-  color: #333;
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -616,12 +615,12 @@ defineExpose({
 
 .file-size {
   font-size: 0.85rem;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .file-path {
   font-size: 0.8rem;
-  color: #999;
+  color: var(--color-text-muted);
   font-family: monospace;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -631,61 +630,37 @@ defineExpose({
 :where(.remove-btn) {
   width: 24px;
   height: 24px;
-  background: #fff;
-  color: #999;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   border-radius: 50%;
   cursor: pointer;
   font-size: 16px;
   font-weight: bold;
   transition: all 0.2s;
   flex-shrink: 0;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border);
 }
 
 :where(.remove-btn:hover) {
-  background: #f44336;
+  background: var(--color-error);
   color: white;
-  border-color: #f44336;
-}
-
-:where(.files-summary) {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 8px;
-  border-top: 1px solid #e0e0e0;
-  font-size: 0.9rem;
-}
-
-.total-size {
-  color: #666;
-  font-weight: 500;
-}
-
-.size-warning {
-  color: #f57c00;
-  font-weight: 500;
-}
-
-/* New: Highlight non-compliant files in red */
-:where(.file-noncompliant) {
-  background: #ffe5e5;
-  border-left: 4px solid #d9534f;
-}
-
-.file-noncompliant .file-name {
-  color: #d9534f;
-  font-weight: bold;
+  border-color: var(--color-error);
 }
 
 .upload-zone {
-  min-height: 13rem;
-  display: grid;
-  place-items: center;
-  padding: clamp(1.25rem, 4vw, 2.5rem);
-  border-color: color-mix(in srgb, var(--primary-color) 52%, #cbd5e1);
-  border-radius: 0.8rem;
-  background: color-mix(in srgb, var(--primary-color) 2.5%, white);
+  border: 2px dashed var(--color-primary);
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: color-mix(in srgb, var(--color-primary) 0.5%, white);
+  min-height: 140px;
+  position: relative;
+}
+
+.upload-zone:hover {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 2.5%, white);
   cursor: default;
   transition:
     border-color 150ms ease,
@@ -693,13 +668,8 @@ defineExpose({
     box-shadow 150ms ease;
 }
 
-.upload-zone:hover {
-  border-color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-color) 4%, white);
-}
-
 .upload-zone.dragover {
-  border-color: #0f766e;
+  border-color: var(--color-secondary);
   background: #effaf8;
   box-shadow: inset 0 0 0 3px rgb(15 118 110 / 10%);
   transform: none;
@@ -718,30 +688,15 @@ defineExpose({
   background: white;
 }
 
-.upload-content {
-  max-width: 42rem;
-  gap: 0.45rem;
-}
-
-.upload-content h3 {
-  color: var(--color-text);
-  font-size: 1.05rem;
-}
-
-.upload-content p {
-  color: var(--color-text-muted);
-  font-size: 0.88rem;
-}
-
 .upload-icon {
   width: 3.25rem;
   height: 3.25rem;
   display: grid;
   place-items: center;
   margin: 0 0 0.35rem;
-  border-radius: 0.75rem;
-  color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-color) 10%, white);
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
   font-size: 1.45rem;
   opacity: 1;
 }
@@ -761,8 +716,8 @@ defineExpose({
   justify-content: center;
   gap: 0.45rem;
   padding: 0.5rem 0.8rem;
-  border: 1px solid var(--primary-color);
-  border-radius: 0.55rem;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
   font: inherit;
   font-size: 0.85rem;
   font-weight: 700;
@@ -771,11 +726,11 @@ defineExpose({
 
 .upload-browse-button {
   color: white;
-  background: var(--primary-color);
+  background: var(--color-primary);
 }
 
 .upload-folder-button {
-  color: var(--primary-color);
+  color: var(--color-primary);
   background: white;
 }
 
@@ -783,7 +738,7 @@ defineExpose({
 .upload-folder-button:focus-visible,
 .action-btn:focus-visible,
 .remove-btn:focus-visible {
-  outline: 2px solid var(--primary-color);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -810,7 +765,7 @@ defineExpose({
   margin: 0;
   padding: 0.65rem 0.7rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.55rem;
+  border-radius: var(--radius-md);
   background: var(--color-surface-subtle);
 }
 
@@ -831,21 +786,21 @@ defineExpose({
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 0.45rem;
-  color: #b42318;
+  border-radius: var(--radius-sm);
+  color: var(--color-error);
   background: transparent;
 }
 
 .remove-btn:hover {
   border-color: transparent;
-  color: #9f1c13;
-  background: #fff1f0;
+  color: var(--color-error-dark);
+  background: var(--color-error-bg-subtle);
 }
 
 .file-noncompliant {
-  border-color: #fecaca;
-  border-left: 3px solid #dc2626;
-  background: #fff7f7;
+  border-color: var(--color-error-bg);
+  border-left: 3px solid var(--color-error);
+  background: var(--color-error-bg-subtle);
 }
 
 .files-summary {
