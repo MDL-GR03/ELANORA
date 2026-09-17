@@ -1776,7 +1776,8 @@
       "uploadFailed": "Upload failed",
       "standardsFailed": "The project's naming rules could not be loaded. Upload is paused to avoid an unchecked submission.",
       "fileValidationFailed": "{filename}: validation failed",
-      "moreIssues": "{n} more issue | {n} more issues"
+      "moreIssues": "{n} more issue | {n} more issues",
+      "correctionFilesMissing": "Add every requested correction file before submitting: {files}"
     },
     "complianceWarning": "Some files don't comply with the naming standard. Please verify the file names and try again.",
     "topics": {

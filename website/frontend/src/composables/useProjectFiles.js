@@ -3,21 +3,12 @@ import { computed, ref } from 'vue';
 import gitService from '@/api/service/gitService';
 import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
 import { useNamingStandardStore } from '@/stores/namingStandard';
+import { standardAt } from '@/utils/effectiveStandard';
 import { isFilenameCompliant } from '@/utils/filenameCompliance';
 import { getMediaStandardForProject } from '@/utils/filenameFromMediaFile';
 
 const PROJECT_FILES_LOCATION_ID = 1;
 const MEDIA_FILES_LOCATION_ID = 3;
-
-function firstStandardId(assignment) {
-  if (typeof assignment === 'string' || typeof assignment === 'number') {
-    return assignment;
-  }
-  if (assignment && typeof assignment === 'object') {
-    return Object.values(assignment).find(Boolean);
-  }
-  return undefined;
-}
 
 /**
  * The selected project's files and their naming compliance. Compliance is
@@ -87,12 +78,11 @@ export function useProjectFiles({ isAdmin }) {
       );
       if (request !== latestRequest) return;
 
-      const standardId = firstStandardId(
-        effectiveStandards.effectiveStandards[PROJECT_FILES_LOCATION_ID]
+      projectStandard.value = standardAt(
+        effectiveStandards.effectiveStandards,
+        namingStandards.standards,
+        PROJECT_FILES_LOCATION_ID
       );
-      projectStandard.value =
-        namingStandards.standards.find((item) => item.id === standardId) ??
-        null;
       mediaStandard.value = media;
       files.value = listing.files.map((file) => ({
         ...file,

@@ -1776,7 +1776,8 @@
       "uploadFailed": "アップロードに失敗しました",
       "standardsFailed": "命名規則を読み込めないため、未検証の提出を防ぐ目的でアップロードを停止しました。",
       "fileValidationFailed": "{filename}：検証に失敗しました",
-      "moreIssues": "ほか{n}件の問題 | ほか{n}件の問題"
+      "moreIssues": "ほか{n}件の問題 | ほか{n}件の問題",
+      "correctionFilesMissing": "送信する前に、依頼されたすべての修正ファイルを追加してください：{files}"
     },
     "complianceWarning": "命名規則に違反するファイルがあります。",
     "topics": {

@@ -1776,7 +1776,8 @@
       "uploadFailed": "Échec de l'upload des fichiers.",
       "standardsFailed": "Les règles de nommage du projet n'ont pas pu être chargées. L'upload est suspendu afin d'éviter une soumission non vérifiée.",
       "fileValidationFailed": "{filename} : la validation a échoué",
-      "moreIssues": "{n} autre problème | {n} autres problèmes"
+      "moreIssues": "{n} autre problème | {n} autres problèmes",
+      "correctionFilesMissing": "Ajoutez tous les fichiers de correction demandés avant l'envoi : {files}"
     },
     "complianceWarning": "Certains fichiers ne respectent pas la norme de nommage. Veuillez vérifier les noms des fichiers et réessayer.",
     "topics": {
