@@ -26,7 +26,10 @@ from app.schema.responses.git import (
     ProjectInfo,
     ProjectSyncCheckResponse,
 )
-from app.service.contribution_inspection import ContributionInspectionService
+from app.service.contribution_inspection import (
+    ContributionInspectionService,
+    MergeReadinessResponse,
+)
 from app.service.contribution_intake import (
     ContributionIntakeService,
 )
@@ -386,7 +389,7 @@ class GitService:
 
     def test_pending_upload(
         self, project_name: str, branch_name: str
-    ) -> dict[str, Any]:
+    ) -> MergeReadinessResponse:
         """Test a contribution without changing accepted project state."""
         return self.contribution_inspection.test_compatibility(
             project_name, branch_name
@@ -561,7 +564,7 @@ class GitService:
         db: AsyncSession,
         user_id: int,
         operation_id: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> ProjectSyncCheckResponse:
         """Idempotently synchronize the project's elan_files with the database."""
         return await self.filesystem_sync.synchronize(
             project_name, db, user_id, operation_id

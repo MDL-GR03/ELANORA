@@ -168,7 +168,7 @@ async def test_synchronizing_ingests_a_new_file_into_the_database(
         PROJECT_NAME, session, curator_id, None
     )
 
-    assert result["in_sync"] is True
+    assert result.in_sync is True
     stored = await _stored_filenames(session, project.project_id)
     assert "session-12.eaf" in stored
 

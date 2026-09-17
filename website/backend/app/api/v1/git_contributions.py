@@ -39,6 +39,7 @@ from app.schema.responses.git import (
     EafReviewResponse,
     PendingUploadsResponse,
 )
+from app.service.contribution_inspection import MergeReadinessResponse
 from app.service.contribution_intake import (
     ContributionAlreadyCurrentError,
     DuplicatePendingContributionError,
@@ -392,7 +393,7 @@ async def test_pending_upload(
     project_name: str,
     branch_name: str,
     access: ProjectAccess = get_project_admin_dep,
-) -> dict[str, Any]:
+) -> MergeReadinessResponse:
     """Test whether a pending contribution merges cleanly without changing history."""
     try:
         return git_shared.git_service.test_pending_upload(project_name, branch_name)

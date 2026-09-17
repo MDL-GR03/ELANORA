@@ -1,6 +1,6 @@
 """Typed response models for upload naming compliance."""
 
-from typing import Any, TypedDict
+from typing import TypedDict
 
 
 class NamingStandardComponent(TypedDict, total=False):

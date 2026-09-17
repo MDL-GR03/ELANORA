@@ -7,7 +7,6 @@ uses the same reading but must never stage or alter anything.
 """
 
 from pathlib import Path
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,7 +48,7 @@ class ProjectFilesystemSyncService:
         db: AsyncSession,
         user_id: int,
         operation_id: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> ProjectSyncCheckResponse:
         """Idempotently synchronize the project's elan_files with the database."""
         project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
@@ -185,7 +184,7 @@ class ProjectFilesystemSyncService:
                 FileStatus(filename=f, status="deleted", description="File deleted")
                 for f in deleted_files
             ],
-        ).model_dump()
+        )
 
     def validate_changes(
         self, project_name: str, changes: list[dict[str, object]]

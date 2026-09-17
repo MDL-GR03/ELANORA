@@ -2,17 +2,13 @@
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from app.core.centralized_logging import get_logger
 from app.elan.validation import EafValidationError
 from app.schema.responses.contribution_queue import (
     AnnotationCollision,
     QueueItem,
-    QueueItemFiles,
-    QueueItemFileCounts,
-    QueueItemProtocolWarning,
-    QueueItemQualityChecks,
     QueueItemResearchContext,
     QueueItemSemanticSummary,
 )
@@ -31,34 +27,6 @@ class MergeReadinessResponse(TypedDict):
     conflicts_count: int
     can_auto_merge: bool
     tested_at: str
-
-
-class QueueItem(TypedDict, total=False):
-    upload_id: int
-    branch_name: str | None
-    original_branch: str | None
-    upload_type: str
-    description: str | None
-    status: str
-    uploaded_at: str | None
-    uploaded_by: str | None
-    files: QueueItemFiles
-    file_counts: QueueItemFileCounts
-    quality_checks: QueueItemQualityChecks
-    protocol_warnings: list[QueueItemProtocolWarning]
-    semantic_summary: QueueItemSemanticSummary
-    research_context: QueueItemResearchContext
-    protocol_version_id: str | None
-    git_details: dict[str, Any] | None
-    merge_status: str
-    superseded_by_upload_id: int | None
-    duplicate_of_upload_id: int | None
-    conflicted_files: list[str] | None
-    conflicted_files_count: int | None
-    tested_at: str | None
-    error: str | None
-    can_auto_merge: bool | None
-    annotation_collisions: list[AnnotationCollision]
 
 
 class ContributionInspectionService:
@@ -127,9 +95,9 @@ class ContributionInspectionService:
         upload: Any,
         configured_baseline_tiers: set[str],
     ) -> tuple[
-        dict[str, int],
+        QueueItemSemanticSummary,
         dict[str, dict[str, tuple[Any, ...]]],
-        dict[str, Any],
+        QueueItemResearchContext,
         str,
         str | None,
     ]:
@@ -189,9 +157,9 @@ class ContributionInspectionService:
             }
         )
         return (
-            semantic_summary,
+            cast("QueueItemSemanticSummary", semantic_summary),
             semantic_targets,
-            research_context,
+            cast("QueueItemResearchContext", research_context),
             protocol_outcome,
             recorded_protocol_id,
         )
@@ -200,8 +168,8 @@ class ContributionInspectionService:
     def queue_item(
         upload: Any,
         upload_data: dict[str, Any],
-        semantic_summary: dict[str, int],
-        research_context: dict[str, Any],
+        semantic_summary: QueueItemSemanticSummary,
+        research_context: QueueItemResearchContext,
         protocol_outcome: str,
         recorded_protocol_id: str | None,
         merge_status: str,
@@ -209,7 +177,7 @@ class ContributionInspectionService:
     ) -> QueueItem:
         """Build the stable administrator queue representation for one upload."""
         branch_name = upload.branch_name
-        item: QueueItem = {
+        item = {
             "upload_id": upload.upload_id,
             "branch_name": branch_name,
             "original_branch": upload_data.get(
@@ -248,32 +216,35 @@ class ContributionInspectionService:
             "merge_status": merge_status,
         }
         item.update(extra)
-        return item
+        return cast("QueueItem", item)
 
     @staticmethod
-    def inspection_error_item(
-        upload: Any, upload_data: dict[str, Any]
-    ) -> QueueItem:
+    def inspection_error_item(upload: Any, upload_data: dict[str, Any]) -> QueueItem:
         """Return a deliberately sparse queue item when Git inspection fails."""
         branch_name = upload.branch_name
-        return {
-            "upload_id": upload.upload_id,
-            "branch_name": branch_name,
-            "original_branch": upload_data.get(
-                "original_branch",
-                branch_name.replace("_pending_approval", "") if branch_name else None,
-            ),
-            "upload_type": upload.upload_type.value,
-            "description": upload.upload_description,
-            "status": upload.status.value,
-            "uploaded_at": (
-                upload.detected_at.isoformat() if upload.detected_at else None
-            ),
-            "uploaded_by": None,
-            "merge_status": "error",
-            "error": "Unable to inspect this pending upload",
-            "can_auto_merge": False,
-        }
+        return cast(
+            "QueueItem",
+            {
+                "upload_id": upload.upload_id,
+                "branch_name": branch_name,
+                "original_branch": upload_data.get(
+                    "original_branch",
+                    branch_name.replace("_pending_approval", "")
+                    if branch_name
+                    else None,
+                ),
+                "upload_type": upload.upload_type.value,
+                "description": upload.upload_description,
+                "status": upload.status.value,
+                "uploaded_at": (
+                    upload.detected_at.isoformat() if upload.detected_at else None
+                ),
+                "uploaded_by": None,
+                "merge_status": "error",
+                "error": "Unable to inspect this pending upload",
+                "can_auto_merge": False,
+            },
+        )
 
     def semantic_analysis(
         self,
@@ -341,7 +312,9 @@ class ContributionInspectionService:
                 summary["media_changed"] += 1
         return summary, targets, changed_tiers
 
-    def test_compatibility(self, project_name: str, branch_name: str) -> MergeReadinessResponse:
+    def test_compatibility(
+        self, project_name: str, branch_name: str
+    ) -> MergeReadinessResponse:
         """Preview Git compatibility without retaining working-tree changes."""
         project_path = safe_project_path(self.base_path, project_name)
         if not project_path.exists():

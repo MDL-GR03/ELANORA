@@ -2,6 +2,10 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from app.schema.responses.contribution_queue import (
+    QueueItemResearchContext,
+    QueueItemSemanticSummary,
+)
 from app.service.contribution_inspection import ContributionInspectionService
 
 
@@ -114,8 +118,8 @@ def test_queue_item_has_one_consistent_shape_for_admin_views() -> None:
     item = ContributionInspectionService.queue_item(
         upload,
         upload_data,
-        {"annotations": 2},
-        {"scope_status": "aligned"},
+        QueueItemSemanticSummary(annotations=2),
+        QueueItemResearchContext(scope_status="aligned"),
         "passed",
         "protocol-2",
         "ready_to_merge",

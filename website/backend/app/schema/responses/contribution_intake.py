@@ -9,6 +9,7 @@ class ProtocolValidation(TypedDict, total=False):
     outcome: str
     warnings: list[dict[str, Any]]
     protocol_version_id: str | None
+    rules_sha256: str | None
 
 
 class ResearchContext(TypedDict, total=False):

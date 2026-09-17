@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,11 @@ from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
 from app.crud.pending_upload import get_pending_uploads, save_pending_upload
 from app.crud.project import get_project_by_name
-from app.schema.responses.contribution_intake import UploadInfoResponse
+from app.schema.responses.contribution_intake import (
+    ProtocolValidation,
+    ResearchContext,
+    UploadInfoResponse,
+)
 from app.service.git_branches import GitBranchManager, GitDiffAnalyzer
 from app.service.git_command_runner import GitCommandRunner
 from app.service.git_results import FileUploadResult
@@ -143,8 +147,10 @@ class ContributionIntakeService:
                 "pending_approval_since": now,
                 "uploaded_by": context.username,
                 "base_commit": context.base_commit,
-                "protocol_validation": context.protocol_validation,
-                "research_context": context.research_context,
+                "protocol_validation": cast(
+                    "ProtocolValidation", context.protocol_validation
+                ),
+                "research_context": cast("ResearchContext", context.research_context),
             }
             await self._save_pending_upload(
                 upload_info, project.project_id, db, context

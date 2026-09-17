@@ -63,7 +63,16 @@ async def resolve_upload_naming_standard(
 
     return UploadNamingStandardResponse(
         pattern=full_standard.pattern,
-        components=[component.model_dump() for component in full_standard.components],
+        components=[
+            {
+                "id": component.id,
+                "file_type_id": component.project_file_type_id,
+                "name": component.name,
+                "regex": component.regex,
+                "description": component.description,
+            }
+            for component in full_standard.components
+        ],
     )
 
 
