@@ -493,13 +493,15 @@ watch(pageCount, (count) => {
 });
 </script>
 
+
+
 <style scoped>
 .eaf-review {
   display: grid;
   gap: 1.1rem;
   margin-top: 0.35rem;
   padding: 1rem 0.1rem 0.15rem;
-  border-top: 1px solid #dbeafe;
+  border-top: 1px solid var(--color-info-bg);
   color: var(--color-text);
 }
 
@@ -531,7 +533,7 @@ watch(pageCount, (count) => {
 .eyebrow,
 .version-label,
 .annotation-id {
-  color: var(--primary-color);
+  color: var(--color-primary);
   font-size: 0.75rem;
   font-weight: 750;
   letter-spacing: 0.06em;
@@ -543,15 +545,15 @@ watch(pageCount, (count) => {
 .time {
   flex: none;
   padding: 0.3rem 0.55rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.78rem;
   font-weight: 700;
 }
 
 .count,
 .time {
-  color: #1e40af;
-  background: #dbeafe;
+  color: var(--color-info-dark);
+  background: var(--color-info-bg);
 }
 
 .state {
@@ -569,15 +571,15 @@ watch(pageCount, (count) => {
 }
 
 .state.error {
-  color: #991b1b;
-  border-color: #fecaca;
-  background: #fef2f2;
+  color: var(--color-error);
+  border-color: var(--color-error-bg);
+  background: var(--color-error-bg-subtle);
 }
 
 .state.comparison-context {
-  color: #1e40af;
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  color: var(--color-info-dark);
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
 }
 
 .media-reference-changes {
@@ -595,7 +597,7 @@ watch(pageCount, (count) => {
 
 .media-change-group > span {
   padding: 0.15rem 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   text-align: center;
   font-size: 0.72rem;
   font-weight: 750;
@@ -618,28 +620,28 @@ watch(pageCount, (count) => {
   min-width: 0;
   max-width: 100%;
   padding: 0.28rem 0.5rem;
-  border: 1px solid #d7e0ec;
-  border-radius: 0.4rem;
-  color: #40536d;
-  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.76rem;
   overflow-wrap: anywhere;
 }
 
 .media-added span {
-  color: #166534;
-  background: #dcfce7;
+  color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
 .media-removed span {
-  color: #991b1b;
-  background: #fee2e2;
+  color: var(--color-error);
+  background: var(--color-error-bg);
 }
 
 .media-unchanged span {
-  color: #475569;
-  background: #e2e8f0;
+  color: var(--color-text-muted);
+  background: var(--color-gray-200);
 }
 
 .review-list {
@@ -673,9 +675,9 @@ watch(pageCount, (count) => {
   min-width: 0;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.45rem;
+  border-radius: var(--radius-sm);
   color: var(--color-text);
-  background: white;
+  background: var(--color-surface);
   font: inherit;
 }
 
@@ -695,9 +697,9 @@ watch(pageCount, (count) => {
 .change-pagination button {
   padding: 0.45rem 0.7rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.45rem;
-  color: var(--primary-color);
-  background: white;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  background: var(--color-surface);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -722,18 +724,18 @@ watch(pageCount, (count) => {
   gap: 0.45rem;
   margin-top: 0.85rem;
   padding: 0.55rem 0.75rem;
-  color: var(--primary-color);
-  border: 1px solid #93c5fd;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary-light);
   border-radius: var(--radius-sm);
-  background: white;
+  background: var(--color-surface);
   font-weight: 700;
   cursor: pointer;
 }
 
 .open-case.selected {
-  color: #166534;
-  border-color: #86efac;
-  background: #f0fdf4;
+  color: var(--color-success);
+  border-color: var(--color-success-bg);
+  background: var(--color-success-bg-subtle);
 }
 
 .annotation-meta > div:first-child {
@@ -749,18 +751,18 @@ watch(pageCount, (count) => {
 }
 
 .badge {
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
 }
 
 .kind-added {
-  color: #166534;
-  background: #dcfce7;
+  color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
 .kind-removed {
-  color: #991b1b;
-  background: #fee2e2;
+  color: var(--color-error);
+  background: var(--color-error-bg);
 }
 
 .comparison {
@@ -778,11 +780,11 @@ watch(pageCount, (count) => {
 }
 
 .version.accepted {
-  background: #f1f5f9;
+  background: var(--color-surface-subtle);
 }
 
 .version.submitted {
-  background: #eff6ff;
+  background: var(--color-primary-bg);
 }
 
 .version p {

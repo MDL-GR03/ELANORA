@@ -423,6 +423,8 @@ async function openCorrectionComposer() {
 }
 </script>
 
+
+
 <style scoped>
 .upload-resolution {
   padding: 20px 0;
@@ -431,17 +433,17 @@ async function openCorrectionComposer() {
 .resolution-header {
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .resolution-header h3 {
   margin: 0 0 10px;
-  color: #2c3e50;
+  color: var(--color-text);
 }
 
 .resolution-summary {
   margin: 0;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .loading {
@@ -452,8 +454,8 @@ async function openCorrectionComposer() {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid #e0e0e0;
-  border-top: 4px solid #1976d2;
+  border: 4px solid var(--color-border);
+  border-top: 4px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
@@ -475,7 +477,7 @@ async function openCorrectionComposer() {
 
 .strategy-section h4 {
   margin: 0 0 15px;
-  color: #2c3e50;
+  color: var(--color-text);
 }
 
 .strategy-options {
@@ -491,10 +493,10 @@ async function openCorrectionComposer() {
   width: 100%;
   gap: 12px;
   padding: 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
   color: inherit;
-  background: white;
+  background: var(--color-surface);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -505,9 +507,9 @@ async function openCorrectionComposer() {
 }
 
 .strategy-option[aria-checked='true'] {
-  border-color: #2563eb;
-  background: #f5f9ff;
-  box-shadow: 0 0 0 1px #2563eb;
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 .decision-indicator {
@@ -518,7 +520,7 @@ async function openCorrectionComposer() {
   width: 1.15rem;
   height: 1.15rem;
   margin-top: 0.15rem;
-  border: 1.5px solid #94a3b8;
+  border: 1.5px solid var(--color-gray-600);
   border-radius: 50%;
   color: white;
   background: white;
@@ -527,16 +529,16 @@ async function openCorrectionComposer() {
 }
 
 .strategy-option:hover {
-  border-color: #1976d2;
+  border-color: var(--color-primary-light);
 }
 
 .strategy-option[aria-checked='true'] .decision-indicator {
-  border-color: #2563eb;
-  background: #2563eb;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
 }
 
 .strategy-option[aria-checked='true'] .strategy-content {
-  color: #1976d2;
+  color: var(--color-primary-light);
 }
 
 .strategy-content strong {
@@ -546,7 +548,7 @@ async function openCorrectionComposer() {
 
 .strategy-content p {
   margin: 0;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
@@ -556,19 +558,19 @@ async function openCorrectionComposer() {
   justify-content: space-between;
   gap: 1rem;
   padding: 16px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
 }
 
 .correction-button,
 .close-inline {
   flex: none;
   padding: 0.65rem 0.85rem;
-  border: 1px solid #8b5cf6;
-  border-radius: 0.5rem;
-  color: #6d28d9;
-  background: white;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  color: var(--color-accent-dark);
+  background: var(--color-surface);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -577,7 +579,7 @@ async function openCorrectionComposer() {
 .step-label {
   display: inline-block;
   margin-bottom: 0.35rem;
-  color: #1d4ed8;
+  color: var(--color-primary-dark);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -591,19 +593,19 @@ async function openCorrectionComposer() {
 
 .section-heading p {
   margin-top: 0.25rem;
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .conflicted-files {
   margin-bottom: 30px;
   padding: 20px;
-  background: #fff3e0;
-  border-radius: 8px;
-  border-left: 4px solid #f57c00;
+  background: var(--color-warning-bg);
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--color-warning);
 }
 
 .conflicted-files h4 {
-  color: #1e293b;
+  color: var(--color-text);
 }
 
 .files-list {
@@ -617,9 +619,9 @@ async function openCorrectionComposer() {
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
 }
 
 .file-info {
@@ -635,15 +637,15 @@ async function openCorrectionComposer() {
 
 .file-status {
   font-size: 0.8rem;
-  color: #f57c00;
+  color: var(--color-warning);
 }
 
 .inline-comparison {
   margin-top: 1rem;
   padding: 1rem;
-  border: 1px solid #bfdbfe;
-  border-radius: 0.65rem;
-  background: white;
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .inline-comparison > header {
@@ -652,7 +654,7 @@ async function openCorrectionComposer() {
   justify-content: space-between;
   gap: 1rem;
   padding-bottom: 0.8rem;
-  border-bottom: 1px solid #dbeafe;
+  border-bottom: 1px solid var(--color-info-bg);
 }
 
 .inline-comparison > header h4 {
@@ -671,7 +673,7 @@ async function openCorrectionComposer() {
 
 .changes-preview h4 {
   margin: 0 0 15px;
-  color: #2c3e50;
+  color: var(--color-text);
 }
 
 .changes-grid {
@@ -682,7 +684,7 @@ async function openCorrectionComposer() {
 
 .change-group h5 {
   margin: 0 0 10px;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
@@ -696,11 +698,11 @@ async function openCorrectionComposer() {
   padding: 4px 0;
   font-family: monospace;
   font-size: 0.8rem;
-  color: #555;
+  color: var(--color-text);
 }
 
 .more-files {
-  color: #999;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
@@ -715,9 +717,9 @@ async function openCorrectionComposer() {
 .decision-confirmation {
   flex: 1 0 100%;
   padding: 1rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.65rem;
-  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
 }
 
 .decision-confirmation > header {
@@ -735,10 +737,10 @@ async function openCorrectionComposer() {
 .clear-decision {
   flex: none;
   padding: 0.35rem 0.55rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.4rem;
-  color: #475569;
-  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
   font: inherit;
   font-size: 0.82rem;
   font-weight: 700;
@@ -746,23 +748,23 @@ async function openCorrectionComposer() {
 }
 
 .decision-consequence {
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .decision-confirmation .decision-impact {
   margin: 0.75rem 0;
   padding: 0.7rem 0.8rem;
-  border-left: 3px solid #2563eb;
-  background: white;
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-surface);
 }
 
 .completion-note {
-  color: #475569;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
 .completion-note a {
-  color: #1d4ed8;
+  color: var(--color-primary-dark);
   font-weight: 700;
 }
 
@@ -771,7 +773,7 @@ async function openCorrectionComposer() {
   align-items: flex-start;
   gap: 0.55rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border-subtle);
   font-weight: 700;
 }
 
@@ -785,29 +787,29 @@ async function openCorrectionComposer() {
 .action-btn {
   padding: 12px 24px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
   cursor: pointer;
   transition: background 0.3s;
 }
 
 .resolve-btn {
-  background: #4caf50;
+  background: var(--color-success);
   color: white;
 }
 
 .resolve-btn:disabled {
-  background: #ccc;
+  background: var(--color-gray-300);
   cursor: not-allowed;
 }
 
 .cancel-btn {
-  background: #666;
+  background: var(--color-text-muted);
   color: white;
 }
 
 .view-btn {
-  background: #2196f3;
+  background: var(--color-info);
   color: white;
   padding: 8px 16px;
   font-size: 0.8rem;
@@ -820,16 +822,16 @@ async function openCorrectionComposer() {
 .progress-text {
   margin: 0;
   text-align: center;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
 .error-message {
-  background: #ffebee;
-  border: 1px solid #f44336;
-  color: #d32f2f;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin-top: 20px;
 }
 

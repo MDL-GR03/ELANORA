@@ -466,6 +466,8 @@ watch(
 );
 </script>
 
+
+
 <style scoped>
 .sync-backdrop {
   position: fixed;
@@ -488,7 +490,7 @@ watch(
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: 1rem;
-  background: white;
+  background: var(--color-surface);
   box-shadow: 0 24px 64px rgb(15 23 42 / 28%);
 }
 
@@ -506,14 +508,14 @@ watch(
   display: grid;
   place-items: center;
   border-radius: 0.7rem;
-  color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-color) 10%, white);
+  color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 10%, white);
 }
 
 .sync-eyebrow {
   display: block;
   margin-bottom: 0.2rem;
-  color: var(--primary-color);
+  color: var(--color-primary);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -540,7 +542,7 @@ watch(
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 0.55rem;
+  border-radius: var(--radius-sm);
   color: var(--color-text-muted);
   background: transparent;
   cursor: pointer;
@@ -564,7 +566,7 @@ watch(
   gap: 0.75rem;
   padding: 1rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
   color: var(--color-text);
   background: var(--color-surface-subtle);
 }
@@ -576,21 +578,21 @@ watch(
 }
 
 .sync-callout.warning {
-  border-color: #f5d486;
-  background: #fffaf0;
+  border-color: var(--color-warning);
+  background: var(--color-warning-bg-subtle);
 }
 
 .sync-callout.danger {
-  border-color: #fecaca;
-  background: #fff7f7;
+  border-color: var(--color-error-bg);
+  background: var(--color-error-bg-subtle);
 }
 
 .sync-safety {
   margin: 1rem 0;
   padding: 0.9rem 1rem;
-  border-left: 3px solid var(--primary-color);
+  border-left: 3px solid var(--color-primary);
   color: var(--color-text);
-  background: color-mix(in srgb, var(--primary-color) 4%, white);
+  background: color-mix(in srgb, var(--color-primary) 4%, white);
 }
 
 .sync-list {
@@ -645,42 +647,42 @@ watch(
 
 .sync-operation-state {
   padding: 0.18rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-weight: 750;
 }
 
 .sync-history-action {
   padding: 0.25rem 0.5rem;
-  border: 1px solid var(--primary-color);
-  border-radius: 0.4rem;
-  color: var(--primary-color);
-  background: white;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  background: var(--color-surface);
   font: inherit;
   font-weight: 750;
   cursor: pointer;
 }
 
 .operation-completed {
-  color: #067647;
-  background: #ecfdf3;
+  color: var(--color-success);
+  background: var(--color-success-bg-subtle);
 }
 
 .operation-discarded {
-  color: #475467;
-  background: #f2f4f7;
+  color: var(--color-text-muted);
+  background: var(--color-surface-subtle);
 }
 
 .operation-failed,
 .operation-recovery_required {
-  color: #b42318;
-  background: #fff1f0;
+  color: var(--color-error);
+  background: var(--color-error-bg-subtle);
 }
 
 .operation-preparing,
 .operation-prepared,
 .operation-committing {
-  color: #9a6700;
-  background: #fff8c5;
+  color: var(--color-warning);
+  background: var(--color-warning-bg-subtle);
 }
 
 .sync-change {
@@ -691,8 +693,8 @@ watch(
   gap: 0.7rem;
   padding: 0.7rem 0.8rem;
   border: 1px solid var(--color-border);
-  border-radius: 0.65rem;
-  background: white;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .sync-change img {
@@ -711,29 +713,29 @@ watch(
 
 .sync-status {
   padding: 0.25rem 0.55rem;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 0.72rem;
   font-weight: 750;
 }
 
 .status-added {
-  color: #067647;
-  background: #ecfdf3;
+  color: var(--color-success);
+  background: var(--color-success-bg-subtle);
 }
 
 .status-modified {
-  color: #9a6700;
-  background: #fff8c5;
+  color: var(--color-warning);
+  background: var(--color-warning-bg-subtle);
 }
 
 .status-deleted {
-  color: #b42318;
-  background: #fff1f0;
+  color: var(--color-error);
+  background: var(--color-error-bg-subtle);
 }
 
 .status-renamed {
-  color: #175cd3;
-  background: #eff8ff;
+  color: var(--color-info);
+  background: var(--color-info-bg);
 }
 
 .sync-actions {
@@ -749,7 +751,7 @@ watch(
   min-height: 2.55rem;
   padding: 0.55rem 0.85rem;
   border: 1px solid transparent;
-  border-radius: 0.55rem;
+  border-radius: var(--radius-md);
   font: inherit;
   font-size: 0.84rem;
   font-weight: 750;
@@ -758,19 +760,19 @@ watch(
 
 .sync-btn.primary {
   color: white;
-  background: var(--primary-color);
+  background: var(--color-primary);
 }
 
 .sync-btn.secondary {
   color: var(--color-text);
   border-color: var(--color-border);
-  background: white;
+  background: var(--color-surface);
 }
 
 .sync-btn.destructive {
-  color: #b42318;
-  border-color: #fecaca;
-  background: #fff7f7;
+  color: var(--color-error);
+  border-color: var(--color-error-bg);
+  background: var(--color-error-bg-subtle);
 }
 
 .sync-btn.quiet {
@@ -785,15 +787,15 @@ watch(
 
 .sync-btn:focus-visible,
 .sync-close:focus-visible {
-  outline: 2px solid var(--primary-color);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
 .sync-spinner {
   width: 1.3rem;
   height: 1.3rem;
-  border: 2px solid #dbeafe;
-  border-top-color: var(--primary-color);
+  border: 2px solid var(--color-info-bg);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 700ms linear infinite;
 }
