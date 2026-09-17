@@ -62,6 +62,13 @@ class QueueItemProtocolWarning(TypedDict, total=False):
     rule_key: str
 
 
+class AnnotationCollision(TypedDict):
+    """Information about annotation conflicts between contributions."""
+
+    contribution_id: int
+    annotations: dict[str, list[str]]
+
+
 class QueueItem(TypedDict, total=False):
     """A single item in the review queue."""
 
@@ -73,12 +80,12 @@ class QueueItem(TypedDict, total=False):
     status: str
     uploaded_at: str | None
     uploaded_by: str | None
-    files: dict[str, Any]
-    file_counts: dict[str, Any]
-    quality_checks: dict[str, Any]
-    protocol_warnings: list[dict[str, Any]]
-    semantic_summary: dict[str, Any]
-    research_context: dict[str, Any]
+    files: QueueItemFiles
+    file_counts: QueueItemFileCounts
+    quality_checks: QueueItemQualityChecks
+    protocol_warnings: list[QueueItemProtocolWarning]
+    semantic_summary: QueueItemSemanticSummary
+    research_context: QueueItemResearchContext
     protocol_version_id: str | None
     git_details: dict[str, Any] | None
     merge_status: str
@@ -92,14 +99,14 @@ class QueueItem(TypedDict, total=False):
     error: str | None
     can_auto_merge: bool | None
     # Annotation collisions
-    annotation_collisions: list[dict[str, Any]]
+    annotation_collisions: list[AnnotationCollision]
 
 
 class ReviewQueueResponse(TypedDict):
     """The complete review queue response."""
 
     project_name: str
-    pending_uploads: list[dict[str, Any]]
+    pending_uploads: list[QueueItem]
     total_pending: int
     ready_count: int
     conflicts_count: int

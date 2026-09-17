@@ -17,4 +17,4 @@ class UploadNamingStandardResponse(TypedDict):
     """The naming standard configuration for upload filename validation."""
 
     pattern: str
-    components: list[dict[str, Any]]
+    components: list[NamingStandardComponent]

@@ -2,15 +2,63 @@
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from app.core.centralized_logging import get_logger
 from app.elan.validation import EafValidationError
+from app.schema.responses.contribution_queue import (
+    AnnotationCollision,
+    QueueItem,
+    QueueItemFiles,
+    QueueItemFileCounts,
+    QueueItemProtocolWarning,
+    QueueItemQualityChecks,
+    QueueItemResearchContext,
+    QueueItemSemanticSummary,
+)
 from app.service.eaf_review import EafReviewUnavailableError, compare_repository_eaf
 from app.service.git_command_runner import GitCommandRunner
 from app.storage.paths import safe_project_path
 
 logger = get_logger()
+
+
+class MergeReadinessResponse(TypedDict):
+    """Git merge readiness check result."""
+
+    status: str
+    conflicted_files: list[str]
+    conflicts_count: int
+    can_auto_merge: bool
+    tested_at: str
+
+
+class QueueItem(TypedDict, total=False):
+    upload_id: int
+    branch_name: str | None
+    original_branch: str | None
+    upload_type: str
+    description: str | None
+    status: str
+    uploaded_at: str | None
+    uploaded_by: str | None
+    files: QueueItemFiles
+    file_counts: QueueItemFileCounts
+    quality_checks: QueueItemQualityChecks
+    protocol_warnings: list[QueueItemProtocolWarning]
+    semantic_summary: QueueItemSemanticSummary
+    research_context: QueueItemResearchContext
+    protocol_version_id: str | None
+    git_details: dict[str, Any] | None
+    merge_status: str
+    superseded_by_upload_id: int | None
+    duplicate_of_upload_id: int | None
+    conflicted_files: list[str] | None
+    conflicted_files_count: int | None
+    tested_at: str | None
+    error: str | None
+    can_auto_merge: bool | None
+    annotation_collisions: list[AnnotationCollision]
 
 
 class ContributionInspectionService:
@@ -48,12 +96,12 @@ class ContributionInspectionService:
         upload_id: int,
         targets_by_upload: dict[int, dict[str, dict[str, tuple[Any, ...]]]],
         candidate_ids: set[int],
-    ) -> list[dict[str, Any]]:
+    ) -> list[AnnotationCollision]:
         """Describe differing edits to the same annotation in active submissions."""
         if upload_id not in candidate_ids:
             return []
         targets = targets_by_upload.get(upload_id, {})
-        collisions: list[dict[str, Any]] = []
+        collisions: list[AnnotationCollision] = []
         for other_id, other_targets in targets_by_upload.items():
             if other_id == upload_id or other_id not in candidate_ids:
                 continue
@@ -158,10 +206,10 @@ class ContributionInspectionService:
         recorded_protocol_id: str | None,
         merge_status: str,
         **extra: Any,
-    ) -> dict[str, Any]:
+    ) -> QueueItem:
         """Build the stable administrator queue representation for one upload."""
         branch_name = upload.branch_name
-        item = {
+        item: QueueItem = {
             "upload_id": upload.upload_id,
             "branch_name": branch_name,
             "original_branch": upload_data.get(
@@ -205,7 +253,7 @@ class ContributionInspectionService:
     @staticmethod
     def inspection_error_item(
         upload: Any, upload_data: dict[str, Any]
-    ) -> dict[str, Any]:
+    ) -> QueueItem:
         """Return a deliberately sparse queue item when Git inspection fails."""
         branch_name = upload.branch_name
         return {
@@ -293,7 +341,7 @@ class ContributionInspectionService:
                 summary["media_changed"] += 1
         return summary, targets, changed_tiers
 
-    def test_compatibility(self, project_name: str, branch_name: str) -> dict[str, Any]:
+    def test_compatibility(self, project_name: str, branch_name: str) -> MergeReadinessResponse:
         """Preview Git compatibility without retaining working-tree changes."""
         project_path = safe_project_path(self.base_path, project_name)
         if not project_path.exists():

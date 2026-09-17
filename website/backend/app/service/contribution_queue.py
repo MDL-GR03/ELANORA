@@ -23,7 +23,7 @@ from app.core.error_diagnostics import safe_exception_type
 from app.crud.pending_upload import get_pending_uploads
 from app.crud.project import get_project_by_name
 from app.model.research_topic import ProjectBaselineTier
-from app.schema.responses.contribution_queue import ReviewQueueResponse
+from app.schema.responses.contribution_queue import QueueItem, ReviewQueueResponse
 from app.service.contribution_inspection import ContributionInspectionService
 from app.service.git_command_runner import GitCommandRunner
 from app.storage.paths import safe_project_path
@@ -81,7 +81,7 @@ class ContributionQueueService:
             and upload.upload_id not in duplicate_of
         }
 
-        items: list[dict[str, Any]] = []
+        items: list[QueueItem] = []
         targets_by_upload: dict[int, SemanticTargets] = {}
         ready_count = 0
         conflicts_count = 0

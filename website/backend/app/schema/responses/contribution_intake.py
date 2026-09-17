@@ -38,5 +38,5 @@ class UploadInfoResponse(TypedDict, total=False):
     pending_approval_since: str
     uploaded_by: str
     base_commit: str
-    protocol_validation: dict[str, Any]
-    research_context: dict[str, Any]
+    protocol_validation: ProtocolValidation
+    research_context: ResearchContext
