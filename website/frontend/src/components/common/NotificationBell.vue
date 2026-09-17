@@ -67,9 +67,9 @@
         <div
           class="notification-dropdown-header px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200"
         >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <div class="p-2 bg-blue-100 rounded-lg">
+          <div class="flex items-center justify-between min-w-0">
+            <div class="flex items-center space-x-2 truncate min-w-0">
+              <div class="p-2 bg-blue-100 rounded-lg flex-shrink-0">
                 <svg
                   class="w-5 h-5 text-blue-600"
                   fill="none"
@@ -84,11 +84,11 @@
                   />
                 </svg>
               </div>
-              <h3 :id="headingId" class="text-lg font-semibold text-gray-900">
+              <h3 :id="headingId" class="text-lg font-semibold text-gray-900 truncate">
                 {{ t('notificationBell.title') }}
               </h3>
             </div>
-            <div class="notification-header-actions">
+            <div class="notification-header-actions flex-shrink-0 ml-2">
               <button
                 v-if="unreadCount > 0"
                 class="mark-all-read px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors duration-200"
@@ -532,10 +532,10 @@ onUnmounted(() => {
   display: grid;
   flex: none;
   place-items: center;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.65rem;
-  background: #fff;
-  color: #475569;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-gray-700);
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
@@ -543,11 +543,11 @@ onUnmounted(() => {
 
 .notification-close:hover,
 .notification-close:focus-visible {
-  border-color: #93b4f5;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border-color: var(--color-primary-light);
+  background: var(--color-primary-bg);
+  color: var(--color-primary-dark);
   outline: none;
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
 .notification-open-button {
@@ -591,7 +591,7 @@ article:focus-within .notification-item-actions {
 }
 
 .notification-dropdown-header {
-  border-radius: 0.75rem 0.75rem 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 @media (width <= 1024px) {

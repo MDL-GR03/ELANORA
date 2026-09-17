@@ -1,26 +1,5 @@
-:root {
-  --color-canvas: #f4f7fa;
-  --color-surface: #fff;
-  --color-surface-subtle: #f8fafc;
-  --color-text: #172033;
-  --color-text-muted: #64748b;
-  --color-border: #dfe6ee;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --shadow-sm: 0 1px 2px rgb(15 23 42 / 5%);
-  --shadow-md: 0 10px 30px rgb(15 23 42 / 7%);
-  --content-width: 80rem;
-
-  color: var(--color-text);
-  font-family: 'Nunito Sans Variable', system-ui, sans-serif;
-  font-synthesis: none;
-  text-rendering: optimizelegibility;
-}
-
-* {
-  box-sizing: border-box;
-}
+/* Design System - Global Styles for the Frontend Application */
+/* Uses centralized design tokens from _variables.css */
 
 html,
 body {
@@ -34,6 +13,13 @@ body {
   background-attachment: fixed;
   background-size: cover;
   overscroll-behavior-y: none;
+  font-family: var(--font-family);
+  font-synthesis: none;
+  text-rendering: optimizelegibility;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 button,
@@ -45,16 +31,16 @@ textarea {
 
 :where(.content)
   :where(input:not([type='checkbox'], [type='radio']), select, textarea) {
-  border-color: #cbd5e1;
+  border-color: var(--color-border-strong);
   color: var(--color-text);
   background-color: var(--color-surface);
 }
 
 :where(.content)
   :where(input:not([type='checkbox'], [type='radio']), select, textarea):focus {
-  border-color: var(--primary-color);
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--primary-color) 12%, transparent);
+    color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 button,
@@ -67,7 +53,7 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--primary-color) 24%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
   outline-offset: 2px;
 }
 
@@ -127,11 +113,11 @@ h4 {
 :where(.modal-content, .dialog-content, .confirm-dialog, .prompt-dialog) {
   border: 1px solid var(--color-border) !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: 0 24px 70px rgb(15 23 42 / 18%) !important;
+  box-shadow: var(--modal-shadow) !important;
 }
 
 :where(.loading-spinner, .spinner) {
-  border-top-color: var(--primary-color) !important;
+  border-top-color: var(--color-primary) !important;
 }
 
 :where(.empty-state, .project-page-no-projects, .project-page-loading) {
@@ -145,22 +131,9 @@ h4 {
 }
 
 @media (width <= 768px) {
-  :root {
-    --radius-lg: 0.8rem;
-  }
-
   h1 {
     font-size: clamp(1.65rem, 8vw, 2.15rem) !important;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-  }
-}
+

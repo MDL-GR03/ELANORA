@@ -1,0 +1,472 @@
+/*
+ * Utility CSS Classes
+ * 
+ * Best Practices (2026):
+ * - Use :where() for zero-specificity selectors
+ * - Use CSS custom properties for all colors
+ * - Use rem units for all spacing
+ * - Use logical properties (inset, padding-inline, etc.) where appropriate
+ * - Group related utilities together
+ */
+
+/* ========================================
+   LAYOUT UTILITIES
+   ======================================== */
+
+:where(.flex) {
+  display: flex;
+}
+
+:where(.flex-col) {
+  display: flex;
+  flex-direction: column;
+}
+
+:where(.flex-wrap) {
+  flex-wrap: wrap;
+}
+
+:where(.items-center) {
+  align-items: center;
+}
+
+:where(.items-start) {
+  align-items: flex-start;
+}
+
+:where(.justify-center) {
+  justify-content: center;
+}
+
+:where(.justify-between) {
+  justify-content: space-between;
+}
+
+:where(.justify-end) {
+  justify-content: flex-end;
+}
+
+:where(.gap-sm) {
+  gap: 0.5rem;
+}
+
+:where(.gap-md) {
+  gap: 0.75rem;
+}
+
+:where(.gap-lg) {
+  gap: 1rem;
+}
+
+:where(.gap-xl) {
+  gap: 1.5rem;
+}
+
+:where(.min-w-0) {
+  min-width: 0;
+}
+
+/* ========================================
+   SPACING UTILITIES
+   ======================================== */
+
+:where(.p-sm) { padding: 0.5rem; }
+:where(.p-md) { padding: 0.75rem; }
+:where(.p-lg) { padding: 1rem; }
+:where(.p-xl) { padding: 1.5rem; }
+
+:where(.px-sm) { padding-inline: 0.5rem; }
+:where(.px-md) { padding-inline: 0.75rem; }
+:where(.px-lg) { padding-inline: 1rem; }
+
+:where(.py-sm) { padding-block: 0.5rem; }
+:where(.py-md) { padding-block: 0.75rem; }
+:where(.py-lg) { padding-block: 1rem; }
+
+:where(.mt-sm) { margin-top: 0.5rem; }
+:where(.mt-md) { margin-top: 0.75rem; }
+:where(.mt-lg) { margin-top: 1rem; }
+
+:where(.mb-sm) { margin-bottom: 0.5rem; }
+:where(.mb-md) { margin-bottom: 0.75rem; }
+:where(.mb-lg) { margin-bottom: 1rem; }
+
+/* ========================================
+   SIZING UTILITIES
+   ======================================== */
+
+:where(.w-full) { width: 100%; }
+:where(.h-full) { height: 100%; }
+:where(.w-fit) { width: fit-content; }
+
+/* ========================================
+   BORDER UTILITIES
+   ======================================== */
+
+:where(.border) {
+  border: 1px solid var(--color-border);
+}
+
+:where(.border-subtle) {
+  border: 1px solid var(--color-border-subtle);
+}
+
+:where(.border-strong) {
+  border: 1px solid var(--color-border-strong);
+}
+
+:where(.rounded-sm) {
+  border-radius: var(--radius-sm);
+}
+
+:where(.rounded-md) {
+  border-radius: var(--radius-md);
+}
+
+:where(.rounded-lg) {
+  border-radius: var(--radius-lg);
+}
+
+:where(.rounded-xl) {
+  border-radius: var(--radius-xl);
+}
+
+:where(.rounded-full) {
+  border-radius: var(--radius-full);
+}
+
+/* ========================================
+   COLOR UTILITIES - TEXT
+   ======================================== */
+
+:where(.text-primary) { color: var(--color-primary); }
+:where(.text-primary-dark) { color: var(--color-primary-dark); }
+:where(.text-primary-light) { color: var(--color-primary-light); }
+
+:where(.text-success) { color: var(--color-success); }
+:where(.text-error) { color: var(--color-error); }
+:where(.text-warning) { color: var(--color-warning); }
+:where(.text-muted) { color: var(--color-text-muted); }
+:where(.text-subtle) { color: var(--color-text-subtle); }
+:where(.text-inverse) { color: var(--color-text-inverse); }
+
+/* ========================================
+   COLOR UTILITIES - BACKGROUND
+   ======================================== */
+
+:where(.bg-surface) { background-color: var(--color-surface); }
+:where(.bg-surface-subtle) { background-color: var(--color-surface-subtle); }
+:where(.bg-canvas) { background-color: var(--color-canvas); }
+
+:where(.bg-primary) { background-color: var(--color-primary); }
+:where(.bg-primary-dark) { background-color: var(--color-primary-dark); }
+:where(.bg-primary-subtle) { background-color: var(--color-primary-subtle); }
+:where(.bg-primary-bg) { background-color: var(--color-primary-bg); }
+
+:where(.bg-success) { background-color: var(--color-success); }
+:where(.bg-success-bg) { background-color: var(--color-success-bg); }
+:where(.bg-error) { background-color: var(--color-error); }
+:where(.bg-error-bg) { background-color: var(--color-error-bg); }
+:where(.bg-warning) { background-color: var(--color-warning); }
+:where(.bg-info) { background-color: var(--color-info); }
+
+/* ========================================
+   SHADOW UTILITIES
+   ======================================== */
+
+:where(.shadow-sm) { box-shadow: var(--shadow-sm); }
+:where(.shadow-md) { box-shadow: var(--shadow-md); }
+:where(.shadow-lg) { box-shadow: var(--shadow-lg); }
+:where(.shadow-xl) { box-shadow: var(--shadow-xl); }
+
+:where(.shadow-btn) { box-shadow: var(--btn-shadow); }
+:where(.shadow-btn-hover) { box-shadow: var(--btn-shadow-hover); }
+
+/* ========================================
+   TYPOGRAPHY UTILITIES
+   ======================================== */
+
+:where(.font-bold) { font-weight: 700; }
+:where(.font-semibold) { font-weight: 600; }
+:where(.font-medium) { font-weight: 500; }
+:where(.font-normal) { font-weight: 400; }
+
+:where(.text-xs) { font-size: var(--font-size-xs); }
+:where(.text-sm) { font-size: var(--font-size-sm); }
+:where(.text-base) { font-size: var(--font-size-base); }
+:where(.text-lg) { font-size: var(--font-size-lg); }
+:where(.text-xl) { font-size: var(--font-size-xl); }
+
+:where(.truncate) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:where(.break-words) {
+  overflow-wrap: break-word;
+}
+
+/* ========================================
+   INTERACTION UTILITIES
+   ======================================== */
+
+:where(.cursor-pointer) { cursor: pointer; }
+:where(.cursor-default) { cursor: default; }
+:where(.cursor-wait) { cursor: wait; }
+:where(.cursor-not-allowed) { cursor: not-allowed; }
+
+:where(.transition-fast) { transition: all var(--transition-fast); }
+:where(.transition-base) { transition: all var(--transition-base); }
+:where(.transition-slow) { transition: all var(--transition-slow); }
+
+:where(.transition-colors) {
+  transition: color var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
+}
+
+/* ========================================
+   FORM UTILITIES
+   ======================================== */
+
+:where(.form-input) {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+:where(.form-input:focus) {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+:where(.form-input:disabled) {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   BUTTON UTILITIES
+   ======================================== */
+
+:where(.btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-base);
+}
+
+:where(.btn:active:not(:disabled)) {
+  transform: translateY(1px);
+}
+
+:where(.btn:disabled) {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+:where(.btn-primary) {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  box-shadow: var(--btn-shadow);
+}
+
+:where(.btn-primary:hover:not(:disabled)) {
+  background: var(--color-primary-dark);
+  box-shadow: var(--btn-shadow-hover);
+}
+
+:where(.btn-secondary) {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+:where(.btn-secondary:hover:not(:disabled)) {
+  background: var(--color-surface-subtle);
+}
+
+:where(.btn-danger) {
+  border: 1px solid var(--color-error-bg);
+  background: var(--color-surface);
+  color: var(--color-error);
+}
+
+:where(.btn-danger:hover:not(:disabled)) {
+  background: var(--color-error-bg-subtle);
+}
+
+:where(.btn-text) {
+  padding: 0.25rem;
+  background: transparent;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+:where(.btn-text:hover:not(:disabled)) {
+  background: transparent;
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+/* ========================================
+   CARD UTILITIES
+   ======================================== */
+
+:where(.card) {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+:where(.card-title) {
+  margin: 0 0 1.5rem;
+  color: var(--color-text);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ========================================
+   STATUS UTILITIES
+   ======================================== */
+
+:where(.status-badge) {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: var(--radius-full);
+  padding: 0.2rem 0.55rem;
+  font-size: var(--font-size-xs);
+  font-style: normal;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+:where(.status-draft) {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+}
+
+:where(.status-passed) {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+:where(.status-failed) {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+:where(.status-published) {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+:where(.status-archived) {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   EMPTY STATE UTILITIES
+   ======================================== */
+
+:where(.empty-state) {
+  padding: 1rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+:where(.empty-state.compact) {
+  border: 0;
+}
+
+:where(.loading-spinner) {
+  border-top-color: var(--color-primary) !important;
+}
+
+/* ========================================
+   MESSAGE/ALERT UTILITIES
+   ======================================== */
+
+:where(.message) {
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-md);
+}
+
+:where(.message-error) {
+  border: 1px solid var(--color-error-bg);
+  background: var(--color-error-bg-subtle);
+  color: var(--color-error);
+}
+
+:where(.message-success) {
+  border: 1px solid var(--color-success-bg);
+  background: var(--color-success-bg-subtle);
+  color: var(--color-success);
+}
+
+:where(.message-info) {
+  border: 1px solid var(--color-info-bg);
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+/* ========================================
+   MODAL/DIALOG UTILITIES
+   ======================================== */
+
+:where(.modal-content),
+:where(.dialog-content),
+:where(.confirm-dialog),
+:where(.prompt-dialog) {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  background: var(--color-surface);
+}
+
+/* ========================================
+   RESPONSIVE UTILITIES
+   ======================================== */
+
+@media (width <= 768px) {
+  :where(.mobile-hidden) {
+    display: none;
+  }
+  
+  :where(.mobile-block) {
+    display: block;
+  }
+  
+  :where(.mobile-flex) {
+    display: flex;
+  }
+}
+
+@media (width > 768px) {
+  :where(.desktop-hidden) {
+    display: none;
+  }
+}

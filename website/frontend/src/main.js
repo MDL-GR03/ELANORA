@@ -6,6 +6,8 @@ import { createHead } from '@unhead/vue/client';
 import '@fontsource-variable/nunito-sans';
 
 import '@css/tailwind.css';
+import '@css/_variables.css';
+import '@css/_utilities.css';
 import '@css/style.css';
 import '@css/app.css';
 import '@css/design-system.css';
