@@ -1,7 +1,12 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from app.model.file_type import FileType
 
 
 class ProjectFileType(Base):
@@ -19,4 +24,4 @@ class ProjectFileType(Base):
     )
     name: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    file_type = relationship("FileType")
+    file_type: Mapped["FileType"] = relationship("FileType")

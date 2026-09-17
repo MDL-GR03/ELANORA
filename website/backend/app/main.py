@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -53,7 +54,7 @@ API_V1_PREFIX = "/api/v1"
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize and dispose shared infrastructure with the ASGI process."""
     init_database()
     create_hidden_folder_in_root()
@@ -177,7 +178,7 @@ app.include_router(
 
 # Root endpoint
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     """Root endpoint for API health check."""
     return {
         "message": "ELANORA API is running",
@@ -188,6 +189,6 @@ async def root():
 
 # Health check endpoint
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy"}

@@ -134,6 +134,9 @@ class ContributionQueueService:
                 )
                 continue
 
+            if upload.branch_name is None:
+                items.append(self.inspection.inspection_error_item(upload, upload_data))
+                continue
             try:
                 readiness = runner.preview_merge(upload.branch_name)
                 items.append(

@@ -4,7 +4,6 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
-from lxml import etree
 
 import app.crud.annotation_value as annotation_value_module
 import app.service.user_sessions as user_sessions_module
@@ -14,7 +13,7 @@ import app.utils.validation as validation_module
 from app.model.accepted_value import AcceptedValue
 from app.service import user_sessions
 from app.utils.database import DatabaseUtils
-from app.utils.file_processing import ElanFileProcessor, XmlAttributeExtractor
+from app.utils.file_processing import ElanFileProcessor
 from app.utils.validation import ValidationUtils
 
 SENSITIVE_VALUE = "participant-secret-annotation@example.org"
@@ -77,24 +76,6 @@ async def test_annotation_value_logs_contain_counts_not_annotation_text(
     assert SENSITIVE_VALUE not in _rendered_calls(logger)
 
 
-def test_xml_extraction_logs_exclude_annotation_text(monkeypatch) -> None:
-    logger = Mock()
-    monkeypatch.setattr(file_processing_module, "logger", logger)
-    annotation = etree.fromstring(
-        f"<ALIGNABLE_ANNOTATION ANNOTATION_ID='a1' TIME_SLOT_REF1='ts1' "
-        f"TIME_SLOT_REF2='ts2'><ANNOTATION_VALUE>{SENSITIVE_VALUE}"
-        "</ANNOTATION_VALUE></ALIGNABLE_ANNOTATION>"
-    )
-
-    extracted = XmlAttributeExtractor.get_alignable_annotation_attributes(
-        annotation, {"ts1": 0, "ts2": 1000}
-    )
-
-    assert extracted is not None
-    assert extracted["annotation_value"] == SENSITIVE_VALUE
-    assert SENSITIVE_VALUE not in _rendered_calls(logger)
-
-
 def test_file_validation_logs_exclude_sensitive_path(monkeypatch, tmp_path) -> None:
     logger = Mock()
     monkeypatch.setattr(file_processing_module, "logger", logger)
@@ -102,9 +83,8 @@ def test_file_validation_logs_exclude_sensitive_path(monkeypatch, tmp_path) -> N
     sensitive_file.write_text("<ANNOTATION_DOCUMENT />", encoding="utf-8")
 
     validated = ElanFileProcessor.validate_elan_file(str(sensitive_file))
-    info = ElanFileProcessor.get_file_info(validated)
 
-    assert info["filename"] == sensitive_file.name
+    assert validated == sensitive_file
     assert SENSITIVE_VALUE not in _rendered_calls(logger)
 
 

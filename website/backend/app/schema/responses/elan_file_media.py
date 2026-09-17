@@ -1,15 +1,6 @@
 from app.schema.common.base import CustomBaseModel
 
 
-class ElanFileMediaResponse(CustomBaseModel):
-    """Response schema for ELAN file media information."""
-
-    media_id: int
-    media_url: str
-    relative_media_url: str | None = None
-    mime_type: str | None = None
-
-
 class ElanFileWithMediaResponse(CustomBaseModel):
     """Response schema for ELAN file with associated media filenames."""
 

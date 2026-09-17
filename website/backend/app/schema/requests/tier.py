@@ -5,10 +5,6 @@ from pydantic import Field, StringConstraints
 from app.schema.common.base import CustomBaseModel
 
 
-class TierTreeRequest(CustomBaseModel):
-    project_name: str
-
-
 class CreateSectionRequest(CustomBaseModel):
     project_id: int
     name: str

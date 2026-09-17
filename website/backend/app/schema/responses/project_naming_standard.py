@@ -23,6 +23,20 @@ class NamingStandardResponse(CustomBaseModel):
     components: list[NamingComponentResponse]
 
 
+class NamingStandardSummaryResponse(CustomBaseModel):
+    id: int
+    project_id: int
+    name: str
+    project_file_type_id: int
+    pattern: str
+    description: str | None = ""
+
+
+class ProjectNamingStandardsResponse(CustomBaseModel):
+    component_names: list[str]
+    standards: list[NamingStandardResponse]
+
+
 class ProjectWithStandardsResponse(CustomBaseModel):
     id: int
     name: str

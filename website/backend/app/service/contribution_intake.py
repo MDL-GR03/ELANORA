@@ -134,7 +134,6 @@ class ContributionIntakeService:
                 "new_files": analysis.new_files,
                 "modified_files": analysis.modified_files,
                 "deleted_files": analysis.deleted_files,
-                "analysis": analysis,
                 "message": (
                     "Upload saved for admin approval. "
                     f"{len(analysis.new_files)} new files, "

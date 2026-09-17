@@ -15,7 +15,8 @@ from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_MAX_FILE_SIZE_MB
 from app.core.error_diagnostics import safe_exception_type
 from app.elan.validation import validate_eaf
-from app.schema.responses.git import FileStatus, ProjectSyncCheckResponse
+from app.schema.common.git import FileStatus
+from app.schema.responses.git import ProjectSyncCheckResponse
 from app.service.database_rename_handler import DatabaseRenameHandler
 from app.service.elan import ElanService
 from app.service.git_command_runner import GitCommandRunner
@@ -34,7 +35,7 @@ class ProjectFilesystemSyncService:
     @staticmethod
     def _analyze_changes(
         runner: GitCommandRunner, elan_files_dir: Path
-    ) -> tuple[list[FileStatus], list[Any]]:
+    ) -> tuple[list[FileStatus], set[str]]:
         """Read Git's view of the folder. Shared so preview and apply agree."""
         status_output = runner.get_status()
         analyzer = GitFileStatusAnalyzer(GitStatusParser())

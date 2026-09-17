@@ -310,12 +310,13 @@ async def count_permanently_failed_events(db: AsyncSession) -> int:
 
 async def oldest_pending_event_at(db: AsyncSession) -> datetime | None:
     """When the oldest deliverable event was queued, for backlog alerting."""
-    return await db.scalar(
+    oldest: datetime | None = await db.scalar(
         select(func.min(OutboxEvent.occurred_at)).where(
             OutboxEvent.published_at.is_(None),
             OutboxEvent.attempts < MAX_DELIVERY_ATTEMPTS,
         )
     )
+    return oldest
 
 
 async def purge_failed_events(

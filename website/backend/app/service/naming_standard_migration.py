@@ -93,15 +93,15 @@ async def _copy_one(
         return
     try:
         rule = FilenameStandardRule(
-            name=full["name"],
-            pattern=full["pattern"],
+            name=full.name,
+            pattern=full.pattern,
             components=[
                 {
-                    "name": component["name"],
-                    "regex": component["regex"] or "",
-                    "accepted_values": component["accepted_values"],
+                    "name": component.name,
+                    "regex": component.regex,
+                    "accepted_values": component.accepted_values,
                 }
-                for component in full["components"]
+                for component in full.components
             ],
         )
     except ValidationError:

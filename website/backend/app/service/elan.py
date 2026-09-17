@@ -1,7 +1,9 @@
-"""ELAN Service - Simplified using utilities."""
+"""Parsing ELAN files and storing their relational projection."""
 
 import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,23 +28,31 @@ from app.crud.tier import (
     create_tier_in_db,
     delete_tiers_for_elan_file,
     get_tier_by_name,
-    get_tier_statistics,
     update_parent_tier,
 )
 from app.crud.tier_group import delete_tier_groups_for_project_and_elan
 from app.elan import PersistedEafFile, document_to_persistence, parse_eaf_path
+from app.elan.persistence import PersistedTier
 from app.utils.file_processing import ElanFileProcessor
 
 # Get logger for this module
 logger = get_logger()
 
 
+@dataclass(frozen=True, slots=True)
+class ElanFileOutcome:
+    """What happened to one ELAN file given to the service."""
+
+    status: Literal["processed", "skipped", "updated"]
+    filename: str
+    elan_id: int
+
+
 class ElanService:
     """Service for ELAN file operations."""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
-        self.file_processor = ElanFileProcessor()
 
     def parse_elan_file(self, file_path: str) -> PersistedEafFile:
         logger.info("Starting to parse an ELAN file")
@@ -59,7 +69,7 @@ class ElanService:
     # ==================== STORAGE METHODS ====================
 
     async def _store_tiers_and_annotations(
-        self, tiers_data: list[dict], elan_id: int
+        self, tiers_data: list[PersistedTier], elan_id: int
     ) -> None:
         logger.debug(f"Storing {len(tiers_data)} tiers with annotations")
         t0 = time.perf_counter()
@@ -71,7 +81,7 @@ class ElanService:
         logger.info(f"AnnotationValue creation took {t_val_end - t_val_start:.3f}s")
 
         # First pass: create all tiers without parent references
-        tier_name_to_id = {}
+        tier_name_to_id: dict[str, int] = {}
         t_tier_start = time.perf_counter()
         for tier_data in tiers_data:
             tier_obj = await get_tier_by_name(self.db, tier_data["tier_name"], elan_id)
@@ -101,7 +111,7 @@ class ElanService:
             parent_name = tier_data.get("parent_tier_name")
             if parent_name:
                 parent_id = tier_name_to_id.get(parent_name)
-                if parent_id and tier_data.get("parent_tier_id") != parent_id:
+                if parent_id:
                     await update_parent_tier(self.db, tier_data["tier_id"], parent_id)
 
         # Bulk create all annotations for all tiers
@@ -175,7 +185,7 @@ class ElanService:
         project_name: str,
         *,
         commit_changes: bool = True,
-    ) -> dict:
+    ) -> ElanFileOutcome:
         """Process and store a single ELAN file for the given project."""
         logger.info("Processing one ELAN file")
 
@@ -202,12 +212,7 @@ class ElanService:
                     filename,
                     project_name,
                 )
-                return {
-                    "status": "skipped",
-                    "reason": "already_processed",
-                    "filename": filename,
-                    "elan_id": existing_file.elan_id,
-                }
+                return ElanFileOutcome("skipped", filename, existing_file.elan_id)
 
         logger.debug("Processing a new ELAN file for a project")
         file_info = self.parse_elan_file(file_path)
@@ -218,7 +223,7 @@ class ElanService:
             commit_changes=commit_changes,
         )
         logger.info("Successfully processed one ELAN file")
-        return {"status": "processed", "filename": filename, "elan_id": elan_id}
+        return ElanFileOutcome("processed", filename, elan_id)
 
     async def process_single_file_and_update(
         self,
@@ -227,7 +232,7 @@ class ElanService:
         project_name: str,
         *,
         commit_changes: bool = True,
-    ) -> dict:
+    ) -> ElanFileOutcome:
         """Process and update a single ELAN file for the given project."""
         logger.info("Processing one ELAN file update")
 
@@ -248,26 +253,7 @@ class ElanService:
             replace_existing_tiers=True,
         )
         logger.info("Successfully updated one ELAN file")
-        return {"status": "updated", "filename": filename, "elan_id": elan_id}
-
-    # ==================== QUERY METHODS ====================
-
-    async def get_tier_statistics(self) -> dict:
-        """Get statistics about tiers across all files."""
-        logger.debug("Generating tier statistics")
-
-        stats_list = await get_tier_statistics(self.db)
-        stats = {
-            "tier_statistics": [
-                {"tier_name": tier_name, "annotation_count": ann_count}
-                for tier_name, ann_count in stats_list
-            ]
-        }
-
-        logger.debug(
-            f"Generated statistics for {len(stats['tier_statistics'])} tier types"
-        )
-        return stats
+        return ElanFileOutcome("updated", filename, elan_id)
 
     async def delete_elan_files_from_db(
         self, filename: str, project_name: str, *, commit_changes: bool = True

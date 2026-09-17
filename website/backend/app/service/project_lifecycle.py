@@ -124,11 +124,10 @@ class ProjectLifecycleService:
                 result = await elan_service.process_single_file(
                     str(elan_file), user_id, project_name, commit_changes=False
                 )
-                status = result.get("status")
-                if status == "processed":
-                    processed_files.append(str(result["filename"]))
-                elif status == "skipped":
-                    skipped_files.append(str(result["filename"]))
+                if result.status == "processed":
+                    processed_files.append(result.filename)
+                elif result.status == "skipped":
+                    skipped_files.append(result.filename)
                 else:
                     raise RuntimeError("Could not import an ELAN file")
 

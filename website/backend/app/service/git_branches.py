@@ -8,7 +8,7 @@ from pathlib import Path
 
 from app.core.centralized_logging import get_logger
 from app.service.git_command_runner import GitCommandRunner
-from app.service.git_diff_parser import GitDiffParser
+from app.service.git_diff_parser import parse_name_status
 from app.service.git_results import MergeAnalysis
 
 logger = get_logger()
@@ -59,62 +59,31 @@ class GitBranchManager:
 class GitDiffAnalyzer:
     """Analyzes Git differences between branches."""
 
-    def __init__(self, project_path: Path):
-        """Initialize with the project path."""
+    def __init__(self, project_path: Path) -> None:
         self.project_path = project_path
 
     def analyze_merge_differences(self, branch_name: str) -> MergeAnalysis:
-        """Analyze differences and return structured data with parsed diffs."""
-        logger.info(
-            f"Analyzing merge differences for branch '{branch_name}' using Git diff"
-        )
-        diff_parser = GitDiffParser()
-
+        """Which files a branch adds, modifies and deletes from the accepted line."""
         canonical = GitCommandRunner(
             self.project_path, maintain_backup=False
         ).canonical_branch()
-        diff_name_status_result = subprocess.run(
+        result = subprocess.run(
             ["git", "diff", f"{canonical}...{branch_name}", "--name-status"],
             cwd=self.project_path,
             capture_output=True,
             text=True,
             check=False,
         )
-
-        logger.debug("Generated a Git name-status diff")
-
-        new_files, modified_files, deleted_files = diff_parser.parse_name_status_output(
-            diff_name_status_result.stdout
-        )
-
-        has_conflicts = len(modified_files) > 0 or len(deleted_files) > 0
-
+        changes = parse_name_status(result.stdout)
         logger.info(
-            f"Git diff analysis - New: {len(new_files)}, Modified: {len(modified_files)}, Deleted: {len(deleted_files)}"
+            "Git diff analysis - new: %s, modified: %s, deleted: %s",
+            len(changes.new_files),
+            len(changes.modified_files),
+            len(changes.deleted_files),
         )
-
-        file_diffs = {}
-
-        # For each modified file, parse the diff ONCE
-        for filename in modified_files:
-            file_diff_result = subprocess.run(
-                ["git", "diff", f"{canonical}...{branch_name}", "--", filename],
-                cwd=self.project_path,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            if file_diff_result.stdout:
-                parsed_diff = diff_parser.parse_single_file_diff(
-                    file_diff_result.stdout
-                )
-                file_diffs[filename] = parsed_diff  # STORE PARSED DATA
-
         return MergeAnalysis(
-            new_files=new_files,
-            modified_files=modified_files,
-            deleted_files=deleted_files,
-            has_conflicts=has_conflicts,
-            file_diffs=file_diffs,
+            new_files=changes.new_files,
+            modified_files=changes.modified_files,
+            deleted_files=changes.deleted_files,
+            has_conflicts=bool(changes.modified_files or changes.deleted_files),
         )

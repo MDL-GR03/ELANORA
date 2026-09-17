@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import UploadFile
 
+from app.service.elan import ElanFileOutcome
 from app.service.git import GitService
 from app.service.git_command_runner import GitCommandRunner
 
@@ -119,7 +120,7 @@ async def test_folder_import_publishes_only_after_eaf_projection_succeeds(
     append_revision = AsyncMock()
     elan_service = MagicMock()
     elan_service.process_single_file = AsyncMock(
-        return_value={"status": "processed", "filename": "session.eaf"}
+        return_value=ElanFileOutcome("processed", "session.eaf", 1)
     )
     upload = eaf_upload()
 

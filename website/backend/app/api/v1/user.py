@@ -163,7 +163,9 @@ async def update_current_user_address(
             ],
         )
 
-        if user_with_address and user_with_address.address:
+        if user_with_address is None:
+            raise ElanoraError(ErrorCode.ACCOUNT_NOT_FOUND)
+        if user_with_address.address:
             # Update existing address
             updated_address = await AddressService.update_address(
                 db, user_with_address.address, address_data
@@ -187,7 +189,8 @@ async def update_current_user_address(
             ],
         )
 
-        # Return the updated address with city and country info
+        if updated_address_with_relations is None:
+            raise ElanoraError(ErrorCode.ADDRESS_UPDATE_FAILED)
         city_obj = updated_address_with_relations.city
 
         return AddressResponse(

@@ -36,7 +36,6 @@ class FileUploadResponse(CustomBaseModel):
     merge_status: str
     has_conflicts: bool
     conflicts: list[str] | None = None
-    status: str
     added_at: str
 
 
@@ -168,14 +167,6 @@ class ProjectEditResponse(CustomBaseModel):
     new_project_description: str | None = None
 
 
-class ProjectDeleteResponse(CustomBaseModel):
-    """Schema for project delete response."""
-
-    project_id: int
-    status: str
-    message: str | None = None
-
-
 class ProjectSyncCheckResponse(CustomBaseModel):
     """Schema for project synchronization check response."""
 
@@ -221,15 +212,7 @@ class PendingUploadInfo(CustomBaseModel):
     tested_at: str | None = None
 
     # Raw git details
-    git_details: dict | None = None
-
-
-class UploadSummaryStats(CustomBaseModel):
-    """Schema for upload summary statistics."""
-
-    total_pending: int
-    ready_count: int = 0
-    conflicts_count: int = 0
+    git_details: dict[str, object] | None = None
 
 
 class PendingUploadsResponse(CustomBaseModel):
@@ -348,6 +331,10 @@ class FileInfo(CustomBaseModel):
     type: str = "file"
 
 
+class ProjectFilesResponse(CustomBaseModel):
+    files: list[FileInfo]
+
+
 class FileInfoWithMedia(CustomBaseModel):
     """Extended file info that includes database ID and associated media filenames."""
 
@@ -358,10 +345,6 @@ class FileInfoWithMedia(CustomBaseModel):
     type: str = "file"
     elan_id: int | None = None  # Database ID for rename operations
     media_filenames: list[str] = Field(default_factory=list)
-
-
-class ProjectFilesResponse(CustomBaseModel):
-    files: list[FileInfo]
 
 
 class ProjectFilesWithMediaResponse(CustomBaseModel):

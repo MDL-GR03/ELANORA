@@ -1,11 +1,13 @@
-from typing import Any
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.standard_component import get_components_by_standard
 from app.model.project import Project
 from app.model.project_file_type import ProjectFileType
 from app.model.project_naming_standard import ProjectNamingStandard
+from app.schema.responses.project_naming_standard import (
+    NamingComponentResponse,
+    NamingStandardResponse,
+)
 from app.utils.database import DatabaseUtils
 
 # --- ProjectNamingStandard CRUD ---
@@ -68,47 +70,42 @@ async def get_projects_with_standards(db: AsyncSession) -> list[Project]:
 
 async def get_standard_with_components_full(
     db: AsyncSession, standard_id: int
-) -> dict[str, Any] | None:
-    # Get the standard
+) -> NamingStandardResponse | None:
+    """A naming standard with its ordered components and accepted values."""
     standard = await DatabaseUtils.get_by_id(
         db, ProjectNamingStandard, "id", standard_id
     )
     if not standard:
         return None
-
-    # Get the project_file_type
     project_file_type = await DatabaseUtils.get_by_id(
         db, ProjectFileType, "id", standard.project_file_type_id
     )
+    if project_file_type is None:
+        return None
 
-    # Eagerly load components, templates, and accepted values
-    std_components = await get_components_by_standard(db, standard_id)
-    components = []
-    for sc in std_components:
-        template = sc.component_template
-        accepted_values = (
-            [v.value for v in template.accepted_values] if template else []
+    components = [
+        NamingComponentResponse(
+            id=link.component_template.id,
+            name=link.component_template.name,
+            description=link.component_template.description,
+            regex=link.component_template.regex,
+            order=link.order,
+            accepted_values=[
+                value.value for value in link.component_template.accepted_values
+            ],
+            project_file_type_id=standard.project_file_type_id,
         )
-        components.append(
-            {
-                "id": template.id if template else None,
-                "name": template.name if template else None,
-                "description": template.description if template else None,
-                "regex": template.regex if template else None,
-                "order": sc.order,
-                "accepted_values": accepted_values,
-                "project_file_type_id": standard.project_file_type_id,
-            }
-        )
-
-    return {
-        "id": standard.id,
-        "project_id": standard.project_id,
-        "name": standard.name,
-        "project_file_type_id": standard.project_file_type_id,
-        "file_type_id": project_file_type.file_type_id if project_file_type else None,
-        "file_type_name": project_file_type.name if project_file_type else None,
-        "pattern": standard.pattern,
-        "description": standard.description,
-        "components": components,
-    }
+        for link in await get_components_by_standard(db, standard_id)
+        if link.component_template is not None
+    ]
+    return NamingStandardResponse(
+        id=standard.id,
+        project_id=standard.project_id,
+        name=standard.name,
+        project_file_type_id=standard.project_file_type_id,
+        file_type_id=project_file_type.file_type_id,
+        file_type_name=project_file_type.name,
+        pattern=standard.pattern,
+        description=standard.description,
+        components=components,
+    )

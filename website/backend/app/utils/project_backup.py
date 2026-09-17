@@ -8,7 +8,7 @@ from app.core.error_diagnostics import safe_exception_type
 from app.storage.paths import safe_project_path
 
 
-def make_writable(path: Path):
+def make_writable(path: Path) -> None:
     """Recursively make all files and folders under 'path' writable."""
     for root, dirs, files in os.walk(path):
         for d in dirs:
@@ -24,7 +24,7 @@ def create_hidden_folder_in_root() -> Path:
     return hidden_folder
 
 
-def update_backup(project_name: str, projects_root: Path | None):
+def update_backup(project_name: str, projects_root: Path | None) -> None:
     """Copy .git, elan_files, README.md, and .gitignore from the project directory to its backup directory."""
     logger = get_logger()
     hidden_folder = create_hidden_folder_in_root()
@@ -85,7 +85,7 @@ def update_backup(project_name: str, projects_root: Path | None):
         logger.warning(f"No .gitignore found in {project_path}")
 
 
-def remove_project_backup(project_name: str):
+def remove_project_backup(project_name: str) -> None:
     """Remove the backup directory for the specified project."""
     logger = get_logger()
     hidden_folder = create_hidden_folder_in_root()
@@ -105,7 +105,7 @@ def remove_project_backup(project_name: str):
         logger.warning(f"No backup found for project: {project_name}")
 
 
-def restore_project_backup(project_name: str, projects_root: Path | None):
+def restore_project_backup(project_name: str, projects_root: Path | None) -> None:
     """Restore .git, elan_files, README.md, and .gitignore from backup to the project directory."""
     logger = get_logger()
     hidden_folder = create_hidden_folder_in_root()

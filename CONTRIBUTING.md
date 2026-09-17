@@ -35,12 +35,12 @@ repository root, run `make test-integration`, or run `make backend-check` for
 the complete backend gate. The test stack is isolated from development and is
 destroyed after a successful run.
 
-New domain, storage, configuration, and persistence modules must be fully
-typed and added to the strict boundary in `mypy.ini`. Do not add anonymous
-`dict` structures where a dataclass, Pydantic request/response model, or typed
-record describes a stable contract. The legacy service layer is being moved
-into that boundary incrementally; a pull request must not weaken strictness or
-add a new untyped architectural module.
+`mypy.ini` checks the whole `app` package in strict mode, so every new module
+must be fully typed from its first commit. Do not add anonymous `dict`
+structures where a dataclass, Pydantic request/response model, or typed record
+describes a stable contract. A pull request must not weaken strictness, add
+`type: ignore` comments to silence real findings, or exclude a module from the
+check.
 
 ### EAF changes
 

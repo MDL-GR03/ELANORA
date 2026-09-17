@@ -21,7 +21,6 @@ from app.crud.file_type import (
     create_file_type,
     delete_orphaned_file_types,
     get_file_type_by_extension,
-    get_file_type_by_id,
 )
 from app.model.file_type import FileType
 from app.model.project_file_type import ProjectFileType
@@ -71,7 +70,7 @@ class FileTypeService:
     @staticmethod
     async def create_file_type_for_project(
         db: AsyncSession, name: str, extension: str, project_id: int
-    ) -> dict[str, Any]:
+    ) -> ProjectFileType:
         # Get or create the global FileType (by extension)
         file_type = await get_file_type_by_extension(db, extension)
         if not file_type:
@@ -80,23 +79,19 @@ class FileTypeService:
         project_types = await get_project_file_types(db, project_id)
         if any(pt.name == name for pt in project_types):
             raise ElanoraError(ErrorCode.FILE_TYPE_NAME_EXISTS)
-        # Create the ProjectFileType association
         project_file_type = await add_project_file_type(
             db, project_id, name, file_type.id
         )
         await db.commit()
-        # Fetch the related FileType for the extension
-        file_type = await get_file_type_by_id(db, project_file_type.file_type_id)
-        if file_type is None:
-            raise RuntimeError("Created project file type lost its global file type")
-        # Return a dict or a Pydantic model
-        return {
-            "id": project_file_type.id,
-            "name": project_file_type.name,
-            "extension": file_type.extension,
-            "project_id": project_file_type.project_id,
-            "file_type_id": project_file_type.file_type_id,
-        }
+        return await FileTypeService._reloaded(db, project_file_type.id)
+
+    @staticmethod
+    async def _reloaded(db: AsyncSession, project_file_type_id: int) -> ProjectFileType:
+        """A project file type with its global file type loaded."""
+        reloaded = await get_project_file_type_with_file_type(db, project_file_type_id)
+        if reloaded is None:
+            raise ElanoraError(ErrorCode.FILE_TYPE_NOT_FOUND)
+        return reloaded
 
     @staticmethod
     async def get_file_types_for_project(
@@ -114,13 +109,7 @@ class FileTypeService:
                 db, target_project_id, name, file_type_id
             )
             await db.commit()
-            # Use the CRUD function to reload with relationship
-            refreshed = await get_project_file_type_with_file_type(
-                db, project_file_type.id
-            )
-            if refreshed is None:
-                raise RuntimeError("Imported project file type could not be reloaded")
-            return refreshed
+            return await FileTypeService._reloaded(db, project_file_type.id)
         except Exception:
             await db.rollback()
             raise
@@ -180,7 +169,7 @@ class FileTypeService:
         project_id: int,
         project_file_type_id: int,
         update_fields: dict[str, str | None],
-    ) -> dict[str, Any]:
+    ) -> ProjectFileType:
         pft = await get_project_file_type_by_id(db, project_file_type_id)
         if not pft:
             raise ElanoraError(ErrorCode.FILE_TYPE_NOT_FOUND)
@@ -220,14 +209,4 @@ class FileTypeService:
 
         await db.commit()
 
-        updated_pft = await get_project_file_type_by_id(db, project_file_type_id)
-        if not updated_pft:
-            raise ElanoraError(ErrorCode.FILE_TYPE_NOT_FOUND)
-        return {
-            "id": updated_pft.id,
-            "name": updated_pft.name,
-            "extension": updated_pft.file_type.extension
-            if updated_pft.file_type
-            else None,
-            "file_type_id": updated_pft.file_type_id,
-        }
+        return await FileTypeService._reloaded(db, project_file_type_id)

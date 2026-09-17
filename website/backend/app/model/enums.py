@@ -22,7 +22,7 @@ class ProjectPermission(StrEnum):
     OWNER = "owner"
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value: object) -> "ProjectPermission | None":
         if isinstance(value, str):
             for member in cls:
                 if member.value == value.lower():

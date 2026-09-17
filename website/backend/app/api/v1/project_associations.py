@@ -12,7 +12,6 @@ from app.crud.association import (
 )
 from app.crud.project import (
     add_user_to_project,
-    list_projects_by_instance,
     list_projects_by_user,
     update_user_project_permission,
     user_in_project,
@@ -70,7 +69,7 @@ async def _protect_privileged_target(
 async def list_project_users(
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> ProjectUserListResponse:
     """List members for a project administered by the caller."""
     try:
         users = await get_project_users(db, access.project.project_id)
@@ -123,7 +122,7 @@ async def list_user_projects_admin(
     user_id: int,
     db: AsyncSession = get_db_dep,
     user: User = get_admin_dep,
-):
+) -> UserProjectListResponse:
     """List all projects associated with a specific user (admin only)."""
     try:
         # check if the user exists
@@ -159,7 +158,7 @@ async def add_user_to_project_admin(
     request: AddUserToProjectRequest,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> ProjectAssociationResponse:
     """Add a user to a project administered by the caller."""
     try:
         _reject_reserved_or_escalated_permission(access, request.permission)
@@ -200,7 +199,7 @@ async def update_user_project_permission_admin(
     request: UpdateUserPermissionRequest,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> ProjectAssociationResponse:
     """Update member access for a project administered by the caller."""
     try:
         _reject_reserved_or_escalated_permission(access, request.permission)
@@ -268,7 +267,7 @@ async def remove_user_from_project_admin(
     user_id: int,
     db: AsyncSession = get_db_dep,
     access: ProjectAccess = get_project_admin_dep,
-):
+) -> ProjectAssociationResponse:
     """Remove a member from a project administered by the caller."""
     try:
         await _protect_privileged_target(db, access, user_id)
@@ -285,53 +284,6 @@ async def remove_user_from_project_admin(
             permission=None,
             message=f"User {target_user.username} removed from project {access.project.project_name}",
         )
-
-    except (HTTPException, ElanoraError):
-        raise
-    except Exception as e:
-        raise ElanoraError(ErrorCode.INTERNAL_ERROR) from e
-
-
-@router.get("/overview", response_model=dict)
-async def get_associations_overview(
-    db: AsyncSession = get_db_dep,
-    user: User = get_admin_dep,
-):
-    """Get an overview of all project-user associations (admin only)."""
-    try:
-        # Retrieve all projects
-        projects = await list_projects_by_instance(db, instance_id=user.instance_id)
-
-        # Retrieve all active users
-        users = await get_all_active_users(db, user.instance_id)
-
-        # Construire l'aperçu
-        overview = {
-            "total_projects": len(projects),
-            "total_users": len(users),
-            "projects": [],
-        }
-
-        for project in projects:
-            project_users = await get_project_users(db, project.project_id)
-            overview["projects"].append(
-                {
-                    "project_id": project.project_id,
-                    "project_name": project.project_name,
-                    "description": project.description,
-                    "user_count": len(project_users),
-                    "users": [
-                        {
-                            "user_id": assoc.user_id,
-                            "username": assoc.user.username,
-                            "permission": assoc.permission,
-                        }
-                        for assoc in project_users
-                    ],
-                }
-            )
-
-        return overview
 
     except (HTTPException, ElanoraError):
         raise

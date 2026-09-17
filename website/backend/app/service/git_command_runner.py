@@ -5,6 +5,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -120,7 +121,7 @@ class GitCommandRunner:
             line.strip() for line in result.stdout.strip().split("\n") if line.strip()
         ]
 
-    def configure_user(self, instance_name: str):
+    def configure_user(self, instance_name: str) -> None:
         """Configure Git user using the instance name."""
         # Clean the instance name for use in email (lowercase, no spaces)
         safe_name = instance_name.lower().replace(" ", "_")
@@ -134,10 +135,10 @@ class GitCommandRunner:
         result = self.run(["branch", "-a"], check=True)
         return result.stdout.strip().split("\n")
 
-    def reset_hard(self, ref: str = "HEAD"):
+    def reset_hard(self, ref: str = "HEAD") -> None:
         self.run(["reset", "--hard", ref], check=True)
 
-    def clean(self, force: bool = True, directories: bool = True):
+    def clean(self, force: bool = True, directories: bool = True) -> None:
         args = ["clean"]
         if force:
             args.append("-f")
@@ -145,7 +146,7 @@ class GitCommandRunner:
             args.append("-d")
         self.run(args, check=True)
 
-    def checkout(self, branch: str):
+    def checkout(self, branch: str) -> None:
         self.run(["checkout", branch], check=True)
 
     def canonical_head(self) -> str:
@@ -184,13 +185,8 @@ class GitCommandRunner:
         self.run(["add", "."], check=True)
         self._update_backup()
 
-    def commit(self, message: str):
+    def commit(self, message: str) -> None:
         self.run(["commit", "-m", message], check=True)
-        self._update_backup()
-
-    def push(self, branch: str | None = None):
-        branch = branch or self.canonical_branch()
-        self.run(["push", "origin", branch], check=True)
         self._update_backup()
 
     def get_commit_hash(self) -> str:
@@ -214,21 +210,13 @@ class GitCommandRunner:
         self.run(["config", "user.email", "system@elanora.local"], check=True)
         self._update_backup()
 
-    def merge(self, branch_name: str, message: str, no_ff: bool = True):
-        args = ["merge", branch_name]
-        if no_ff:
-            args.append("--no-ff")
-        args += ["-m", message]
-        self.run(args, check=True)
-        self._update_backup()
-
-    def delete_branch_localy(self, branch_name: str):
+    def delete_branch_localy(self, branch_name: str) -> None:
         self.run(["branch", "-D", branch_name], check=False)
 
-    def delete_branch_on_remote(self, branch_name: str):
+    def delete_branch_on_remote(self, branch_name: str) -> None:
         self.run(["push", "origin", "--delete", branch_name], check=False)
 
-    def delete_branch(self, branch_name: str):
+    def delete_branch(self, branch_name: str) -> None:
         self.delete_branch_localy(branch_name)
         self.delete_branch_on_remote(branch_name)
         git_backup.update_backup(self.project_path.name, self.project_path.parent)
@@ -335,7 +323,7 @@ def delete_project_folder(project_path: Path) -> None:
         logger.warning("Project directory does not exist")
         return
 
-    def on_rm_exc(func, path, exc_info):
+    def on_rm_exc(func: Callable[[str], object], path: str, exc_info: object) -> None:
         exc = (
             exc_info[1]
             if isinstance(exc_info, tuple) and len(exc_info) > 1

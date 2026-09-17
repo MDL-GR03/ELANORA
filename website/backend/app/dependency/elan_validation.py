@@ -17,6 +17,7 @@ from app.schema.responses.git import (
 )
 from app.service.protocol_errors import ProtocolConflictError
 from app.service.protocol_evaluation import (
+    ProtocolFinding,
     blocking_findings,
     validate_content_against_protocol,
 )
@@ -216,6 +217,7 @@ async def validate_and_record_elan_files(
             raise ElanoraError(
                 ErrorCode.UPLOAD_BATCH_TOO_LARGE, max_mb=ELAN_MAX_BATCH_SIZE_MB
             )
+        protocol_findings: tuple[ProtocolFinding, ...]
         try:
             if protocol_version is None:
                 validate_eaf(content)

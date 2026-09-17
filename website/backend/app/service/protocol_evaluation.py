@@ -217,13 +217,20 @@ def _vocabulary_rules(ev: _Evaluation) -> None:
             continue
         entry_ids = {entry.get("CVE_ID") for entry in vocabulary.iter("CV_ENTRY_ML")}
         values = {value.text or "" for value in vocabulary.iter("CVE_VALUE")}
+
+        def outside_vocabulary(
+            item: etree._Element,
+            entry_ids: set[str | None] = entry_ids,
+            values: set[str] = values,
+        ) -> bool:
+            reference = item.get("CVE_REF")
+            if reference is not None:
+                return reference not in entry_ids
+            return _value(item) not in values
+
         ev.per_tier(
             [tier_id],
-            lambda item, entry_ids=entry_ids, values=values: (
-                item.get("CVE_REF") not in entry_ids
-                if item.get("CVE_REF") is not None
-                else _value(item) not in values
-            ),
+            outside_vocabulary,
             "protocol.annotation_outside_vocabulary",
             f"not taken from controlled vocabulary {cv_id!r}",
             "vocabulary_tiers",

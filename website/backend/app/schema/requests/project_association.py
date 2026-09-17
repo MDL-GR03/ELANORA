@@ -16,9 +16,3 @@ class UpdateUserPermissionRequest(BaseModel):
     """Request to update a user's permission in a project."""
 
     permission: ProjectPermission
-
-
-class RemoveUserFromProjectRequest(BaseModel):
-    """Request to remove a user from a project."""
-
-    user_id: int

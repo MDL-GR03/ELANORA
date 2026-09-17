@@ -63,8 +63,10 @@ async def resolve_upload_naming_standard(
         return None
 
     return {
-        "pattern": full_standard["pattern"],
-        "components": full_standard["components"],
+        "pattern": full_standard.pattern,
+        "components": [
+            component.model_dump() for component in full_standard.components
+        ],
     }
 
 

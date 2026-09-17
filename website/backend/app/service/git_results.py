@@ -22,7 +22,6 @@ class MergeAnalysis:
     modified_files: list[str]
     deleted_files: list[str]
     has_conflicts: bool
-    file_diffs: dict[str, dict] | None = None
 
 
 @dataclass(frozen=True, slots=True)

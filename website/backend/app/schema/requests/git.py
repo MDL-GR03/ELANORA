@@ -20,13 +20,6 @@ class ProjectEditRequest(CustomBaseModel):
     new_project_description: str | None = None
 
 
-class ProjectDeleteRequest(CustomBaseModel):
-    """Schema for project delete request."""
-
-    project_id: int
-    confirm: bool = False
-
-
 class FileRename(CustomBaseModel):
     """Schema for a single file rename operation."""
 

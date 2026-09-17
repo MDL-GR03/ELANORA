@@ -7,6 +7,10 @@ import pytest
 
 import app.service.upload_naming_compliance as compliance
 from app.schema.protocol import ProtocolRules
+from app.schema.responses.project_naming_standard import (
+    NamingComponentResponse,
+    NamingStandardResponse,
+)
 from app.service.upload_naming_compliance import (
     FilenameNotCompliantError,
     assert_filenames_comply,
@@ -20,12 +24,35 @@ STANDARD: dict[str, Any] = {
 }
 
 
+def _standard(pattern: str, *names: str) -> NamingStandardResponse:
+    return NamingStandardResponse(
+        id=7,
+        project_id=1,
+        name="Standard",
+        project_file_type_id=2,
+        file_type_id=3,
+        file_type_name="ELAN",
+        pattern=pattern,
+        components=[
+            NamingComponentResponse(
+                id=index,
+                name=name,
+                regex=".+",
+                order=index,
+                accepted_values=[],
+                project_file_type_id=2,
+            )
+            for index, name in enumerate(names, start=1)
+        ],
+    )
+
+
 def _patch_lookup(
     monkeypatch: pytest.MonkeyPatch,
     *,
     location_id: int | None = 3,
     effective: list[Any] | None = None,
-    full: dict[str, Any] | None = None,
+    full: NamingStandardResponse | None = None,
 ) -> None:
     monkeypatch.setattr(
         compliance, "get_location_id_by_name", lambda _name: location_id
@@ -107,12 +134,14 @@ async def test_the_resolved_standard_carries_its_pattern_and_components(
     _patch_lookup(
         monkeypatch,
         effective=[Mock(naming_standard_id=7)],
-        full={"pattern": "{subject}", "components": [{"name": "subject"}], "id": 7},
+        full=_standard("{subject}", "subject"),
     )
 
     resolved = await resolve_upload_naming_standard(Mock(), 1)
 
-    assert resolved == {"pattern": "{subject}", "components": [{"name": "subject"}]}
+    assert resolved is not None
+    assert resolved["pattern"] == "{subject}"
+    assert [component["name"] for component in resolved["components"]] == ["subject"]
 
 
 @pytest.mark.asyncio
@@ -153,7 +182,7 @@ async def test_a_non_compliant_upload_is_not_reported_as_a_data_issue(
     _patch_lookup(
         monkeypatch,
         effective=[Mock(naming_standard_id=7)],
-        full={"pattern": "{subject}", "components": [{"name": "subject"}]},
+        full=_standard("{subject}", "subject"),
     )
     monkeypatch.setattr(
         compliance.ValidationUtils, "is_filename_compliant", lambda _s, _f: False
@@ -172,7 +201,7 @@ def _refusing_legacy_standard(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_lookup(
         monkeypatch,
         effective=[Mock(naming_standard_id=7)],
-        full=STANDARD,
+        full=_standard("{subject}-{session}", "subject", "session"),
     )
     monkeypatch.setattr(
         compliance.ValidationUtils, "is_filename_compliant", lambda _s, _f: False

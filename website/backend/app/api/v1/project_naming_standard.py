@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +11,8 @@ from app.schema.requests.project_naming_standard import (
 from app.schema.responses.project_naming_standard import (
     ImportSelectedStandardsResponse,
     NamingStandardResponse,
+    NamingStandardSummaryResponse,
+    ProjectNamingStandardsResponse,
     ProjectWithStandardsResponse,
 )
 from app.service.project_naming_standard import ProjectNamingStandardService
@@ -43,8 +43,7 @@ async def import_selected_standards(
 async def create_standard_with_components(
     req: CreateNamingStandardRequest,
     db: AsyncSession = get_db_dep,
-) -> dict[str, Any]:
-    components = [c.model_dump() for c in req.components]
+) -> NamingStandardResponse:
     return await ProjectNamingStandardService.create_standard_with_components(
         db,
         req.project_id,
@@ -52,21 +51,21 @@ async def create_standard_with_components(
         req.project_file_type_id,
         req.pattern,
         req.description,
-        components,
+        req.components,
     )
 
 
-@router.get("/project/{project_id}")
+@router.get("/project/{project_id}", response_model=list[NamingStandardSummaryResponse])
 async def get_standards_for_project(
     project_id: int, db: AsyncSession = get_db_dep
-) -> list[dict[str, Any]]:
+) -> list[NamingStandardSummaryResponse]:
     return await ProjectNamingStandardService.get_standards_for_project(db, project_id)
 
 
-@router.get("/{standard_id}")
+@router.get("/{standard_id}", response_model=NamingStandardResponse)
 async def get_standard_with_components(
     standard_id: int, db: AsyncSession = get_db_dep
-) -> dict[str, Any]:
+) -> NamingStandardResponse:
     result = await ProjectNamingStandardService.get_standard_with_components(
         db, standard_id
     )
@@ -89,10 +88,10 @@ async def get_component_names(
     )
 
 
-@router.get("/project/{project_id}/full")
+@router.get("/project/{project_id}/full", response_model=ProjectNamingStandardsResponse)
 async def get_project_naming_standards_full(
     project_id: int, db: AsyncSession = get_db_dep
-) -> dict[str, Any]:
+) -> ProjectNamingStandardsResponse:
     return await ProjectNamingStandardService.get_project_naming_standards_full(
         db, project_id
     )

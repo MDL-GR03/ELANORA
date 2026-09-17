@@ -1,6 +1,6 @@
 """Tier CRUD operations - Pure database access layer."""
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -84,17 +84,3 @@ async def update_parent_tier(
     update_fields = {"parent_tier_id": parent_tier_id}
     await DatabaseUtils.update_by_filter(db, Tier, filters, update_fields)
     await db.flush()
-
-
-async def get_tier_statistics(db: AsyncSession) -> list[tuple[str, int]]:
-    """Get statistics about tiers across all files."""
-    result = await db.execute(
-        select(
-            Tier.tier_name,
-            func.count(Annotation.annotation_id).label("annotation_count"),
-        )
-        .join(Annotation)
-        .group_by(Tier.tier_name)
-        .order_by(func.count(Annotation.annotation_id).desc())
-    )
-    return [tuple(row) for row in result]

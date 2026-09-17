@@ -1,5 +1,3 @@
-from typing import Any
-
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,9 +15,12 @@ from app.crud import (
 from app.crud.association import get_project_file_type_by_project_and_file_type
 from app.crud.project_naming_standard import get_standard_with_components_full
 from app.model.project_file_type import ProjectFileType
+from app.schema.requests.project_naming_standard import NamingComponentRequest
 from app.schema.responses.project_naming_standard import (
     ImportSelectedStandardsResponse,
     NamingStandardResponse,
+    NamingStandardSummaryResponse,
+    ProjectNamingStandardsResponse,
     ProjectWithStandardsResponse,
 )
 
@@ -37,21 +38,21 @@ class ProjectNamingStandardService:
     @staticmethod
     async def get_standards_for_project(
         db: AsyncSession, project_id: int
-    ) -> list[dict[str, Any]]:
+    ) -> list[NamingStandardSummaryResponse]:
         try:
             standards = await project_naming_standard.get_standards_by_project(
                 db, project_id
             )
             return [
-                {
-                    "id": s.id,
-                    "project_id": s.project_id,
-                    "name": s.name,
-                    "project_file_type_id": s.project_file_type_id,
-                    "pattern": s.pattern,
-                    "description": s.description,
-                }
-                for s in standards
+                NamingStandardSummaryResponse(
+                    id=standard.id,
+                    project_id=standard.project_id,
+                    name=standard.name,
+                    project_file_type_id=standard.project_file_type_id,
+                    pattern=standard.pattern,
+                    description=standard.description,
+                )
+                for standard in standards
             ]
         except Exception as e:
             await db.rollback()
@@ -64,7 +65,7 @@ class ProjectNamingStandardService:
     @staticmethod
     async def get_standard_with_components(
         db: AsyncSession, standard_id: int
-    ) -> dict[str, Any] | None:
+    ) -> NamingStandardResponse | None:
         try:
             return await get_standard_with_components_full(db, standard_id)
         except Exception as e:
@@ -83,16 +84,13 @@ class ProjectNamingStandardService:
         project_file_type_id: int,
         pattern: str,
         description: str | None,
-        components: list[dict[str, Any]],
+        components: list[NamingComponentRequest],
         *,
         commit: bool = True,
-    ) -> dict[str, Any]:
+    ) -> NamingStandardResponse:
         try:
-            # Block if any regex is empty or only whitespace
-            for comp in components:
-                regex = comp.get("regex", "")
-                if not regex or not str(regex).strip():
-                    raise ElanoraError(ErrorCode.NAMING_REGEX_EMPTY)
+            if any(not component.regex.strip() for component in components):
+                raise ElanoraError(ErrorCode.NAMING_REGEX_EMPTY)
             standard = await project_naming_standard.create_standard(
                 db, project_id, name, project_file_type_id, pattern, description
             )
@@ -100,21 +98,21 @@ class ProjectNamingStandardService:
             if not project_file_type:
                 raise ElanoraError(ErrorCode.PROJECT_FILE_TYPE_INVALID)
             file_type_id = project_file_type.file_type_id
-            for idx, comp in enumerate(components):
+            for component in components:
                 template = await component_template.get_or_create_component_template(
                     db,
                     file_type_id=file_type_id,
-                    name=comp["name"],
-                    regex=comp["regex"],
-                    description=comp.get("description"),
+                    name=component.name,
+                    regex=component.regex,
+                    description=component.description,
                 )
                 await standard_component.link_standard_to_component(
                     db,
                     naming_standard_id=standard.id,
                     component_template_id=template.id,
-                    order=comp.get("order", idx + 1),
+                    order=component.order,
                 )
-                for val in comp.get("accepted_values", []):
+                for val in component.accepted_values or []:
                     acc_val = await accepted_value.get_or_create_accepted_value(db, val)
                     await component_accepted_value.link_component_to_accepted_value(
                         db, template.id, acc_val.id
@@ -195,28 +193,29 @@ class ProjectNamingStandardService:
     @staticmethod
     async def get_project_naming_standards_full(
         db: AsyncSession, project_id: int
-    ) -> dict[str, Any]:
+    ) -> ProjectNamingStandardsResponse:
         try:
             standards = await project_naming_standard.get_standards_by_project(
                 db, project_id
             )
-            standards_with_components: list[dict[str, Any] | None] = []
+            standards_with_components: list[NamingStandardResponse] = []
             for standard in standards:
                 detail = (
                     await ProjectNamingStandardService.get_standard_with_components(
                         db, standard.id
                     )
                 )
-                standards_with_components.append(detail)
+                if detail is not None:
+                    standards_with_components.append(detail)
             component_names = (
                 await component_template.get_unique_component_names_by_project(
                     db, project_id
                 )
             )
-            return {
-                "component_names": component_names,
-                "standards": standards_with_components,
-            }
+            return ProjectNamingStandardsResponse(
+                component_names=component_names,
+                standards=standards_with_components,
+            )
         except Exception as e:
             await db.rollback()
             logger.error(
@@ -263,7 +262,7 @@ class ProjectNamingStandardService:
 
                 # Get the file_type_id from the source's project_file_type_id
                 source_pft = await db.get(
-                    ProjectFileType, source_standard["project_file_type_id"]
+                    ProjectFileType, source_standard.project_file_type_id
                 )
                 if source_pft is None:
                     raise ElanoraError(ErrorCode.NAMING_SOURCE_FILE_TYPE_INVALID)
@@ -278,14 +277,15 @@ class ProjectNamingStandardService:
 
                 # Prepare components for creation (no need to set project_file_type_id in components)
                 components = [
-                    {
-                        "name": c["name"],
-                        "regex": c["regex"],
-                        "description": c.get("description", ""),
-                        "order": c["order"],
-                        "accepted_values": c.get("accepted_values", []),
-                    }
-                    for c in source_standard["components"]
+                    NamingComponentRequest(
+                        name=component.name,
+                        regex=component.regex,
+                        description=component.description,
+                        order=component.order,
+                        accepted_values=component.accepted_values,
+                        project_file_type_id=target_pft.id,
+                    )
+                    for component in source_standard.components
                 ]
 
                 # Create the new standard with components from the source standard in the target project
@@ -293,14 +293,14 @@ class ProjectNamingStandardService:
                     new_standard = await ProjectNamingStandardService.create_standard_with_components(
                         db,
                         target_project_id,
-                        source_standard["name"],
+                        source_standard.name,
                         target_pft.id,
-                        source_standard["pattern"],
-                        source_standard.get("description", ""),
+                        source_standard.pattern,
+                        source_standard.description,
                         components,
                         commit=False,
                     )
-                    imported_standards.append(NamingStandardResponse(**new_standard))
+                    imported_standards.append(new_standard)
                 except IntegrityError as e:
                     await db.rollback()
                     if _is_duplicate_standard_error(e):

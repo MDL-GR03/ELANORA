@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import ElanoraError
 from app.model.project_file_type import ProjectFileType
+from app.schema.responses.project_naming_standard import NamingStandardResponse
 from app.service import project_naming_standard as service_module
 from app.service.project_naming_standard import ProjectNamingStandardService
 
@@ -14,17 +15,17 @@ async def test_import_selected_standards_is_committed_as_one_batch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     db = AsyncMock(spec=AsyncSession)
-    source = {
-        "id": 4,
-        "project_id": 1,
-        "name": "Session names",
-        "project_file_type_id": 7,
-        "file_type_id": 3,
-        "file_type_name": "ELAN",
-        "pattern": "{session}",
-        "description": None,
-        "components": [],
-    }
+    source = NamingStandardResponse(
+        id=4,
+        project_id=1,
+        name="Session names",
+        project_file_type_id=7,
+        file_type_id=3,
+        file_type_name="ELAN",
+        pattern="{session}",
+        description=None,
+        components=[],
+    )
     source_pft = ProjectFileType(id=7, project_id=1, file_type_id=3, name="ELAN")
     target_pft = ProjectFileType(id=8, project_id=2, file_type_id=3, name="ELAN")
     db.get.return_value = source_pft
@@ -39,7 +40,9 @@ async def test_import_selected_standards_is_committed_as_one_batch(
         AsyncMock(return_value=target_pft),
     )
     creator = AsyncMock(
-        return_value={**source, "project_id": 2, "project_file_type_id": 8}
+        return_value=source.model_copy(
+            update={"project_id": 2, "project_file_type_id": 8}
+        )
     )
     monkeypatch.setattr(
         ProjectNamingStandardService, "create_standard_with_components", creator

@@ -64,6 +64,7 @@ ruff = ">=0.12,<1"
 pre-commit = ">=4.2,<5"
 pip-audit = ">=2.9,<3"
 pygments = ">=2.20,<3"
+types-regex = ">=2025.9,<2027"
 
 [tool.ruff]
 target-version = "py313"

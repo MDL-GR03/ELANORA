@@ -1,5 +1,6 @@
+from collections.abc import Mapping, Sequence
 from decimal import Decimal
-from typing import Any
+from typing import Any, TypedDict
 
 import regex as re
 
@@ -7,6 +8,16 @@ from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
 
 logger = get_logger()
+
+
+class NamingComponent(TypedDict):
+    """One filename component, with its legacy key spellings resolved."""
+
+    name: str
+    regex: str | None
+    accepted_values: list[object]
+    fixed_value: object | None
+    numeric_range: object | None
 
 
 class ValidationUtils:
@@ -58,7 +69,9 @@ class ValidationUtils:
         return user_id
 
     @staticmethod
-    def is_filename_compliant(standard: dict | None, filename: str) -> bool:
+    def is_filename_compliant(
+        standard: Mapping[str, Any] | None, filename: str
+    ) -> bool:
         """Check if a filename complies with the given naming standard.
 
         Args:
@@ -99,17 +112,19 @@ class ValidationUtils:
         return ValidationUtils._check_all_components(match, normalized_components)
 
     @staticmethod
-    def _normalize_components(components: list) -> list[dict]:
+    def _normalize_components(
+        components: Sequence[Mapping[str, Any]],
+    ) -> list[NamingComponent]:
         """Normalize component fields for consistency."""
         logger.debug(f"_normalize_components called with components: {components}")
-        normalized = []
+        normalized: list[NamingComponent] = []
         for i, comp in enumerate(components):
             logger.debug(f"Processing component {i}: {comp}")
             name = comp.get("name")
             if not name:
                 logger.warning(f"Component {i} missing 'name': {comp}. Skipping.")
                 continue
-            accepted_values = []
+            accepted_values: list[object] = []
             if isinstance(comp.get("accepted_values"), list):
                 accepted_values = comp["accepted_values"]
             elif isinstance(comp.get("accepted_values_str"), str):
@@ -121,7 +136,7 @@ class ValidationUtils:
 
             normalized.append(
                 {
-                    "name": comp.get("name"),
+                    "name": str(name),
                     "regex": comp.get("regex") or comp.get("pattern"),
                     "accepted_values": accepted_values,
                     "fixed_value": comp.get("fixed_value")
@@ -135,7 +150,7 @@ class ValidationUtils:
         return normalized
 
     @staticmethod
-    def _build_pattern(pattern: str, components: list[dict]) -> str:
+    def _build_pattern(pattern: str, components: list[NamingComponent]) -> str:
         """Replace each ``{name}`` placeholder with its component's group.
 
         Placeholders are replaced as plain text. The ``regex`` module reads
@@ -149,7 +164,7 @@ class ValidationUtils:
         return pattern
 
     @staticmethod
-    def _compile_regex(pattern: str) -> re.Pattern | None:
+    def _compile_regex(pattern: str) -> re.Pattern[str] | None:
         """Compile the regex pattern."""
         logger.debug(f"_compile_regex called with pattern: {pattern}")
         try:
@@ -164,7 +179,9 @@ class ValidationUtils:
             return None
 
     @staticmethod
-    def _check_all_components(match: re.Match, components: list[dict]) -> bool:
+    def _check_all_components(
+        match: re.Match[str], components: list[NamingComponent]
+    ) -> bool:
         """Check all components against the match."""
         for i, comp in enumerate(components):
             value = match.group(i + 1)
@@ -173,7 +190,7 @@ class ValidationUtils:
         return True
 
     @staticmethod
-    def _check_component(comp: dict, value: str) -> bool:
+    def _check_component(comp: NamingComponent, value: str) -> bool:
         """Check a single component's constraints.
 
         Args:
@@ -193,7 +210,7 @@ class ValidationUtils:
         return ValidationUtils._check_numeric_range(comp, value)
 
     @staticmethod
-    def _check_regex(comp: dict, value: str) -> bool:
+    def _check_regex(comp: NamingComponent, value: str) -> bool:
         """Check regex constraint."""
         regex = comp.get("regex")
         if not regex:
@@ -204,7 +221,7 @@ class ValidationUtils:
             return False
 
     @staticmethod
-    def _check_accepted_values(comp: dict, value: str) -> bool:
+    def _check_accepted_values(comp: NamingComponent, value: str) -> bool:
         """Check accepted values constraint."""
         accepted_values = comp.get("accepted_values")
         if not accepted_values:
@@ -215,13 +232,13 @@ class ValidationUtils:
         return False
 
     @staticmethod
-    def _check_fixed_value(comp: dict, value: str) -> bool:
+    def _check_fixed_value(comp: NamingComponent, value: str) -> bool:
         """Check fixed value constraint."""
         fixed = comp.get("fixed_value")
         return fixed is None or str(fixed) == str(value)
 
     @staticmethod
-    def _check_numeric_range(comp: dict, value: str) -> bool:
+    def _check_numeric_range(comp: NamingComponent, value: str) -> bool:
         """Check numeric range constraint."""
         numeric_range = comp.get("numeric_range")
         if not numeric_range:
@@ -243,7 +260,7 @@ class ValidationUtils:
         return ValidationUtils._within_padded_range(value, min_val, max_val, width)
 
     @staticmethod
-    def _check_numeric_range_dict(numeric_range: dict, value: str) -> bool:
+    def _check_numeric_range_dict(numeric_range: Mapping[str, Any], value: str) -> bool:
         """Check dict-format numeric range."""
         try:
             num = int(value)
@@ -301,7 +318,7 @@ class ValidationUtils:
             return False
 
     @staticmethod
-    def _check_range_value(range_match: re.Match, value: str) -> bool:
+    def _check_range_value(range_match: re.Match[str], value: str) -> bool:
         """Check range accepted value."""
         min_val, max_val = int(range_match.group(1)), int(range_match.group(2))
         return ValidationUtils._within_padded_range(
@@ -316,6 +333,3 @@ class ValidationUtils:
         if len(value) != width or re.fullmatch(r"[0-9]+", value) is None:
             return False
         return minimum <= int(value) <= maximum
-
-
-logger.debug(f"Using re module: {re.__name__}")

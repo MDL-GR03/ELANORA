@@ -1,6 +1,6 @@
 # ELANORA architecture and roadmap
 
-**Last updated:** 16 September 2026
+**Last updated:** 17 September 2026
 **Product stage:** hardened pre-production prototype, distributed to
 institutions that install and operate it themselves
 
@@ -38,15 +38,15 @@ The non-negotiable invariants:
 | 3 | Revision-scoped EAF projection and deterministic rebuild | Done |
 | 4 | Separate object storage for media | Withdrawn: no media is stored |
 | 5 | Change sets and outbox workers instead of shared-worktree Git | Done |
-| 6 | Split oversized backend services and frontend components | Backend done; frontend in progress |
+| 6 | Split oversized backend services and frontend components | Done |
 | 7 | Database-enforced project and temporal invariants | Done |
 | 8 | Privacy, operations and self-maintenance for institutions | Done |
 | 9 | Accessibility review and sanitized pilot corpus | Open; needs people and data, not code |
 
 Quality gates on every change: `make check` runs the credential scan; ruff,
-mypy, 670 backend unit tests, 214 PostgreSQL integration tests with a
-downgrade/upgrade and `alembic check`, and the recovery drill; then eslint,
-stylelint, prettier, the three-language translation parity check, 388 frontend
+strict mypy over the whole backend package, 670 backend unit tests, 216
+PostgreSQL integration tests with a downgrade/upgrade and `alembic check`, and the recovery drill; then eslint,
+stylelint, prettier, the three-language translation parity check, 469 frontend
 tests and the production build. The database is at migration 0037.
 
 ## What is in place
@@ -66,6 +66,9 @@ tests and the production build. The database is at migration 0037.
   Publications run through durable change sets retried by a worker.
 - Two validation layers: the vendored ELAN 3.0 XSD and ELANORA's semantic and
   cross-reference checks, followed by the pinned protocol.
+- The whole backend package is checked by strict mypy. Services return
+  dataclasses or Pydantic models rather than anonymous dictionaries where the
+  shape is a stable contract.
 
 ### Protocols and projection
 
@@ -128,44 +131,25 @@ reference, a retention period and an optional legal hold
 - English, French and Japanese are complete; the parity check covers every key
   in both directions. The setup, home, protocol, contribution, registration
   and profile screens, all dialogs and all API errors are translated.
-- Registration is composed from tested composables and field components, and
-  shares its field and password rules with the profile editors.
+- Pages and panels are composed from tested composables and focused
+  components: registration, contributions, reviews, research scopes, projects,
+  uploads, project members and protocols. Registration shares its field and
+  password rules with the profile editors.
 - Every icon the interface names is registered; a test enforces it.
 - Confirmation dialogs state their tone explicitly rather than guessing it from
   English words.
 
 ## What remains
 
-### Frontend decomposition (item 6)
+### Remaining large components
 
-Components still over about 800 lines, largest first:
-
-| Component | Lines | Notes |
-| --- | --- | --- |
-| `common/ReviewCasePanel.vue` | 2,582 | Workflows already live in tested composables; the template and styles remain. |
-| `views/TiersPage.vue` | 1,294 | Research topics, tier browsing and export in one page. |
-| `projectConfiguration/ConfigureProjectMembers.vue` | 1,120 | Member list, permission editing and capability grants. |
-| `projectConfiguration/ConfigureProtocols.vue` | 1,061 | Protocol list, editor and compliance scan panel. |
-| `common/UploadDetailsView.vue` | 944 | |
-| `views/ProjectsPage.vue` | 920 | |
-| `common/UploadFolder.vue` | 887 | |
-| `common/ConflictMergeView.vue` | 860 | |
-| `projectsPage/ProjectSyncDialog.vue` | 856 | |
-| `common/UploadResolutionView.vue` | 853 | |
-
-The approach that worked for registration and contributions: move state and
-requests into composables with direct tests, move self-contained markup into
-components, keep pages responsible for composition, and translate anything
-found in English along the way.
-
-### Backend typing
-
-`mypy.ini` checks an explicit list of modules strictly. The module splits moved
-code into new files that are not on that list, and several services still
-return anonymous dictionaries where CONTRIBUTING.md asks for typed contracts.
-Strict mypy over the whole `app` package currently reports 108 errors in 22
-files, so the goal is to make the whole package strict and replace the
-remaining result dictionaries with dataclasses or Pydantic models.
+Every page and panel with substantial logic is now composed from tested
+composables and components. Six components remain between 800 and 950 lines
+(`UploadDetailsView`, `UploadFolder`, `ConflictMergeView`, `ProjectSyncDialog`,
+`UploadResolutionView` and `ProtocolRuleBuilder`), but their size is mostly
+scoped CSS around under 300 lines of logic that already has tests. Splitting them further would move
+styles around without making behaviour easier to test, so they are left as
+they are unless a change needs to touch them.
 
 ### Smaller items
 
@@ -175,6 +159,11 @@ remaining result dictionaries with dataclasses or Pydantic models.
   consolidating them needs visual review.
 - EAF validation issue messages come from the validator in English; the issue
   codes could be translated the way API errors are.
+- The login verification email is always sent in French; it should use the
+  account's language.
+- Vitest 3 has a moderate advisory in its mock redirect (development tooling
+  only, never shipped). The fix is Vitest 5, a major upgrade to schedule with a
+  test-suite review.
 
 ### Item 9: before identifiable corpora are admitted
 
@@ -242,3 +231,12 @@ Dates are 2026.
   Japanese gaps across the interface. The
   password policy moved to NIST SP 800-63B with a breach check, and every API
   refusal gained a translatable code.
+- **17 September.** Item 6 finished. The research scopes, projects, upload,
+  project members and protocol configuration screens were split into tested
+  composables and components. Strict mypy now covers the whole backend, and
+  the naming standard and file type services return typed models. Defects
+  found and fixed: editing a protocol draft, creating a version or saving a
+  protocol failed because reactive rules were passed to `structuredClone`; the
+  file type import preview always failed; refused project deletions, member
+  changes and topic deletions were silent; an association overview endpoint that could never succeed was
+  removed, along with unused diff parsing, response models and components.

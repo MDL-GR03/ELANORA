@@ -30,9 +30,3 @@ class InvitationSendRequest(CustomBaseModel):
         if normalized not in {"en", "fr"}:
             raise ValueError("Invitation language must be 'en' or 'fr'")
         return normalized
-
-
-class InvitationAcceptRequest(CustomBaseModel):
-    """Schema for accepting an invitation during registration."""
-
-    invitation_id: int

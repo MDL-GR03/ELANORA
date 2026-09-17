@@ -137,7 +137,9 @@ async def recovery_status(db: AsyncSession) -> RecoveryStatusResponse:
         state = "healthy"
     return RecoveryStatusResponse(
         responsibility="installation",
-        latest_backup_at=backup.started_at if succeeded else None,
+        latest_backup_at=backup.started_at
+        if backup is not None and succeeded
+        else None,
         latest_verified_backup_at=(
             verification.started_at
             if verification is not None and verification.outcome == "succeeded"

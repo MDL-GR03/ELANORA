@@ -245,7 +245,7 @@ async def _install_and_ingest_eaf_sources(
             result = await service.process_single_file(
                 str(target_path), importer_id, project.project_name
             )
-            if result["status"] != "processed":
+            if result.status != "processed":
                 raise RuntimeError(f"failed to import {target_path.name}: {result}")
 
 

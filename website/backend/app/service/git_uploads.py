@@ -1,7 +1,10 @@
 """Writing uploaded files into a project's working tree."""
 
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path
+
+from fastapi import UploadFile
 
 from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type, safe_failure_summary
@@ -15,16 +18,16 @@ logger = get_logger()
 class FileUploadProcessor:
     """Processes file uploads to Git."""
 
-    def __init__(self, project_path: Path):
+    def __init__(self, project_path: Path) -> None:
         """Initialize with the project path."""
         self.project_path = project_path
 
     async def process_files(
-        self, files, existing_files: list[str]
+        self, files: Sequence[UploadFile], existing_files: list[str]
     ) -> tuple[list[FileUploadResult], list[FileUploadResult]]:
         """Process all uploaded files and return success/failure lists."""
-        uploaded_files = []
-        failed_files = []
+        uploaded_files: list[FileUploadResult] = []
+        failed_files: list[FileUploadResult] = []
 
         for file in files:
             try:
@@ -32,10 +35,11 @@ class FileUploadProcessor:
                 uploaded_files.append(result)
                 logger.info("Added an uploaded file to Git")
             except Exception as e:
+                filename = file.filename or ""
                 failed_result = FileUploadResult(
-                    filename=file.filename,
+                    filename=filename,
                     size=file.size or 0,
-                    existed=file.filename in existing_files,
+                    existed=filename in existing_files,
                     success=False,
                     error=safe_failure_summary(e, operation="File processing failed"),
                 )
@@ -48,7 +52,7 @@ class FileUploadProcessor:
         return uploaded_files, failed_files
 
     async def _process_single_file(
-        self, file, existing_files: list[str]
+        self, file: UploadFile, existing_files: list[str]
     ) -> FileUploadResult:
         """Process a single file upload."""
         # Ensure elan_files directory exists

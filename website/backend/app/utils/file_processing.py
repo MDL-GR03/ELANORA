@@ -1,11 +1,6 @@
 """File processing utilities for ELAN files."""
 
-import os
-from datetime import UTC, datetime
-from decimal import Decimal
 from pathlib import Path
-
-from lxml import etree
 
 from app.core.centralized_logging import get_logger
 from app.core.config import ELAN_PROJECTS_BASE_PATH
@@ -85,87 +80,3 @@ class ElanFileProcessor:
             raise ValueError(f"Not an ELAN file: {file_path}")
         logger.debug("ELAN file path validation passed")
         return file_path_obj
-
-    @staticmethod
-    def get_file_info(file_path_obj: Path) -> dict:
-        """Extract basic file information."""
-        last_modified_timestamp = os.path.getmtime(file_path_obj)
-        last_modified = datetime.fromtimestamp(last_modified_timestamp, UTC)
-
-        # Convert absolute path to relative path for storage
-        absolute_path = str(file_path_obj.absolute())
-        relative_path = make_path_relative_to_projects(absolute_path)
-
-        logger.debug("Converted ELAN file metadata to storage-relative form")
-
-        info = {
-            "filename": file_path_obj.name,
-            "file_path": relative_path,  # Store relative path
-            "file_size": file_path_obj.stat().st_size,
-            "last_modified": last_modified,
-        }
-        logger.info("Extracted ELAN file metadata")
-        return info
-
-    @staticmethod
-    def safe_get_text(element: etree._Element | None) -> str | None:
-        """Safely get text from XML element."""
-        if element is None or not element.text:
-            logger.warning("safe_get_text: element is None or empty")
-            return None
-        text = element.text.strip()
-        logger.debug("Extracted text from an XML element")
-        return text
-
-    @staticmethod
-    def convert_time_to_decimal(time_value: int) -> Decimal:
-        """Convert milliseconds to decimal seconds."""
-        decimal_time = Decimal(time_value) / 1000
-        logger.debug(f"convert_time_to_decimal: {time_value}ms -> {decimal_time}s")
-        return decimal_time
-
-
-class XmlAttributeExtractor:
-    """Utilities for extracting attributes from XML elements."""
-
-    @staticmethod
-    def get_alignable_annotation_attributes(
-        annotation: etree._Element, time_slots: dict[str, int]
-    ) -> dict | None:
-        """Extract information from an alignable annotation."""
-        annotation_value_elem = annotation.find("ANNOTATION_VALUE", namespaces=None)
-        if annotation_value_elem is None or not annotation_value_elem.text:
-            logger.warning(
-                "get_alignable_annotation_attributes: missing annotation value"
-            )
-            return None
-        start_ref = annotation.get("TIME_SLOT_REF1", None)
-        end_ref = annotation.get("TIME_SLOT_REF2", None)
-        start_time = time_slots.get(start_ref, 0) if start_ref else 0
-        end_time = time_slots.get(end_ref, 0) if end_ref else 0
-        attrs = {
-            "annotation_id": annotation.get("ANNOTATION_ID", None),
-            "annotation_value": annotation_value_elem.text.strip(),
-            "start_time": Decimal(start_time) / 1000,
-            "end_time": Decimal(end_time) / 1000,
-        }
-        logger.debug("Extracted alignable annotation")
-        return attrs
-
-    @staticmethod
-    def get_ref_annotation_attributes(
-        annotation: etree._Element,
-    ) -> dict | None:
-        """Extract information from a reference annotation."""
-        annotation_value_elem = annotation.find("ANNOTATION_VALUE", namespaces=None)
-        if annotation_value_elem is None or not annotation_value_elem.text:
-            logger.warning("get_ref_annotation_attributes: missing annotation value")
-            return None
-        attrs = {
-            "annotation_id": annotation.get("ANNOTATION_ID", None),
-            "annotation_value": annotation_value_elem.text.strip(),
-            "start_time": Decimal(0),
-            "end_time": Decimal(0),
-        }
-        logger.debug("Extracted reference annotation")
-        return attrs
