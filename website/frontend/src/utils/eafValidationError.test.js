@@ -33,7 +33,8 @@ describe('formatEafUploadError', () => {
     );
 
     expect(message).toContain('apiErrors.invalid_eaf_batch');
-    expect(message).toContain("session.eaf: Unknown time slot 'ts1'");
+    expect(message).toContain('apiErrors.unknown_time_slot:');
+    expect(message).toContain("session.eaf:");
     expect(message).toContain('uploadPage.errors.moreIssues:2');
   });
 
