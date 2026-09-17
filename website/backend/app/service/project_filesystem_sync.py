@@ -217,7 +217,7 @@ class ProjectFilesystemSyncService:
                 )
             validate_eaf(candidate.read_bytes())
 
-    def inspect_project(self, project_name: str) -> dict[str, Any]:
+    def inspect_project(self, project_name: str) -> ProjectSyncCheckResponse:
         """Check for changes in a Git-managed project and analyze file status.
 
         Analyzes the Git status to detect file changes in the elan_files directory
@@ -227,7 +227,7 @@ class ProjectFilesystemSyncService:
             project_name: Name of the project to check for changes
 
         Returns:
-            Dictionary containing project sync status and file change information
+            ProjectSyncCheckResponse containing project sync status and file change information
 
         """
         project_path = safe_project_path(self.base_path, project_name)
@@ -237,26 +237,26 @@ class ProjectFilesystemSyncService:
         logger.info("Checking project synchronization state")
 
         if not project_path.exists():
-            return {
-                "project_name": project_name,
-                "status": "missing_folder",
-                "in_sync": False,
-                "files_status": [],
-            }
+            return ProjectSyncCheckResponse(
+                project_name=project_name,
+                in_sync=False,
+                files_status=[],
+                status="missing_folder",
+            )
         if not git_dir.exists():
-            return {
-                "project_name": project_name,
-                "status": "missing_git",
-                "in_sync": False,
-                "files_status": [],
-            }
+            return ProjectSyncCheckResponse(
+                project_name=project_name,
+                in_sync=False,
+                files_status=[],
+                status="missing_git",
+            )
         if not elan_files_dir.exists():
-            return {
-                "project_name": project_name,
-                "status": "missing_elan_files",
-                "in_sync": False,
-                "files_status": [],
-            }
+            return ProjectSyncCheckResponse(
+                project_name=project_name,
+                in_sync=False,
+                files_status=[],
+                status="missing_elan_files",
+            )
 
         # Preview must not stage or otherwise alter administrator edits.
         runner = GitCommandRunner(project_path)
@@ -272,7 +272,7 @@ class ProjectFilesystemSyncService:
 
         return ProjectSyncCheckResponse(
             project_name=project_name, in_sync=in_sync, files_status=files_status
-        ).model_dump()
+        )
 
     def discard_local_changes(self, project_name: str) -> str:
         """Discard server edits and leave the accepted repository version checked out.

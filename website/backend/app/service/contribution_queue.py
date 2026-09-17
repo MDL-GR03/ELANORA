@@ -23,6 +23,7 @@ from app.core.error_diagnostics import safe_exception_type
 from app.crud.pending_upload import get_pending_uploads
 from app.crud.project import get_project_by_name
 from app.model.research_topic import ProjectBaselineTier
+from app.schema.responses.contribution_queue import ReviewQueueResponse
 from app.service.contribution_inspection import ContributionInspectionService
 from app.service.git_command_runner import GitCommandRunner
 from app.storage.paths import safe_project_path
@@ -59,7 +60,9 @@ class ContributionQueueService:
             ).all()
         )
 
-    async def review_queue(self, project_name: str, db: AsyncSession) -> dict[str, Any]:
+    async def review_queue(
+        self, project_name: str, db: AsyncSession
+    ) -> ReviewQueueResponse:
         """List pending contributions with their merge readiness, computed now."""
         project_path = safe_project_path(self.base_path, project_name)
         runner = GitCommandRunner(project_path)
@@ -167,10 +170,10 @@ class ContributionQueueService:
                 int(item["upload_id"]), targets_by_upload, collision_candidate_ids
             )
 
-        return {
-            "project_name": project_name,
-            "pending_uploads": items,
-            "total_pending": len(items),
-            "ready_count": ready_count,
-            "conflicts_count": conflicts_count,
-        }
+        return ReviewQueueResponse(
+            project_name=project_name,
+            pending_uploads=items,
+            total_pending=len(items),
+            ready_count=ready_count,
+            conflicts_count=conflicts_count,
+        )

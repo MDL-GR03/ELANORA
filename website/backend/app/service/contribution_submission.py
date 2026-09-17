@@ -18,6 +18,7 @@ from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
 from app.crud.project import get_project_by_id
 from app.schema.protocol import ProtocolRules
+from app.schema.responses.contribution_intake import UploadInfoResponse
 from app.service.contribution_intake import (
     ContributionAlreadyCurrentError,
     ContributionIntakeService,
@@ -155,7 +156,7 @@ class ContributionSubmissionService:
         *,
         project_name: str,
         auto_accept_new_files: bool,
-        upload_info: dict[str, Any],
+        upload_info: UploadInfoResponse,
         has_failed_files: bool,
         user_id: int,
     ) -> bool:

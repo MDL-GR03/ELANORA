@@ -6,8 +6,6 @@ read the configuration is an installation problem, while a filename that does
 not match is a normal, reportable outcome the researcher can act on.
 """
 
-from typing import Any
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logging import get_logger
@@ -16,6 +14,7 @@ from app.core.error_diagnostics import safe_exception_type
 from app.crud.effective_naming_standard import get_effective_standards_for_project
 from app.crud.project_naming_standard import get_standard_with_components_full
 from app.schema.protocol import ProtocolRules
+from app.schema.responses.upload_naming_compliance import UploadNamingStandardResponse
 from app.utils.validation import ValidationUtils
 
 logger = get_logger()
@@ -40,7 +39,7 @@ class FilenameNotCompliantError(ValueError):
 
 async def resolve_upload_naming_standard(
     db: AsyncSession, project_id: int
-) -> dict[str, Any] | None:
+) -> UploadNamingStandardResponse | None:
     """Return the naming standard for uploads, or None if none is configured."""
     location_id = get_location_id_by_name(UPLOAD_LOCATION_NAME)
     if location_id is None:
@@ -62,16 +61,14 @@ async def resolve_upload_naming_standard(
         logger.warning("The configured naming standard could not be loaded")
         return None
 
-    return {
-        "pattern": full_standard.pattern,
-        "components": [
-            component.model_dump() for component in full_standard.components
-        ],
-    }
+    return UploadNamingStandardResponse(
+        pattern=full_standard.pattern,
+        components=[component.model_dump() for component in full_standard.components],
+    )
 
 
 def assert_filenames_comply(
-    standard: dict[str, Any] | None, filenames: list[str | None]
+    standard: UploadNamingStandardResponse | None, filenames: list[str | None]
 ) -> None:
     """Raise for the first filename that does not match the standard."""
     for filename in filenames:
@@ -80,7 +77,7 @@ def assert_filenames_comply(
         if not ValidationUtils.is_filename_compliant(standard, filename):
             logger.warning("An uploaded filename does not comply with the standard")
             raise FilenameNotCompliantError(
-                filename, pattern=(standard or {}).get("pattern")
+                filename, pattern=standard["pattern"] if standard else None
             )
     logger.info("All %s uploaded filenames are compliant", len(filenames))
 

@@ -33,9 +33,7 @@ async def synchronize_project_check(
 ) -> ProjectSyncCheckResponse:
     """Preview unmanaged server-side EAF changes without modifying the repository."""
     try:
-        return ProjectSyncCheckResponse(
-            **git_shared.git_service.synchronize_project_check(project_name)
-        )
+        return git_shared.git_service.synchronize_project_check(project_name)
     except ElanoraError:
         raise
     except Exception as e:

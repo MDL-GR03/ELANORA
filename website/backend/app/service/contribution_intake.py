@@ -12,6 +12,7 @@ from app.core.centralized_logging import get_logger
 from app.core.error_diagnostics import safe_exception_type
 from app.crud.pending_upload import get_pending_uploads, save_pending_upload
 from app.crud.project import get_project_by_name
+from app.schema.responses.contribution_intake import UploadInfoResponse
 from app.service.git_branches import GitBranchManager, GitDiffAnalyzer
 from app.service.git_command_runner import GitCommandRunner
 from app.service.git_results import FileUploadResult
@@ -96,7 +97,7 @@ class ContributionIntakeService:
         project_path: Path,
         *,
         allow_current_tree: bool = False,
-    ) -> dict[str, Any]:
+    ) -> UploadInfoResponse:
         """Deduplicate, analyze, and durably record a submitted Git tree."""
         project = await get_project_by_name(db, project_path.name)
         if project is None:
@@ -122,7 +123,7 @@ class ContributionIntakeService:
             runner.run(["branch", "-m", branch_name, approval_branch], check=True)
             renamed = True
             now = datetime.now(UTC).isoformat()
-            upload_info: dict[str, Any] = {
+            upload_info: UploadInfoResponse = {
                 "status": "pending_admin_approval",
                 "has_conflicts": False,
                 "has_differences": bool(
@@ -177,7 +178,7 @@ class ContributionIntakeService:
 
     @staticmethod
     async def _save_pending_upload(
-        upload_info: dict[str, Any],
+        upload_info: UploadInfoResponse,
         project_id: int,
         db: AsyncSession,
         context: SubmissionContext,
@@ -225,7 +226,7 @@ class ContributionIntakeService:
         project_name: str,
         uploaded_files: list[FileUploadResult],
         failed_files: list[FileUploadResult],
-        upload_info: dict[str, Any],
+        upload_info: UploadInfoResponse,
     ) -> dict[str, Any]:
         # Counted from what was actually written, so a requested file that failed
         # is neither an update nor an addition.

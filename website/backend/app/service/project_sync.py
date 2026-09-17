@@ -216,7 +216,7 @@ class ProjectSyncCoordinator:
             project_id=project.project_id,
             initiated_by=user_id,
             state="preparing",
-            changes=[dict(item) for item in preview.get("files_status", [])],
+            changes=[dict(item) for item in preview.files_status],
             starting_commit=runner.canonical_head(),
         )
         db.add(operation)

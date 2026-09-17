@@ -106,13 +106,15 @@ async def login_user(
         verification_code = generate_verification_code()
         # Store the hash and encrypted delivery request atomically.
         user.activation_code = hash_verification_code(verification_code)
+        # Use the user's instance default language instead of hardcoded 'fr'
+        language = user.instance.default_language
         await enqueue_account_verification_email(
             db,
             user_id=user.user_id,
             email=user.email,
             username=user.username,
             code=verification_code,
-            language="fr",
+            language=language,
         )
         await db.commit()
         return LoginOutcome(user=user, needs_verification=True)

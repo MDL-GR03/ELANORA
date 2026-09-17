@@ -48,7 +48,7 @@ class ProjectRecoveryService:
         self.filesystem_sync = filesystem_sync
 
     def _require_missing_storage(self, project_name: str) -> None:
-        state = self.filesystem_sync.inspect_project(project_name).get("status")
+        state = self.filesystem_sync.inspect_project(project_name).status
         if state not in MISSING_STORAGE_STATES:
             raise ProjectStorageIntactError(
                 "The project storage is intact; recovery is only for missing storage"

@@ -19,10 +19,12 @@ from app.crud.project import (
 from app.elan.validation import validate_eaf
 from app.model.association import ProjectCapabilityGrant, UserToProject
 from app.model.enums import ProjectPermission
+from app.schema.responses.contribution_queue import ReviewQueueResponse
 from app.schema.responses.git import (
     BulkRenameResponse,
     FileRenameResponse,
     ProjectInfo,
+    ProjectSyncCheckResponse,
 )
 from app.service.contribution_inspection import ContributionInspectionService
 from app.service.contribution_intake import (
@@ -378,7 +380,7 @@ class GitService:
 
     async def get_pending_uploads_with_status(
         self, project_name: str, db: AsyncSession
-    ) -> dict[str, Any]:
+    ) -> ReviewQueueResponse:
         """Get pending uploads and compute their merge readiness in real-time."""
         return await self.contribution_queue.review_queue(project_name, db)
 
@@ -587,7 +589,7 @@ class GitService:
             db, old_project_name, new_project_name, new_project_description
         )
 
-    def synchronize_project_check(self, project_name: str) -> dict[str, Any]:
+    def synchronize_project_check(self, project_name: str) -> ProjectSyncCheckResponse:
         """Check for changes in a Git-managed project and analyze file status."""
         return self.filesystem_sync.inspect_project(project_name)
 
