@@ -1,0 +1,185 @@
+/*
+ * Controls and typography shared by the protocol workspace components.
+ * Each component loads this file as a scoped style, so these element
+ * selectors never reach into the rule builder or other child components.
+ */
+
+.section-intro,
+.compliance-panel > header,
+.version-row,
+.file-result summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+h3 {
+  margin-top: 0.25rem;
+  font-size: 1.25rem;
+}
+
+h4 {
+  font-size: 1.05rem;
+}
+
+.section-intro p,
+.protocol-title p,
+small,
+.scan-context {
+  color: #64748b;
+}
+
+.eyebrow {
+  color: #2563eb;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+button {
+  border: 0;
+  border-radius: 0.65rem;
+  padding: 0.7rem 1rem;
+  background: #2563eb;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+button.secondary {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #1e3a8a;
+}
+
+button.secondary:hover {
+  background: #eff6ff;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.message {
+  padding: 0.8rem 1rem;
+  border-radius: 0.65rem;
+}
+
+.error {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.status,
+.result {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.status.draft {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status.published,
+.result.passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status.archived {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.result.failed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+button.danger {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+}
+
+button.danger:hover {
+  background: #fff1f2;
+}
+
+.text-button {
+  padding: 0.25rem;
+  background: transparent;
+  color: #2563eb;
+  white-space: nowrap;
+}
+
+.text-button:hover {
+  background: transparent;
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.passed-copy,
+.empty-state,
+.loading-state {
+  padding: 1rem;
+  color: #64748b;
+}
+
+.empty-state {
+  text-align: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.8rem;
+}
+
+.empty-state.compact {
+  border: 0;
+}
+
+@media (width <= 760px) {
+  .section-intro,
+  .version-row,
+  .compliance-panel > header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

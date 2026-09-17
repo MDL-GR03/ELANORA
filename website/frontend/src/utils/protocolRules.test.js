@@ -1,3 +1,4 @@
+import { reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -9,6 +10,7 @@ import {
   parseLanguages,
   severityOf,
   withSeverity,
+  withSuggestedRules,
   withTierCheck,
   withoutTier,
   withoutVocabulary,
@@ -131,5 +133,36 @@ describe('protocol rules', () => {
 
     expect(countRules(rules)).toBe(1);
     expect(configuredRuleKeys(rules)).toEqual(['filename_standard']);
+  });
+});
+
+describe('withSuggestedRules', () => {
+  it('unites lists, takes suggested mappings and keeps a media requirement', () => {
+    const rules = {
+      ...emptyRules(),
+      required_tiers: ['Gloss'],
+      tier_parents: { Gloss: 'Old' },
+      media_required: true,
+    };
+    const suggested = {
+      ...emptyRules(),
+      required_tiers: ['Gloss', 'Notes'],
+      tier_parents: { Gloss: 'Main' },
+      allowed_media_mime_types: ['video/mp4'],
+    };
+    const merged = withSuggestedRules(rules, suggested);
+    expect(merged.required_tiers).toEqual(['Gloss', 'Notes']);
+    expect(merged.tier_parents).toEqual({ Gloss: 'Main' });
+    expect(merged.media_required).toBe(true);
+    expect(merged.allowed_media_mime_types).toEqual(['video/mp4']);
+  });
+});
+
+describe('normalizeRules', () => {
+  it('copies rules held in reactive state', () => {
+    const state = reactive({ rules: { required_tiers: ['Gloss'] } });
+    const copy = normalizeRules(state.rules);
+    copy.required_tiers.push('Notes');
+    expect(state.rules.required_tiers).toEqual(['Gloss']);
   });
 });

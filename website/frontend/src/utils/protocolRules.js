@@ -5,6 +5,8 @@
 // therefore has to remove every rule that names it, or the draft cannot be
 // saved.
 
+import { toRaw } from 'vue';
+
 // Labels for these keys live in the locale files under protocolRules.
 
 export const CONSTRAINT_STEREOTYPES = [
@@ -62,10 +64,14 @@ export const emptyRules = () => ({
   severities: {},
 });
 
+// A deep copy of rules that may be reactive: structuredClone refuses Vue's
+// proxies, so copy the raw object underneath.
+export const cloneRules = (rules) => structuredClone(toRaw(rules));
+
 // Fill in rule families that a snapshot published before they existed lacks.
 export const normalizeRules = (rules) => ({
   ...emptyRules(),
-  ...structuredClone(rules || {}),
+  ...cloneRules(rules || {}),
 });
 
 const ruleSize = (rules, key) => {
@@ -144,3 +150,29 @@ export const parseLanguages = (text) =>
         .filter(Boolean)
     ),
   ].sort();
+
+const union = (left, right) => [...new Set([...left, ...right])];
+
+/**
+ * Add rules suggested from the corpus to the rules being edited. Lists are
+ * united, per-tier mappings take the suggestion, and a media requirement is
+ * never dropped.
+ */
+export const withSuggestedRules = (rules, suggested) => ({
+  ...rules,
+  required_tiers: union(rules.required_tiers, suggested.required_tiers),
+  tier_parents: { ...rules.tier_parents, ...suggested.tier_parents },
+  tier_linguistic_types: {
+    ...rules.tier_linguistic_types,
+    ...suggested.tier_linguistic_types,
+  },
+  required_controlled_vocabularies: union(
+    rules.required_controlled_vocabularies,
+    suggested.required_controlled_vocabularies
+  ),
+  media_required: rules.media_required || suggested.media_required,
+  allowed_media_mime_types: union(
+    rules.allowed_media_mime_types,
+    suggested.allowed_media_mime_types
+  ),
+});
