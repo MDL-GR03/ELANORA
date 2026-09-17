@@ -10,7 +10,7 @@
 }
 
 .register-container {
-  background: white;
+  background: var(--color-surface);
   border-radius: 1rem;
   box-shadow: 0 20px 40px rgb(0 0 0 / 10%);
   padding: 3rem;
@@ -42,7 +42,7 @@
 }
 
 .invitation-welcome {
-  color: #059669;
+  color: var(--color-emerald-600);
   font-weight: 500;
 }
 
@@ -51,7 +51,7 @@
   padding: 1.5rem;
   background: var(--secondary-bg);
   border-radius: 0.5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-slate-200);
 }
 
 .register-form {
@@ -62,7 +62,7 @@
 
 .btn-primary {
   /* Use style.css .btn-primary */
-  color: white;
+  color: var(--color-text-inverse);
   border: none;
   padding: 0.875rem 2rem;
   border-radius: 0.5rem;
@@ -93,7 +93,7 @@
   text-align: center;
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .register-footer p {

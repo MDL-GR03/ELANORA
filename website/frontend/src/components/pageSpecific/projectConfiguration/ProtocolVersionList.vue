@@ -190,29 +190,29 @@ function summarizeRules(rules) {
   justify-content: flex-end;
   gap: 0.35rem;
   min-height: 2rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
 }
 
 .archived-copy {
   max-width: 42rem;
   margin-top: 0.2rem;
-  color: #475569;
+  color: var(--color-gray-700);
   font-size: 0.82rem;
   line-height: 1.4;
 }
 
 .protocol-card {
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 0.9rem;
-  background: #fff;
+  background: var(--color-surface);
   overflow: hidden;
 }
 
 .protocol-title {
   padding: 1rem 1.1rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-surface-subtle);
+  border-bottom: 1px solid var(--color-gray-200);
 }
 
 .version-row {
@@ -220,12 +220,12 @@ function summarizeRules(rules) {
   grid-template-columns: minmax(16rem, 1fr) auto;
   align-items: center;
   padding: 0.9rem 1.1rem;
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid var(--color-gray-100);
 }
 
 .version-row.archived {
-  background: #fafbfc;
-  box-shadow: inset 3px 0 #cbd5e1;
+  background: var(--color-gray-50);
+  box-shadow: inset 3px 0 var(--color-border-strong);
 }
 
 .version-row:last-child {

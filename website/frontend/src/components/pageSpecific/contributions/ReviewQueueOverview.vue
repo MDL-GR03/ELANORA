@@ -137,7 +137,7 @@ const emptyMessage = computed(() => {
 }
 
 .panel-state.error {
-  color: #991b1b;
+  color: var(--color-error-darkest);
 }
 
 @media (width <= 700px) {

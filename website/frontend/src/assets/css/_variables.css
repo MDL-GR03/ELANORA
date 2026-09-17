@@ -106,7 +106,294 @@
   --color-gray-200: #f1f5f9;
   --color-gray-700: #475569;
   --color-gray-800: #334155;
+
+  /* Gray-Blue Scale (used in footer, etc.) */
+  --color-gray-blue-100: #718096;
+  --color-gray-blue-200: #a0aec0;
+  --color-gray-blue-300: #4a5568;
+  --color-gray-blue-400: #1a73e8;
+  --color-gray-blue-500: #bfdbfe;
+
+  /* Additional Grays */
+  --color-gray-750: #757575;
+  --color-gray-850: #495057;
   
+  /* Additional Reds */
+  --color-error-medium: #d32f2f;
+  --color-error-darker: #b71c1c;
+  --color-error-darkest: #991b1b;
+  --color-error-500: #ef4444;
+  
+  /* Additional Blues */
+  --color-primary-bg-lighter: #f0f7ff;
+  --color-slate-800: #1e293b;
+  --color-slate-500: #4b5563;
+  --color-slate-700: #334155;
+  --color-slate-800-alt: #444;
+  --color-slate-900-alt: #333;
+  --color-slate-500-alt: #888;
+  --color-slate-400-alt: #aaa;
+  --color-gray-300: #d1d5db;
+  --color-gray-200-alt: #f3f6fa;
+  --color-gray-100-alt: #f9fafb;
+  --color-gray-50-alt: #e0e0e0;
+  --color-gray-500-alt: #f3f4f6;
+  --color-gray-700-alt: #2d3748;
+  --color-blue-50: #f8fbff;
+  --color-blue-100: #eff6ff;
+  --color-blue-200: #bfdbfe;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #1e3a8a;
+  --color-blue-900: #1e293b;
+  --color-yellow-50: #fffbeb;
+  --color-yellow-200: #fde68a;
+  --color-amber-800: #92400e;
+  --color-red-500: #e74c3c;
+  --color-red-600: #f44336;
+  --color-slate-900: #14213d;
+  --color-slate-600: #52627a;
+  --color-slate-700: #17243b;
+  --color-blue-50: #e8eef7;
+  --color-blue-50-alt: #f7faff;
+  --color-blue-100: #e2e8f2;
+  --color-blue-100-subtle: #eef3f9;
+  --color-gray-100: #f8fafc;
+  --color-gray-200: #e2e8f0;
+  --color-gray-500: #6b7280;
+  --color-gray-900: #1f2937;
+  --color-gray-400: #cbd5e0;
+  --color-gray-600: #4a5568;
+  --color-slate-500: #65748d;
+  --color-slate-900: #12213b;
+  --color-blue-100-alt: #dbe3ef;
+  --color-success-800: #15803d;
+  --color-gray-50: #fafbfc;
+  --color-gray-50-alt: #fbfdff;
+  --color-gray-100-alt: #e0e0e0;
+  --color-blue-700-alt: #1976d2;
+  --color-blue-800-alt: #1565c0;
+  --color-blue-100-alt: #dbe4f0;
+  --color-success-600: #38a169;
+  --color-success-50: #f0fff4;
+  --color-error-600: #e53e3e;
+  --color-error-50: #fff5f5;
+  --color-red-200: #fda29b;
+  --color-indigo-500: #6366f1;
+  --color-purple-500-alt: #8b5cf6;
+  --color-success-dark: #047857;
+  --color-success-bg-subtle: #d1fae5;
+  --color-purple-700-alt: #6b21a8;
+  --color-red-200-alt: #fecaca;
+  --color-blue-200-alt: #2864e8;
+  --color-blue-600-alt: #1976d2;
+  --color-amber-50: #fff7ed;
+  --color-amber-200: #fdba74;
+  --color-amber-900: #9a3412;
+  --color-f7f9fc: #f7f9fc;
+  
+  /* Emerald/Teal Scale */
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  
+  /* Error/Red Scale Extensions */
+  --color-error-bg-light: #fecaca;
+  --color-error-bg-subtler: #fff1f2;
+  
+  /* Amber Scale Extensions */
+  --color-amber-800-alt: #b45309;
+  --color-amber-850: #704800;
+  --color-amber-800: #9a5b00;
+  --color-amber-750: #dfa93f;
+  --color-amber-700: #9a4d00;
+  --color-amber-700-alt: #b86f00;
+  --color-amber-650: #684300;
+  --color-amber-600: #7a4b00;
+  --color-amber-600-alt: #694400;
+  --color-amber-500: #f5c26b;
+  --color-amber-400: #f1c76b;
+  --color-amber-300: #c88716;
+  --color-amber-300-alt: #e9bd67;
+  --color-amber-250: #ecd7aa;
+  --color-amber-200: #9a3412;
+  --color-amber-200-bg: #fffaeb;
+  --color-amber-150: #eee1c5;
+  --color-amber-100-bg: #fff2cf;
+  --color-amber-50-bg: #fff7ed;
+  --color-amber-50-bg-alt: #fff9e9;
+  
+  /* Success Scale Extensions for Greener colors */
+  --color-green-500: #4caf50;
+  --color-green-50-bg: #f8fff8;
+  
+  /* Error Scale Extensions for Redder colors */
+  --color-red-500: #f44336;
+  --color-red-600: #a33a2d;
+  --color-red-700: #a12b21;
+  --color-red-50-bg: #fff8f8;
+  
+  /* Neutral Gray Extensions */
+  --color-gray-500: #e0e0e0;
+  --color-gray-400: #ccc;
+  --color-gray-400-alt: #bdbdbd;
+  --color-gray-300: #ddd;
+  --color-gray-200: #ede5ef;
+  --color-gray-100: #f5f5f5;
+  --color-gray-100-alt: #f8f9fa;
+  --color-slate-900-alt: #333;
+  --color-slate-700-alt: #666;
+  --color-slate-700: #26354d;
+  --color-slate-500: #888;
+  
+  /* Blue Scale Extensions */
+  --color-blue-50-subtle: #eff6ff;
+  --color-blue-50-lighter: #f8fbff;
+  --color-blue-50-lightest: #f7faff;
+  --color-blue-50-superlight: #fbfdff;
+  --color-blue-100-lighter: #c7d2fe;
+  --color-blue-100-lightest: #eef4ff;
+  --color-blue-200: #9bb9ed;
+  --color-blue-250: #b8cae6;
+  --color-blue-300: #d8e5fa;
+  --color-blue-350: #6f8fbf;
+  --color-blue-400: #d6e0ed;
+  --color-blue-450: #dde5ef;
+  --color-blue-500: #e8eefb;
+  --color-blue-600: #edf1f6;
+  --color-blue-700: #1f62ea;
+  --color-blue-800: #2196f3;
+  
+  /* Slate Scale Extensions */
+  --color-slate-800: #1e293b;
+  --color-slate-700-alt: #334155;
+  --color-slate-600: #475569;
+  --color-slate-500: #64748b;
+  --color-slate-400: #94a3b8;
+  --color-slate-300: #cbd5e1;
+  --color-slate-200: #e2e8f0;
+  --color-slate-100: #f1f5f9;
+  --color-slate-50: #f8fafc;
+  
+  /* Gray-Blue Scale */
+  --color-gray-blue-600: #526683;
+  --color-gray-blue-550: #b9c7da;
+  --color-gray-blue-500: #647595;
+  --color-gray-blue-500-alt: #60718c;
+  --color-gray-blue-400: #71809a;
+  --color-gray-blue-300: #7584a0;
+  --color-gray-blue-200: #91a0b8;
+  --color-gray-blue-100: #d8e2f0;
+  --color-gray-blue-50: #dbe3ee;
+  --color-gray-blue-40: #d7e1f0;
+  --color-gray-blue-30: #e2e8f2;
+  
+  /* Indigo/Purple Scale */
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+  --color-indigo-100-bg: #eef2ff;
+  
+  /* Gray-Blue Scale Extensions */
+  --color-gray-blue-20: #e5eaf2;
+  --color-gray-blue-10: #dbe4f0;
+  
+  /* Additional Blues */
+  --color-blue-300: #1f5ed5;
+  --color-blue-400: #174fbf;
+  --color-blue-500: #2864e8;
+  --color-blue-600: #174eaa;
+  --color-blue-700: #225fc8;
+  --color-blue-800: #1f62ea;
+  --color-blue-900: #1565c0;
+  
+  /* Light Blues for backgrounds */
+  --color-blue-50-bg: #f3f7fd;
+  --color-blue-100-bg: #dbe5f3;
+  --color-blue-150-bg: #d6e0ed;
+  --color-blue-200-bg: #edf4ff;
+  --color-blue-300-bg: #b9d1ff;
+  --color-blue-400-bg: #e8f0ff;
+  --color-blue-500-bg: #9bb9ed;
+  
+  /* Green Scale for backgrounds */
+  --color-green-100-bg: #a7d7b6;
+  --color-green-150-bg: #f6fcf8;
+  --color-green-200-bg: #a6d8b5;
+  --color-green-250-bg: #dff5e7;
+  --color-green-300-bg: #b8ddc3;
+  --color-green-400-bg: #f3fbf5;
+  --color-green-500: #34445e;
+  --color-green-600: #126937;
+  --color-green-700: #294f92;
+  
+  /* Success Scale Extensions */
+  --color-success-900: #176b3a;
+  --color-success-800: #245b3c;
+  --color-success-700: #52745e;
+  --color-success-600: #61ae7d;
+  --color-success-100-bg: #eaf8ef;
+  --color-success-150-bg: #ecfdf3;
+  --color-success-200-bg: #eaf3ff;
+  --color-success-300-bg: #effaf3;
+  --color-success-400-bg: #effaf8;
+  --color-success-200: #bbf7d0;
+  
+  /* Info Scale Extensions */
+  --color-info-800: #24547f;
+
+  /* Purple Scale (used in instance branding) */
+  --color-purple-50: #f3e8ff;
+  --color-purple-100: #ede9fe;
+  --color-purple-200: #c4b5fd;
+  --color-purple-300: #a78bfa;
+  --color-purple-400: #7c3aed;
+  --color-purple-500: #6d28d9;
+  --color-purple-600: #5b21b6;
+  --color-purple-700: #17243a;
+  --color-purple-800: #eadcff;
+  --color-purple-100: #ede9fe;
+  --color-purple-200: #c7d7fe;
+
+  /* Additional Blue variants from tiers.css */
+  --color-blue-50-lighter: #dbe7ff;
+  --color-blue-50-light: #e7edf5;
+  --color-blue-50-lightest: #eaf1ff;
+  --color-blue-100-lighter: #dbe5f2;
+
+  /* Emerald/Teal variant */
+  --color-emerald-800: #065f46;
+  --color-emerald-650: #397867;
+  --color-emerald-900: #15803d;
+
+  /* Additional Success/Green variants */
+  --color-success-100: #e8f7ee;
+  --color-success-100-bg: #f7f9fc;
+
+  /* Additional Blue variants */
+  --color-blue-50-variant: #f0f7ff;
+  --color-blue-100-variant: #dbe5f1;
+  --color-blue-200-variant: #cbd9eb;
+  --color-blue-500-variant: #249052;
+
+  /* Amber/Yellow variants */
+  --color-amber-400-variant: #fcd34d;
+
+  /* Gray-Blue variant */
+  --color-gray-blue-40: #eef2f7;
+
+  /* Login page specific colors */
+  --color-slate-705: #17243a;
+
+  /* Profile settings colors */
+  --color-blue-50-lighter: #f0f4ff;
+  --color-gray-300: #d1d5db;
+  --color-gray-350: #f3f4f6;
+
   /* ========================================
      SPACING & SIZING
      ======================================== */

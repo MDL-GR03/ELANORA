@@ -284,12 +284,12 @@ watch(
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-border-subtle);
 }
 
 .invitations-header h3 {
   margin: 0;
-  color: #1f2937;
+  color: var(--color-gray-900);
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -298,7 +298,7 @@ watch(
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #1976d2;
+  background: var(--color-blue-700-alt);
   color: white;
   border: none;
   border-radius: 8px;
@@ -310,7 +310,7 @@ watch(
 }
 
 .btn-send-invitation:hover {
-  background: #1565c0;
+  background: var(--color-blue-800-alt);
   transform: translateY(-1px);
 }
 
@@ -327,8 +327,8 @@ watch(
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #f3f4f6;
-  border-top: 3px solid #10b981;
+  border: 3px solid var(--color-gray-500-alt);
+  border-top: 3px solid var(--color-emerald-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
@@ -345,27 +345,27 @@ watch(
 }
 
 .error-message {
-  color: #dc2626;
+  color: var(--color-error-light);
   margin-bottom: 1rem;
 }
 
 .btn-retry {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--color-gray-500-alt);
+  color: var(--color-slate-700);
+  border: 1px solid var(--color-gray-300);
   border-radius: 6px;
   padding: 0.5rem 1rem;
   cursor: pointer;
 }
 
 .btn-retry:hover {
-  background: #e5e7eb;
+  background: var(--color-border-subtle);
 }
 
 .empty-state {
   text-align: center;
   padding: 3rem 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .empty-icon {
@@ -381,7 +381,7 @@ watch(
 
 .empty-state small {
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: var(--color-text-subtle);
 }
 
 .invitations-list {
@@ -394,16 +394,16 @@ watch(
   grid-template-columns: 1fr auto auto auto;
   align-items: center;
   gap: 1rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   padding: 1rem;
   transition: all 0.2s ease;
 }
 
 .invitation-card:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--color-gray-500-alt);
+  border-color: var(--color-gray-300);
 }
 
 .invitation-email {
@@ -422,13 +422,13 @@ watch(
 
 .email-address {
   font-weight: 500;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin-bottom: 0.125rem;
 }
 
 .invitation-date {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .permission-badge {
@@ -441,18 +441,18 @@ watch(
 }
 
 .permission-badge.read {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-info-bg);
+  color: var(--color-info-dark);
 }
 
 .permission-badge.write {
-  background: #d1fae5;
-  color: #047857;
+  background: var(--color-success-bg-subtle);
+  color: var(--color-emerald-700);
 }
 
 .permission-badge.admin {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-bg);
+  color: var(--color-amber-900);
 }
 
 .status-badge {
@@ -465,23 +465,23 @@ watch(
 }
 
 .status-badge.pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-bg);
+  color: var(--color-amber-900);
 }
 
 .status-badge.accepted {
-  background: #d1fae5;
-  color: #047857;
+  background: var(--color-success-bg-subtle);
+  color: var(--color-emerald-700);
 }
 
 .status-badge.declined {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-error-bg);
+  color: var(--color-error-light);
 }
 
 .status-badge.expired {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-gray-500-alt);
+  color: var(--color-gray-600);
 }
 
 .invitation-actions {
@@ -505,23 +505,23 @@ watch(
 }
 
 .btn-resend {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-info-bg);
+  color: var(--color-info-dark);
 }
 
 .btn-resend:hover:not(:disabled) {
-  background: #bfdbfe;
+  background: var(--color-blue-200);
   transform: scale(1.1);
 }
 
 .btn-cancel {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-error-bg);
+  color: var(--color-error-light);
   font-weight: bold;
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background: #fecaca;
+  background: var(--color-error-bg-light);
   transform: scale(1.1);
 }
 

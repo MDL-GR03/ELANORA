@@ -225,7 +225,7 @@ onMounted(() => {
 }
 
 .project-create-modal-content {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 16px;
   padding: 32px 24px;
   min-width: 600px;
@@ -261,7 +261,7 @@ onMounted(() => {
 
 .project-create-label {
   margin-bottom: 6px;
-  color: #26354d;
+  color: var(--color-slate-700);
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -270,7 +270,7 @@ onMounted(() => {
   width: 100%;
   margin-bottom: 10px;
   padding: 8px 12px;
-  border: 1.5px solid #bdbdbd;
+  border: 1.5px solid var(--color-gray-400-alt);
   border-radius: 6px;
   font-size: 1rem;
 }
@@ -281,19 +281,19 @@ onMounted(() => {
   max-height: 180px;
   margin-bottom: 4px;
   padding: 10px 12px;
-  border: 1.5px solid #bdbdbd;
+  border: 1.5px solid var(--color-gray-400-alt);
   border-radius: 6px;
   font-size: 1rem;
   resize: vertical;
   overflow-y: auto;
-  background: #f8f9fa;
+  background: var(--color-gray-100-alt);
   box-sizing: border-box;
 }
 
 .project-create-desc-info {
   text-align: right;
   font-size: 0.95rem;
-  color: #888;
+  color: var(--color-slate-500);
   margin-bottom: 8px;
 }
 
@@ -305,7 +305,7 @@ onMounted(() => {
 }
 
 .project-create-error {
-  color: #d32f2f;
+  color: var(--color-error-medium);
   margin-bottom: 8px;
   font-size: 0.98rem;
   text-align: left;

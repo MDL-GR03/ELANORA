@@ -339,18 +339,18 @@ async function addFileType() {
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--color-border-strong);
 }
 
 .configure-filetypes-title {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .configure-filetypes-loading {
-  color: #888;
+  color: var(--color-gray-800);
   font-size: 1.1rem;
   margin-bottom: 18px;
 }
@@ -364,7 +364,7 @@ async function addFileType() {
 
 .configure-filetypes-table th,
 .configure-filetypes-table td {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-border-strong);
   padding: 6px 10px;
   text-align: left;
   overflow: hidden;
@@ -407,16 +407,16 @@ async function addFileType() {
   min-width: 0;
   box-sizing: border-box;
   padding: 6px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
 }
 
 .configure-filetypes-add-form button {
-  background: #1976d2;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 6.5px 18px;
   font-size: 1rem;
   cursor: pointer;
@@ -425,7 +425,7 @@ async function addFileType() {
 }
 
 .configure-filetypes-add-form button:hover {
-  background: #1565c0;
+  background: var(--color-primary-dark);
 }
 
 .configure-file-types-actions {
@@ -455,34 +455,34 @@ async function addFileType() {
 }
 
 .configure-file-types-edit-btn {
-  border-color: #757575;
-  color: #757575;
+  border-color: var(--color-gray-750);
+  color: var(--color-gray-750);
 }
 
 .configure-file-types-edit-btn:hover {
-  background: #757575;
-  color: #fff;
-  border-color: #495057;
+  background: var(--color-gray-750);
+  color: var(--color-text-inverse);
+  border-color: var(--color-gray-850);
 }
 
 .configure-file-types-delete-btn {
-  border-color: #d32f2f;
-  color: #d32f2f;
+  border-color: var(--color-error-medium);
+  color: var(--color-error-medium);
 }
 
 .configure-file-types-delete-btn:hover {
-  background: #d32f2f;
-  color: #fff;
-  border-color: #b71c1c;
+  background: var(--color-error-medium);
+  color: var(--color-text-inverse);
+  border-color: var(--color-error-darker);
 }
 
 /* Highlight editable fields */
 .configure-file-types-edit-highlight {
-  border: 2px solid #2563eb !important;
-  background: #f0f7ff !important;
-  border-radius: 5px;
+  border: 2px solid var(--color-primary) !important;
+  background: var(--color-primary-bg-lighter) !important;
+  border-radius: var(--radius-sm);
   outline: none;
-  box-shadow: 0 0 0 2px #2563eb33;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 20%);
   transition:
     border 0.18s,
     box-shadow 0.18s;
@@ -491,7 +491,7 @@ async function addFileType() {
 }
 
 .configure-file-types-input-error {
-  color: #d32f2f;
+  color: var(--color-error-medium);
   font-size: 0.92em;
   margin-top: 2px;
   display: block;

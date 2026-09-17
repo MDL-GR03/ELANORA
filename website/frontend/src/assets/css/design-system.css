@@ -7,7 +7,7 @@ body {
   min-height: 100%;
   margin: 0;
   color: var(--color-text);
-  background-color: #c7d2fe;
+  background-color: var(--color-blue-100-lighter);
   background-image: var(--main-bg-gradient);
   background-repeat: no-repeat;
   background-attachment: fixed;

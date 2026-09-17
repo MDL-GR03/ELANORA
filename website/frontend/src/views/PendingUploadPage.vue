@@ -476,7 +476,7 @@ function getUploadStatusClass(upload) {
 
 <style scoped>
 .project-name {
-  color: #1976d2;
+  color: var(--color-blue-700-alt, #1976d2);
   font-weight: 600;
 }
 
@@ -484,8 +484,8 @@ function getUploadStatusClass(upload) {
   display: inline-block;
   margin-top: 16px;
   padding: 12px 24px;
-  background: #1976d2;
-  color: white;
+  background: var(--color-blue-700-alt, #1976d2);
+  color: var(--color-text-inverse);
   text-decoration: none;
   border-radius: 8px;
   font-weight: 500;
@@ -493,6 +493,6 @@ function getUploadStatusClass(upload) {
 }
 
 .select-project-btn:hover {
-  background: #1565c0;
+  background: var(--color-blue-800-alt, #1565c0);
 }
 </style>

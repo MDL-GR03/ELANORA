@@ -170,7 +170,7 @@ watch(
 
 <style scoped>
 .file-rename-suggestion-popover {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   box-shadow: 0 18px 45px rgb(15 23 42 / 18%);
@@ -210,7 +210,7 @@ watch(
 /* Arrow pointing to the filename - right placement (default) */
 .file-rename-suggestion-popover::before {
   border-width: 8px;
-  border-right-color: #94a3b8;
+  border-right-color: var(--color-text-subtle);
   top: var(--arrow-offset, 50%);
   left: -16px;
   transform: translateY(-50%);
@@ -218,7 +218,7 @@ watch(
 
 .file-rename-suggestion-popover::after {
   border-width: 7px;
-  border-right-color: #fff;
+  border-right-color: var(--color-surface);
   top: var(--arrow-offset, 50%);
   left: -14px;
   transform: translateY(-50%);
@@ -226,7 +226,7 @@ watch(
 
 /* Left placement - arrow points right */
 .file-rename-suggestion-popover--left::before {
-  border-left-color: #94a3b8;
+  border-left-color: var(--color-text-subtle, #94a3b8);
   border-right-color: transparent;
   left: auto;
   right: -16px;
@@ -235,7 +235,7 @@ watch(
 }
 
 .file-rename-suggestion-popover--left::after {
-  border-left-color: #fff;
+  border-left-color: var(--color-surface);
   border-right-color: transparent;
   left: auto;
   right: -14px;
@@ -245,7 +245,7 @@ watch(
 
 /* Top placement - arrow points down */
 .file-rename-suggestion-popover--top::before {
-  border-top-color: #94a3b8;
+  border-top-color: var(--color-text-subtle, #94a3b8);
   border-right-color: transparent;
   top: auto;
   bottom: -16px;
@@ -254,7 +254,7 @@ watch(
 }
 
 .file-rename-suggestion-popover--top::after {
-  border-top-color: #fff;
+  border-top-color: var(--color-surface);
   border-right-color: transparent;
   top: auto;
   bottom: -14px;
@@ -264,7 +264,7 @@ watch(
 
 /* Bottom placement - arrow points up */
 .file-rename-suggestion-popover--bottom::before {
-  border-bottom-color: #94a3b8;
+  border-bottom-color: var(--color-text-subtle, #94a3b8);
   border-right-color: transparent;
   bottom: auto;
   top: -16px;
@@ -273,7 +273,7 @@ watch(
 }
 
 .file-rename-suggestion-popover--bottom::after {
-  border-bottom-color: #fff;
+  border-bottom-color: var(--color-surface);
   border-right-color: transparent;
   bottom: auto;
   top: -14px;
@@ -283,18 +283,18 @@ watch(
 
 .suggestion-title {
   font-weight: 600;
-  color: #d32f2f;
+  color: var(--color-error-medium);
   margin-bottom: 8px;
 }
 
 .media-files-info {
-  color: #666;
+  color: var(--color-slate-700-alt);
   font-size: 0.85rem;
   margin-bottom: 8px;
   padding: 4px 8px;
-  background: #f5f5f5;
+  background: var(--color-gray-100);
   border-radius: 4px;
-  border-left: 3px solid #1565c0;
+  border-left: 3px solid var(--color-blue-900);
 }
 
 .suggestion-input-container {
@@ -304,7 +304,7 @@ watch(
 }
 
 .suggestion-input {
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-gray-400);
   border-radius: 4px;
   padding: 6px 8px;
   font-size: 0.95rem;
@@ -314,30 +314,30 @@ watch(
 
 .suggestion-input:focus {
   outline: none;
-  border-color: #2196f3;
+  border-color: var(--color-blue-800);
 }
 
 .suggestion-input.non-compliant {
-  border-color: #f44336;
-  background-color: #fff8f8;
+  border-color: var(--color-red-500);
+  background-color: var(--color-red-50-bg);
 }
 
 .compliance-warning {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  color: #f44336;
+  color: var(--color-red-500);
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
 
 .compliance-warning i {
-  color: #f44336;
+  color: var(--color-red-500);
 }
 
 .suggestion-confirm-btn {
-  background: #1976d2;
-  color: #fff;
+  background: var(--color-blue-700-alt);
+  color: var(--color-text-inverse);
   border: none;
   border-radius: 4px;
   padding: 6px 12px;
@@ -350,11 +350,11 @@ watch(
 }
 
 .suggestion-confirm-btn:disabled {
-  background: #ccc;
+  background: var(--color-gray-400);
   cursor: not-allowed;
 }
 
 .suggestion-confirm-btn:hover:not(:disabled) {
-  background: #1565c0;
+  background: var(--color-blue-900);
 }
 </style>

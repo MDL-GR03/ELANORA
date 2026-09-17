@@ -49,7 +49,7 @@ defineProps({
   position: relative;
   margin: 2px 0 0 1.15rem;
   padding: 0.65rem 0 0 1.35rem;
-  border-left: 2px solid #bfdbfe;
+  border-left: 2px solid var(--color-blue-200);
 }
 
 .tier-tree.nested::before {
@@ -57,7 +57,7 @@ defineProps({
   top: 1.65rem;
   left: 0;
   width: 1rem;
-  border-top: 2px solid #bfdbfe;
+  border-top: 2px solid var(--color-blue-200);
   content: '';
 }
 
@@ -68,9 +68,9 @@ defineProps({
   width: fit-content;
   min-width: 13rem;
   padding: 0.65rem 0.8rem;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--color-info-bg);
   border-radius: 0.7rem;
-  background: #fff;
+  background: var(--color-surface);
   box-shadow: 0 0.15rem 0.4rem rgb(15 23 42 / 5%);
 }
 
@@ -80,7 +80,7 @@ defineProps({
 }
 
 .tier-node small {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.75rem;
 }
 
@@ -90,8 +90,8 @@ defineProps({
   height: 1.7rem;
   place-items: center;
   border-radius: 0.5rem;
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--color-blue-50-subtle);
+  color: var(--color-primary);
   font-size: 0.72rem;
   font-weight: 900;
 }

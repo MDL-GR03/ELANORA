@@ -206,7 +206,7 @@ onBeforeUnmount(() => {
 .instance-section-root {
   display: flex;
   align-items: center;
-  background: #fff;
+  background: var(--color-surface);
   gap: 0.75rem;
   min-width: 0;
   padding: 0;
@@ -215,8 +215,8 @@ onBeforeUnmount(() => {
 .instance-section-name {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #1a73e8;
-  background: #e8f0fe;
+  color: var(--color-gray-blue-400);
+  background: var(--color-blue-50);
   border-radius: 0.65rem;
   padding: 0.48rem 0.9rem;
   white-space: nowrap;
@@ -234,9 +234,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #f3e8ff;
-  color: #7c3aed;
-  border: 1px solid #eadcff;
+  background: var(--color-purple-50);
+  color: var(--color-purple-400);
+  border: 1px solid var(--color-purple-800);
   border-radius: 0.65rem;
   padding: 0.48rem 0.75rem;
   font-size: 0.95rem;
@@ -252,9 +252,9 @@ onBeforeUnmount(() => {
 .instance-section-user-trigger:focus-visible,
 .instance-section-login:hover,
 .instance-section-login:focus-visible {
-  background: #ede9fe;
-  color: #5b21b6;
-  border-color: #c4b5fd;
+  background: var(--color-purple-100);
+  color: var(--color-purple-600);
+  border-color: var(--color-purple-200);
   outline: none;
   box-shadow: 0 0 0 3px rgb(124 58 237 / 12%);
 }
@@ -268,8 +268,8 @@ onBeforeUnmount(() => {
   max-width: min(20rem, 80vw);
   padding: 0.42rem 0.65rem;
   border-radius: 0.45rem;
-  background: #17243a;
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-surface);
   font-size: 0.78rem;
   font-weight: 500;
   line-height: 1.3;
@@ -307,7 +307,7 @@ onBeforeUnmount(() => {
 .instance-section-chevron {
   margin-left: 0.2rem;
   transition: transform 0.2s;
-  fill: #a78bfa;
+  fill: var(--color-purple-300);
 }
 
 .instance-section-user-trigger[aria-expanded='true'] .instance-section-chevron {
@@ -335,8 +335,8 @@ onBeforeUnmount(() => {
   top: calc(100% + 0.55rem);
   min-width: 15rem;
   max-width: min(21rem, 88vw);
-  background: #fff;
-  color: #4b5563;
+  background: var(--color-surface);
+  color: var(--color-slate-500);
   border-radius: 0.75rem;
   box-shadow: 0 16px 36px rgb(15 23 42 / 16%);
   padding: 0.4rem;
@@ -344,7 +344,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   animation: instance-section-slide 0.18s;
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--color-blue-100);
 }
 
 .instance-section-identity {
@@ -353,7 +353,7 @@ onBeforeUnmount(() => {
   gap: 0.7rem;
   margin-bottom: 0.35rem;
   padding: 0.65rem 0.7rem 0.75rem;
-  border-bottom: 1px solid #e5eaf2;
+  border-bottom: 1px solid var(--color-blue-200);
 }
 
 .instance-section-identity-avatar {
@@ -363,8 +363,8 @@ onBeforeUnmount(() => {
   flex: none;
   place-items: center;
   border-radius: 50%;
-  background: #ede9fe;
-  color: #6d28d9;
+  background: var(--color-purple-100);
+  color: var(--color-purple-500);
   font-weight: 750;
 }
 
@@ -381,12 +381,12 @@ onBeforeUnmount(() => {
 }
 
 .instance-section-identity strong {
-  color: #1e293b;
+  color: var(--color-slate-800);
   font-size: 0.9rem;
 }
 
 .instance-section-identity small {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.77rem;
 }
 
@@ -433,12 +433,12 @@ onBeforeUnmount(() => {
 .instance-section-link:hover,
 .instance-section-action:focus,
 .instance-section-link:focus {
-  background: #f1f5ff;
-  color: #7c3aed;
+  background: var(--color-surface-subtle);
+  color: var(--color-purple-400);
   outline: none;
 }
 
 .instance-section-action:last-child {
-  color: #b42318;
+  color: var(--color-error-medium);
 }
 </style>

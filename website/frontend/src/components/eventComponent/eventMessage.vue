@@ -179,8 +179,8 @@ onBeforeUnmount(() => {
 }
 
 .event-message {
-  --toast-accent: #2563eb;
-  --toast-soft: #eff6ff;
+  --toast-accent: var(--color-primary);
+  --toast-soft: var(--color-blue-50-subtle);
 
   width: min(24rem, calc(100vw - 2rem));
   display: grid;
@@ -213,7 +213,7 @@ onBeforeUnmount(() => {
 
 .event-message-text {
   padding-top: 0.28rem;
-  color: #1e293b;
+  color: var(--color-slate-800, #1e293b);
   font-size: 0.92rem;
   font-weight: 650;
   line-height: 1.45;
@@ -228,7 +228,7 @@ onBeforeUnmount(() => {
   height: 1.75rem;
   display: grid;
   place-items: center;
-  color: #6b7280;
+  color: var(--color-slate-500, #6b7280);
   background: none;
   border: none;
   cursor: pointer;
@@ -243,27 +243,27 @@ onBeforeUnmount(() => {
 }
 
 .event-message-close:hover {
-  background: #f1f5f9;
-  color: #374151;
+  background: var(--color-slate-100, #f1f5f9);
+  color: var(--color-slate-700, #374151);
 }
 
 .event-message-error {
-  --toast-accent: #dc2626;
-  --toast-soft: #fef2f2;
+  --toast-accent: var(--color-error-light);
+  --toast-soft: var(--color-error-bg);
 }
 
 .event-message-warning {
-  --toast-accent: #d97706;
-  --toast-soft: #fffbeb;
+  --toast-accent: var(--color-accent);
+  --toast-soft: var(--color-amber-50);
 }
 
 .event-message-info {
-  --toast-accent: #2563eb;
-  --toast-soft: #eff6ff;
+  --toast-accent: var(--color-primary);
+  --toast-soft: var(--color-blue-50-subtle);
 }
 
 .event-message-success {
-  --toast-accent: #059669;
-  --toast-soft: #ecfdf5;
+  --toast-accent: var(--color-emerald-600);
+  --toast-soft: var(--color-success-150-bg);
 }
 </style>

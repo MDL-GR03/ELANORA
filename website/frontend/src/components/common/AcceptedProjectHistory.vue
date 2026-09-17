@@ -394,7 +394,7 @@ onMounted(loadAll);
 
 .history-heading {
   padding: 0 0 1.25rem;
-  border-bottom: 1px solid #d9e2ef;
+  border-bottom: 1px solid var(--color-blue-300);
 }
 
 .history-heading h2 {
@@ -405,7 +405,7 @@ onMounted(loadAll);
 .version-summary p,
 .restore-actions p {
   margin: 0;
-  color: #60718c;
+  color: var(--color-gray-blue-500-alt);
 }
 
 .recovery-panel {
@@ -413,11 +413,11 @@ onMounted(loadAll);
   gap: 0.9rem;
   margin: 1.25rem 0 0;
   padding: 1rem;
-  border: 1px solid #dfa93f;
-  border-left: 4px solid #b86f00;
+  border: 1px solid var(--color-amber-750);
+  border-left: 4px solid var(--color-amber-700-alt);
   border-radius: 0.7rem;
-  background: #fff9e9;
-  color: #684300;
+  background: var(--color-amber-50-bg-alt);
+  color: var(--color-amber-650);
 }
 
 .recovery-panel > svg {
@@ -438,7 +438,7 @@ onMounted(loadAll);
   margin: 0.8rem 0;
   padding: 0;
   list-style: none;
-  border: 1px solid #ecd7aa;
+  border: 1px solid var(--color-amber-250);
   border-radius: 0.5rem;
   background: rgb(255 255 255 / 65%);
 }
@@ -448,7 +448,7 @@ onMounted(loadAll);
   grid-template-columns: minmax(10rem, 0.35fr) 1fr;
   gap: 0.75rem;
   padding: 0.55rem 0.7rem;
-  border-bottom: 1px solid #eee1c5;
+  border-bottom: 1px solid var(--color-amber-150);
 }
 
 .health-issues li:last-child {
@@ -460,7 +460,7 @@ onMounted(loadAll);
 }
 
 .eyebrow {
-  color: #1f62ea;
+  color: var(--color-blue-700);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -478,22 +478,22 @@ onMounted(loadAll);
 
 .secondary-button,
 .preview-button {
-  background: #fff;
-  border: 1px solid #9bb9ed;
-  color: #174eaa;
+  background: var(--color-surface);
+  border: 1px solid var(--color-blue-500-bg);
+  color: var(--color-blue-600);
 }
 
 .text-button {
   padding: 0.25rem;
   border: 0;
   background: transparent;
-  color: #225fc8;
+  color: var(--color-blue-700);
 }
 
 .danger-button {
-  border: 1px solid #a33a2d;
-  background: #a33a2d;
-  color: #fff;
+  border: 1px solid var(--color-red-600);
+  background: var(--color-red-600);
+  color: var(--color-text-inverse);
   font-weight: 700;
 }
 
@@ -506,7 +506,7 @@ button:disabled {
   margin: 0;
   padding: 1.25rem 0 0 1.25rem;
   list-style: none;
-  border-left: 2px solid #d8e5fa;
+  border-left: 2px solid var(--color-blue-300);
 }
 
 .version-row {
@@ -520,22 +520,22 @@ button:disabled {
   top: 1.35rem;
   width: 0.7rem;
   height: 0.7rem;
-  border: 3px solid #fff;
+  border: 3px solid var(--color-surface);
   border-radius: 50%;
-  background: #6f8fbf;
-  box-shadow: 0 0 0 2px #b8cae6;
+  background: var(--color-blue-350);
+  box-shadow: 0 0 0 2px var(--color-blue-250);
 }
 
 .version-card {
-  border: 1px solid #d6e0ed;
+  border: 1px solid var(--color-blue-400);
   border-radius: 0.75rem;
-  background: #fff;
+  background: var(--color-surface);
   padding: 1rem;
 }
 
 .version-card.current {
-  border-color: #61ae7d;
-  background: #f6fcf8;
+  border-color: var(--color-success-600);
+  background: var(--color-success-150-bg);
 }
 
 .version-card h3 {
@@ -560,13 +560,13 @@ button:disabled {
 }
 
 .current-badge {
-  background: #dff5e7;
-  color: #126937;
+  background: var(--color-green-250-bg);
+  color: var(--color-green-600);
 }
 
 .restore-badge {
-  background: #e8eefb;
-  color: #294f92;
+  background: var(--color-blue-500);
+  color: var(--color-green-700);
 }
 
 .version-reason {
@@ -576,7 +576,7 @@ button:disabled {
 .restore-preview {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid #d9e2ef;
+  border-top: 1px solid var(--color-blue-300);
 }
 
 .restore-preview h4 {
@@ -589,7 +589,7 @@ button:disabled {
   margin: 1rem 0;
   padding: 0;
   list-style: none;
-  border: 1px solid #dde5ef;
+  border: 1px solid var(--color-blue-450);
   border-radius: 0.5rem;
 }
 
@@ -598,7 +598,7 @@ button:disabled {
   grid-template-columns: 3rem 1fr;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #edf1f6;
+  border-bottom: 1px solid var(--color-blue-600);
 }
 
 .changed-files li:last-child {
@@ -606,7 +606,7 @@ button:disabled {
 }
 
 .changed-files span {
-  color: #9a5b00;
+  color: var(--color-amber-800);
   font-weight: 800;
 }
 
@@ -614,10 +614,10 @@ button:disabled {
   display: flex;
   gap: 0.75rem;
   padding: 0.9rem;
-  border: 1px solid #e9bd67;
+  border: 1px solid var(--color-amber-300-alt);
   border-radius: 0.55rem;
-  background: #fff9e9;
-  color: #694400;
+  background: var(--color-amber-50-bg-alt);
+  color: var(--color-amber-600-alt);
 }
 
 .impact-warning p {
@@ -635,7 +635,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  color: #34445e;
+  color: var(--color-green-500);
   font-weight: 650;
 }
 
@@ -644,7 +644,7 @@ button:disabled {
   box-sizing: border-box;
   width: 100%;
   padding: 0.7rem;
-  border: 1px solid #b9c7da;
+  border: 1px solid var(--color-gray-blue-550);
   border-radius: 0.5rem;
   font: inherit;
 }
@@ -657,11 +657,11 @@ button:disabled {
 .history-state {
   padding: 2rem;
   text-align: center;
-  color: #60718c;
+  color: var(--color-gray-blue-500-alt);
 }
 
 .error-state {
-  color: #a12b21;
+  color: var(--color-red-700);
 }
 
 @media (width <= 720px) {

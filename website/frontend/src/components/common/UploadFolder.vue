@@ -670,7 +670,7 @@ defineExpose({
 
 .upload-zone.dragover {
   border-color: var(--color-secondary);
-  background: #effaf8;
+  background: var(--color-success-400-bg);
   box-shadow: inset 0 0 0 3px rgb(15 118 110 / 10%);
   transform: none;
 }

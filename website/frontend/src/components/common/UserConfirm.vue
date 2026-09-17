@@ -158,9 +158,9 @@ defineExpose({ confirm, cancel });
   margin: 0;
   padding: 0;
   overflow: hidden auto;
-  color: #12213b;
-  background: #fff;
-  border: 1px solid #d7e1f0;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
   box-shadow: 0 24px 70px rgb(15 35 70 / 28%);
   animation: dialog-in 170ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -172,7 +172,7 @@ defineExpose({ confirm, cancel });
   gap: 14px;
   align-items: center;
   padding: 24px 24px 18px;
-  border-bottom: 1px solid #e2e8f2;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .confirm-icon {
@@ -180,20 +180,20 @@ defineExpose({ confirm, cancel });
   place-items: center;
   width: 44px;
   height: 44px;
-  color: #205ee8;
-  background: #eaf1ff;
-  border-radius: 12px;
+  color: var(--color-info-dark);
+  background: var(--color-info-bg);
+  border-radius: var(--radius-lg);
   font-size: 1.05rem;
 }
 
 .tone-success .confirm-icon {
-  color: #08783f;
-  background: #e7f8ef;
+  color: var(--color-success-dark);
+  background: var(--color-success-bg-subtle);
 }
 
 .tone-danger .confirm-icon {
-  color: #c62828;
-  background: #fff0f0;
+  color: var(--color-error);
+  background: var(--color-error-bg-subtle);
 }
 
 .confirm-heading {
@@ -203,7 +203,7 @@ defineExpose({ confirm, cancel });
 .confirm-eyebrow {
   display: block;
   margin-bottom: 3px;
-  color: #5e7191;
+  color: var(--color-text-muted);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.075em;
@@ -212,7 +212,7 @@ defineExpose({ confirm, cancel });
 
 .confirm-heading h2 {
   margin: 0;
-  color: #12213b;
+  color: var(--color-text);
   font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.3;
@@ -224,16 +224,16 @@ defineExpose({ confirm, cancel });
   width: 38px;
   height: 38px;
   padding: 0;
-  color: #65748d;
+  color: var(--color-text-muted);
   background: transparent;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   cursor: pointer;
 }
 
 .confirm-close:hover {
-  color: #17243b;
-  background: #eef3f9;
+  color: var(--color-text);
+  background: var(--color-surface-subtle);
 }
 
 .confirm-content {
@@ -242,7 +242,7 @@ defineExpose({ confirm, cancel });
 
 .confirm-content p {
   margin: 0;
-  color: #50617e;
+  color: var(--color-gray-700);
   font-size: 0.98rem;
   line-height: 1.65;
 }
@@ -252,8 +252,8 @@ defineExpose({ confirm, cancel });
   justify-content: flex-end;
   gap: 10px;
   padding: 16px 24px;
-  background: #f7f9fc;
-  border-top: 1px solid #e2e8f2;
+  background: var(--color-canvas);
+  border-top: 1px solid var(--color-border);
 }
 
 .confirm-button {
@@ -266,7 +266,7 @@ defineExpose({ confirm, cancel });
   font: inherit;
   font-weight: 700;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition:
     transform 120ms ease,
@@ -275,24 +275,24 @@ defineExpose({ confirm, cancel });
 }
 
 .confirm-button.secondary {
-  color: #35445f;
-  background: #fff;
-  border-color: #cdd8e8;
+  color: var(--color-gray-800);
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .confirm-button.primary {
-  color: #fff;
-  background: #2563eb;
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
   box-shadow: 0 4px 12px rgb(37 99 235 / 20%);
 }
 
 .tone-success .confirm-button.primary {
-  background: #12824a;
+  background: var(--color-success);
   box-shadow: 0 4px 12px rgb(18 130 74 / 20%);
 }
 
 .tone-danger .confirm-button.primary {
-  background: #d52b2b;
+  background: var(--color-error);
   box-shadow: 0 4px 12px rgb(213 43 43 / 20%);
 }
 

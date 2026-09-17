@@ -259,14 +259,14 @@ onMounted(load);
   gap: 0.75rem;
   margin: 0;
   padding: 1rem;
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--color-blue-100-alt);
   border-radius: 0.85rem;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 legend {
   padding: 0 0.25rem;
-  color: #14213d;
+  color: var(--color-slate-900);
   font-size: 1rem;
   font-weight: 800;
 }
@@ -274,7 +274,7 @@ legend {
 .help,
 small {
   margin: 0;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.84rem;
 }
 
@@ -289,14 +289,14 @@ small {
   align-items: flex-start;
   gap: 0.6rem;
   padding: 0.75rem;
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--color-blue-100-alt);
   border-radius: 0.7rem;
   cursor: pointer;
 }
 
 .level.selected {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--color-primary);
+  background: var(--color-blue-50-subtle);
 }
 
 .level span {
@@ -306,7 +306,7 @@ small {
 
 .notice {
   margin: 0;
-  color: #b45309;
+  color: var(--color-amber-800-alt);
   font-size: 0.84rem;
   font-weight: 700;
 }
@@ -314,7 +314,7 @@ small {
 .field {
   display: grid;
   gap: 0.3rem;
-  color: #475569;
+  color: var(--color-gray-700);
   font-size: 0.8rem;
   font-weight: 750;
 }
@@ -327,23 +327,23 @@ small {
 .field input {
   box-sizing: border-box;
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.55rem;
   padding: 0.6rem 0.7rem;
-  color: #14213d;
+  color: var(--color-slate-900);
   font: inherit;
   font-size: 0.9rem;
 }
 
 [aria-invalid='true'] {
-  border-color: #b91c1c;
+  border-color: var(--color-error);
 }
 
 .check {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #14213d;
+  color: var(--color-slate-900);
   font-size: 0.9rem;
 }
 
@@ -360,8 +360,8 @@ small {
   border: 0;
   border-radius: 0.6rem;
   padding: 0.6rem 1rem;
-  background: #2563eb;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
   font: inherit;
   font-weight: 750;
   cursor: pointer;
@@ -376,12 +376,12 @@ small {
   margin: 0;
   padding: 0.75rem 1rem;
   border-radius: 0.65rem;
-  background: #f0fdf4;
-  color: #166534;
+  background: var(--color-success-bg-subtle);
+  color: var(--color-success);
 }
 
 .state.error {
-  background: #fff1f2;
-  color: #b91c1c;
+  background: var(--color-error-bg-subtler);
+  color: var(--color-error);
 }
 </style>

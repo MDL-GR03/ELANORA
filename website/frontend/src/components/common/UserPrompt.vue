@@ -155,8 +155,8 @@ defineExpose({ inputValue });
 .prompt-dialog {
   width: min(500px, 100%);
   overflow: hidden;
-  background: #fff;
-  border: 1px solid #d7e1f0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
   box-shadow: 0 24px 70px rgb(15 35 70 / 28%);
 }
@@ -167,8 +167,8 @@ defineExpose({ inputValue });
   gap: 14px;
   align-items: center;
   padding: 22px 24px 18px;
-  background: linear-gradient(145deg, #fff, #f7faff);
-  border-bottom: 1px solid #e2e8f2;
+  background: linear-gradient(145deg, var(--color-surface), var(--color-primary-bg));
+  border-bottom: 1px solid var(--color-border);
 }
 
 .prompt-icon {
@@ -176,14 +176,14 @@ defineExpose({ inputValue });
   place-items: center;
   width: 44px;
   height: 44px;
-  color: #2864e8;
-  background: #e8f0ff;
-  border-radius: 12px;
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-lg);
 }
 
 .prompt-eyebrow {
   display: block;
-  color: #2864e8;
+  color: var(--color-primary);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.075em;
@@ -192,23 +192,23 @@ defineExpose({ inputValue });
 
 .prompt-header h2 {
   margin: 2px 0 0;
-  color: #12213b;
+  color: var(--color-text);
   font-size: 1.18rem;
 }
 
 .prompt-close {
   width: 38px;
   height: 38px;
-  color: #65748d;
+  color: var(--color-text-muted);
   background: transparent;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--radius-md);
   cursor: pointer;
 }
 
 .prompt-close:hover {
-  color: #17243b;
-  background: #eef3f9;
+  color: var(--color-text);
+  background: var(--color-surface-subtle);
 }
 
 .prompt-form {
@@ -218,7 +218,7 @@ defineExpose({ inputValue });
 }
 
 .prompt-form label {
-  color: #35445f;
+  color: var(--color-gray-800);
   font-size: 0.9rem;
   font-weight: 700;
   line-height: 1.45;
@@ -228,27 +228,27 @@ defineExpose({ inputValue });
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
-  color: #12213b;
-  background: #fff;
-  border: 1px solid #cdd8e8;
-  border-radius: 10px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font: inherit;
 }
 
 .prompt-input:focus {
   outline: 3px solid rgb(37 99 235 / 15%);
-  border-color: #4480ef;
+  border-color: var(--color-info-light);
 }
 
 .prompt-input[aria-invalid='true'] {
-  border-color: #dc4848;
+  border-color: var(--color-error);
 }
 
 .prompt-warning {
   display: flex;
   gap: 7px;
   align-items: center;
-  color: #b52626;
+  color: var(--color-error);
   font-size: 0.82rem;
 }
 
@@ -258,8 +258,8 @@ defineExpose({ inputValue });
   gap: 10px;
   margin: 12px -24px 0;
   padding: 16px 24px;
-  background: #f7f9fc;
-  border-top: 1px solid #e2e8f2;
+  background: var(--color-canvas);
+  border-top: 1px solid var(--color-border);
 }
 
 .prompt-button {
@@ -267,20 +267,20 @@ defineExpose({ inputValue });
   padding: 9px 17px;
   font: inherit;
   font-weight: 700;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   cursor: pointer;
 }
 
 .prompt-button.secondary {
-  color: #35445f;
-  background: #fff;
-  border: 1px solid #cdd8e8;
+  color: var(--color-gray-800);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
 }
 
 .prompt-button.primary {
-  color: #fff;
-  background: #2563eb;
-  border: 1px solid #2563eb;
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
 }
 
 @media (width <= 560px) {

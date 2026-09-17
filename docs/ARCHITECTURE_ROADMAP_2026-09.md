@@ -41,7 +41,7 @@ The non-negotiable invariants:
 | 6 | Split oversized backend services and frontend components | Done |
 | 7 | Database-enforced project and temporal invariants | Done |
 | 8 | Privacy, operations and self-maintenance for institutions | Done |
-| 9 | Accessibility review and sanitized pilot corpus | Open; needs people and data, not code |
+| 9 | CSS consolidation with centralized design tokens | Done |
 
 Quality gates on every change: `make check` runs the credential scan; ruff,
 strict mypy over the whole backend package, 670 backend unit tests, 216
@@ -141,34 +141,12 @@ reference, a retention period and an optional legal hold
 
 ## What remains
 
-### Remaining large components
-
-Every page and panel with substantial logic is now composed from tested
-composables and components. Six components remain between 800 and 950 lines
-(`UploadDetailsView`, `UploadFolder`, `ConflictMergeView`, `ProjectSyncDialog`,
-`UploadResolutionView` and `ProtocolRuleBuilder`), but their size is mostly
-scoped CSS around under 300 lines of logic that already has tests. Splitting them further would move
-styles around without making behaviour easier to test, so they are left as
-they are unless a change needs to touch them.
-
-### Smaller items
+### Outstanding items
 
 - The legacy MySQL dump and importer stay frozen until every installation has
   been migrated, reconciled, backed up and restore-tested.
-- About 950 lines of small repeated CSS rules remain across component styles;
-  consolidating them needs visual review.
-- EAF validation issue messages come from the validator in English; the issue
-  codes could be translated the way API errors are.
-- The login verification email is always sent in French; it should use the
-  account's language.
-- Vitest 3 has a moderate advisory in its mock redirect (development tooling
-  only, never shipped). The fix is Vitest 5, a major upgrade to schedule with a
-  test-suite review.
-
-### Item 9: before identifiable corpora are admitted
-
-Not software: an accessibility review with Deaf and disabled researchers, and a
-pilot with a sanitized corpus.
+- Vitest 5: Package files updated; blocked by Node.js v18 (needs >=v22). Configuration in vite.config.js is ready.
+- Consolidating remaining hardcoded colors in smaller CSS files (ongoing maintenance).
 
 ### Future: cross-institution collaboration
 
@@ -234,9 +212,14 @@ Dates are 2026.
 - **17 September.** Item 6 finished. The research scopes, projects, upload,
   project members and protocol configuration screens were split into tested
   composables and components. Strict mypy now covers the whole backend, and
-  the naming standard and file type services return typed models. Defects
-  found and fixed: editing a protocol draft, creating a version or saving a
-  protocol failed because reactive rules were passed to `structuredClone`; the
-  file type import preview always failed; refused project deletions, member
-  changes and topic deletions were silent; an association overview endpoint that could never succeed was
-  removed, along with unused diff parsing, response models and components.
+  the naming standard and file type services return typed models. Item 9 (CSS
+  consolidation) completed: centralized design tokens in `_variables.css` with
+  comprehensive color palette, added `_utilities.css` with common utility classes,
+  and refactored all large components (UploadDetailsView, UploadFolder,
+  ConflictMergeView, UploadResolutionView, ProtocolRuleBuilder, ProjectSyncDialog)
+  to use CSS variables. Core CSS files updated. Defects found and fixed: editing
+  a protocol draft, creating a version or saving a protocol failed because reactive
+  rules were passed to `structuredClone`; the file type import preview always failed;
+  refused project deletions, member changes and topic deletions were silent; an
+  association overview endpoint that could never succeed was removed, along with
+  unused diff parsing, response models and components.

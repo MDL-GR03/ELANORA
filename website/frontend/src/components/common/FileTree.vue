@@ -538,7 +538,7 @@ onMounted(() => {
   padding: 12px 16px;
   text-align: left;
   border-bottom: 1px solid var(--color-border);
-  border-right: 1px solid #edf1f5;
+  border-right: 1px solid var(--color-border-strong);
 }
 
 .filetree-table th:last-child,
@@ -547,8 +547,8 @@ onMounted(() => {
 }
 
 .filetree-table th {
-  color: #475569;
-  background: #f8fafc;
+  color: var(--color-gray-700);
+  background: var(--color-surface-subtle);
   font-size: 0.76rem;
   letter-spacing: 0.025em;
   text-transform: uppercase;
@@ -556,20 +556,20 @@ onMounted(() => {
 }
 
 .filetree-table th:hover {
-  background: #f1f5f9;
+  background: var(--color-gray-200);
 }
 
 .filetree-row:nth-child(even) {
-  background: #fbfcfd;
+  background: var(--color-canvas);
 }
 
 .filetree-row:hover {
-  background: #f1f7fd;
+  background: var(--color-info-bg);
 }
 
 .filetree-noncompliant {
-  background: #fff4f2 !important;
-  box-shadow: inset 3px 0 #d92d20;
+  background: var(--color-error-bg-subtle) !important;
+  box-shadow: inset 3px 0 var(--color-error);
 }
 
 .filetree-filters {
@@ -622,7 +622,7 @@ onMounted(() => {
 }
 
 .filename-noncompliant {
-  color: #b42318;
+  color: var(--color-error);
   font-weight: 700;
 }
 

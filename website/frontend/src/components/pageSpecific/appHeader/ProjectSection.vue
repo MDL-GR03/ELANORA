@@ -155,9 +155,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  background: #f3e8ff;
-  color: #7c3aed;
-  border: 1px solid #eadcff;
+  background: var(--color-purple-50);
+  color: var(--color-purple-400);
+  border: 1px solid var(--color-purple-800);
   border-radius: 0.65rem;
   padding: 0.48rem 0.75rem;
   font-size: 0.95rem;
@@ -174,9 +174,9 @@ onBeforeUnmount(() => {
 
 .project-section-trigger:hover,
 .project-section-trigger:focus-visible {
-  background: #ede9fe;
-  color: #5b21b6;
-  border-color: #c4b5fd;
+  background: var(--color-purple-100);
+  color: var(--color-purple-600);
+  border-color: var(--color-purple-200);
   outline: 0;
   box-shadow: 0 0 0 3px rgb(124 58 237 / 12%);
 }
@@ -208,8 +208,8 @@ onBeforeUnmount(() => {
   max-width: min(22rem, 80vw);
   padding: 0.42rem 0.65rem;
   border-radius: 0.45rem;
-  background: #17243a;
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-surface);
   font-size: 0.78rem;
   font-weight: 500;
   line-height: 1.3;
@@ -231,7 +231,7 @@ onBeforeUnmount(() => {
 .project-section-icon {
   width: 1.1rem;
   height: 1.1rem;
-  color: #7c3aed;
+  color: var(--color-purple-400);
   vertical-align: middle;
   flex-shrink: 0;
 }
@@ -239,7 +239,7 @@ onBeforeUnmount(() => {
 .project-section-chevron {
   margin-left: 0.2rem;
   transition: transform 0.2s;
-  fill: #a78bfa;
+  fill: var(--color-purple-300);
   flex-shrink: 0;
 }
 
@@ -268,8 +268,8 @@ onBeforeUnmount(() => {
   top: calc(100% + 0.55rem);
   min-width: 15rem;
   max-width: min(22rem, 88vw);
-  background: #fff;
-  color: #4b5563;
+  background: var(--color-surface);
+  color: var(--color-slate-500);
   border-radius: 0.75rem;
   box-shadow: 0 16px 36px rgb(15 23 42 / 16%);
   padding: 0.4rem;
@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   animation: project-section-slide 0.18s;
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--color-blue-100);
   overflow-x: hidden;
 }
 
@@ -334,14 +334,14 @@ onBeforeUnmount(() => {
 
 .project-section-action:hover,
 .project-section-action:focus {
-  background: #f1f5ff;
-  color: #7c3aed;
+  background: var(--color-surface-subtle);
+  color: var(--color-purple-400);
   outline: none;
 }
 
 .project-section-current-indicator {
   margin-left: auto;
-  color: #7c3aed;
+  color: var(--color-purple-400);
   font-weight: bold;
 }
 </style>

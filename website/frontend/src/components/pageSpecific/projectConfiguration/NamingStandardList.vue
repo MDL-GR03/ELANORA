@@ -124,7 +124,7 @@ function acceptedValues(component) {
 
 <style scoped>
 .empty-state {
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .standard-list {
@@ -134,8 +134,8 @@ function acceptedValues(component) {
 
 .standard {
   overflow: hidden;
-  background: #fff;
-  border: 1px solid #dbe4f0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-blue-100-alt);
   border-radius: 10px;
 }
 
@@ -145,9 +145,9 @@ function acceptedValues(component) {
   justify-content: space-between;
   width: 100%;
   padding: 15px 18px;
-  color: #17243b;
+  color: var(--color-slate-700);
   text-align: left;
-  background: #f1f5f9;
+  background: var(--color-gray-200);
   border: 0;
   cursor: pointer;
 }
@@ -160,12 +160,12 @@ function acceptedValues(component) {
 }
 
 .standard-heading small {
-  color: #52627a;
+  color: var(--color-slate-600);
   font-weight: 400;
 }
 
 .chevron {
-  color: #64748b;
+  color: var(--color-text-muted);
   transition: transform 0.2s;
 }
 
@@ -177,20 +177,20 @@ function acceptedValues(component) {
   display: grid;
   padding: 18px 22px 22px;
   gap: 16px;
-  background: #f8fafc;
+  background: var(--color-surface-subtle);
 }
 
 .description {
   margin: 0;
   padding: 10px 14px;
-  background: #eff6ff;
-  border-left: 4px solid #3b82f6;
+  background: var(--color-blue-100);
+  border-left: 4px solid var(--color-blue-500);
   border-radius: 6px;
 }
 
 .description strong {
   margin-right: 8px;
-  color: #1d4ed8;
+  color: var(--color-blue-700);
 }
 
 .summary-grid {
@@ -202,7 +202,7 @@ function acceptedValues(component) {
 h3,
 caption {
   margin: 0 0 6px;
-  color: #52627a;
+  color: var(--color-slate-600);
   font-size: 0.78rem;
   font-weight: 700;
   text-align: left;
@@ -224,12 +224,12 @@ code {
   align-items: center;
   padding: 6px 10px;
   gap: 7px;
-  background: #e8eef7;
+  background: var(--color-blue-50);
   border-radius: 6px;
 }
 
 .breakdown strong {
-  color: #1d4ed8;
+  color: var(--color-blue-700);
 }
 
 .table-wrap {
@@ -240,7 +240,7 @@ table {
   width: 100%;
   min-width: 620px;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 caption {
@@ -252,20 +252,20 @@ td {
   padding: 7px 10px;
   text-align: left;
   overflow-wrap: anywhere;
-  border: 1px solid #dbe4f0;
+  border: 1px solid var(--color-blue-100-alt);
 }
 
 th {
-  background: #f1f5f9;
+  background: var(--color-gray-200);
 }
 
 .delete {
   justify-self: start;
   min-height: 40px;
   padding: 8px 14px;
-  color: #b42318;
-  background: #fff;
-  border: 1px solid #fda29b;
+  color: var(--color-error-medium);
+  background: var(--color-surface);
+  border: 1px solid var(--color-red-200);
   border-radius: 7px;
   cursor: pointer;
 }

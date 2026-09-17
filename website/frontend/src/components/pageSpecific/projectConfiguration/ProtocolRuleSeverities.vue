@@ -68,17 +68,17 @@ li {
   align-items: center;
   gap: 0.65rem;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-gray-200);
   border-radius: 0.7rem;
-  background: #fbfdff;
-  color: #14213d;
+  background: var(--color-gray-50-alt);
+  color: var(--color-slate-900);
   font-size: 0.86rem;
   font-weight: 700;
 }
 
 .empty {
   margin: 0;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.86rem;
 }
 

@@ -308,8 +308,8 @@ function toggleSelectedStandard(standardId, event) {
   height: min(760px, calc(100vh - 48px));
   padding: 104px 32px 82px;
   overflow: hidden;
-  background: #fff;
-  border: 1px solid #d7e1f0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-gray-200);
   border-radius: 18px;
   box-shadow: 0 24px 70px rgb(15 35 70 / 28%);
 }
@@ -322,12 +322,12 @@ function toggleSelectedStandard(standardId, event) {
   min-height: 82px;
   padding: 18px 72px 18px 28px;
   gap: 14px;
-  background: linear-gradient(145deg, #fff, #f7faff);
-  border-bottom: 1px solid #e2e8f2;
+  background: linear-gradient(145deg, var(--color-surface), var(--color-blue-50-alt));
+  border-bottom: 1px solid var(--color-blue-100);
 }
 
 .import-modal-heading > div > span {
-  color: #2864e8;
+  color: var(--color-blue-200-alt);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.075em;
@@ -337,7 +337,7 @@ function toggleSelectedStandard(standardId, event) {
 .import-modal-heading h2,
 .import-step h3 {
   margin: 2px 0 0;
-  color: #12213b;
+  color: var(--color-slate-900);
 }
 
 .import-modal-icon {
@@ -345,8 +345,8 @@ function toggleSelectedStandard(standardId, event) {
   place-items: center;
   width: 44px;
   height: 44px;
-  color: #2864e8;
-  background: #e8f0ff;
+  color: var(--color-blue-200-alt);
+  background: var(--color-blue-100);
   border-radius: 12px;
 }
 
@@ -357,7 +357,7 @@ function toggleSelectedStandard(standardId, event) {
   right: 24px;
   width: 38px;
   height: 38px;
-  color: #65748d;
+  color: var(--color-slate-500);
   background: transparent;
   border: 0;
   border-radius: 9px;
@@ -365,8 +365,8 @@ function toggleSelectedStandard(standardId, event) {
 }
 
 .import-modal-close:hover {
-  color: #17243b;
-  background: #eef3f9;
+  color: var(--color-slate-700);
+  background: var(--color-blue-100-subtle);
 }
 
 .import-step {
@@ -398,9 +398,9 @@ function toggleSelectedStandard(standardId, event) {
 .secondary-action {
   min-height: 40px;
   padding: 8px 18px;
-  color: #fff;
+  color: var(--color-surface);
   font: inherit;
-  background: #1976d2;
+  background: var(--color-blue-700-alt);
   border: 0;
   border-radius: 7px;
   cursor: pointer;
@@ -409,9 +409,9 @@ function toggleSelectedStandard(standardId, event) {
 .secondary-action {
   min-height: 34px;
   padding: 5px 12px;
-  color: #9a3412;
-  background: #fff;
-  border: 1px solid #fdba74;
+  color: var(--color-amber-900);
+  background: var(--color-surface);
+  border: 1px solid var(--color-amber-200);
 }
 
 button:disabled {
@@ -421,10 +421,10 @@ button:disabled {
 
 .empty-state {
   padding: 2rem;
-  color: #65748d;
+  color: var(--color-slate-500);
   text-align: center;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  background: var(--color-surface-subtle);
+  border: 1px dashed var(--color-border-strong);
   border-radius: 10px;
 }
 
@@ -436,8 +436,8 @@ button:disabled {
 
 .import-standard-preview {
   margin-bottom: 14px;
-  background: #f9fafb;
-  border: 1px solid #dce4ef;
+  background: var(--secondary-bg);
+  border: 1px solid var(--color-blue-100-alt);
   border-radius: 10px;
 }
 
@@ -461,7 +461,7 @@ button:disabled {
 }
 
 .import-standard-header-row label span {
-  color: #52627a;
+  color: var(--color-slate-600);
 }
 
 .import-fold-toggle {
@@ -478,13 +478,13 @@ button:disabled {
 
 .import-fold-toggle:hover,
 .import-fold-toggle:focus-visible {
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  border-color: var(--color-blue-200);
+  background: var(--color-blue-100);
   outline: none;
 }
 
 .import-standard-chevron {
-  color: #718096;
+  color: var(--color-gray-blue-100);
 }
 
 .import-standard-warning-row {
@@ -494,14 +494,14 @@ button:disabled {
   margin-top: 10px;
   padding: 8px 10px;
   gap: 0.75rem;
-  color: #9a3412;
-  background: #fff7ed;
+  color: var(--color-amber-900);
+  background: var(--color-amber-50);
   border-radius: 7px;
 }
 
 .import-standard-details {
   padding: 16px;
-  border-top: 1px solid #dce4ef;
+  border-top: 1px solid var(--color-blue-100-alt);
 }
 
 .import-standard-details.unavailable {
@@ -517,7 +517,7 @@ dl {
 
 dt,
 caption {
-  color: #52627a;
+  color: var(--color-slate-600);
   font-size: 0.78rem;
   font-weight: 700;
   text-align: left;
@@ -546,11 +546,11 @@ th,
 td {
   padding: 7px 9px;
   text-align: left;
-  border: 1px solid #dce4ef;
+  border: 1px solid var(--color-blue-100-alt);
 }
 
 th {
-  background: #f1f5f9;
+  background: var(--color-gray-200);
 }
 
 .import-modal-footer {
@@ -559,8 +559,8 @@ th {
   display: flex;
   justify-content: flex-end;
   padding: 16px 28px;
-  background: #f7f9fc;
-  border-top: 1px solid #e2e8f2;
+  background: var(--color-f7f9fc);
+  border-top: 1px solid var(--color-blue-100);
 }
 
 .fade-enter-active,

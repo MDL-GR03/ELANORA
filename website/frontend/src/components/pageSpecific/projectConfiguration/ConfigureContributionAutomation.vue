@@ -131,7 +131,7 @@ async function save(value) {
   justify-content: space-between;
   gap: 2rem;
   padding: 1.25rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.75rem;
   background: white;
 }
@@ -149,12 +149,12 @@ async function save(value) {
 
 .policy-card p,
 .policy-boundary {
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.55;
 }
 
 .policy-eyebrow {
-  color: #2563eb;
+  color: var(--color-primary);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -168,10 +168,10 @@ async function save(value) {
   gap: 0.55rem;
   min-width: 7rem;
   padding: 0.55rem 0.7rem;
-  border: 1px solid #94a3b8;
+  border: 1px solid var(--color-text-subtle);
   border-radius: 999px;
-  color: #475569;
-  background: #f8fafc;
+  color: var(--color-gray-700);
+  background: var(--color-surface-subtle);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -181,17 +181,17 @@ async function save(value) {
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 50%;
-  background: #94a3b8;
+  background: var(--color-text-subtle);
 }
 
 .policy-toggle[aria-checked='true'] {
-  border-color: #15803d;
-  color: #166534;
-  background: #f0fdf4;
+  border-color: var(--color-success-800);
+  color: var(--color-success);
+  background: var(--color-success-bg-subtle);
 }
 
 .policy-toggle[aria-checked='true'] span {
-  background: #16a34a;
+  background: var(--color-success-light);
 }
 
 .policy-toggle:disabled {
@@ -205,17 +205,17 @@ async function save(value) {
   gap: 0.7rem;
   padding: 0.9rem 1rem;
   border-radius: 0.6rem;
-  background: #f1f5f9;
+  background: var(--color-gray-200);
 }
 
 .policy-boundary svg {
   flex: none;
   margin-top: 0.2rem;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .policy-boundary a {
-  color: #1d4ed8;
+  color: var(--color-primary-dark);
   font-weight: 700;
 }
 
@@ -224,12 +224,12 @@ async function save(value) {
 }
 
 .policy-message {
-  color: #166534;
+  color: var(--color-success);
   font-weight: 700;
 }
 
 .policy-message.error {
-  color: #b91c1c;
+  color: var(--color-error);
 }
 
 @media (width <= 700px) {

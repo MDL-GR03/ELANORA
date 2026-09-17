@@ -325,12 +325,12 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-gray-500);
 }
 
 .dialog-header h2 {
   margin: 0;
-  color: #333;
+  color: var(--color-slate-900-alt);
 }
 
 .close-btn {
@@ -338,11 +338,11 @@ onMounted(async () => {
   border: none;
   font-size: 1.2rem;
   cursor: pointer;
-  color: #666;
+  color: var(--color-slate-700-alt);
 }
 
 .close-btn:hover {
-  color: #333;
+  color: var(--color-slate-900-alt);
 }
 
 .dialog-content {
@@ -355,11 +355,11 @@ onMounted(async () => {
 .no-suggestions {
   text-align: center;
   padding: 2rem;
-  color: #666;
+  color: var(--color-slate-700-alt);
 }
 
 .file-rename-item {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-gray-500);
   border-radius: 4px;
   padding: 1rem;
   margin-bottom: 0.5rem;
@@ -367,13 +367,13 @@ onMounted(async () => {
 }
 
 .file-rename-item.has-rename {
-  border-color: #4caf50;
-  background-color: #f8fff8;
+  border-color: var(--color-green-500);
+  background-color: var(--color-green-50-bg);
 }
 
 .file-rename-item.non-compliant {
-  border-color: #f44336;
-  background-color: #fff8f8;
+  border-color: var(--color-red-500);
+  background-color: var(--color-red-50-bg);
 }
 
 .file-current {
@@ -391,13 +391,13 @@ onMounted(async () => {
 .suggestion-input {
   flex: 1;
   padding: 0.25rem 0.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-gray-400);
   border-radius: 4px;
   font-family: monospace;
 }
 
 .extracted-info {
-  color: #666;
+  color: var(--color-slate-700-alt);
   font-size: 0.8rem;
 }
 
@@ -405,13 +405,13 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  color: #f44336;
+  color: var(--color-red-500);
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
 
 .compliance-warning i {
-  color: #f44336;
+  color: var(--color-red-500);
 }
 
 .dialog-footer {
@@ -419,14 +419,14 @@ onMounted(async () => {
   justify-content: flex-end;
   gap: 0.5rem;
   padding: 1rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-gray-500);
   flex-wrap: wrap;
 }
 
 .compliance-error {
   flex-basis: 100%;
   text-align: center;
-  color: #f44336;
+  color: var(--color-red-500);
   margin-top: 0.5rem;
 }
 
@@ -439,27 +439,27 @@ onMounted(async () => {
 }
 
 .cancel-btn {
-  background: #f5f5f5;
-  border: 1px solid #ccc;
-  color: #333;
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-400);
+  color: var(--color-slate-900-alt);
 }
 
 .cancel-btn:hover {
-  background: #e0e0e0;
+  background: var(--color-gray-500);
 }
 
 .apply-btn {
-  background: #1976d2;
+  background: var(--color-blue-700-alt);
   border: none;
-  color: white;
+  color: var(--color-text-inverse);
 }
 
 .apply-btn:hover {
-  background: #1565c0;
+  background: var(--color-blue-800-alt);
 }
 
 .apply-btn:disabled {
-  background: #ccc;
+  background: var(--color-gray-400);
   cursor: not-allowed;
 }
 </style>

@@ -645,14 +645,14 @@ const {
   align-items: flex-start;
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--color-gray-100-alt);
 }
 
 .configure-naming-title {
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0;
-  color: #1f2937;
+  color: var(--color-gray-900);
 }
 
 .configure-naming-header-actions {
@@ -663,8 +663,8 @@ const {
 }
 
 .configure-naming-add-btn {
-  background: #1976d2;
-  color: #fff;
+  background: var(--color-blue-700-alt);
+  color: var(--color-surface);
   border: none;
   border-radius: 6px;
   padding: 10px 26px;
@@ -676,7 +676,7 @@ const {
 }
 
 .configure-naming-add-btn:hover {
-  background: #1565c0;
+  background: var(--color-blue-800-alt);
 }
 
 .configure-naming-page {

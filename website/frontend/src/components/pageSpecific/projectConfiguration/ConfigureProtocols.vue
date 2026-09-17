@@ -126,6 +126,6 @@ onMounted(load);
 .protocol-workspace {
   display: grid;
   gap: 1.25rem;
-  color: #14213d;
+  color: var(--color-slate-900);
 }
 </style>

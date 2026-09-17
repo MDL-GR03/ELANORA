@@ -134,9 +134,9 @@ function formatDate(value) {
 <style scoped>
 .compliance-panel {
   overflow: hidden;
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--color-blue-100-alt);
   border-radius: 0.9rem;
-  background: #fff;
+  background: var(--color-surface);
   padding: 1.1rem;
   display: grid;
   gap: 1rem;
@@ -158,7 +158,7 @@ function formatDate(value) {
   gap: 0.15rem;
   padding: 0.9rem;
   border-radius: 0.7rem;
-  background: #f8fafc;
+  background: var(--color-surface-subtle);
 }
 
 .summary-grid strong {
@@ -166,16 +166,16 @@ function formatDate(value) {
 }
 
 .summary-grid span {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.82rem;
 }
 
 .summary-grid .passed strong {
-  color: #15803d;
+  color: var(--color-success-800);
 }
 
 .summary-grid .failed strong {
-  color: #b91c1c;
+  color: var(--color-error);
 }
 
 .file-results {
@@ -184,7 +184,7 @@ function formatDate(value) {
 }
 
 .file-result {
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--color-blue-100-alt);
   border-radius: 0.7rem;
   overflow: hidden;
 }
@@ -192,7 +192,7 @@ function formatDate(value) {
 .file-result summary {
   padding: 0.8rem 1rem;
   cursor: pointer;
-  background: #fbfdff;
+  background: var(--color-gray-50-alt);
 }
 
 .file-result summary > span {
@@ -209,7 +209,7 @@ function formatDate(value) {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.85rem 1rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-gray-200);
 }
 
 .findings article > div {

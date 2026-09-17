@@ -561,8 +561,8 @@ onUnmounted(() => {
 }
 
 .notification-open-button:focus-visible {
-  border-radius: 0.25rem;
-  outline: 2px solid #2563eb;
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--color-primary);
   outline-offset: 3px;
 }
 
@@ -583,9 +583,9 @@ article:focus-within .notification-item-actions {
   right: 1rem;
   width: 0.8rem;
   height: 0.8rem;
-  border-top: 1px solid #e5e7eb;
-  border-left: 1px solid #e5e7eb;
-  background: #eff6ff;
+  border-top: 1px solid var(--color-border-subtle);
+  border-left: 1px solid var(--color-border-subtle);
+  background: var(--color-primary-subtle);
   content: '';
   transform: rotate(45deg);
 }
@@ -706,17 +706,17 @@ article:focus-within .notification-item-actions {
 }
 
 .max-h-96::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--color-gray-200);
   border-radius: 3px;
 }
 
 .max-h-96::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--color-border-strong);
   border-radius: 3px;
 }
 
 .max-h-96::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-text-subtle);
 }
 
 /* Focus states */

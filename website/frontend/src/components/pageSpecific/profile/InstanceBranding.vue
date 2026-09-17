@@ -138,7 +138,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(
     135deg,
     var(--brand-primary),
-    color-mix(in srgb, var(--brand-secondary) 65%, #17243a)
+    color-mix(in srgb, var(--brand-secondary) 65%, var(--color-slate-900))
   );
 }
 
@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
 }
 
 .branding-preview span {
-  color: #e2e8f0;
+  color: var(--color-blue-100);
 }
 
 .branding-panel form {
@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
 .branding-panel label {
   display: grid;
   gap: 0.4rem;
-  color: #334155;
+  color: var(--color-slate-700);
   font-weight: 650;
   font-size: 0.9rem;
 }
@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
 .branding-panel input:not([type='color']) {
   min-height: 2.8rem;
   padding: 0.65rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.6rem;
 }
 
@@ -197,7 +197,7 @@ onBeforeUnmount(() => {
 }
 
 .logo-picker small {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-weight: 400;
 }
 
@@ -211,7 +211,7 @@ onBeforeUnmount(() => {
 }
 
 .branding-panel p {
-  color: #991b1b;
+  color: var(--color-error-darkest);
 }
 
 @media (width <= 760px) {

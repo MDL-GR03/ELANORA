@@ -83,10 +83,10 @@ const copy = computed(() => EDITOR_COPY[props.mode]);
 <style scoped>
 .suggestion-loading {
   padding: 1rem;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--color-blue-200);
   border-radius: 0.75rem;
-  background: #eff6ff;
-  color: #1e3a8a;
+  background: var(--color-blue-100);
+  color: var(--color-blue-800);
   text-align: center;
 }
 
@@ -95,9 +95,9 @@ const copy = computed(() => EDITOR_COPY[props.mode]);
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   padding: 1.25rem;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--color-blue-200);
   border-radius: 0.9rem;
-  background: #f8fbff;
+  background: var(--color-blue-50);
 }
 
 .protocol-form label {

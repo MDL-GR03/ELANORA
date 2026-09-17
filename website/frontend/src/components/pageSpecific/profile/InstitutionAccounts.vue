@@ -272,7 +272,7 @@ onMounted(loadAccounts);
   display: grid;
   gap: 0.4rem;
   font-weight: 700;
-  color: #334155;
+  color: var(--color-slate-700);
 }
 
 .accounts-toolbar input,
@@ -280,7 +280,7 @@ textarea {
   width: 100%;
   min-height: 2.8rem;
   padding: 0.7rem 0.85rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.65rem;
   background: white;
 }
@@ -288,14 +288,14 @@ textarea {
 .account-count {
   padding: 0.65rem 0.85rem;
   border-radius: 999px;
-  color: #1d4ed8;
-  background: #eff6ff;
+  color: var(--color-primary-dark);
+  background: var(--color-blue-50-subtle);
   font-weight: 750;
 }
 
 .account-list {
   display: grid;
-  border: 1px solid #dbe4f0;
+  border: 1px solid var(--color-gray-blue-10);
   border-radius: 0.85rem;
   overflow: hidden;
 }
@@ -310,7 +310,7 @@ textarea {
 }
 
 .account-row + .account-row {
-  border-top: 1px solid #e5eaf2;
+  border-top: 1px solid var(--color-gray-blue-20);
 }
 
 .account-avatar {
@@ -319,8 +319,8 @@ textarea {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #4338ca;
-  background: #eef2ff;
+  color: var(--color-indigo-700);
+  background: var(--color-indigo-100-bg);
   font-weight: 800;
 }
 
@@ -332,7 +332,7 @@ textarea {
 
 .account-identity span {
   overflow: hidden;
-  color: #64748b;
+  color: var(--color-text-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -350,23 +350,23 @@ textarea {
 }
 
 .role-badge {
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--color-gray-700);
+  background: var(--color-gray-200);
 }
 
 .status-badge.active {
-  color: #166534;
-  background: #ecfdf3;
+  color: var(--color-success);
+  background: var(--color-success-150-bg);
 }
 
 .status-badge.suspended {
-  color: #9a3412;
-  background: #fff7ed;
+  color: var(--color-amber-200);
+  background: var(--color-amber-50-bg);
 }
 
 .current-user {
-  color: #1d4ed8;
-  background: #eff6ff;
+  color: var(--color-primary-dark);
+  background: var(--color-blue-50-subtle);
 }
 
 .status-action {
@@ -376,16 +376,16 @@ textarea {
   justify-content: center;
   gap: 0.45rem;
   padding: 0.6rem 0.85rem;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-error-bg-light);
   border-radius: 0.6rem;
-  color: #b91c1c;
-  background: #fff;
+  color: var(--color-error);
+  background: var(--color-surface);
   font-weight: 750;
 }
 
 .status-action.restore {
-  border-color: #bbf7d0;
-  color: #166534;
+  border-color: var(--color-success-200);
+  color: var(--color-success);
 }
 
 .dialog-backdrop {
@@ -416,18 +416,18 @@ textarea {
   display: grid;
   place-items: center;
   border-radius: 0.8rem;
-  color: #b91c1c;
-  background: #fef2f2;
+  color: var(--color-error);
+  background: var(--color-error-bg);
 }
 
 .dialog-icon.restore {
-  color: #166534;
-  background: #ecfdf3;
+  color: var(--color-success);
+  background: var(--color-success-150-bg);
 }
 
 .dialog-eyebrow {
   margin: 0 0 0.2rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -459,7 +459,7 @@ textarea {
 
 .dialog-error,
 .state-message.error {
-  color: #b91c1c;
+  color: var(--color-error);
 }
 
 .dialog-actions {
@@ -476,14 +476,14 @@ textarea {
 }
 
 .dialog-actions .cancel {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-gray-400);
   background: white;
 }
 
 .dialog-actions .confirm {
   border: 0;
-  color: white;
-  background: #2563eb;
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
 }
 
 .dialog-actions .confirm:disabled {

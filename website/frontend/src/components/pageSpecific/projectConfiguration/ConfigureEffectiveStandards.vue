@@ -322,14 +322,14 @@ onMounted(() => {
 .configure-effective-standards-header {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--color-gray-200);
 }
 
 .configure-effective-standards-title {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: #1f2937;
+  color: var(--color-gray-900);
 }
 
 .configure-effective-standards-section {
@@ -340,14 +340,14 @@ onMounted(() => {
   font-size: 1.15rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .configure-effective-standards-label {
   font-size: 1rem;
   font-weight: 500;
   margin-bottom: 0.7rem;
-  color: #2d3748;
+  color: var(--color-gray-700-alt);
   display: block;
 }
 
@@ -359,14 +359,14 @@ onMounted(() => {
 
 .configure-effective-standards-dnd-box {
   flex: 1;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 10px;
   box-shadow: 0 1px 6px rgb(0 0 0 / 7%);
   padding: 1.2rem;
   min-height: 120px;
   display: flex;
   flex-direction: column;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-gray-200);
   transition:
     border-color 0.2s,
     background 0.2s;
@@ -376,7 +376,7 @@ onMounted(() => {
   font-size: 1rem;
   font-weight: 500;
   margin-bottom: 0.7rem;
-  color: #2d3748;
+  color: var(--color-gray-700-alt);
 }
 
 .configure-effective-standards-chips-list {
@@ -392,9 +392,9 @@ onMounted(() => {
   padding: 0.5rem 1rem;
   border-radius: 20px;
   font-size: 1rem;
-  background: #e2e8f0;
-  color: #2d3748;
-  border: 2px solid #e2e8f0;
+  background: var(--color-gray-200);
+  color: var(--color-gray-700-alt);
+  border: 2px solid var(--color-gray-200);
   cursor: grab;
   transition:
     background 0.2s,
@@ -403,20 +403,20 @@ onMounted(() => {
 }
 
 .configure-effective-standards-chip:hover {
-  background: #cbd5e0;
-  border-color: #2563eb;
+  background: var(--color-gray-400);
+  border-color: var(--color-primary);
 }
 
 .configure-effective-standards-chip--active {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
+  background: var(--color-primary);
+  color: var(--color-surface);
+  border-color: var(--color-primary);
 }
 
 .configure-effective-standards-table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 8px;
   box-shadow: 0 1px 4px rgb(0 0 0 / 7%);
   overflow: visible; /* Allow dropdowns to be visible outside table boundaries */
@@ -425,12 +425,12 @@ onMounted(() => {
 }
 
 .configure-effective-standards-th {
-  background: #e2e8f0;
-  color: #2d3748;
+  background: var(--color-gray-200);
+  color: var(--color-gray-700-alt);
   font-weight: 500;
   padding: 1rem 1.2rem;
   text-align: left;
-  border-bottom: 2px solid #cbd5e0;
+  border-bottom: 2px solid var(--color-gray-400);
 }
 
 .configure-effective-standards-th:first-child {
@@ -442,20 +442,20 @@ onMounted(() => {
 }
 
 .configure-effective-standards-row {
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-gray-200);
 }
 
 .configure-effective-standards-td {
   padding: 1rem 1.2rem;
   font-size: 1rem;
-  color: #4a5568;
+  color: var(--color-gray-600);
   position: relative; /* Ensure dropdown positioning is relative to table cell */
 }
 
 .configure-effective-standards-success {
   margin-top: 2rem;
-  color: #38a169;
-  background: #f0fff4;
+  color: var(--color-success-600);
+  background: var(--color-success-50);
   padding: 1rem 1.2rem;
   border-radius: 8px;
   text-align: center;
@@ -464,8 +464,8 @@ onMounted(() => {
 
 .configure-effective-standards-error {
   margin-top: 2rem;
-  color: #e53e3e;
-  background: #fff5f5;
+  color: var(--color-error-600);
+  background: var(--color-error-50);
   padding: 1rem 1.2rem;
   border-radius: 8px;
   text-align: center;

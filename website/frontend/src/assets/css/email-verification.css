@@ -98,7 +98,7 @@
 .code-input {
   width: 100%;
   padding: 1.25rem 1.5rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-border-subtle);
   border-radius: var(--input-radius);
   font-size: 1.75rem;
   font-weight: 600;
@@ -118,13 +118,13 @@
 }
 
 .code-input.error {
-  border-color: #dc2626;
-  background: #fef2f2;
+  border-color: var(--color-error-light);
+  background: var(--color-error-bg-subtle);
 }
 
 .code-input.loading {
   border-color: var(--primary-color);
-  background: #f0f9ff;
+  background: var(--color-blue-50-bg);
 }
 
 .input-loading-spinner {
@@ -137,7 +137,7 @@
 .spinner {
   width: 1.5rem;
   height: 1.5rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-border-subtle);
   border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -161,15 +161,15 @@
 }
 
 .validation-message.error {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+  background: var(--color-error-bg-subtle);
+  color: var(--color-error-light);
+  border: 1px solid var(--color-red-200-alt);
 }
 
 .validation-message.success {
-  background: #f0fdf4;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
+  background: var(--color-success-bg-subtle);
+  color: var(--color-success-light);
+  border: 1px solid var(--color-success-200);
 }
 
 .message-icon {
@@ -185,7 +185,7 @@
 .verify-button {
   width: 100%;
   background: var(--primary-color);
-  color: #fff;
+  color: var(--color-text-inverse);
   border: none;
   padding: 1rem 2rem;
   border-radius: var(--input-radius);
@@ -198,7 +198,7 @@
 }
 
 .verify-button:disabled {
-  background: #9ca3af;
+  background: var(--color-slate-400);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -214,7 +214,7 @@
 .resend-section {
   text-align: center;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .resend-text {
@@ -236,8 +236,8 @@
 }
 
 .resend-button:disabled {
-  border-color: #9ca3af;
-  color: #9ca3af;
+  border-color: var(--color-slate-400);
+  color: var(--color-slate-400);
   cursor: not-allowed;
 }
 

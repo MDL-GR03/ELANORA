@@ -273,9 +273,9 @@ watch(
 .configure-naming-add-form {
   overflow-wrap: break-word;
   margin: 32px auto 0;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
-  box-shadow: 0 2px 12px #0002;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
   padding: 32px 36px 28px;
   display: flex;
   flex-direction: column;
@@ -284,7 +284,7 @@ watch(
 .configure-naming-add-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--color-primary);
   text-align: center;
   margin-bottom: 2rem;
   letter-spacing: 0.5px;
@@ -315,17 +315,17 @@ watch(
 .configure-naming-form-row label {
   width: 110px;
   font-weight: 500;
-  color: #333;
+  color: var(--color-slate-900-alt);
   flex-shrink: 0;
 }
 
 .configure-naming-form-row input {
   flex: 1;
   padding: 7px 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-300);
   border-radius: 5px;
   font-size: 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-100-alt);
 }
 
 .configure-naming-pattern-row {
@@ -336,28 +336,28 @@ watch(
 }
 
 .configure-naming-prefix-box {
-  background: #f3f6fa;
-  color: #2563eb;
+  background: var(--color-gray-200-alt);
+  color: var(--color-primary);
   font-weight: 600;
-  border: 1.5px solid #2563eb;
+  border: 1.5px solid var(--color-primary);
   max-width: fit-content;
   cursor: not-allowed;
   caret-color: transparent;
 }
 
 .configure-naming-pattern-sep {
-  color: #888;
+  color: var(--color-slate-500-alt);
   font-size: 1.2em;
   font-weight: 700;
 }
 
 .configure-naming-pattern-box {
   flex: 2.5;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .configure-naming-example-desc {
-  color: #888;
+  color: var(--color-slate-500-alt);
   font-size: 0.98em;
   margin: 0 0 0.2rem 7.4rem;
 }
@@ -371,7 +371,7 @@ watch(
 }
 
 .configure-naming-error {
-  color: #e74c3c;
+  color: var(--color-red-500);
   font-size: 0.98em;
   margin: 4px 0 0 8px;
 }
@@ -385,23 +385,23 @@ watch(
   width: 100%;
   border-radius: 6px;
   overflow: hidden;
-  background: #fff;
-  box-shadow: 0 1px 4px #0001;
+  background: var(--color-surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.01);
 }
 
 .configure-naming-components-edit-table input {
   width: 100%;
   padding: 6px 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-300);
   border-radius: 4px;
   font-size: 1rem;
-  background: #f9fafb;
+  background: var(--color-gray-100-alt);
   box-sizing: border-box;
 }
 
 .configure-naming-components-edit-table th,
 .configure-naming-components-edit-table td {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--color-gray-50-alt);
 }
 
 .configure-naming-components-edit-table td {
@@ -410,22 +410,22 @@ watch(
 }
 
 .configure-naming-components-edit-table th {
-  background: #f3f6fa;
+  background: var(--color-gray-200-alt);
   font-weight: 600;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .configure-naming-components-label {
   font-weight: 600;
-  color: #444;
+  color: var(--color-slate-800-alt);
   display: block;
   font-size: 1.08rem;
   margin-top: 1rem;
 }
 
 .configure-naming-components-table-prefix-disabled {
-  background: #f3f6fa !important;
-  color: #aaa !important;
+  background: var(--color-gray-200-alt) !important;
+  color: var(--color-slate-400-alt) !important;
   cursor: not-allowed !important;
   pointer-events: auto !important;
 }

@@ -133,9 +133,9 @@ li {
   align-items: center;
   gap: 0.65rem;
   padding: 0.6rem 0.75rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-blue-100);
   border-radius: 0.7rem;
-  background: #fbfdff;
+  background: var(--color-blue-50-superlight);
 }
 
 li strong {
@@ -153,7 +153,7 @@ li strong {
 label {
   display: grid;
   gap: 0.3rem;
-  color: #475569;
+  color: var(--color-gray-700);
   font-size: 0.75rem;
   font-weight: 750;
 }
@@ -161,11 +161,11 @@ label {
 input {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.55rem;
   padding: 0.6rem 0.7rem;
-  background: #fff;
-  color: #14213d;
+  background: var(--color-surface);
+  color: var(--color-slate-900);
   font: inherit;
   font-size: 0.86rem;
 }
@@ -175,8 +175,8 @@ button {
   border: 0;
   border-radius: 0.6rem;
   padding: 0.6rem 0.85rem;
-  background: #2563eb;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
   font: inherit;
   font-size: 0.82rem;
   font-weight: 750;
@@ -189,14 +189,14 @@ button:disabled {
 }
 
 .remove-button {
-  border: 1px solid #fecaca;
-  background: #fff;
-  color: #b91c1c;
+  border: 1px solid var(--color-error-bg-light);
+  background: var(--color-surface);
+  color: var(--color-error);
 }
 
 .field-error {
   margin: 0;
-  color: #b45309;
+  color: var(--color-amber-800-alt);
   font-size: 0.8rem;
 }
 

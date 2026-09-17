@@ -100,8 +100,8 @@ const permissionOptions = computed(() =>
   grid-template-columns: minmax(0, 1fr) minmax(12rem, 18rem) auto;
   align-items: center;
   gap: 1rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--secondary-bg);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   padding: 1rem;
   transition: all 0.2s ease;
@@ -112,14 +112,14 @@ const permissionOptions = computed(() =>
   align-items: center;
   gap: 0.4rem;
   margin-top: 0.5rem;
-  color: #4b5563;
+  color: var(--color-text-muted);
   font-size: 0.8rem;
   cursor: pointer;
 }
 
 .member-card:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--color-gray-500-alt);
+  border-color: var(--color-gray-300);
 }
 
 .member-info {
@@ -132,8 +132,8 @@ const permissionOptions = computed(() =>
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+  background: linear-gradient(135deg, var(--color-indigo-500), var(--color-purple-500-alt));
+  color: var(--color-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,13 +148,13 @@ const permissionOptions = computed(() =>
 
 .member-name {
   font-weight: 500;
-  color: #1f2937;
+  color: var(--color-gray-900);
   margin-bottom: 0.125rem;
 }
 
 .member-email {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-gray-500);
   overflow-wrap: anywhere;
 }
 
@@ -183,8 +183,8 @@ const permissionOptions = computed(() =>
 .spinner-small {
   width: 16px;
   height: 16px;
-  border: 2px solid #e5e7eb;
-  border-top: 2px solid #6366f1;
+  border: 2px solid var(--color-border-subtle);
+  border-top: 2px solid var(--color-indigo-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -209,23 +209,23 @@ const permissionOptions = computed(() =>
 }
 
 .permission-badge.read {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-info-bg);
+  color: var(--color-info-dark);
 }
 
 .permission-badge.write {
-  background: #d1fae5;
-  color: #047857;
+  background: var(--color-success-bg-subtle);
+  color: var(--color-success-dark);
 }
 
 .permission-badge.admin {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dark);
 }
 
 .permission-badge.owner {
-  background: #ede9fe;
-  color: #6b21a8;
+  background: var(--color-purple-100);
+  color: var(--color-purple-700-alt);
 }
 
 .btn-remove {
@@ -235,10 +235,10 @@ const permissionOptions = computed(() =>
   justify-content: center;
   gap: 0.4rem;
   padding: 0.45rem 0.7rem;
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-red-200-alt);
   border-radius: 0.5rem;
-  background: #fff;
-  color: #dc2626;
+  background: var(--color-surface);
+  color: var(--color-error-light);
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 700;
@@ -246,7 +246,7 @@ const permissionOptions = computed(() =>
 }
 
 .btn-remove:hover:not(:disabled) {
-  background: #fef2f2;
+  background: var(--color-error-bg-subtle);
   transform: scale(1.1);
 }
 
@@ -293,7 +293,7 @@ const permissionOptions = computed(() =>
 
 .owner-badge {
   font-size: 0.75rem;
-  color: #6b21a8;
+  color: var(--color-purple-700-alt);
   font-weight: 500;
 }
 

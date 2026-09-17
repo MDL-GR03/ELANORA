@@ -63,10 +63,10 @@ onBeforeUnmount(() =>
   min-height: 1.15rem;
   place-items: center;
   padding: 0;
-  border: 1px solid #bfdbfe;
-  border-radius: 50%;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-full);
+  background: var(--color-info-bg);
+  color: var(--color-primary-dark);
   font: inherit;
   font-size: 0.7rem;
   font-weight: 850;
@@ -76,8 +76,8 @@ onBeforeUnmount(() =>
 
 .help-trigger:hover,
 .help-trigger:focus-visible {
-  border-color: #60a5fa;
-  background: #dbeafe;
+  border-color: var(--color-info-light);
+  background: var(--color-info-bg);
   outline: none;
   box-shadow: 0 0 0 3px rgb(59 130 246 / 15%);
 }
@@ -90,10 +90,10 @@ onBeforeUnmount(() =>
   width: max-content;
   max-width: min(19rem, calc(100vw - 2rem));
   padding: 0.65rem 0.75rem;
-  border: 1px solid #334155;
-  border-radius: 0.55rem;
-  background: #172033;
-  color: #f8fafc;
+  border: 1px solid var(--color-gray-800);
+  border-radius: var(--radius-md);
+  background: var(--color-text);
+  color: var(--color-surface-subtle);
   box-shadow: 0 0.6rem 1.4rem rgb(15 23 42 / 22%);
   font-size: 0.76rem;
   font-weight: 500;
@@ -114,7 +114,7 @@ onBeforeUnmount(() =>
   top: 100%;
   left: 50%;
   border: 0.35rem solid transparent;
-  border-top-color: #172033;
+  border-top-color: var(--color-text);
   content: '';
   transform: translateX(-50%);
 }
@@ -122,7 +122,7 @@ onBeforeUnmount(() =>
 .help-content strong {
   display: block;
   margin-bottom: 0.15rem;
-  color: #bfdbfe;
+  color: var(--color-info);
 }
 
 .help-tooltip:hover .help-content,

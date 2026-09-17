@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
   padding: 0.65rem 0.8rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--color-surface);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -278,32 +278,32 @@ onBeforeUnmount(() => {
 .app-select.disabled .app-select-trigger {
   cursor: not-allowed;
   opacity: 0.62;
-  background: #f3f6fa;
+  background: var(--color-surface-subtle);
 }
 
 .app-select.invalid .app-select-trigger {
-  border-color: var(--color-error, #dc2626);
+  border-color: var(--color-error);
 }
 
 .app-select-placeholder {
-  color: #8491a5;
+  color: var(--color-text-subtle);
 }
 
 .app-select-trigger:hover {
-  border-color: #9bbcf7;
-  background: #f8fbff;
+  border-color: var(--color-info);
+  background: var(--color-info-bg);
 }
 
 .app-select-trigger:focus-visible,
 .open .app-select-trigger {
-  border-color: #2563eb;
+  border-color: var(--color-primary);
   outline: 0;
   box-shadow: 0 0 0 3px rgb(37 99 235 / 14%);
 }
 
 .app-select-trigger svg {
   flex: none;
-  color: #64748b;
+  color: var(--color-text-muted);
   transition: transform 140ms ease;
 }
 
@@ -319,16 +319,16 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   margin: 0;
   padding: 0.35rem;
-  border: 1px solid #bfd0ea;
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
   box-shadow: 0 12px 30px rgb(15 23 42 / 16%);
-  background: #fff;
+  background: var(--color-surface);
   list-style: none;
   overscroll-behavior: contain;
 }
 
 .app-select-options li + li {
-  border-top: 1px solid #edf1f6;
+  border-top: 1px solid var(--color-border-strong);
 }
 
 .app-select-options button {
@@ -340,7 +340,7 @@ onBeforeUnmount(() => {
   gap: 0.75rem;
   padding: 0.6rem 0.7rem;
   border: 0;
-  border-radius: 0.4rem;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -350,18 +350,18 @@ onBeforeUnmount(() => {
 
 .app-select-options button:hover,
 .app-select-options button.active {
-  background: #edf4ff;
-  color: #174ea6;
+  background: var(--color-primary-bg);
+  color: var(--color-primary-dark);
 }
 
 .app-select-options button.selected {
-  color: #1558c0;
+  color: var(--color-primary-dark);
   font-weight: 700;
 }
 
 .app-select-options button:disabled {
   cursor: not-allowed;
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   background: transparent;
 }
 
@@ -377,13 +377,13 @@ onBeforeUnmount(() => {
 }
 
 .app-select-option-copy small {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.78em;
   font-weight: 400;
 }
 
 .app-select-options svg {
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 @media (width <= 480px) {

@@ -160,12 +160,12 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-border-subtle);
 }
 
 .members-header h3 {
   margin: 0;
-  color: #1f2937;
+  color: var(--color-gray-900);
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -174,7 +174,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #1976d2;
+  background: var(--color-blue-700-alt);
   color: white;
   border: none;
   border-radius: 8px;
@@ -186,7 +186,7 @@ onMounted(() => {
 }
 
 .btn-add-member:hover {
-  background: #1565c0;
+  background: var(--color-blue-800-alt);
   transform: translateY(-1px);
 }
 
@@ -204,8 +204,8 @@ onMounted(() => {
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #f3f4f6;
-  border-top: 3px solid #6366f1;
+  border: 3px solid var(--color-gray-500-alt);
+  border-top: 3px solid var(--color-indigo-500);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
@@ -222,27 +222,27 @@ onMounted(() => {
 }
 
 .error-message {
-  color: #dc2626;
+  color: var(--color-error-light);
   margin-bottom: 1rem;
 }
 
 .btn-retry {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: var(--color-gray-500-alt);
+  color: var(--color-slate-700);
+  border: 1px solid var(--color-gray-300);
   border-radius: 6px;
   padding: 0.5rem 1rem;
   cursor: pointer;
 }
 
 .btn-retry:hover {
-  background: #e5e7eb;
+  background: var(--color-border-subtle);
 }
 
 .empty-state {
   text-align: center;
   padding: 3rem 1rem;
-  color: #6b7280;
+  color: var(--color-gray-600);
 }
 
 .empty-icon {
@@ -258,7 +258,7 @@ onMounted(() => {
 
 .empty-state small {
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: var(--color-text-subtle);
 }
 
 .members-grid {

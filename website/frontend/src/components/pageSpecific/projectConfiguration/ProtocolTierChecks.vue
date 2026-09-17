@@ -94,7 +94,7 @@ table {
 
 caption {
   padding-bottom: 0.5rem;
-  color: #475569;
+  color: var(--color-gray-700);
   font-size: 0.78rem;
   font-weight: 750;
   text-align: left;
@@ -103,12 +103,12 @@ caption {
 th,
 td {
   padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-blue-100);
   text-align: center;
 }
 
 thead th {
-  color: #475569;
+  color: var(--color-gray-700);
   font-size: 0.74rem;
   font-weight: 750;
 }
@@ -116,7 +116,7 @@ thead th {
 tbody th {
   max-width: 14rem;
   overflow: hidden;
-  color: #14213d;
+  color: var(--color-slate-900);
   text-align: left;
   text-overflow: ellipsis;
 }
@@ -129,7 +129,7 @@ input[type='checkbox'] {
 .language {
   width: 6rem;
   box-sizing: border-box;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-gray-400);
   border-radius: 0.5rem;
   padding: 0.4rem 0.5rem;
   font: inherit;
@@ -138,9 +138,9 @@ input[type='checkbox'] {
 .empty {
   margin: 0;
   padding: 1rem;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--color-gray-400);
   border-radius: 0.7rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   text-align: center;
 }
 </style>

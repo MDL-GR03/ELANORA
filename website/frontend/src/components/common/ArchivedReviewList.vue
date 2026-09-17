@@ -371,9 +371,9 @@ const formatTimeRange = (item) => {
 .archive-heading > strong,
 .archive-state {
   padding: 0.25rem 0.5rem;
-  border-radius: 999px;
-  color: #475569;
-  background: #eef2f7;
+  border-radius: var(--radius-full);
+  color: var(--color-gray-700);
+  background: var(--color-info-bg);
   font-size: 0.75rem;
 }
 
@@ -418,7 +418,7 @@ const formatTimeRange = (item) => {
 }
 
 .archive-item.highlighted {
-  border-color: #60a5fa;
+  border-color: var(--color-info-light);
   box-shadow: 0 0 0 3px rgb(37 99 235 / 12%);
 }
 
