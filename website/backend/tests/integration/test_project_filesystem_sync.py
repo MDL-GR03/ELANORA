@@ -119,8 +119,8 @@ async def test_a_clean_project_reports_itself_in_sync(
 
     result = _service(tmp_path).inspect_project(PROJECT_NAME)
 
-    assert result["in_sync"] is True
-    assert result["files_status"] == []
+    assert result.in_sync is True
+    assert result.files_status == []
 
 
 @pytest.mark.asyncio
@@ -135,8 +135,8 @@ async def test_inspection_reports_a_new_file_without_staging_it(
 
     result = _service(tmp_path).inspect_project(PROJECT_NAME)
 
-    assert result["in_sync"] is False
-    assert any("session-12.eaf" in f["filename"] for f in result["files_status"])
+    assert result.in_sync is False
+    assert any("session-12.eaf" in f.filename for f in result.files_status)
     assert _staged(project_path) == ""
 
 
@@ -147,10 +147,10 @@ async def test_missing_folders_are_reported_rather_than_raising(
     _, project_path, _curator_id = await _project(session, tmp_path, ["video-11.eaf"])
     service = _service(tmp_path)
 
-    assert service.inspect_project("never-created")["status"] == "missing_folder"
+    assert service.inspect_project("never-created").status == "missing_folder"
 
     shutil.rmtree(project_path / "elan_files")
-    assert service.inspect_project(PROJECT_NAME)["status"] == "missing_elan_files"
+    assert service.inspect_project(PROJECT_NAME).status == "missing_elan_files"
 
 
 @pytest.mark.asyncio
