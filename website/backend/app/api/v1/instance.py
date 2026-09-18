@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.errors import ElanoraError, ErrorCode
 from app.core.limiter import limiter
 from app.dependency.database import get_db_dep
-from app.dependency.user import get_admin_dep, get_admin_user_dep
+from app.dependency.user import get_admin_dep
 from app.model.instance import Instance
 from app.model.user import User
 from app.schema.requests.setup import InstanceBrandingUpdateRequest, InstanceSettingsUpdateRequest
@@ -21,7 +21,7 @@ router = APIRouter()
 @router.get("/", response_model=InstanceResponse | None)
 async def get_instance(
     db: AsyncSession = get_db_dep,
-    current_user: User = get_admin_user_dep,
+    current_user: User = get_admin_dep,
 ) -> InstanceResponse | None:
     """Return the instance configuration for administrators.
     

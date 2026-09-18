@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependency.database import get_db_dep
-from app.dependency.user import get_active_user_dep, get_admin_user_dep
+from app.dependency.user import get_admin_dep, get_user_dep
 from app.model.onboarding import OnboardingStep
 from app.model.user import User
 from app.schema.requests.onboarding import (
@@ -42,7 +42,7 @@ router = APIRouter()
 )
 async def get_onboarding_status(
     db: AsyncSession = get_db_dep,
-    current_user: User = get_active_user_dep,
+    current_user: User = get_user_dep,
 ) -> OnboardingStatusResponse | None:
     """Get the current onboarding status for this installation.
     
@@ -76,7 +76,7 @@ async def get_onboarding_status(
 )
 async def get_onboarding_progress(
     db: AsyncSession = get_db_dep,
-    current_user: User = get_active_user_dep,
+    current_user: User = get_user_dep,
 ) -> OnboardingProgressResponse:
     """Get detailed progress information for the onboarding workflow.
     
@@ -106,7 +106,7 @@ async def get_onboarding_progress(
 )
 async def start_onboarding(
     db: AsyncSession = get_db_dep,
-    current_user: User = get_admin_user_dep,
+    current_user: User = get_admin_dep,
 ) -> StartOnboardingResponse:
     """Start the onboarding workflow for this installation.
     
@@ -134,7 +134,7 @@ async def start_onboarding(
 async def mark_step_complete(
     body: MarkStepCompleteRequest,
     db: AsyncSession = get_db_dep,
-    current_user: User = get_active_user_dep,
+    current_user: User = get_user_dep,
 ) -> MarkStepCompleteResponse:
     """Mark a specific onboarding step as complete.
     
@@ -170,7 +170,7 @@ async def mark_step_complete(
 )
 async def skip_onboarding(
     db: AsyncSession = get_db_dep,
-    current_user: User = get_active_user_dep,
+    current_user: User = get_user_dep,
 ) -> SkipOnboardingResponse:
     """Skip the onboarding workflow entirely.
     
@@ -195,7 +195,7 @@ async def skip_onboarding(
 async def update_step_flags(
     body: UpdateOnboardingStepFlagsRequest,
     db: AsyncSession = get_db_dep,
-    current_user: User = get_active_user_dep,
+    current_user: User = get_user_dep,
 ) -> OnboardingStatusResponse:
     """Update individual step completion flags.
     
