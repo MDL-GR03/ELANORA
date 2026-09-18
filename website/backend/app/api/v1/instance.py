@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -69,6 +69,7 @@ async def update_instance_branding(
 @router.patch("/settings", response_model=InstanceResponse)
 @limiter.limit("5/minute")
 async def update_instance_settings(
+    request: Request,
     body: InstanceSettingsUpdateRequest,
     db: AsyncSession = get_db_dep,
     administrator: User = get_admin_dep,
