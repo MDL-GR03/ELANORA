@@ -414,19 +414,41 @@
   /* ========================================
      SHADOWS
      ======================================== */
-  --shadow-sm: 0 1px 2px rgb(15 23 42 / 5%);
-  --shadow-md: 0 10px 30px rgb(15 23 42 / 7%);
-  --shadow-lg: 0 25px 50px rgb(0 0 0 / 20%);
-  --shadow-xl: 0 24px 70px rgb(15 23 42 / 18%);
+  --shadow-sm: 0 1px 2px var(--black-5);
+  --shadow-md: 0 10px 30px var(--black-7);
+  --shadow-lg: 0 25px 50px var(--black-20);
+  --shadow-xl: 0 24px 70px var(--black-18);
   
   /* Button Shadows */
-  --btn-shadow: 0 2px 8px rgb(37 99 235 / 8%);
-  --btn-shadow-hover: 0 4px 16px rgb(37 99 235 / 12%);
+  --btn-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 8%, transparent);
+  --btn-shadow-hover: 0 4px 16px color-mix(in srgb, var(--color-primary) 12%, transparent);
   
   /* Card Shadows */
   --card-shadow: var(--shadow-sm);
-  --card-shadow-hover: 0 4px 16px rgb(0 0 0 / 8%);
+  --card-shadow-hover: 0 4px 16px color-mix(in srgb, black 8%, transparent);
   --modal-shadow: var(--shadow-xl);
+  
+  /* Primary Color Opacity Variants */
+  --primary-8: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  --primary-10: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  --primary-12: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  --primary-14: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  --primary-15: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  --primary-16: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  --primary-20: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --primary-22: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  --primary-24: color-mix(in srgb, var(--color-primary) 24%, transparent);
+  --primary-28: color-mix(in srgb, var(--color-primary) 28%, transparent);
+  --primary-40: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  
+  /* Black/Neutral Opacity Variants */
+  --black-5: color-mix(in srgb, black 5%, transparent);
+  --black-7: color-mix(in srgb, black 7%, transparent);
+  --black-8: color-mix(in srgb, black 8%, transparent);
+  --black-10: color-mix(in srgb, black 10%, transparent);
+  --black-12: color-mix(in srgb, black 12%, transparent);
+  --black-18: color-mix(in srgb, black 18%, transparent);
+  --black-20: color-mix(in srgb, black 20%, transparent);
   
   /* Profile Card Shadows */
   --profile-card-shadow: 0 4px 16px rgb(0 0 0 / 8%);
@@ -493,8 +515,6 @@
   --warning-bg: #fef3c7;
   --info-color: #3b82f6;
   --info-bg: #dbeafe;
-  --btn-shadow: 0 2px 8px rgb(37 99 235 / 8%);
-  --btn-shadow-hover: 0 4px 16px rgb(37 99 235 / 12%);
   
   /* Base text styles */
   color: var(--color-text);

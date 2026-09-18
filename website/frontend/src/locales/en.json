@@ -17,7 +17,11 @@
     "yes_cancel": "Yes, cancel",
     "add": "Add",
     "adding": "Adding",
-    "remove": "Remove"
+    "remove": "Remove",
+    "yes": "Yes",
+    "learnMore": "Learn more",
+    "hide": "Hide",
+    "reset": "Reset"
   },
   "operations": {
     "title": "System health and recovery",
@@ -116,6 +120,151 @@
     "boundary": {
       "title": "Why configuration is not editable here",
       "body": "Storage credentials, encryption keys, schedules, and restores belong in the deployment secret manager and infrastructure runbook. This page deliberately exposes status only."
+    },
+    "installation": {
+      "settings": "Installation Settings",
+      "description": "Configure your institution's identity and system settings",
+      "loadError": "Failed to load installation settings",
+      "saveSuccess": "Settings saved successfully",
+      "saveError": "Failed to save installation settings",
+      "branding": {
+        "title": "Branding & Identity",
+        "instanceName": "Instance Name",
+        "instanceNamePlaceholder": "Enter your institution name",
+        "instanceNameRequired": "Instance name is required",
+        "institutionName": "Institution Name",
+        "institutionNamePlaceholder": "Enter your institution name",
+        "institutionNameRequired": "Institution name is required",
+        "contactEmail": "Contact Email",
+        "contactEmailPlaceholder": "Enter your contact email",
+        "contactEmailRequired": "Contact email is required",
+        "colorTheme": "Color Theme",
+        "primaryColor": "Primary Color",
+        "secondaryColor": "Secondary Color",
+        "accentColor": "Accent Color",
+        "resetColors": "Reset to Defaults",
+        "invalidColor": "Please enter a valid hex color (e.g., #2563eb)"
+      },
+      "general": {
+        "title": "General Settings",
+        "defaultLanguage": "Default Language",
+        "timezone": "Timezone"
+      }
+    },
+    "database": {
+      "configuration": "Database Configuration",
+      "description": "Configure database-related settings and limits",
+      "loadError": "Failed to load database configuration",
+      "saveSuccess": "Configuration saved successfully",
+      "saveSuccessWithRestart": "Configuration saved. Some changes require application restart to take effect.",
+      "saveError": "Failed to save database configuration",
+      "warning": "Warning",
+      "restartRequired": "The following settings require application restart: {settings}",
+      "restartNote": "Please restart the application for these changes to take effect.",
+      "storage": {
+        "title": "Storage & Limits",
+        "maxFileSize": "Maximum File Size",
+        "maxFileSizeHint": "Maximum size in megabytes",
+        "maxUsers": "Maximum Users",
+        "maxUsersHint": "Maximum number of users",
+        "timezone": "Timezone",
+        "invalidMaxFileSize": "Please enter a valid maximum file size (1-10000 MB)",
+        "invalidMaxUsers": "Please enter a valid maximum user count (1-100000)"
+      },
+      "system": {
+        "title": "System Settings",
+        "defaultLanguage": "Default Language",
+        "isActive": "Instance Active",
+        "isActiveHint": "Whether this instance is active and accepting connections"
+      }
+    },
+    "onboarding": {
+      "title": "Welcome to ELANORA",
+      "description": "Let's get your installation configured",
+      "stepsComplete": "steps complete",
+      "stepOf": "Step {step} of {total}",
+      "previous": "Previous",
+      "next": "Next",
+      "complete": "Complete",
+      "skip": "Skip onboarding",
+      "completed": "Completed",
+      "pending": "Pending",
+      "status": "Status",
+      "completeTitle": "Onboarding Complete!",
+      "completeDescription": "Your installation is now fully configured. You can start using ELANORA.",
+      "close": "Close",
+      "steps": {
+        "project": {
+          "title": "Create Your First Project",
+          "description": "Start by creating your first research project"
+        },
+        "protocol": {
+          "title": "Configure Protocols",
+          "description": "Set up validation rules and standards for your projects"
+        },
+        "collaborator": {
+          "title": "Invite Your First Collaborator",
+          "description": "Add a team member to work with you"
+        },
+        "upload": {
+          "title": "Upload Your First File",
+          "description": "Upload and validate your first EAF file"
+        }
+      },
+      "project": {
+        "instructionsTitle": "To create your first project:",
+        "step1": "Click 'Create Project' button",
+        "step2": "Enter a name and description for your project",
+        "step3": "Set up data classification and retention policies",
+        "step4": "Configure conventions and standards",
+        "createProject": "Create Project",
+        "helpTitle": "Project Setup Help",
+        "helpName": "Project Name",
+        "helpNameDesc": "Choose a descriptive name for your research project",
+        "helpDescription": "Description",
+        "helpDescriptionDesc": "Explain the purpose and scope of your project",
+        "helpConventions": "Conventions & Standards",
+        "helpConventionsDesc": "Define naming standards and validation rules",
+        "helpClassification": "Data Classification",
+        "helpClassificationDesc": "Set retention period and data classification level"
+      },
+      "collaborator": {
+        "instructionsTitle": "To invite your first collaborator:",
+        "step1": "Click 'Invite Collaborator' button",
+        "step2": "Enter their email address",
+        "step3": "Set their permissions and role",
+        "invite": "Invite Collaborator",
+        "helpTitle": "Collaborator Setup Help",
+        "helpEmail": "Email Address",
+        "helpEmailDesc": "Enter the collaborator's valid email address",
+        "helpPermissions": "Permissions",
+        "helpPermissionsDesc": "Set what the collaborator can access and modify",
+        "helpRole": "Role",
+        "helpRoleDesc": "Choose between member, reviewer, or administrator",
+        "helpNotification": "Notification",
+        "helpNotificationDesc": "An invitation email will be sent to the collaborator"
+      },
+      "upload": {
+        "instructionsTitle": "To upload your first file:",
+        "step1": "Click 'Upload Files' button",
+        "step2": "Select one or more EAF files",
+        "step3": "Verify the files pass validation",
+        "step4": "Complete the upload process",
+        "uploadFiles": "Upload Files",
+        "requirementsTitle": "Requirements:",
+        "requirement1": "Files must be valid EAF format",
+        "requirement2": "Files must pass validation against your protocol",
+        "requirement3": "Files will be preserved with their original bytes",
+        "helpTitle": "Upload Help",
+        "helpFileTypes": "File Types",
+        "helpFileTypesDesc": "Only ELAN Annotation Format (.eaf) files are accepted",
+        "helpValidation": "Validation",
+        "helpValidationDesc": "Files are automatically validated against your protocol",
+        "helpReview": "Review Process",
+        "helpReviewDesc": "Uploaded files can be reviewed before final acceptance",
+        "helpBatch": "Batch Upload",
+        "helpBatchDesc": "Multiple files can be uploaded at once"
+      }
     }
   },
   "http_status": {

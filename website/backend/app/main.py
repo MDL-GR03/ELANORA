@@ -18,6 +18,7 @@ from app.api.v1.instance import router as instance_router
 from app.api.v1.invitation import router as invitation_router
 from app.api.v1.location import router as location_router
 from app.api.v1.notification import router as notification_router
+from app.api.v1.onboarding import router as onboarding_router
 from app.api.v1.operations import router as operations_router
 from app.api.v1.project_associations import router as project_associations_router
 from app.api.v1.project_governance import router as project_governance_router
@@ -137,6 +138,9 @@ app.include_router(
 )
 app.include_router(
     instance_router, prefix=f"{API_V1_PREFIX}/instance", tags=["INSTANCE"]
+)
+app.include_router(
+    onboarding_router, prefix=f"{API_V1_PREFIX}/onboarding", tags=["ONBOARDING"]
 )
 app.include_router(
     project_associations_router,

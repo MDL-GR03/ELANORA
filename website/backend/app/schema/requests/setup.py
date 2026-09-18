@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Annotated
 
 from pydantic import BaseModel, EmailStr, StringConstraints, model_validator
@@ -62,3 +63,17 @@ class InstanceBrandingUpdateRequest(BaseModel):
     primary_color: HexColor | None = None
     secondary_color: HexColor | None = None
     accent_color: HexColor | None = None
+
+
+class InstanceSettingsUpdateRequest(BaseModel):
+    """Administrator-editable general settings for this installation.
+    
+    These settings control the database and system-level configuration.
+    """
+
+    domain: Annotated[TrimmedText, StringConstraints(max_length=100)] | None = None
+    timezone: Annotated[TrimmedText, StringConstraints(max_length=50)] | None = None
+    default_language: Annotated[str, StringConstraints(pattern=r"^[a-z]{2,3}$")] | None = None
+    max_file_size_mb: Decimal | None = None
+    max_users: int | None = None
+    is_active: bool | None = None

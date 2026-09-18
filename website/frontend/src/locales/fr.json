@@ -17,7 +17,11 @@
     "yes_cancel": "Oui, annuler",
     "add": "Ajouter",
     "adding": "Ajout",
-    "remove": "Supprimer"
+    "remove": "Supprimer",
+    "yes": "Oui",
+    "learnMore": "En savoir plus",
+    "hide": "Masquer",
+    "reset": "Réinitialiser"
   },
   "operations": {
     "title": "État du système et récupération",
@@ -116,6 +120,151 @@
     "boundary": {
       "title": "Pourquoi la configuration n'est pas modifiable ici",
       "body": "Les identifiants de stockage, clés de chiffrement, calendriers et restaurations appartiennent au gestionnaire de secrets et au guide d'exploitation. Cette page n'expose volontairement que l'état."
+    },
+    "installation": {
+      "settings": "Paramètres d'installation",
+      "description": "Configurez l'identité et les paramètres système de votre institution",
+      "loadError": "Échec du chargement des paramètres d'installation",
+      "saveSuccess": "Paramètres enregistrés avec succès",
+      "saveError": "Échec de l'enregistrement des paramètres d'installation",
+      "branding": {
+        "title": "Identité visuelle",
+        "instanceName": "Nom de l'instance",
+        "instanceNamePlaceholder": "Entrez le nom de votre institution",
+        "instanceNameRequired": "Le nom de l'instance est obligatoire",
+        "institutionName": "Nom de l'institution",
+        "institutionNamePlaceholder": "Entrez le nom de votre institution",
+        "institutionNameRequired": "Le nom de l'institution est obligatoire",
+        "contactEmail": "Email de contact",
+        "contactEmailPlaceholder": "Entrez votre email de contact",
+        "contactEmailRequired": "L'email de contact est obligatoire",
+        "colorTheme": "Thème des couleurs",
+        "primaryColor": "Couleur principale",
+        "secondaryColor": "Couleur secondaire",
+        "accentColor": "Couleur d'accentuation",
+        "resetColors": "Réinitialiser aux valeurs par défaut",
+        "invalidColor": "Veuillez entrer une couleur hexadécimale valide (ex: #2563eb)"
+      },
+      "general": {
+        "title": "Paramètres généraux",
+        "defaultLanguage": "Langue par défaut",
+        "timezone": "Fuseau horaire"
+      }
+    },
+    "database": {
+      "configuration": "Configuration de la base de données",
+      "description": "Configurez les paramètres et limites liés à la base de données",
+      "loadError": "Échec du chargement de la configuration de la base de données",
+      "saveSuccess": "Configuration enregistrée avec succès",
+      "saveSuccessWithRestart": "Configuration enregistrée. Certaines modifications nécessitent un redémarrage de l'application pour prendre effet.",
+      "saveError": "Échec de l'enregistrement de la configuration de la base de données",
+      "warning": "Avertissement",
+      "restartRequired": "Les paramètres suivants nécessitent un redémarrage : {settings}",
+      "restartNote": "Veuillez redémarrer l'application pour que ces modifications prennent effet.",
+      "storage": {
+        "title": "Stockage et limites",
+        "maxFileSize": "Taille maximale des fichiers",
+        "maxFileSizeHint": "Taille maximale en mégaoctets",
+        "maxUsers": "Nombre maximal d'utilisateurs",
+        "maxUsersHint": "Nombre maximal d'utilisateurs",
+        "timezone": "Fuseau horaire",
+        "invalidMaxFileSize": "Veuillez entrer une taille maximale de fichier valide (1-10000 Mo)",
+        "invalidMaxUsers": "Veuillez entrer un nombre maximal d'utilisateurs valide (1-100000)"
+      },
+      "system": {
+        "title": "Paramètres système",
+        "defaultLanguage": "Langue par défaut",
+        "isActive": "Instance active",
+        "isActiveHint": "Si cette instance est active et accepte les connexions"
+      }
+    },
+    "onboarding": {
+      "title": "Bienvenue sur ELANORA",
+      "description": "Configurons votre installation",
+      "stepsComplete": "étapes terminées",
+      "stepOf": "Étape {step} sur {total}",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "complete": "Terminer",
+      "skip": "Ignorer l'onboarding",
+      "completed": "Terminé",
+      "pending": "En attente",
+      "status": "Statut",
+      "completeTitle": "Onboarding terminé !",
+      "completeDescription": "Votre installation est maintenant complètement configurée. Vous pouvez commencer à utiliser ELANORA.",
+      "close": "Fermer",
+      "steps": {
+        "project": {
+          "title": "Créer votre premier projet",
+          "description": "Commencez par créer votre premier projet de recherche"
+        },
+        "protocol": {
+          "title": "Configurer les protocoles",
+          "description": "Mettre en place des règles de validation et des normes pour vos projets"
+        },
+        "collaborator": {
+          "title": "Inviter votre premier collaborateur",
+          "description": "Ajoutez un membre d'équipe pour travailler avec vous"
+        },
+        "upload": {
+          "title": "Télécharger votre premier fichier",
+          "description": "Téléchargez et validez votre premier fichier EAF"
+        }
+      },
+      "project": {
+        "instructionsTitle": "Pour créer votre premier projet :",
+        "step1": "Cliquez sur le bouton 'Créer un projet'",
+        "step2": "Entrez un nom et une description pour votre projet",
+        "step3": "Configurez la classification des données et les politiques de conservation",
+        "step4": "Configurez les conventions et normes",
+        "createProject": "Créer un projet",
+        "helpTitle": "Aide à la configuration du projet",
+        "helpName": "Nom du projet",
+        "helpNameDesc": "Choisissez un nom descriptif pour votre projet de recherche",
+        "helpDescription": "Description",
+        "helpDescriptionDesc": "Expliquez l'objectif et la portée de votre projet",
+        "helpConventions": "Conventions et normes",
+        "helpConventionsDesc": "Définissez les normes de nommage et les règles de validation",
+        "helpClassification": "Classification des données",
+        "helpClassificationDesc": "Définissez la période de conservation et le niveau de classification des données"
+      },
+      "collaborator": {
+        "instructionsTitle": "Pour inviter votre premier collaborateur :",
+        "step1": "Cliquez sur le bouton 'Inviter un collaborateur'",
+        "step2": "Entrez son adresse email",
+        "step3": "Définissez ses permissions et rôle",
+        "invite": "Inviter un collaborateur",
+        "helpTitle": "Aide à la configuration du collaborateur",
+        "helpEmail": "Adresse email",
+        "helpEmailDesc": "Entrez l'adresse email valide du collaborateur",
+        "helpPermissions": "Permissions",
+        "helpPermissionsDesc": "Définissez ce que le collaborateur peut accéder et modifier",
+        "helpRole": "Rôle",
+        "helpRoleDesc": "Choisissez entre membre, réviseur ou administrateur",
+        "helpNotification": "Notification",
+        "helpNotificationDesc": "Un email d'invitation sera envoyé au collaborateur"
+      },
+      "upload": {
+        "instructionsTitle": "Pour télécharger votre premier fichier :",
+        "step1": "Cliquez sur le bouton 'Télécharger des fichiers'",
+        "step2": "Sélectionnez un ou plusieurs fichiers EAF",
+        "step3": "Vérifiez que les fichiers passent la validation",
+        "step4": "Terminez le processus de téléchargement",
+        "uploadFiles": "Télécharger des fichiers",
+        "requirementsTitle": "Exigences :",
+        "requirement1": "Les fichiers doivent être au format EAF valide",
+        "requirement2": "Les fichiers doivent passer la validation par rapport à votre protocole",
+        "requirement3": "Les fichiers seront conservés avec leurs octets d'origine",
+        "helpTitle": "Aide au téléchargement",
+        "helpFileTypes": "Types de fichiers",
+        "helpFileTypesDesc": "Seuls les fichiers ELAN Annotation Format (.eaf) sont acceptés",
+        "helpValidation": "Validation",
+        "helpValidationDesc": "Les fichiers sont automatiquement validés par rapport à votre protocole",
+        "helpReview": "Processus de révision",
+        "helpReviewDesc": "Les fichiers téléchargés peuvent être révisés avant acceptation finale",
+        "helpBatch": "Téléchargement par lots",
+        "helpBatchDesc": "Plusieurs fichiers peuvent être téléchargés en une seule fois"
+      }
     }
   },
   "http_status": {

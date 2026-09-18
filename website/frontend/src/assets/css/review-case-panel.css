@@ -658,7 +658,7 @@
 
 .review-panel .file-task-draft.selected {
   border-color: var(--color-blue-300);
-  box-shadow: 0 0 0 2px rgb(37 99 235 / 8%);
+  box-shadow: 0 0 0 2px var(--primary-8);
 }
 
 .review-panel .file-selector {
@@ -696,7 +696,7 @@
 }
 
 .review-panel .file-selector input:focus-visible + .file-selector-box {
-  outline: 3px solid rgb(37 99 235 / 20%);
+  outline: 3px solid var(--primary-20);
 }
 
 .review-panel .file-selector > span:last-child {
@@ -1040,7 +1040,7 @@
 }
 
 .review-panel .comparison-disclosure:focus-visible {
-  outline: 3px solid rgb(37 99 235 / 22%);
+  outline: 3px solid var(--primary-22);
   outline-offset: 2px;
 }
 

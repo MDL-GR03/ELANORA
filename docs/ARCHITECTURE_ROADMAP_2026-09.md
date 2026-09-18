@@ -1,6 +1,6 @@
 # ELANORA architecture and roadmap
 
-**Last updated:** 17 September 2026
+**Last updated:** 18 September 2026
 **Product stage:** hardened pre-production prototype, distributed to
 institutions that install and operate it themselves
 
@@ -41,13 +41,12 @@ The non-negotiable invariants:
 | 6 | Split oversized backend services and frontend components | Done |
 | 7 | Database-enforced project and temporal invariants | Done |
 | 8 | Privacy, operations and self-maintenance for institutions | Done |
-| 9 | CSS consolidation with centralized design tokens | Done |
 
 Quality gates on every change: `make check` runs the credential scan; ruff,
-strict mypy over the whole backend package, 670 backend unit tests, 216
+strict mypy over the whole backend package, 673 backend unit tests, 216
 PostgreSQL integration tests with a downgrade/upgrade and `alembic check`, and the recovery drill; then eslint,
 stylelint, prettier, the three-language translation parity check, 469 frontend
-tests and the production build. The database is at migration 0037.
+tests and the production build. The database is at migration 0038.
 
 ## What is in place
 
@@ -138,6 +137,8 @@ reference, a retention period and an optional legal hold
 - Every icon the interface names is registered; a test enforces it.
 - Confirmation dialogs state their tone explicitly rather than guessing it from
   English words.
+- Installation configuration tool with guided onboarding workflow for first-time
+  setup is available through the Operations page for administrators.
 
 ## What remains
 
@@ -145,8 +146,8 @@ reference, a retention period and an optional legal hold
 
 - The legacy MySQL dump and importer stay frozen until every installation has
   been migrated, reconciled, backed up and restore-tested.
-- Vitest 5: Package files updated; blocked by Node.js v18 (needs >=v22). Configuration in vite.config.js is ready.
-- Consolidating remaining hardcoded colors in smaller CSS files (ongoing maintenance).
+- Vitest 5: Package files updated in commit 4ed3175; blocked by Node.js v18 (needs >=v22) on development machine. Configuration in vite.config.js is ready.
+- Complete remaining CSS consolidation in smaller components.
 
 ### Future: cross-institution collaboration
 
@@ -223,3 +224,11 @@ Dates are 2026.
   refused project deletions, member changes and topic deletions were silent; an
   association overview endpoint that could never succeed was removed, along with
   unused diff parsing, response models and components.
+- **18 September.** Installation configuration tool and onboarding workflow added.
+  Backend: OnboardingStatus model tracks progress through project creation,
+  protocol configuration, collaborator invitation, and first file upload;
+  OnboardingService manages state; new `/api/v1/onboarding/*` and `/api/v1/instance/*`
+  endpoints for progress tracking and settings modification. Frontend: useOnboarding,
+  useInstallationSettings, and useDatabaseConfiguration composables provide state
+  management. OperationsPage extended with new sections for installation settings
+  and guided onboarding. Database migration 0038 adds onboarding_status table.
