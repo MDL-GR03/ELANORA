@@ -1,11 +1,20 @@
 FROM python:3.13-slim AS runtime
 
 # Git is an application runtime dependency: each research project is a Git
-# repository. postgresql-client provides pg_dump, which this installation uses
-# to take its own scheduled backups. Poetry is used only to install the locked
-# Python environment.
+# repository. postgresql-client-18 provides pg_dump, which this installation
+# uses to take its own scheduled backups; its major version must match the
+# PostgreSQL server, so it comes from the PostgreSQL upstream apt repo rather
+# than Debian's older postgresql-client meta-package. Poetry is used only to
+# install the locked Python environment.
 RUN apt-get update \
-    && apt-get install --yes --no-install-recommends git postgresql-client \
+    && apt-get install --yes --no-install-recommends ca-certificates gnupg curl \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install --yes --no-install-recommends git postgresql-client-18 \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir poetry==2.4.2
 

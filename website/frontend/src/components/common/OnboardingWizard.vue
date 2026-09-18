@@ -116,7 +116,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
-import { useOnboarding } from '@composables/useOnboarding';
+import { useOnboarding } from '@/composables/useOnboarding';
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 

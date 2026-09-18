@@ -61,6 +61,8 @@ coverage/
 
 # Ignore backup folder/files
 elanora_projects_backups
+website/backend/elanora_backups/
+website/dumps/
 
 # Ignore project (ELAN) specific files
 elanora_projects/*

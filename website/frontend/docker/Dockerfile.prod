@@ -1,6 +1,13 @@
 # Use a Node.js image to build the app
 FROM node:24-alpine AS build-stage
 
+# Build mode selects which .env.* file Vite reads to bake VITE_API_URL into the
+# bundle: "prod" for the local/staging stack (separate frontend/backend ports),
+# "server" for the internet-facing stack behind nginx. Defaults to prod so the
+# prod compose file needs no extra configuration.
+ARG BUILD_MODE=prod
+ENV BUILD_MODE=${BUILD_MODE}
+
 # Set the working directory
 WORKDIR /app
 
@@ -17,8 +24,11 @@ COPY ./vite.config.js ./
 COPY ./tailwind.config.js ./
 COPY ./index.html ./
 
-# Build the Vue.js app for production
-RUN npm run build -- --mode prod
+# Build the Vue.js app for production. Called directly via npx so the build
+# mode is controlled by BUILD_MODE rather than hardcoded in package.json's
+# build script. Both modes produce the same nginx-served static bundle; the
+# mode only selects which .env.* file supplies VITE_API_URL.
+RUN npx vite build --mode ${BUILD_MODE}
 
 # Use an official Nginx image to serve the app
 FROM nginx:stable-alpine-slim AS production-stage

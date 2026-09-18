@@ -50,7 +50,9 @@ services:
   frontend:
     build:
       context: ../../frontend
-      dockerfile: ../frontend/docker/Dockerfile.server
+      dockerfile: ../frontend/docker/Dockerfile.prod
+      args:
+        BUILD_MODE: server
     ports:
       - '80:80'
     env_file:
@@ -101,7 +103,7 @@ services:
   maintenance-worker:
     build:
       context: ../../backend
-      dockerfile: ../backend/docker/Dockerfile.server
+      dockerfile: ../backend/docker/Dockerfile.prod
     env_file:
       - ../../env/.env.server
     environment:
