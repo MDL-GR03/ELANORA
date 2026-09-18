@@ -8,7 +8,7 @@ export ELANORA_DEV_GID ?= $(shell id -g)
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install install-check dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-bootstrap dev-reset-password dev-dispatch-outbox dev-dispatch-change-sets dev-email-smoke dev-check-integrity recovery-verify test-db-up test-db-reset test-db-down test-integration test-recovery test-e2e legacy-validate legacy-status legacy-down security-check backend-check frontend-check check
+.PHONY: help install install-check dev-up dev-down dev-logs dev-status dev-health dev-db-current dev-db-history dev-db-schema dev-db-dump dev-db-restore dev-bootstrap dev-reset-password dev-dispatch-outbox dev-dispatch-change-sets dev-email-smoke dev-check-integrity dev-backup dev-backup-list dev-backup-verify recovery-verify test-db-up test-db-reset test-db-down test-integration test-recovery test-e2e legacy-validate legacy-status legacy-down security-check backend-check frontend-check check
 
 help:
 	@echo "ELANORA commands"
@@ -23,6 +23,9 @@ help:
 	@echo "  make dev-dispatch-change-sets  Immediately retry queued contribution publications"
 	@echo "  make dev-email-smoke  Send a test message to Mailpit at localhost:8025"
 	@echo "  make dev-check-integrity  Scan accepted project data without repairing it"
+	@echo "  make dev-backup      Take an encrypted off-host backup (DB + projects + assets)"
+	@echo "  make dev-backup-list  List stored encrypted backups, oldest first"
+	@echo "  make dev-backup-verify  Read the newest backup back and check its manifest"
 	@echo "  make recovery-verify RECOVERY_BUNDLE=/path/file.elanora"
 	@echo "  make dev-logs       Follow development container logs"
 	@echo "  make dev-status     Show container status"
@@ -30,6 +33,8 @@ help:
 	@echo "  make dev-db-current Show the migration applied to development PostgreSQL"
 	@echo "  make dev-db-history Show the complete versioned schema history"
 	@echo "  make dev-db-schema  Print the current PostgreSQL schema (no table data)"
+	@echo "  make dev-db-dump    Dump the database to a shareable .sql file"
+	@echo "  make dev-db-restore DUMP=file.sql  Load a .sql dump, replacing all data"
 	@echo "  make dev-down       Stop containers without deleting database data"
 	@echo "  make test-db-up     Start and migrate disposable PostgreSQL"
 	@echo "  make test-db-reset  Recreate and migrate disposable PostgreSQL"
@@ -44,6 +49,7 @@ help:
 	@echo "  make check          Run backend and frontend quality checks"
 
 dev-up:
+	@test -f website/env/.env.dev.docker || cp website/env/.env.dev.docker.example website/env/.env.dev.docker
 	$(COMPOSE) up --build --wait -d
 	@echo "ELANORA: http://localhost:8777"
 	@echo "First-run setup token: elanora-local-setup"
@@ -72,6 +78,20 @@ dev-db-history:
 
 dev-db-schema:
 	$(COMPOSE) exec -T db pg_dump --schema-only --no-owner --no-privileges -U elanora -d elanora
+
+dev-db-dump:
+	@mkdir -p website/dumps
+	@$(COMPOSE) exec -T db pg_dump --no-owner --no-privileges --clean --if-exists -U elanora -d elanora \
+		> "website/dumps/elanora-dump.sql"
+	@ls -lh website/dumps/elanora-dump.sql
+	@echo "Share website/dumps/elanora-dump.sql. Recipient loads it with: make dev-db-restore DUMP=<file>"
+
+dev-db-restore:
+	@test -n "$(DUMP)" || { echo "Usage: make dev-db-restore DUMP=/path/to/elanora-dump.sql"; exit 1; }
+	@test -f "$(DUMP)" || { echo "File not found: $(DUMP)"; exit 1; }
+	@echo "Restoring $(DUMP) — this replaces all database data."
+	$(COMPOSE) exec -T db psql -U elanora -d elanora < "$(DUMP)"
+	@echo "Done. The backend will pick up the new data on the next request."
 
 dev-bootstrap:
 	$(COMPOSE) exec backend elanora-bootstrap \
@@ -106,6 +126,15 @@ dev-email-smoke:
 
 dev-check-integrity:
 	$(COMPOSE) exec backend elanora-check-integrity
+
+dev-backup:
+	$(COMPOSE) exec backend elanora-backup create
+
+dev-backup-list:
+	$(COMPOSE) exec backend elanora-backup list
+
+dev-backup-verify:
+	$(COMPOSE) exec backend elanora-backup verify
 
 recovery-verify:
 	test -n "$(RECOVERY_BUNDLE)"

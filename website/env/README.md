@@ -4,9 +4,11 @@ Only `*.example` files belong in Git. Copy the example for the environment you
 need, keep the resulting `.env.*` file local, and replace every production or
 server placeholder with a secret from the deployment platform's secret store.
 
-For local Docker development, no environment file is required:
+For local Docker development, `make dev-up` creates `.env.dev.docker` from
+the committed example on first run. To create it manually:
 
 ```bash
+cp website/env/.env.dev.docker.example website/env/.env.dev.docker
 make dev-up
 ```
 

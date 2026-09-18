@@ -11,10 +11,8 @@ must provide `ENVIRONMENT`, a random `JWT_SECRET_KEY` of at least 32 characters,
 HTTPS `FRONTEND_HOST` and `BACKEND_HOST` origins, mail configuration, and
 database credentials. Do not commit the resulting `.env` files.
 
-The development stack contains explicit local-only database and JWT defaults
-and needs no `.env` file. It routes all SMTP traffic to Mailpit, a local catcher;
-no development message is delivered to the public internet. From the repository
-root:
+The development stack reads its configuration from `website/env/.env.dev.docker`.
+`make dev-up` creates this file from the committed example on first run:
 
 ```bash
 make dev-up
@@ -71,9 +69,11 @@ The test database listens only on `127.0.0.1:5418`; development remains on
 the database manually. Test schema creation always uses Alembic, never an SQL
 dump or SQLAlchemy `create_all()`.
 
-To override the local-only defaults, set `ELANORA_DEV_DB_PASSWORD` or
-`ELANORA_DEV_JWT_SECRET` in the invoking shell. Production and server Compose
-configurations still require externally managed secrets.
+To override the local-only database password, set `ELANORA_DEV_DB_PASSWORD`
+in the invoking shell and edit `DB_PASSWORD` in `website/env/.env.dev.docker`
+to match — the `db` service reads the shell variable, the backend reads the
+env file. Production and server Compose configurations still require externally
+managed secrets.
 
 Before upgrading a deployed instance, take and verify an off-host PostgreSQL
 backup and a versioned copy of the immutable EAF/media objects. Review the new
