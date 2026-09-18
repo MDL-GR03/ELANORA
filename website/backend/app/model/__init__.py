@@ -8,6 +8,7 @@ Models are imported based on their dependencies, with base models first.
 from .accepted_value import AcceptedValue
 from .address import Address
 from .annotation import Annotation
+from .onboarding import OnboardingStep, OnboardingStatus
 
 # Base models with no dependencies
 from .annotation_standard import AnnotationStandard
@@ -107,6 +108,8 @@ __all__ = [
     "EffectiveNamingStandard",
     "ElanFile",
     "ElanFileMedia",
+    "OnboardingStep",
+    "OnboardingStatus",
     "ElanFileToMedia",
     "ElanFileToTier",
     "FileContent",
