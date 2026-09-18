@@ -262,6 +262,141 @@
           </p>
         </div>
       </section>
+
+      <!-- Installation Configuration Section -->
+      <section class="operations-card wide">
+        <div class="card-heading">
+          <span class="card-icon"
+            ><font-awesome-icon icon="fa-solid fa-gear"
+          /></span>
+          <div>
+            <p class="eyebrow">{{ t('operations.installation.context') }}</p>
+            <h2>{{ t('operations.installation.title') }}</h2>
+          </div>
+        </div>
+        <p class="guidance">{{ t('operations.installation.description') }}</p>
+        <div class="card-action">
+          <button
+            type="button"
+            class="secondary-action"
+            @click="toggleInstallationSettings"
+          >
+            <font-awesome-icon :icon="showInstallationSettings ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" />
+            {{ showInstallationSettings ? t('common.hide') : t('operations.installation.configure') }}
+          </button>
+        </div>
+        <div v-if="showInstallationSettings" class="expanded-content">
+          <InstallationSettingsForm />
+        </div>
+      </section>
+
+      <!-- Database Configuration Section -->
+      <section class="operations-card wide">
+        <div class="card-heading">
+          <span class="card-icon"
+            ><font-awesome-icon icon="fa-solid fa-database"
+          /></span>
+          <div>
+            <p class="eyebrow">{{ t('operations.database.context') }}</p>
+            <h2>{{ t('operations.database.title') }}</h2>
+          </div>
+        </div>
+        <p class="guidance">{{ t('operations.database.description') }}</p>
+        <div class="card-action">
+          <button
+            type="button"
+            class="secondary-action"
+            @click="toggleDatabaseConfig"
+          >
+            <font-awesome-icon :icon="showDatabaseConfig ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" />
+            {{ showDatabaseConfig ? t('common.hide') : t('operations.database.configure') }}
+          </button>
+        </div>
+        <div v-if="showDatabaseConfig" class="expanded-content">
+          <DatabaseConfigurationForm />
+        </div>
+      </section>
+
+      <!-- Onboarding Section -->
+      <section class="operations-card wide" v-if="showOnboarding">
+        <div class="card-heading">
+          <span class="card-icon"
+            ><font-awesome-icon icon="fa-solid fa-graduation-cap"
+          /></span>
+          <div>
+            <p class="eyebrow">{{ t('operations.onboarding.context') }}</p>
+            <h2>{{ t('operations.onboarding.title') }}</h2>
+          </div>
+          <span class="status-pill" :class="onboardingStatusClass">
+            {{ onboardingStatusText }}
+          </span>
+        </div>
+        <div class="onboarding-summary">
+          <div class="progress-bar">
+            <div
+              class="progress-fill"
+              :style="{ width: `${onboardingProgress}%` }"
+              role="progressbar"
+              :aria-valuenow="onboardingProgress"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            />
+          </div>
+          <p class="progress-text">
+            {{ onboardingCompletedSteps }}/4 {{ t('operations.onboarding.stepsComplete') }}
+          </p>
+        </div>
+        <div class="onboarding-steps">
+          <div
+            v-for="step in onboardingSteps"
+            :key="step.id"
+            class="onboarding-step"
+            :class="{
+              'completed': step.completed,
+              'current': currentOnboardingStep === step.id,
+            }"
+          >
+            <span class="step-icon">
+              <font-awesome-icon v-if="step.completed" icon="fa-solid fa-check-circle" />
+              <font-awesome-icon v-else-if="currentOnboardingStep === step.id" icon="fa-solid fa-circle" />
+              <span v-else class="step-number">{{ step.order }}</span>
+            </span>
+            <span class="step-label">{{ t(`onboarding.steps.${step.id}.title`) }}</span>
+          </div>
+        </div>
+        <div class="card-action">
+          <button
+            type="button"
+            class="secondary-action"
+            @click="startOnboarding"
+            v-if="!onboardingStarted"
+          >
+            <font-awesome-icon icon="fa-solid fa-play" />
+            {{ t('operations.onboarding.start') }}
+          </button>
+          <button
+            type="button"
+            class="secondary-action"
+            @click="skipOnboarding"
+            v-else-if="!onboardingComplete"
+          >
+            <font-awesome-icon icon="fa-solid fa-forward" />
+            {{ t('operations.onboarding.skip') }}
+          </button>
+          <button
+            type="button"
+            class="secondary-action"
+            @click="toggleOnboarding"
+            v-if="onboardingStarted && !onboardingComplete"
+          >
+            <font-awesome-icon :icon="showOnboardingDetails ? 'fa-solid fa-chevron-up' : 'fa-solid fa-list-check'" />
+            {{ showOnboardingDetails ? t('common.hide') : t('operations.onboarding.continue') }}
+          </button>
+        </div>
+        <div v-if="showOnboardingDetails" class="expanded-content">
+          <OnboardingWizard @close="showOnboardingDetails = false" />
+        </div>
+      </section>
     </div>
   </main>
 </template>
@@ -270,10 +405,79 @@
 import { apiErrorMessage } from '@/utils/apiError';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import operationsService from '@/api/service/operationsService';
+import { useOnboarding } from '@/composables/useOnboarding';
+import InstallationSettingsForm from '@/components/pageSpecific/operations/InstallationSettingsForm.vue';
+import DatabaseConfigurationForm from '@/components/pageSpecific/operations/DatabaseConfigurationForm.vue';
+import OnboardingWizard from '@/components/common/OnboardingWizard.vue';
 
 const { t, locale } = useI18n();
+const router = useRouter();
+
+// Onboarding state
+const {
+  onboardingStatus,
+  isLoading: onboardingLoading,
+  currentStep,
+  isComplete: onboardingComplete,
+  isSkipped,
+  projectCreated,
+  protocolConfigured,
+  collaboratorInvited,
+  firstUpload,
+  stepsCompleted,
+  totalSteps,
+  loadOnboardingStatus,
+  startOnboarding: startOnboardingApi,
+  skipOnboarding: skipOnboardingApi,
+} = useOnboarding();
+
+// Onboarding UI state
+const showOnboarding = ref(true);
+const showOnboardingDetails = ref(false);
+
+// Expanded content state
+const showInstallationSettings = ref(false);
+const showDatabaseConfig = ref(false);
+
+// Computed onboarding state
+const onboardingStarted = computed(() => {
+  return onboardingStatus.value !== null && onboardingStatus.value.current_step !== 'not_started';
+});
+
+const currentOnboardingStep = computed(() => {
+  return currentStep.value || 'not_started';
+});
+
+const onboardingProgress = computed(() => {
+  return (stepsCompleted.value / totalSteps.value) * 100;
+});
+
+const onboardingCompletedSteps = computed(() => {
+  return stepsCompleted.value;
+});
+
+const onboardingStatusClass = computed(() => {
+  if (onboardingComplete.value) return 'healthy';
+  if (onboardingStarted.value) return 'warning';
+  return 'neutral';
+});
+
+const onboardingStatusText = computed(() => {
+  if (onboardingComplete.value) return t('operations.onboarding.complete');
+  if (onboardingStarted.value) return t('operations.onboarding.inProgress');
+  return t('operations.onboarding.notStarted');
+});
+
+const onboardingSteps = computed(() => [
+  { id: 'project', order: 1, completed: projectCreated.value },
+  { id: 'protocol', order: 2, completed: protocolConfigured.value },
+  { id: 'collaborator', order: 3, completed: collaboratorInvited.value },
+  { id: 'upload', order: 4, completed: firstUpload.value },
+]);
+
 const status = ref(null);
 const loading = ref(true);
 const loadError = ref('');
@@ -390,7 +594,58 @@ async function runStorageCheck() {
   }
 }
 
-onMounted(loadStatus);
+// Onboarding methods
+async function loadOnboarding() {
+  try {
+    await loadOnboardingStatus();
+  } catch (error) {
+    console.error('Failed to load onboarding status:', error);
+  }
+}
+
+async function startOnboarding() {
+  try {
+    await startOnboardingApi();
+    await loadOnboarding();
+    showOnboardingDetails.value = true;
+  } catch (error) {
+    console.error('Failed to start onboarding:', error);
+  }
+}
+
+async function skipOnboarding() {
+  try {
+    await skipOnboardingApi();
+    await loadOnboarding();
+    showOnboardingDetails.value = false;
+  } catch (error) {
+    console.error('Failed to skip onboarding:', error);
+  }
+}
+
+// Toggle methods for expanded content
+function toggleInstallationSettings() {
+  showInstallationSettings.value = !showInstallationSettings.value;
+  showDatabaseConfig.value = false;
+  showOnboardingDetails.value = false;
+}
+
+function toggleDatabaseConfig() {
+  showDatabaseConfig.value = !showDatabaseConfig.value;
+  showInstallationSettings.value = false;
+  showOnboardingDetails.value = false;
+}
+
+function toggleOnboarding() {
+  showOnboardingDetails.value = !showOnboardingDetails.value;
+  showInstallationSettings.value = false;
+  showDatabaseConfig.value = false;
+}
+
+onMounted(async () => {
+  await loadStatus();
+  await loadOnboarding();
+});
 </script>
 
 <style scoped>
@@ -640,6 +895,111 @@ code {
 
 .operations-state p {
   margin: 0.25rem 0 0;
+}
+
+/* Onboarding Section Styles */
+.onboarding-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.onboarding-summary .progress-bar {
+  height: 0.5rem;
+  background: var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.onboarding-summary .progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.onboarding-summary .progress-text {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.onboarding-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.onboarding-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 8rem;
+}
+
+.onboarding-step .step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-full);
+  background: var(--color-border-subtle);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.onboarding-step.completed .step-icon {
+  background: var(--color-success-bg);
+  color: var(--color-success-dark);
+}
+
+.onboarding-step.current .step-icon {
+  background: var(--color-primary-bg);
+  color: var(--color-primary-dark);
+}
+
+.step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.onboarding-step .step-label {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.onboarding-step.completed .step-label {
+  color: var(--color-success-dark);
+}
+
+.onboarding-step.current .step-label {
+  color: var(--color-primary-dark);
+}
+
+/* Expanded Content */
+.expanded-content {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-subtle);
+  animation: expand 0.3s ease;
+}
+
+@keyframes expand {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (width <= 48rem) {

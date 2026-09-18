@@ -17,7 +17,11 @@
     "yes_cancel": "はい、キャンセル",
     "add": "追加",
     "adding": "追加中",
-    "remove": "削除"
+    "remove": "削除",
+    "yes": "はい",
+    "learnMore": "詳細を表示",
+    "hide": "非表示",
+    "reset": "リセット"
   },
   "operations": {
     "title": "システム状態と復旧",
@@ -116,6 +120,151 @@
     "boundary": {
       "title": "ここで設定を変更できない理由",
       "body": "ストレージ認証情報、暗号鍵、スケジュール、復旧操作はデプロイの秘密管理と運用手順書で管理します。このページは意図的に状態のみを表示します。"
+    },
+    "installation": {
+      "settings": "インストール設定",
+      "description": "機関の識別情報とシステム設定を構成します",
+      "loadError": "インストール設定の読み込みに失敗しました",
+      "saveSuccess": "設定を正常に保存しました",
+      "saveError": "インストール設定の保存に失敗しました",
+      "branding": {
+        "title": "ブランディングとアイデンティティ",
+        "instanceName": "インスタンス名",
+        "instanceNamePlaceholder": "機関名を入力",
+        "instanceNameRequired": "インスタンス名は必須です",
+        "institutionName": "機関名",
+        "institutionNamePlaceholder": "機関名を入力",
+        "institutionNameRequired": "機関名は必須です",
+        "contactEmail": "連絡先メール",
+        "contactEmailPlaceholder": "連絡先メールを入力",
+        "contactEmailRequired": "連絡先メールは必須です",
+        "colorTheme": "カラーテーマ",
+        "primaryColor": "プライマリーカラー",
+        "secondaryColor": "セカンダリーカラー",
+        "accentColor": "アクセントカラー",
+        "resetColors": "デフォルトにリセット",
+        "invalidColor": "有効な16進カラー（例：#2563eb）を入力してください"
+      },
+      "general": {
+        "title": "一般設定",
+        "defaultLanguage": "デフォルト言語",
+        "timezone": "タイムゾーン"
+      }
+    },
+    "database": {
+      "configuration": "データベース設定",
+      "description": "制限やタイムゾーンなどのデータベース関連設定を構成します",
+      "loadError": "データベース設定の読み込みに失敗しました",
+      "saveSuccess": "設定を正常に保存しました",
+      "saveSuccessWithRestart": "設定を保存しました。一部の変更はアプリケーションの再起動が必要です。",
+      "saveError": "データベース設定の保存に失敗しました",
+      "warning": "警告",
+      "restartRequired": "次の設定には再起動が必要です：{settings}",
+      "restartNote": "これらの変更を有効にするには、アプリケーションを再起動してください。",
+      "storage": {
+        "title": "ストレージと制限",
+        "maxFileSize": "最大ファイルサイズ",
+        "maxFileSizeHint": "メガバイト単位の最大サイズ",
+        "maxUsers": "最大ユーザー数",
+        "maxUsersHint": "最大ユーザー数",
+        "timezone": "タイムゾーン",
+        "invalidMaxFileSize": "有効な最大ファイルサイズ（1-10000 MB）を入力してください",
+        "invalidMaxUsers": "有効な最大ユーザー数（1-100000）を入力してください"
+      },
+      "system": {
+        "title": "システム設定",
+        "defaultLanguage": "デフォルト言語",
+        "isActive": "インスタンスアクティブ",
+        "isActiveHint": "このインスタンスがアクティブで接続を受け入れるか"
+      }
+    },
+    "onboarding": {
+      "title": "ELANORAへようこそ",
+      "description": "インストールを設定しましょう",
+      "stepsComplete": "ステップ完了",
+      "stepOf": "ステップ {step} / {total}",
+      "previous": "前へ",
+      "next": "次へ",
+      "complete": "完了",
+      "skip": "オンボーディングをスキップ",
+      "completed": "完了",
+      "pending": "保留中",
+      "status": "ステータス",
+      "completeTitle": "オンボーディング完了！",
+      "completeDescription": "インストールが完全に設定されました。ELANORAの使用を開始できます。",
+      "close": "閉じる",
+      "steps": {
+        "project": {
+          "title": "最初のプロジェクトを作成",
+          "description": "最初の研究プロジェクトを作成しましょう"
+        },
+        "protocol": {
+          "title": "プロトコルを設定",
+          "description": "プロジェクトの検証ルールと基準を設定"
+        },
+        "collaborator": {
+          "title": "最初のコラボレーターを招待",
+          "description": "チームメンバーを追加"
+        },
+        "upload": {
+          "title": "最初のファイルをアップロード",
+          "description": "最初のEAFファイルをアップロードして検証"
+        }
+      },
+      "project": {
+        "instructionsTitle": "最初のプロジェクトを作成するには：",
+        "step1": "「プロジェクト作成」ボタンをクリック",
+        "step2": "プロジェクトの名前と説明を入力",
+        "step3": "データ分類と保存ポリシーを設定",
+        "step4": "規約と基準を設定",
+        "createProject": "プロジェクト作成",
+        "helpTitle": "プロジェクトセットアップヘルプ",
+        "helpName": "プロジェクト名",
+        "helpNameDesc": "研究プロジェクトの説明的な名前を選択",
+        "helpDescription": "説明",
+        "helpDescriptionDesc": "プロジェクトの目的と範囲を説明",
+        "helpConventions": "規約と基準",
+        "helpConventionsDesc": "命名基準と検証ルールを定義",
+        "helpClassification": "データ分類",
+        "helpClassificationDesc": "保存期間とデータ分類レベルを設定"
+      },
+      "collaborator": {
+        "instructionsTitle": "最初のコラボレーターを招待するには：",
+        "step1": "「コラボレーター招待」ボタンをクリック",
+        "step2": "メールアドレスを入力",
+        "step3": "権限とロールを設定",
+        "invite": "コラボレーターを招待",
+        "helpTitle": "コラボレーター設定ヘルプ",
+        "helpEmail": "メールアドレス",
+        "helpEmailDesc": "有効なコラボレーターのメールアドレスを入力",
+        "helpPermissions": "権限",
+        "helpPermissionsDesc": "コラボレーターがアクセスおよび変更できる内容を設定",
+        "helpRole": "ロール",
+        "helpRoleDesc": "メンバー、レビュアー、または管理者を選択",
+        "helpNotification": "通知",
+        "helpNotificationDesc": "招待メールがコラボレーターに送信されます"
+      },
+      "upload": {
+        "instructionsTitle": "最初のファイルをアップロードするには：",
+        "step1": "「ファイルをアップロード」ボタンをクリック",
+        "step2": "1つ以上のEAFファイルを選択",
+        "step3": "ファイルが検証に合格することを確認",
+        "step4": "アップロードプロセスを完了",
+        "uploadFiles": "ファイルをアップロード",
+        "requirementsTitle": "要件：",
+        "requirement1": "ファイルは有効なEAFフォーマットでなければなりません",
+        "requirement2": "ファイルはプロトコルに対して検証に合格しなければなりません",
+        "requirement3": "ファイルは元のバイトで保存されます",
+        "helpTitle": "アップロードヘルプ",
+        "helpFileTypes": "ファイルタイプ",
+        "helpFileTypesDesc": "ELANアノテーションフォーマット(.eaf)ファイルのみが受け入れられます",
+        "helpValidation": "検証",
+        "helpValidationDesc": "ファイルは自動的にプロトコルに対して検証されます",
+        "helpReview": "レビュープロセス",
+        "helpReviewDesc": "アップロードされたファイルは最終承認前にレビューできます",
+        "helpBatch": "バッチアップロード",
+        "helpBatchDesc": "複数のファイルを一度にアップロードできます"
+      }
     }
   },
   "http_status": {
