@@ -15,7 +15,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import ElanoraError, ErrorCode
-from app.db.database import async_session_factory
 from app.model.instance import Instance
 from app.model.onboarding import OnboardingStep, OnboardingStatus
 from app.model.user import User
