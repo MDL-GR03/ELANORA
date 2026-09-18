@@ -145,7 +145,7 @@ defineExpose({ confirm, cancel });
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgb(18 35 64 / 58%);
+  background: color-mix(in srgb, var(--color-slate-900) 58%, transparent);
   backdrop-filter: blur(3px);
   animation: backdrop-in 140ms ease-out;
 }
@@ -162,7 +162,7 @@ defineExpose({ confirm, cancel });
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 18px;
-  box-shadow: 0 24px 70px rgb(15 35 70 / 28%);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--color-slate-800) 28%, transparent);
   animation: dialog-in 170ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -283,17 +283,17 @@ defineExpose({ confirm, cancel });
 .confirm-button.primary {
   color: var(--color-text-inverse);
   background: var(--color-primary);
-  box-shadow: 0 4px 12px rgb(37 99 235 / 20%);
+  box-shadow: 0 4px 12px var(--primary-20);
 }
 
 .tone-success .confirm-button.primary {
   background: var(--color-success);
-  box-shadow: 0 4px 12px rgb(18 130 74 / 20%);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-emerald-700) 20%, transparent);
 }
 
 .tone-danger .confirm-button.primary {
   background: var(--color-error);
-  box-shadow: 0 4px 12px rgb(213 43 43 / 20%);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-red-600) 20%, transparent);
 }
 
 .confirm-button:hover {
@@ -302,7 +302,7 @@ defineExpose({ confirm, cancel });
 
 .confirm-button:focus-visible,
 .confirm-close:focus-visible {
-  outline: 3px solid rgb(37 99 235 / 28%);
+  outline: 3px solid var(--primary-28);
   outline-offset: 2px;
 }
 

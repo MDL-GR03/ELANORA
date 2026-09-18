@@ -41,7 +41,6 @@ The non-negotiable invariants:
 | 6 | Split oversized backend services and frontend components | Done |
 | 7 | Database-enforced project and temporal invariants | Done |
 | 8 | Privacy, operations and self-maintenance for institutions | Done |
-| 9 | CSS consolidation with centralized design tokens | Done |
 
 Quality gates on every change: `make check` runs the credential scan; ruff,
 strict mypy over the whole backend package, 670 backend unit tests, 216
@@ -145,8 +144,8 @@ reference, a retention period and an optional legal hold
 
 - The legacy MySQL dump and importer stay frozen until every installation has
   been migrated, reconciled, backed up and restore-tested.
-- Vitest 5: Package files updated; blocked by Node.js v18 (needs >=v22). Configuration in vite.config.js is ready.
-- Consolidating remaining hardcoded colors in smaller CSS files (ongoing maintenance).
+- Vitest 5: Package files updated in commit 4ed3175; blocked by Node.js v18 (needs >=v22) on development machine. Configuration in vite.config.js is ready.
+- Complete CSS consolidation: refactor remaining hardcoded colors in smaller CSS files to use centralized design tokens.
 
 ### Future: cross-institution collaboration
 
