@@ -271,7 +271,7 @@ const loadData = async () => {
       // Initialize changes tracking
       clearChanges();
     }
-  } catch (err) {
+  } catch {
     errorMessage.value = t('database.loadError');
     // Error handled by error reporting utility
   }
@@ -308,7 +308,7 @@ const handleSubmit = async () => {
 
     // Reload data to get fresh values
     await loadData();
-  } catch (err) {
+  } catch {
     errorMessage.value = t('database.saveError');
     // Error handled by error reporting utility
   } finally {

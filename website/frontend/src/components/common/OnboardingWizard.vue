@@ -165,7 +165,7 @@ export default {
         } else if (stepId === 'first_upload') {
           router.push({ name: 'UploadPage' });
         }
-      } catch (err) {
+      } catch {
         // Error handled by error reporting utility
       }
     };
@@ -174,7 +174,7 @@ export default {
       try {
         await skipOnboarding();
         await loadOnboardingStatus();
-      } catch (err) {
+      } catch {
         // Error handled by error reporting utility
       }
     };

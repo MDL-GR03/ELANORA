@@ -637,7 +637,7 @@ async function runStorageCheck() {
 async function loadOnboarding() {
   try {
     await loadOnboardingStatus();
-  } catch (error) {
+  } catch {
     // Error handled by error reporting utility
   }
 }
@@ -647,7 +647,7 @@ async function startOnboarding() {
     await startOnboardingApi();
     await loadOnboarding();
     showOnboardingDetails.value = true;
-  } catch (error) {
+  } catch {
     // Error handled by error reporting utility
   }
 }
@@ -657,7 +657,7 @@ async function skipOnboarding() {
     await skipOnboardingApi();
     await loadOnboarding();
     showOnboardingDetails.value = false;
-  } catch (error) {
+  } catch {
     // Error handled by error reporting utility
   }
 }
