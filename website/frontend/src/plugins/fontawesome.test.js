@@ -20,10 +20,15 @@ function namedIcons() {
     )) {
       named.add(`${style === 'regular' ? 'far' : 'fas'}:${name}`);
     }
-    for (const [, name] of text.matchAll(
-      /<font-awesome-icon[^>]*\sicon="([a-z0-9-]+)"/g
+    for (const [, iconStyle, iconName] of text.matchAll(
+      /<font-awesome-icon[^>]*\sicon="fa-(solid|regular) fa-([a-z0-9-]+)"/g
     )) {
-      named.add(`fas:${name.replace(/^fa-/, '')}`);
+      named.add(`${iconStyle === 'regular' ? 'far' : 'fas'}:${iconName}`);
+    }
+    for (const [, textStyle, textIconName] of text.matchAll(
+      /icon:\s*'fa-(solid|regular) fa-([a-z0-9-]+)'/g
+    )) {
+      named.add(`${textStyle === 'regular' ? 'far' : 'fas'}:${textIconName}`);
     }
   }
   return [...named].sort();
