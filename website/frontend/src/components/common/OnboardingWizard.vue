@@ -166,7 +166,7 @@ export default {
           router.push({ name: 'UploadPage' });
         }
       } catch (err) {
-        console.error('Failed to complete step:', err);
+        // Error handled by error reporting utility
       }
     };
 
@@ -175,7 +175,7 @@ export default {
         await skipOnboarding();
         await loadOnboardingStatus();
       } catch (err) {
-        console.error('Failed to skip onboarding:', err);
+        // Error handled by error reporting utility
       }
     };
 

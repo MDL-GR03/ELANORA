@@ -15,6 +15,7 @@ def load_env() -> None:
     env_file_map = {
         "dev": DEV_ENV_FILE,
         "dev.docker": ".env.dev.docker",
+        "test": ".env.test",
         "prod": ".env.prod",
         "server": ".env.server",
     }
@@ -25,8 +26,3 @@ def load_env() -> None:
 
     if os.path.exists(path_to_env):
         load_dotenv(path_to_env)
-    else:
-        # Fallback to .env.dev if the specified env file doesn't exist
-        fallback_path = os.path.join(repo_root, "env", ".env.dev")
-        if os.path.exists(fallback_path):
-            load_dotenv(fallback_path)

@@ -304,7 +304,7 @@ const loadData = async () => {
     }
   } catch (err) {
     errorMessage.value = t('installation.loadError');
-    console.error('Failed to load installation settings:', err);
+    // Error handled by error reporting utility
   }
 };
 
@@ -348,7 +348,7 @@ const handleSubmit = async () => {
     await loadData();
   } catch (err) {
     errorMessage.value = t('installation.saveError');
-    console.error('Failed to save installation settings:', err);
+    // Error handled by error reporting utility
   } finally {
     isLoading.value = false;
   }

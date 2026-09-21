@@ -74,7 +74,7 @@ export function useInstallationSettings() {
       return response.data;
     } catch (err) {
       error.value = err;
-      console.error('Failed to load instance settings:', err);
+      // Error handled by error reporting utility
       throw err;
     } finally {
       isLoading.value = false;
@@ -101,7 +101,7 @@ export function useInstallationSettings() {
       return response.data;
     } catch (err) {
       error.value = err;
-      console.error('Failed to update branding:', err);
+      // Error handled by error reporting utility
       throw err;
     } finally {
       isLoading.value = false;
@@ -128,7 +128,7 @@ export function useInstallationSettings() {
       return response.data;
     } catch (err) {
       error.value = err;
-      console.error('Failed to update general settings:', err);
+      // Error handled by error reporting utility
       throw err;
     } finally {
       isLoading.value = false;

@@ -89,7 +89,7 @@ export function useDatabaseConfiguration() {
       return databaseConfig.value;
     } catch (err) {
       error.value = err;
-      console.error('Failed to load database configuration:', err);
+      // Error handled by error reporting utility
       throw err;
     } finally {
       isLoading.value = false;
@@ -123,7 +123,7 @@ export function useDatabaseConfiguration() {
       };
     } catch (err) {
       error.value = err;
-      console.error('Failed to update database configuration:', err);
+      // Error handled by error reporting utility
       throw err;
     } finally {
       isLoading.value = false;

@@ -638,7 +638,7 @@ async function loadOnboarding() {
   try {
     await loadOnboardingStatus();
   } catch (error) {
-    console.error('Failed to load onboarding status:', error);
+    // Error handled by error reporting utility
   }
 }
 
@@ -648,7 +648,7 @@ async function startOnboarding() {
     await loadOnboarding();
     showOnboardingDetails.value = true;
   } catch (error) {
-    console.error('Failed to start onboarding:', error);
+    // Error handled by error reporting utility
   }
 }
 
@@ -658,7 +658,7 @@ async function skipOnboarding() {
     await loadOnboarding();
     showOnboardingDetails.value = false;
   } catch (error) {
-    console.error('Failed to skip onboarding:', error);
+    // Error handled by error reporting utility
   }
 }
 

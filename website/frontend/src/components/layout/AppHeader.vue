@@ -16,7 +16,7 @@
           :aria-label="t('appHeader.navigation.home')"
         >
           <img
-            src="@logos/ELANora-logo.png"
+            src="/images/logos/ELANora-logo.png"
             alt=""
             class="elanora-header-logo"
           />

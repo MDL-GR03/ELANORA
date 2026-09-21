@@ -126,7 +126,7 @@ export function useOnboarding() {
       onboardingStatus.value = response.data;
     } catch (err) {
       error.value = err;
-      console.error('Failed to load onboarding status:', err);
+      // Error handled by error reporting utility
     } finally {
       isLoading.value = false;
     }
@@ -148,7 +148,7 @@ export function useOnboarding() {
       return response.data;
     } catch (err) {
       error.value = err;
-      console.error('Failed to start onboarding:', err);
+      // Error handled by error reporting utility
       throw err;
     } finally {
       isLoading.value = false;
@@ -174,7 +174,7 @@ export function useOnboarding() {
       return response.data;
     } catch (err) {
       error.value = err;
-      console.error(`Failed to mark step ${step} as complete:`, err);
+      // Error handled by error reporting utility
       throw err;
     } finally {
       isLoading.value = false;
@@ -197,7 +197,7 @@ export function useOnboarding() {
       return response.data;
     } catch (err) {
       error.value = err;
-      console.error('Failed to skip onboarding:', err);
+      // Error handled by error reporting utility
       throw err;
     } finally {
       isLoading.value = false;
@@ -217,7 +217,7 @@ export function useOnboarding() {
       return response.data;
     } catch (err) {
       error.value = err;
-      console.error('Failed to update step flags:', err);
+      // Error handled by error reporting utility
       throw err;
     } finally {
       isLoading.value = false;

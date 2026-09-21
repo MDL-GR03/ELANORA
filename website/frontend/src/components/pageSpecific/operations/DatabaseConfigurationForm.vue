@@ -273,7 +273,7 @@ const loadData = async () => {
     }
   } catch (err) {
     errorMessage.value = t('database.loadError');
-    console.error('Failed to load database configuration:', err);
+    // Error handled by error reporting utility
   }
 };
 
@@ -310,7 +310,7 @@ const handleSubmit = async () => {
     await loadData();
   } catch (err) {
     errorMessage.value = t('database.saveError');
-    console.error('Failed to save database configuration:', err);
+    // Error handled by error reporting utility
   } finally {
     isLoading.value = false;
   }

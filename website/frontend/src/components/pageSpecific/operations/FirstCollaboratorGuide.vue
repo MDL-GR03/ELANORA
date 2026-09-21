@@ -18,7 +18,7 @@
       <!-- Step Indicator -->
       <div class="step-indicator">
         <span class="step-badge">
-          <font-awesome-icon icon="fa-solid fa-2" />
+          <font-awesome-icon icon="fa-solid fa-circle" />
           {{ t('onboarding.stepOf', { step: 2, total: 4 }) }}
         </span>
       </div>

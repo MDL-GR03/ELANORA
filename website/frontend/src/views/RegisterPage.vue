@@ -3,7 +3,7 @@
     <div class="register-container">
       <div class="register-header">
         <img
-          src="@logos/ELANora-logo.png"
+          src="/images/logos/ELANora-logo.png"
           :alt="t('register.logo_alt')"
           class="register-logo"
         />
