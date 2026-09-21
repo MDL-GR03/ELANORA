@@ -43,6 +43,19 @@ jobs:
       ENVIRONMENT: test
       DATABASE_URL: postgresql+asyncpg://elanora_test:elanora-test-only@127.0.0.1:5432/elanora_test
       TEST_DATABASE_URL: postgresql+asyncpg://elanora_test:elanora-test-only@127.0.0.1:5432/elanora_test
+      JWT_SECRET_KEY: test-secret-key-for-ci-only
+      JWT_ALGORITHM: HS256
+      SETUP_TOKEN: test-setup-token-for-ci-only
+      MAIL_FROM: test@ci.example.org
+      MAIL_SERVER: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_USE_CREDENTIALS: false
+      ELANORA_BACKUP_PASSPHRASE: test-backup-passphrase-for-ci-only
+      OUTBOX_ENCRYPTION_KEYS: test-encryption-key-for-ci-only
+      FRONTEND_HOST: http://localhost:8777
+      BACKEND_HOST: http://localhost:8018
     defaults:
       run:
         working-directory: website/backend
