@@ -31,15 +31,17 @@ def _database_url() -> str:
 async def session() -> AsyncIterator[AsyncSession]:
     """Provide a clean session backed by the migrated PostgreSQL test database."""
     engine = create_async_engine(_database_url(), pool_pre_ping=True)
-    
+
     # Get existing tables from the database to handle cases where
     # not all metadata tables have been migrated yet
     async with engine.begin() as connection:
         existing_tables_result = await connection.execute(
-            text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+            text(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+            )
         )
         existing_table_names = {row.table_name for row in existing_tables_result}
-        
+
         # Only truncate tables that exist in both metadata and database
         tables_to_truncate = [
             f'"{table.name}"'
@@ -48,7 +50,9 @@ async def session() -> AsyncIterator[AsyncSession]:
         ]
         if tables_to_truncate:
             await connection.execute(
-                text(f"TRUNCATE TABLE {', '.join(tables_to_truncate)} RESTART IDENTITY CASCADE")
+                text(
+                    f"TRUNCATE TABLE {', '.join(tables_to_truncate)} RESTART IDENTITY CASCADE"
+                )
             )
 
     factory = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
