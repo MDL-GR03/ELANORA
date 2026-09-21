@@ -338,7 +338,7 @@
       </section>
 
       <!-- Onboarding Section -->
-      <section class="operations-card wide" v-if="showOnboarding">
+      <section v-if="showOnboarding" class="operations-card wide">
         <div class="card-heading">
           <span class="card-icon"
             ><font-awesome-icon icon="fa-solid fa-graduation-cap"
@@ -395,28 +395,28 @@
         </div>
         <div class="card-action">
           <button
+            v-if="!onboardingStarted"
             type="button"
             class="secondary-action"
             @click="startOnboarding"
-            v-if="!onboardingStarted"
           >
             <font-awesome-icon icon="fa-solid fa-play" />
             {{ t('operations.onboarding.start') }}
           </button>
           <button
+            v-else-if="!onboardingComplete"
             type="button"
             class="secondary-action"
             @click="skipOnboarding"
-            v-else-if="!onboardingComplete"
           >
             <font-awesome-icon icon="fa-solid fa-forward" />
             {{ t('operations.onboarding.skip') }}
           </button>
           <button
+            v-if="onboardingStarted && !onboardingComplete"
             type="button"
             class="secondary-action"
             @click="toggleOnboarding"
-            v-if="onboardingStarted && !onboardingComplete"
           >
             <font-awesome-icon
               :icon="
@@ -444,7 +444,7 @@
 import { apiErrorMessage } from '@/utils/apiError';
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
+
 import WorkspaceHeader from '@/components/layout/WorkspaceHeader.vue';
 import operationsService from '@/api/service/operationsService';
 import { useOnboarding } from '@/composables/useOnboarding';
@@ -453,15 +453,12 @@ import DatabaseConfigurationForm from '@/components/pageSpecific/operations/Data
 import OnboardingWizard from '@/components/common/OnboardingWizard.vue';
 
 const { t, locale } = useI18n();
-const router = useRouter();
 
 // Onboarding state
 const {
   onboardingStatus,
-  isLoading: onboardingLoading,
   currentStep,
   isComplete: onboardingComplete,
-  isSkipped,
   projectCreated,
   protocolConfigured,
   collaboratorInvited,

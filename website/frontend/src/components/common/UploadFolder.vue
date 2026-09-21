@@ -447,7 +447,7 @@ defineExpose({
 </script>
 
 <style scoped>
-\3c style scoped > :where(.upload-zone) {
+:where(.upload-zone) {
   border: 2px dashed var(--color-primary);
   border-radius: var(--radius-lg);
   text-align: center;

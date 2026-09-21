@@ -40,7 +40,9 @@ class OnboardingStatus(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     instance_id: Mapped[int] = mapped_column(
-        ForeignKey("INSTANCE.instance_id"), unique=True, nullable=False
+        ForeignKey("INSTANCE.instance_id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
     )
     current_step: Mapped[OnboardingStep] = mapped_column(
         SQLEnum(OnboardingStep),

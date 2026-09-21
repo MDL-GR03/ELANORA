@@ -127,7 +127,7 @@ import { useOnboarding } from '@/composables/useOnboarding';
 const { t } = useI18n();
 const router = useRouter();
 
-const { firstUpload, isLoading, markStepComplete } = useOnboarding();
+const { firstUpload, isLoading } = useOnboarding();
 
 const showHelp = ref(false);
 

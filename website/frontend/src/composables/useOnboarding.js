@@ -11,7 +11,6 @@
 
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 
 import { useApi } from '@api';
 
@@ -30,7 +29,6 @@ export const ONBOARDING_STEPS = [
  */
 export function useOnboarding() {
   const { t } = useI18n();
-  const router = useRouter();
   const api = useApi();
 
   // Reactive state

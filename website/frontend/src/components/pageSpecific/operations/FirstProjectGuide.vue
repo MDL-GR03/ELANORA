@@ -112,8 +112,7 @@ import { useOnboarding } from '@/composables/useOnboarding';
 const { t } = useI18n();
 const router = useRouter();
 
-const { projectCreated, isLoading, markStepComplete, updateStepFlags } =
-  useOnboarding();
+const { projectCreated, isLoading } = useOnboarding();
 
 const showHelp = ref(false);
 
@@ -128,14 +127,6 @@ const statusClass = computed(() => {
 // Methods
 const navigateToProjects = () => {
   router.push({ name: 'ProjectsPage' });
-};
-
-const markAsComplete = async () => {
-  try {
-    await markStepComplete('project_created');
-  } catch (error) {
-    console.error('Failed to mark project step as complete:', error);
-  }
 };
 
 // Auto-mark as complete when component is viewed

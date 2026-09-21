@@ -68,16 +68,8 @@ def upgrade() -> None:
         ),
     )
 
-    # Create index for faster lookups by instance_id
-    op.create_index(
-        "ix_onboarding_status_instance_id",
-        "onboarding_status",
-        ["instance_id"],
-        unique=True,
-    )
-
 
 def downgrade() -> None:
-    """Drop the onboarding_status table."""
-    op.drop_index("ix_onboarding_status_instance_id", table_name="onboarding_status")
+    """Drop the onboarding_status table and its enum type."""
     op.drop_table("onboarding_status")
+    op.execute("DROP TYPE IF EXISTS onboardingstep CASCADE")

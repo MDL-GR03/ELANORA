@@ -9,7 +9,6 @@
  */
 
 import { computed, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
 
 import { useApi } from '@api';
 
@@ -26,7 +25,6 @@ export const DEFAULT_BRANDING = {
  * Main composable for installation settings.
  */
 export function useInstallationSettings() {
-  const { t } = useI18n();
   const api = useApi();
 
   // Reactive state

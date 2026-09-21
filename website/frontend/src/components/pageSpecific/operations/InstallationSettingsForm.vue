@@ -11,7 +11,7 @@
       <p class="panel-description">{{ t('installation.description') }}</p>
     </div>
 
-    <form @submit.prevent="handleSubmit" class="settings-form">
+    <form class="settings-form" @submit.prevent="handleSubmit">
       <!-- Branding Section -->
       <fieldset class="form-section">
         <legend class="section-title">
@@ -28,9 +28,9 @@
               v-model="formData.instance_name"
               type="text"
               :placeholder="t('installation.branding.instanceNamePlaceholder')"
-              @change="trackChange('instance_name', formData.instance_name)"
               :disabled="isLoading"
               aria-required="true"
+              @change="trackChange('instance_name', formData.instance_name)"
             />
             <span v-if="errors.instance_name" class="error-message">
               {{ errors.instance_name }}
@@ -48,10 +48,10 @@
               :placeholder="
                 t('installation.branding.institutionNamePlaceholder')
               "
+              :disabled="isLoading"
               @change="
                 trackChange('institution_name', formData.institution_name)
               "
-              :disabled="isLoading"
             />
           </div>
 
@@ -64,8 +64,8 @@
               v-model="formData.contact_email"
               type="email"
               :placeholder="t('installation.branding.contactEmailPlaceholder')"
-              @change="trackChange('contact_email', formData.contact_email)"
               :disabled="isLoading"
+              @change="trackChange('contact_email', formData.contact_email)"
             />
           </div>
         </div>
@@ -83,8 +83,8 @@
                   id="primary-color"
                   v-model="formData.primary_color"
                   type="color"
-                  @change="trackChange('primary_color', formData.primary_color)"
                   :disabled="isLoading"
+                  @change="trackChange('primary_color', formData.primary_color)"
                 />
                 <span class="color-value">{{ formData.primary_color }}</span>
               </div>
@@ -99,10 +99,10 @@
                   id="secondary-color"
                   v-model="formData.secondary_color"
                   type="color"
+                  :disabled="isLoading"
                   @change="
                     trackChange('secondary_color', formData.secondary_color)
                   "
-                  :disabled="isLoading"
                 />
                 <span class="color-value">{{ formData.secondary_color }}</span>
               </div>
@@ -117,8 +117,8 @@
                   id="accent-color"
                   v-model="formData.accent_color"
                   type="color"
-                  @change="trackChange('accent_color', formData.accent_color)"
                   :disabled="isLoading"
+                  @change="trackChange('accent_color', formData.accent_color)"
                 />
                 <span class="color-value">{{ formData.accent_color }}</span>
               </div>
@@ -127,8 +127,8 @@
           <button
             type="button"
             class="btn btn-secondary reset-colors"
-            @click="resetColors"
             :disabled="isLoading"
+            @click="resetColors"
           >
             <font-awesome-icon icon="fa-solid fa-undo" />
             {{ t('installation.branding.resetColors') }}
@@ -150,10 +150,10 @@
             <select
               id="default-language"
               v-model="formData.default_language"
+              :disabled="isLoading"
               @change="
                 trackChange('default_language', formData.default_language)
               "
-              :disabled="isLoading"
             >
               <option value="en">English</option>
               <option value="fr">Francais</option>
@@ -168,8 +168,8 @@
             <select
               id="timezone"
               v-model="formData.timezone"
-              @change="trackChange('timezone', formData.timezone)"
               :disabled="isLoading"
+              @change="trackChange('timezone', formData.timezone)"
             >
               <option value="UTC">UTC</option>
               <option value="America/New_York">America/New_York</option>
@@ -186,8 +186,8 @@
         <button
           type="button"
           class="btn btn-text"
-          @click="handleCancel"
           :disabled="isLoading"
+          @click="handleCancel"
         >
           {{ t('common.cancel') }}
         </button>
@@ -236,17 +236,13 @@ import { DEFAULT_BRANDING } from '@/composables/useInstallationSettings';
 const { t } = useI18n();
 
 const {
-  instanceSettings,
-  brandingSettings,
   isLoading,
-  error,
   changes,
   loadInstanceSettings,
   updateBranding,
   updateGeneralSettings,
   trackChange,
   clearChanges,
-  validateBrandingColors,
   isValidHexColor,
 } = useInstallationSettings();
 
