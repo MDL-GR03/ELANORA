@@ -15,10 +15,14 @@ def load_env() -> None:
     env_file_map = {
         "dev": DEV_ENV_FILE,
         "dev.docker": ".env.dev.docker",
-        "test": ".env.test",
         "prod": ".env.prod",
         "server": ".env.server",
     }
+
+    # In CI/test environment, environment variables are set at the job level,
+    # so we don't need to load from a file. Skip file loading for 'test' env.
+    if env == "test":
+        return
 
     # Get the appropriate env file, default to .env.dev if ENVIRONMENT not recognized
     env_file = env_file_map.get(env, DEV_ENV_FILE)

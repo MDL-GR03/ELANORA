@@ -39,7 +39,6 @@ __pycache__/
 .env
 !**/.env.example
 !**/.env.*.example
-!**/.env.test
 
 
 # Ignore SQL Dumps
