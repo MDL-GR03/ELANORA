@@ -53,7 +53,9 @@ jobs:
       MAIL_PASSWORD: ""
       MAIL_USE_CREDENTIALS: false
       ELANORA_BACKUP_PASSPHRASE: test-backup-passphrase-for-ci-only
-      OUTBOX_ENCRYPTION_KEYS: test-encryption-key-for-ci-only
+      # Valid Fernet key for CI tests - generated with:
+      # python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      OUTBOX_ENCRYPTION_KEYS: 7VnAtB9VF3NiUyVViy4qiGoQro_kcbRuvh9egbYKmB8=
       FRONTEND_HOST: http://localhost:8777
       BACKEND_HOST: http://localhost:8018
     defaults:
