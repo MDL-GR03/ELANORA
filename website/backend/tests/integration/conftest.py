@@ -16,7 +16,7 @@ import app.model  # noqa: F401
 from app.db.database import Base
 
 DEFAULT_TEST_DATABASE_URL = (
-    "postgresql+asyncpg://elanora_test:elanora-test-only@127.0.0.1:5418/elanora_test"
+    "postgresql+asyncpg://elanora_test:elanora-test-only@127.0.0.1:5432/elanora_test"
 )
 
 
