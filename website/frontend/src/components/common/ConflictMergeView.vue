@@ -493,8 +493,6 @@ watch(pageCount, (count) => {
 });
 </script>
 
-
-
 <style scoped>
 .eaf-review {
   display: grid;

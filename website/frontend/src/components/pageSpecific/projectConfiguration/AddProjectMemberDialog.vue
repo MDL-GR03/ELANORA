@@ -216,7 +216,11 @@ onMounted(loadCandidates);
   align-items: center;
   margin: 0;
   padding: 1.4rem 1.5rem 1.15rem;
-  background: linear-gradient(145deg, var(--color-surface), var(--color-blue-50-lightest));
+  background: linear-gradient(
+    145deg,
+    var(--color-surface),
+    var(--color-blue-50-lightest)
+  );
   border-bottom: 1px solid var(--color-gray-blue-30);
 }
 

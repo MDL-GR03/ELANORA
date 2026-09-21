@@ -341,7 +341,11 @@
 }
 
 .btn-accept {
-  background: linear-gradient(135deg, var(--success-color) 0%, var(--color-emerald-600, #059669) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--success-color) 0%,
+    var(--color-emerald-600, #059669) 100%
+  );
   color: white;
   box-shadow: 0 4px 20px rgb(22 163 74 / 30%);
 }
@@ -352,7 +356,11 @@
 }
 
 .btn-reject {
-  background: linear-gradient(135deg, var(--error-color) 0%, var(--color-error-dark, #b91c1c) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--error-color) 0%,
+    var(--color-error-dark, #b91c1c) 100%
+  );
   color: white;
   box-shadow: 0 4px 20px rgb(220 38 38 / 30%);
 }

@@ -132,7 +132,11 @@ const permissionOptions = computed(() =>
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-indigo-500), var(--color-purple-500-alt));
+  background: linear-gradient(
+    135deg,
+    var(--color-indigo-500),
+    var(--color-purple-500-alt)
+  );
   color: var(--color-surface);
   display: flex;
   align-items: center;

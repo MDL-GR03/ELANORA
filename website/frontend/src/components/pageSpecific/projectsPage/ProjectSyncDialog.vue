@@ -466,8 +466,6 @@ watch(
 );
 </script>
 
-
-
 <style scoped>
 .sync-backdrop {
   position: fixed;

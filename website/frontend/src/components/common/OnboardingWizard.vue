@@ -8,12 +8,12 @@
       <p class="wizard-description">
         {{ t('onboarding.description') }}
       </p>
-      
+
       <!-- Progress Bar -->
       <div class="progress-container">
         <div class="progress-bar">
-          <div 
-            class="progress-fill" 
+          <div
+            class="progress-fill"
             :style="{ width: `${completionPercentage}%` }"
             role="progressbar"
             :aria-valuenow="completionPercentage"
@@ -22,57 +22,52 @@
           ></div>
         </div>
         <span class="progress-text">
-          {{ stepsCompleted }}/{{ totalSteps }} {{ t('onboarding.stepsComplete') }}
+          {{ stepsCompleted }}/{{ totalSteps }}
+          {{ t('onboarding.stepsComplete') }}
         </span>
       </div>
     </header>
 
     <!-- Steps List -->
     <div class="steps-container">
-      <div 
-        v-for="step in steps" 
-        :key="step.id" 
-        class="step-item" 
+      <div
+        v-for="step in steps"
+        :key="step.id"
+        class="step-item"
         :class="{
-          'completed': step.completed,
-          'current': step.id === nextStep,
-          'blocked': isStepBlocked(step.id),
+          completed: step.completed,
+          current: step.id === nextStep,
+          blocked: isStepBlocked(step.id),
         }"
         role="listitem"
         :aria-current="step.id === nextStep ? 'step' : undefined"
       >
         <div class="step-icon-container">
           <span class="step-number">{{ step.order }}</span>
-          <span 
-            class="step-icon" 
-            :class="step.completed ? 'completed' : ''"
-          >
-            <font-awesome-icon 
-              v-if="step.completed" 
-              icon="fa-solid fa-circle-check" 
+          <span class="step-icon" :class="step.completed ? 'completed' : ''">
+            <font-awesome-icon
+              v-if="step.completed"
+              icon="fa-solid fa-circle-check"
             />
-            <font-awesome-icon 
-              v-else-if="step.id === nextStep" 
-              icon="fa-solid fa-circle-pause" 
+            <font-awesome-icon
+              v-else-if="step.id === nextStep"
+              icon="fa-solid fa-circle-pause"
             />
-            <font-awesome-icon 
-              v-else 
-              icon="fa-regular fa-circle" 
-            />
+            <font-awesome-icon v-else icon="fa-regular fa-circle" />
           </span>
         </div>
-        
+
         <div class="step-content">
           <h3 class="step-title">{{ step.title }}</h3>
           <p class="step-description">{{ step.description }}</p>
         </div>
 
         <!-- Action Button -->
-        <div class="step-actions" v-if="step.id === nextStep">
-          <button 
-            class="step-button" 
-            @click="handleStepAction(step.id)"
+        <div v-if="step.id === nextStep" class="step-actions">
+          <button
+            class="step-button"
             :disabled="isLoading"
+            @click="handleStepAction(step.id)"
           >
             <font-awesome-icon icon="fa-solid fa-arrow-right" />
             {{ t('onboarding.continue') }}
@@ -83,19 +78,19 @@
 
     <!-- Action Footer -->
     <footer class="wizard-footer">
-      <button 
-        class="skip-button" 
-        @click="handleSkip"
+      <button
+        class="skip-button"
         :disabled="isLoading || isComplete"
+        @click="handleSkip"
       >
         {{ t('onboarding.skip') }}
       </button>
-      
-      <button 
-        v-if="isComplete" 
-        class="complete-button" 
-        @click="handleComplete"
+
+      <button
+        v-if="isComplete"
+        class="complete-button"
         :disabled="isLoading"
+        @click="handleComplete"
       >
         <font-awesome-icon icon="fa-solid fa-check" />
         {{ t('onboarding.complete') }}
@@ -107,12 +102,12 @@
 <script>
 /**
  * OnboardingWizard component for guided first-time setup.
- * 
+ *
  * This component displays the onboarding progress and provides
  * a step-by-step guide through the initial setup process.
  */
 
-import { computed, onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 
@@ -128,7 +123,7 @@ export default {
   setup() {
     const { t } = useI18n();
     const router = useRouter();
-    
+
     const {
       onboardingStatus,
       isLoading,
@@ -146,12 +141,9 @@ export default {
       nextStep,
       steps,
       loadOnboardingStatus,
-      startOnboarding,
       markStepComplete,
       skipOnboarding,
-      updateStepFlags,
       isStepBlocked,
-      getNextStepRoute,
     } = useOnboarding();
 
     // Methods
@@ -159,10 +151,10 @@ export default {
       try {
         // Mark the current step as complete
         await markStepComplete(stepId);
-        
+
         // Reload status to get updated state
         await loadOnboardingStatus();
-        
+
         // If this step is complete, navigate to the appropriate page
         if (stepId === 'project_created') {
           router.push({ name: 'ProjectsPage' });
@@ -266,7 +258,11 @@ export default {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-primary-light)
+  );
   border-radius: var(--radius-full);
   transition: width 0.3s ease;
 }
@@ -293,17 +289,24 @@ export default {
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   transition: all 0.2s ease;
-  role: listitem;
 }
 
 .step-item.completed {
   border-color: var(--color-success);
-  background: color-mix(in srgb, var(--color-success-bg) 50%, var(--color-surface-subtle));
+  background: color-mix(
+    in srgb,
+    var(--color-success-bg) 50%,
+    var(--color-surface-subtle)
+  );
 }
 
 .step-item.current {
   border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary-bg) 50%, var(--color-surface-subtle));
+  background: color-mix(
+    in srgb,
+    var(--color-primary-bg) 50%,
+    var(--color-surface-subtle)
+  );
 }
 
 .step-item.blocked {
@@ -387,7 +390,9 @@ export default {
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
 }
 
 .step-button:hover:not(:disabled) {
@@ -444,7 +449,9 @@ export default {
   font-size: var(--font-size-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
 }
 
 .complete-button:hover:not(:disabled) {

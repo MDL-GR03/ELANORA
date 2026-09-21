@@ -447,10 +447,7 @@ defineExpose({
 </script>
 
 <style scoped>
-
-
-<style scoped>
-:where(.upload-zone) {
+\3c style scoped > :where(.upload-zone) {
   border: 2px dashed var(--color-primary);
   border-radius: var(--radius-lg);
   text-align: center;
@@ -501,7 +498,6 @@ defineExpose({
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
   max-width: 42rem;
   gap: 0.45rem;
 }

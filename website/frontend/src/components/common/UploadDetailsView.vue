@@ -478,8 +478,6 @@ function formatDate(dateString) {
 }
 </script>
 
-
-
 <style scoped>
 @import url('@/assets/css/upload-components.css');
 

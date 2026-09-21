@@ -423,8 +423,6 @@ async function openCorrectionComposer() {
 }
 </script>
 
-
-
 <style scoped>
 .upload-resolution {
   padding: 20px 0;

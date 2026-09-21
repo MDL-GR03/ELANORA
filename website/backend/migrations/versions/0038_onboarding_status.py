@@ -30,7 +30,7 @@ def upgrade() -> None:
             "current_step",
             sa.Enum(
                 "not_started",
-                "project_created", 
+                "project_created",
                 "protocol_configured",
                 "collaborator_invited",
                 "first_upload",
@@ -45,8 +45,19 @@ def upgrade() -> None:
         sa.Column("collaborator_invited", sa.Boolean(), nullable=False, default=False),
         sa.Column("first_upload", sa.Boolean(), nullable=False, default=False),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            onupdate=sa.func.now(),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("instance_id", name="uq_onboarding_status_instance_id"),
         sa.ForeignKeyConstraint(
@@ -56,7 +67,7 @@ def upgrade() -> None:
             ondelete="CASCADE",
         ),
     )
-    
+
     # Create index for faster lookups by instance_id
     op.create_index(
         "ix_onboarding_status_instance_id",

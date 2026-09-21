@@ -81,7 +81,8 @@
 
 .invitation-form .form-input.error {
   border-color: var(--color-error-500);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-red-500) 10%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-red-500) 10%, transparent);
 }
 
 /* Surcharge pour le bouton primaire de cette page */

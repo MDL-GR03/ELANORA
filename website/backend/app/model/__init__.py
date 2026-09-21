@@ -8,7 +8,6 @@ Models are imported based on their dependencies, with base models first.
 from .accepted_value import AcceptedValue
 from .address import Address
 from .annotation import Annotation
-from .onboarding import OnboardingStep, OnboardingStatus
 
 # Base models with no dependencies
 from .annotation_standard import AnnotationStandard
@@ -58,6 +57,7 @@ from .invitation import Invitation
 from .maintenance_run import MaintenanceRun
 from .notification import Notification
 from .notification_preference import NotificationPreference
+from .onboarding import OnboardingStatus, OnboardingStep
 from .pending_upload import PendingUpload
 
 # Project model (depends on instance)
@@ -108,8 +108,6 @@ __all__ = [
     "EffectiveNamingStandard",
     "ElanFile",
     "ElanFileMedia",
-    "OnboardingStep",
-    "OnboardingStatus",
     "ElanFileToMedia",
     "ElanFileToTier",
     "FileContent",
@@ -121,6 +119,8 @@ __all__ = [
     "MaintenanceRun",
     "Notification",
     "NotificationPreference",
+    "OnboardingStatus",
+    "OnboardingStep",
     "OutboxEvent",
     "PendingUpload",
     "Project",

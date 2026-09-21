@@ -167,7 +167,11 @@ defineExpose({ inputValue });
   gap: 14px;
   align-items: center;
   padding: 22px 24px 18px;
-  background: linear-gradient(145deg, var(--color-surface), var(--color-primary-bg));
+  background: linear-gradient(
+    145deg,
+    var(--color-surface),
+    var(--color-primary-bg)
+  );
   border-bottom: 1px solid var(--color-border);
 }
 

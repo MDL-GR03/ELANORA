@@ -33,14 +33,14 @@
      BRAND & THEME
      ======================================== */
   --main-bg-gradient: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-  
+
   /* Primary Brand Colors */
   --color-primary: #2563eb;
   --color-primary-dark: #1d4ed8;
   --color-primary-light: #3b82f6;
   --color-primary-subtle: #e8f0fe;
   --color-primary-bg: #edf4ff;
-  
+
   /* Secondary Brand Colors */
   --color-secondary: #0f766e;
   --color-secondary-light: #14b8a6;
@@ -50,58 +50,58 @@
   --color-accent-light: #ea580c;
   --color-accent-dark: #92400e;
   --color-accent-bg: #ffedd5;
-  
+
   /* ========================================
      SEMANTIC COLORS
      ======================================== */
-  
+
   /* Success */
   --color-success: #166534;
   --color-success-light: #16a34a;
   --color-success-dark: #14532d;
   --color-success-bg: #dcfce7;
   --color-success-bg-subtle: #f0fdf4;
-  
+
   /* Warning */
   --color-warning: #f59e0b;
   --color-warning-light: #fbbf24;
   --color-warning-dark: #7a4b00;
   --color-warning-bg: #fef3c7;
   --color-warning-bg-subtle: #fffbeb;
-  
+
   /* Error */
   --color-error: #b91c1c;
   --color-error-light: #dc2626;
   --color-error-dark: #991b1b;
   --color-error-bg: #fee2e2;
   --color-error-bg-subtle: #fef2f2;
-  
+
   /* Info */
   --color-info: #3b82f6;
   --color-info-light: #60a5fa;
   --color-info-dark: #1e40af;
   --color-info-bg: #dbeafe;
-  
+
   /* ========================================
      GRAY SCALE
      ======================================== */
-  
+
   /* Canvas & Surface */
   --color-canvas: #f4f7fa;
-  --color-surface: #fff;
+  --color-surface: #ffffff;
   --color-surface-subtle: #f8fafc;
-  
+
   /* Borders */
   --color-border: #dfe6ee;
   --color-border-subtle: #e5e7eb;
   --color-border-strong: #cbd5e1;
-  
+
   /* Text */
   --color-text: #172033;
   --color-text-muted: #64748b;
   --color-text-subtle: #94a3b8;
-  --color-text-inverse: #fff;
-  
+  --color-text-inverse: #ffffff;
+
   /* Additional Grays */
   --color-gray-200: #f1f5f9;
   --color-gray-700: #475569;
@@ -117,22 +117,22 @@
   /* Additional Grays */
   --color-gray-750: #757575;
   --color-gray-850: #495057;
-  
+
   /* Additional Reds */
   --color-error-medium: #d32f2f;
   --color-error-darker: #b71c1c;
   --color-error-darkest: #991b1b;
   --color-error-500: #ef4444;
-  
+
   /* Additional Blues */
   --color-primary-bg-lighter: #f0f7ff;
   --color-slate-800: #1e293b;
   --color-slate-500: #4b5563;
   --color-slate-700: #334155;
-  --color-slate-800-alt: #444;
-  --color-slate-900-alt: #333;
-  --color-slate-500-alt: #888;
-  --color-slate-400-alt: #aaa;
+  --color-slate-800-alt: #444444;
+  --color-slate-900-alt: #333333;
+  --color-slate-500-alt: #888888;
+  --color-slate-400-alt: #aaaaaa;
   --color-gray-300: #d1d5db;
   --color-gray-200-alt: #f3f6fa;
   --color-gray-100-alt: #f9fafb;
@@ -194,17 +194,17 @@
   --color-amber-200: #fdba74;
   --color-amber-900: #9a3412;
   --color-f7f9fc: #f7f9fc;
-  
+
   /* Emerald/Teal Scale */
   --color-emerald-500: #10b981;
   --color-emerald-600: #059669;
   --color-emerald-700: #047857;
   --color-emerald-800: #065f46;
-  
+
   /* Error/Red Scale Extensions */
   --color-error-bg-light: #fecaca;
   --color-error-bg-subtler: #fff1f2;
-  
+
   /* Amber Scale Extensions */
   --color-amber-800-alt: #b45309;
   --color-amber-850: #704800;
@@ -226,30 +226,30 @@
   --color-amber-100-bg: #fff2cf;
   --color-amber-50-bg: #fff7ed;
   --color-amber-50-bg-alt: #fff9e9;
-  
+
   /* Success Scale Extensions for Greener colors */
   --color-green-500: #4caf50;
   --color-green-50-bg: #f8fff8;
-  
+
   /* Error Scale Extensions for Redder colors */
   --color-red-500: #f44336;
   --color-red-600: #a33a2d;
   --color-red-700: #a12b21;
   --color-red-50-bg: #fff8f8;
-  
+
   /* Neutral Gray Extensions */
   --color-gray-500: #e0e0e0;
-  --color-gray-400: #ccc;
+  --color-gray-400: #cccccc;
   --color-gray-400-alt: #bdbdbd;
-  --color-gray-300: #ddd;
+  --color-gray-300: #dddddd;
   --color-gray-200: #ede5ef;
   --color-gray-100: #f5f5f5;
   --color-gray-100-alt: #f8f9fa;
-  --color-slate-900-alt: #333;
-  --color-slate-700-alt: #666;
+  --color-slate-900-alt: #333333;
+  --color-slate-700-alt: #666666;
   --color-slate-700: #26354d;
-  --color-slate-500: #888;
-  
+  --color-slate-500: #888888;
+
   /* Blue Scale Extensions */
   --color-blue-50-subtle: #eff6ff;
   --color-blue-50-lighter: #f8fbff;
@@ -267,7 +267,7 @@
   --color-blue-600: #edf1f6;
   --color-blue-700: #1f62ea;
   --color-blue-800: #2196f3;
-  
+
   /* Slate Scale Extensions */
   --color-slate-800: #1e293b;
   --color-slate-700-alt: #334155;
@@ -278,7 +278,7 @@
   --color-slate-200: #e2e8f0;
   --color-slate-100: #f1f5f9;
   --color-slate-50: #f8fafc;
-  
+
   /* Gray-Blue Scale */
   --color-gray-blue-600: #526683;
   --color-gray-blue-550: #b9c7da;
@@ -291,17 +291,17 @@
   --color-gray-blue-50: #dbe3ee;
   --color-gray-blue-40: #d7e1f0;
   --color-gray-blue-30: #e2e8f2;
-  
+
   /* Indigo/Purple Scale */
   --color-indigo-500: #6366f1;
   --color-indigo-600: #4f46e5;
   --color-indigo-700: #4338ca;
   --color-indigo-100-bg: #eef2ff;
-  
+
   /* Gray-Blue Scale Extensions */
   --color-gray-blue-20: #e5eaf2;
   --color-gray-blue-10: #dbe4f0;
-  
+
   /* Additional Blues */
   --color-blue-300: #1f5ed5;
   --color-blue-400: #174fbf;
@@ -310,7 +310,7 @@
   --color-blue-700: #225fc8;
   --color-blue-800: #1f62ea;
   --color-blue-900: #1565c0;
-  
+
   /* Light Blues for backgrounds */
   --color-blue-50-bg: #f3f7fd;
   --color-blue-100-bg: #dbe5f3;
@@ -319,7 +319,7 @@
   --color-blue-300-bg: #b9d1ff;
   --color-blue-400-bg: #e8f0ff;
   --color-blue-500-bg: #9bb9ed;
-  
+
   /* Green Scale for backgrounds */
   --color-green-100-bg: #a7d7b6;
   --color-green-150-bg: #f6fcf8;
@@ -330,7 +330,7 @@
   --color-green-500: #34445e;
   --color-green-600: #126937;
   --color-green-700: #294f92;
-  
+
   /* Success Scale Extensions */
   --color-success-900: #176b3a;
   --color-success-800: #245b3c;
@@ -342,7 +342,7 @@
   --color-success-300-bg: #effaf3;
   --color-success-400-bg: #effaf8;
   --color-success-200: #bbf7d0;
-  
+
   /* Info Scale Extensions */
   --color-info-800: #24547f;
 
@@ -397,11 +397,11 @@
   /* ========================================
      SPACING & SIZING
      ======================================== */
-  
+
   /* Content Width */
   --content-width: 80rem;
   --content-width-narrow: 64rem;
-  
+
   /* ========================================
      BORDER RADIUS
      ======================================== */
@@ -410,7 +410,7 @@
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
   --radius-full: 999px;
-  
+
   /* ========================================
      SHADOWS
      ======================================== */
@@ -418,16 +418,18 @@
   --shadow-md: 0 10px 30px var(--black-7);
   --shadow-lg: 0 25px 50px var(--black-20);
   --shadow-xl: 0 24px 70px var(--black-18);
-  
+
   /* Button Shadows */
-  --btn-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 8%, transparent);
-  --btn-shadow-hover: 0 4px 16px color-mix(in srgb, var(--color-primary) 12%, transparent);
-  
+  --btn-shadow: 0 2px 8px
+    color-mix(in srgb, var(--color-primary) 8%, transparent);
+  --btn-shadow-hover: 0 4px 16px
+    color-mix(in srgb, var(--color-primary) 12%, transparent);
+
   /* Card Shadows */
   --card-shadow: var(--shadow-sm);
   --card-shadow-hover: 0 4px 16px color-mix(in srgb, black 8%, transparent);
   --modal-shadow: var(--shadow-xl);
-  
+
   /* Primary Color Opacity Variants */
   --primary-8: color-mix(in srgb, var(--color-primary) 8%, transparent);
   --primary-10: color-mix(in srgb, var(--color-primary) 10%, transparent);
@@ -440,7 +442,7 @@
   --primary-24: color-mix(in srgb, var(--color-primary) 24%, transparent);
   --primary-28: color-mix(in srgb, var(--color-primary) 28%, transparent);
   --primary-40: color-mix(in srgb, var(--color-primary) 40%, transparent);
-  
+
   /* Black/Neutral Opacity Variants */
   --black-5: color-mix(in srgb, black 5%, transparent);
   --black-7: color-mix(in srgb, black 7%, transparent);
@@ -449,11 +451,11 @@
   --black-12: color-mix(in srgb, black 12%, transparent);
   --black-18: color-mix(in srgb, black 18%, transparent);
   --black-20: color-mix(in srgb, black 20%, transparent);
-  
+
   /* Profile Card Shadows */
   --profile-card-shadow: 0 4px 16px rgb(0 0 0 / 8%);
   --profile-card-shadow-hover: 0 8px 25px rgb(0 0 0 / 12%);
-  
+
   /* ========================================
      TYPOGRAPHY
      ======================================== */
@@ -466,14 +468,14 @@
   --font-size-2xl: 1.5rem;
   --font-size-3xl: 1.875rem;
   --font-size-4xl: 2.25rem;
-  
+
   /* ========================================
      TRANSITIONS
      ======================================== */
   --transition-fast: 80ms ease;
   --transition-base: 140ms ease;
   --transition-slow: 200ms ease;
-  
+
   /* ========================================
      Z-INDEX SCALE
      ======================================== */
@@ -483,12 +485,12 @@
   --z-modal-backdrop: 40;
   --z-modal: 50;
   --z-toast: 60;
-  
+
   /* ========================================
      BACKWARD COMPATIBILITY ALIASES
      (for existing CSS files that use old variable names)
      ======================================== */
-  
+
   /* From style.css */
   --main-bg-gradient: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
   --primary-color: #2563eb;
@@ -496,15 +498,13 @@
   --secondary-color: #0f766e;
   --accent-color: #d97706;
   --secondary-bg: #f9fafb;
-  --card-bg: #fff;
+  --card-bg: #ffffff;
   --text-main: #374151;
   --text-secondary: #4b5563;
   --border-radius: 1.5rem;
   --shadow-main: 0 25px 50px rgb(0 0 0 / 20%);
   --input-border: var(--main-bg-gradient);
   --input-radius: 0.75rem;
-  --profile-card-shadow: 0 4px 16px rgb(0 0 0 / 8%);
-  --profile-card-shadow-hover: 0 8px 25px rgb(0 0 0 / 12%);
   --profile-field-bg: #f9fafb;
   --profile-field-border: #e5e7eb;
   --success-color: #16a34a;
@@ -515,7 +515,7 @@
   --warning-bg: #fef3c7;
   --info-color: #3b82f6;
   --info-bg: #dbeafe;
-  
+
   /* Base text styles */
   color: var(--color-text);
   font-family: var(--font-family);

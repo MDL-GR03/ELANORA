@@ -14,7 +14,10 @@ function rejectedFileSummary(file, translate) {
     });
   }
   const remaining = Math.max(0, (file.issue_count || 0) - 1);
-  const translatedMessage = translate(`apiErrors.${firstIssue.code}`, firstIssue);
+  const translatedMessage = translate(
+    `apiErrors.${firstIssue.code}`,
+    firstIssue
+  );
   const message = translatedMessage || firstIssue.message;
   const summary = `${file.filename}: ${message} (${firstIssue.location})`;
   return remaining > 0

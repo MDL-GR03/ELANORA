@@ -1,6 +1,6 @@
 /**
  * Composable for managing installation settings.
- * 
+ *
  * This composable provides methods for:
  * - Loading instance configuration
  * - Updating branding settings
@@ -42,14 +42,15 @@ export function useInstallationSettings() {
   });
 
   const isBrandingChanged = computed(() => {
-    return Object.keys(changes.value).some(key => 
+    return Object.keys(changes.value).some((key) =>
       ['primary_color', 'secondary_color', 'accent_color'].includes(key)
     );
   });
 
   const isGeneralSettingsChanged = computed(() => {
-    return Object.keys(changes.value).some(key => 
-      !['primary_color', 'secondary_color', 'accent_color'].includes(key)
+    return Object.keys(changes.value).some(
+      (key) =>
+        !['primary_color', 'secondary_color', 'accent_color'].includes(key)
     );
   });
 
@@ -60,7 +61,7 @@ export function useInstallationSettings() {
   const loadInstanceSettings = async () => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await api.get('/api/v1/instance');
       instanceSettings.value = response.data;
@@ -88,9 +89,12 @@ export function useInstallationSettings() {
   const updateBranding = async (brandingData) => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
-      const response = await api.patch('/api/v1/instance/branding', brandingData);
+      const response = await api.patch(
+        '/api/v1/instance/branding',
+        brandingData
+      );
       brandingSettings.value = {
         ...brandingSettings.value,
         ...brandingData,
@@ -112,9 +116,12 @@ export function useInstallationSettings() {
   const updateGeneralSettings = async (settingsData) => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
-      const response = await api.patch('/api/v1/instance/settings', settingsData);
+      const response = await api.patch(
+        '/api/v1/instance/settings',
+        settingsData
+      );
       instanceSettings.value = {
         ...instanceSettings.value,
         ...settingsData,
@@ -175,9 +182,9 @@ export function useInstallationSettings() {
       changes.value.primary_color,
       changes.value.secondary_color,
       changes.value.accent_color,
-    ].filter(c => c !== undefined);
-    
-    return colors.every(color => isValidHexColor(color));
+    ].filter((c) => c !== undefined);
+
+    return colors.every((color) => isValidHexColor(color));
   };
 
   return {
@@ -187,12 +194,12 @@ export function useInstallationSettings() {
     isLoading,
     error,
     changes,
-    
+
     // Computed
     hasChanges,
     isBrandingChanged,
     isGeneralSettingsChanged,
-    
+
     // Methods
     loadInstanceSettings,
     updateBranding,

@@ -1,5 +1,8 @@
 <template>
-  <section class="settings-panel" aria-labelledby="installation-settings-heading">
+  <section
+    class="settings-panel"
+    aria-labelledby="installation-settings-heading"
+  >
     <div class="panel-header">
       <h2 id="installation-settings-heading">
         <font-awesome-icon icon="fa-solid fa-gear" />
@@ -11,11 +14,15 @@
     <form @submit.prevent="handleSubmit" class="settings-form">
       <!-- Branding Section -->
       <fieldset class="form-section">
-        <legend class="section-title">{{ t('installation.branding.title') }}</legend>
-        
+        <legend class="section-title">
+          {{ t('installation.branding.title') }}
+        </legend>
+
         <div class="form-grid">
           <div class="form-group">
-            <label for="instance-name">{{ t('installation.branding.instanceName') }}</label>
+            <label for="instance-name">{{
+              t('installation.branding.instanceName')
+            }}</label>
             <input
               id="instance-name"
               v-model="formData.instance_name"
@@ -31,19 +38,27 @@
           </div>
 
           <div class="form-group">
-            <label for="institution-name">{{ t('installation.branding.institutionName') }}</label>
+            <label for="institution-name">{{
+              t('installation.branding.institutionName')
+            }}</label>
             <input
               id="institution-name"
               v-model="formData.institution_name"
               type="text"
-              :placeholder="t('installation.branding.institutionNamePlaceholder')"
-              @change="trackChange('institution_name', formData.institution_name)"
+              :placeholder="
+                t('installation.branding.institutionNamePlaceholder')
+              "
+              @change="
+                trackChange('institution_name', formData.institution_name)
+              "
               :disabled="isLoading"
             />
           </div>
 
           <div class="form-group full-width">
-            <label for="contact-email">{{ t('installation.branding.contactEmail') }}</label>
+            <label for="contact-email">{{
+              t('installation.branding.contactEmail')
+            }}</label>
             <input
               id="contact-email"
               v-model="formData.contact_email"
@@ -60,7 +75,9 @@
           <h3>{{ t('installation.branding.colorTheme') }}</h3>
           <div class="color-pickers">
             <div class="color-picker">
-              <label for="primary-color">{{ t('installation.branding.primaryColor') }}</label>
+              <label for="primary-color">{{
+                t('installation.branding.primaryColor')
+              }}</label>
               <div class="color-input">
                 <input
                   id="primary-color"
@@ -74,13 +91,17 @@
             </div>
 
             <div class="color-picker">
-              <label for="secondary-color">{{ t('installation.branding.secondaryColor') }}</label>
+              <label for="secondary-color">{{
+                t('installation.branding.secondaryColor')
+              }}</label>
               <div class="color-input">
                 <input
                   id="secondary-color"
                   v-model="formData.secondary_color"
                   type="color"
-                  @change="trackChange('secondary_color', formData.secondary_color)"
+                  @change="
+                    trackChange('secondary_color', formData.secondary_color)
+                  "
                   :disabled="isLoading"
                 />
                 <span class="color-value">{{ formData.secondary_color }}</span>
@@ -88,7 +109,9 @@
             </div>
 
             <div class="color-picker">
-              <label for="accent-color">{{ t('installation.branding.accentColor') }}</label>
+              <label for="accent-color">{{
+                t('installation.branding.accentColor')
+              }}</label>
               <div class="color-input">
                 <input
                   id="accent-color"
@@ -115,15 +138,21 @@
 
       <!-- General Settings Section -->
       <fieldset class="form-section">
-        <legend class="section-title">{{ t('installation.general.title') }}</legend>
-        
+        <legend class="section-title">
+          {{ t('installation.general.title') }}
+        </legend>
+
         <div class="form-grid">
           <div class="form-group">
-            <label for="default-language">{{ t('installation.general.defaultLanguage') }}</label>
+            <label for="default-language">{{
+              t('installation.general.defaultLanguage')
+            }}</label>
             <select
               id="default-language"
               v-model="formData.default_language"
-              @change="trackChange('default_language', formData.default_language)"
+              @change="
+                trackChange('default_language', formData.default_language)
+              "
               :disabled="isLoading"
             >
               <option value="en">English</option>
@@ -133,7 +162,9 @@
           </div>
 
           <div class="form-group">
-            <label for="timezone">{{ t('installation.general.timezone') }}</label>
+            <label for="timezone">{{
+              t('installation.general.timezone')
+            }}</label>
             <select
               id="timezone"
               v-model="formData.timezone"
@@ -160,7 +191,7 @@
         >
           {{ t('common.cancel') }}
         </button>
-        
+
         <button
           type="submit"
           class="btn btn-primary"
@@ -258,19 +289,20 @@ const hasErrors = computed(() => {
 const loadData = async () => {
   try {
     const settings = await loadInstanceSettings();
-    
+
     if (settings) {
       formData.value = {
         instance_name: settings.instance_name || '',
         institution_name: settings.institution_name || '',
         contact_email: settings.contact_email || '',
         primary_color: settings.primary_color || DEFAULT_BRANDING.primary_color,
-        secondary_color: settings.secondary_color || DEFAULT_BRANDING.secondary_color,
+        secondary_color:
+          settings.secondary_color || DEFAULT_BRANDING.secondary_color,
         accent_color: settings.accent_color || DEFAULT_BRANDING.accent_color,
         default_language: settings.default_language || 'en',
         timezone: settings.timezone || 'UTC',
       };
-      
+
       // Initialize changes tracking
       clearChanges();
     }
@@ -307,12 +339,12 @@ const handleSubmit = async () => {
 
     // Update branding
     await updateBranding(brandingData);
-    
+
     // Update general settings
     await updateGeneralSettings(generalData);
 
     successMessage.value = t('installation.saveSuccess');
-    
+
     // Clear changes after successful save
     clearChanges();
 
@@ -338,7 +370,7 @@ const resetColors = () => {
   formData.value.primary_color = DEFAULT_BRANDING.primary_color;
   formData.value.secondary_color = DEFAULT_BRANDING.secondary_color;
   formData.value.accent_color = DEFAULT_BRANDING.accent_color;
-  
+
   trackChange('primary_color', formData.value.primary_color);
   trackChange('secondary_color', formData.value.secondary_color);
   trackChange('accent_color', formData.value.accent_color);
@@ -355,12 +387,26 @@ watch(
     formData.value.accent_color,
   ],
   () => {
-    errors.value.instance_name = formData.value.instance_name ? '' : t('installation.branding.instanceNameRequired');
-    errors.value.institution_name = formData.value.institution_name ? '' : t('installation.branding.institutionNameRequired');
-    errors.value.contact_email = formData.value.contact_email ? '' : t('installation.branding.contactEmailRequired');
-    errors.value.primary_color = isValidHexColor(formData.value.primary_color) ? '' : t('installation.branding.invalidColor');
-    errors.value.secondary_color = isValidHexColor(formData.value.secondary_color) ? '' : t('installation.branding.invalidColor');
-    errors.value.accent_color = isValidHexColor(formData.value.accent_color) ? '' : t('installation.branding.invalidColor');
+    errors.value.instance_name = formData.value.instance_name
+      ? ''
+      : t('installation.branding.instanceNameRequired');
+    errors.value.institution_name = formData.value.institution_name
+      ? ''
+      : t('installation.branding.institutionNameRequired');
+    errors.value.contact_email = formData.value.contact_email
+      ? ''
+      : t('installation.branding.contactEmailRequired');
+    errors.value.primary_color = isValidHexColor(formData.value.primary_color)
+      ? ''
+      : t('installation.branding.invalidColor');
+    errors.value.secondary_color = isValidHexColor(
+      formData.value.secondary_color
+    )
+      ? ''
+      : t('installation.branding.invalidColor');
+    errors.value.accent_color = isValidHexColor(formData.value.accent_color)
+      ? ''
+      : t('installation.branding.invalidColor');
   },
   { deep: true, immediate: true }
 );
@@ -457,7 +503,8 @@ onMounted(() => {
   background: var(--color-surface, #fff);
   color: var(--color-text, #172033);
   font-size: var(--text-base, 1rem);
-  transition: border-color var(--transition-fast, 0.15s) ease,
+  transition:
+    border-color var(--transition-fast, 0.15s) ease,
     box-shadow var(--transition-fast, 0.15s) ease;
 }
 
@@ -521,7 +568,7 @@ onMounted(() => {
   gap: var(--spacing-md, 1rem);
 }
 
-.color-input input[type="color"] {
+.color-input input[type='color'] {
   width: var(--size-10, 2.5rem);
   height: var(--size-10, 2.5rem);
   border: 2px solid var(--color-border, #dfe6ee);
@@ -532,7 +579,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.color-input input[type="color"]:focus {
+.color-input input[type='color']:focus {
   outline: none;
   border-color: var(--color-primary, #2563eb);
   box-shadow: 0 0 0 3px var(--color-primary-bg, #edf4ff);

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
+from fastapi import APIRouter, File, Request, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,10 @@ from app.dependency.database import get_db_dep
 from app.dependency.user import get_admin_dep
 from app.model.instance import Instance
 from app.model.user import User
-from app.schema.requests.setup import InstanceBrandingUpdateRequest, InstanceSettingsUpdateRequest
+from app.schema.requests.setup import (
+    InstanceBrandingUpdateRequest,
+    InstanceSettingsUpdateRequest,
+)
 from app.schema.responses.instance import InstanceResponse
 from app.service import instance as instance_service
 from app.service.instance_assets import MAX_UPLOAD_BYTES, read_logo, replace_logo
@@ -24,7 +27,7 @@ async def get_instance(
     current_user: User = get_admin_dep,
 ) -> InstanceResponse | None:
     """Return the instance configuration for administrators.
-    
+
     Returns the full instance configuration including all settings.
     Only available to administrators.
     """
@@ -75,7 +78,7 @@ async def update_instance_settings(
     administrator: User = get_admin_dep,
 ) -> InstanceResponse:
     """Update general system settings as the installation administrator.
-    
+
     Allows modification of database-level configuration such as:
     - Domain name
     - Timezone
@@ -83,30 +86,30 @@ async def update_instance_settings(
     - Maximum file size
     - Maximum number of users
     - Installation active status
-    
+
     Rate limited to prevent abuse.
     """
     instance = await db.get(Instance, administrator.instance_id)
     if instance is None:
         raise ElanoraError(ErrorCode.INSTITUTION_NOT_FOUND)
-    
+
     # Build update data
     update_data = body.model_dump(exclude_none=True)
-    
+
     # Convert Decimal to float for max_file_size_mb if present
     if "max_file_size_mb" in update_data:
         update_data["max_file_size_mb"] = float(update_data["max_file_size_mb"])
-    
+
     # Update the instance
     updated_instance = await instance_service.update_instance(
         db,
         administrator.instance_id,
         update_data,
     )
-    
+
     if updated_instance is None:
         raise ElanoraError(ErrorCode.INSTITUTION_NOT_FOUND)
-    
+
     return InstanceResponse.model_validate(updated_instance, from_attributes=True)
 
 

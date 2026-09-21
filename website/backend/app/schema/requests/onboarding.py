@@ -4,14 +4,12 @@ These schemas define the request bodies for the onboarding API endpoints,
 validating the data required for tracking and updating onboarding progress.
 """
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
-from app.model.onboarding import OnboardingStep
 
-
-class OnboardingStepRequest(str, Enum):
+class OnboardingStepRequest(StrEnum):
     """Enum for onboarding step identifiers in API requests."""
 
     NOT_STARTED = "not_started"

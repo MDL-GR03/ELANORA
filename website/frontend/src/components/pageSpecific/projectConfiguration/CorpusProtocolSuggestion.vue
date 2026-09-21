@@ -374,7 +374,11 @@ const apply = () => {
   padding: 1.15rem;
   border: 1px solid var(--color-blue-300);
   border-radius: 0.9rem;
-  background: linear-gradient(145deg, var(--color-blue-50), var(--color-surface));
+  background: linear-gradient(
+    145deg,
+    var(--color-blue-50),
+    var(--color-surface)
+  );
   box-shadow: 0 0.5rem 1.5rem rgb(37 99 235 / 7%);
 }
 

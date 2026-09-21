@@ -1,6 +1,6 @@
 /**
  * Composable for managing database configuration settings.
- * 
+ *
  * This composable provides methods for:
  * - Loading database configuration
  * - Updating configuration with safeguards
@@ -16,16 +16,13 @@ import { useApi } from '@api';
 /**
  * Settings that require application restart to take effect.
  */
-export const RESTART_REQUIRED_SETTINGS = [
-  'max_file_size_mb',
-  'max_users',
-];
+export const RESTART_REQUIRED_SETTINGS = ['max_file_size_mb', 'max_users'];
 
 /**
  * Default database configuration values.
  */
 export const DEFAULT_DATABASE_CONFIG = {
-  max_file_size_mb: 100.00,
+  max_file_size_mb: 100.0,
   max_users: 1000,
   timezone: 'UTC',
   default_language: 'en',
@@ -51,14 +48,14 @@ export function useDatabaseConfiguration() {
   });
 
   const changesRequiringRestart = computed(() => {
-    return Object.keys(changes.value).filter(key => 
+    return Object.keys(changes.value).filter((key) =>
       RESTART_REQUIRED_SETTINGS.includes(key)
     );
   });
 
   const warnings = computed(() => {
     const warnings = [];
-    
+
     if (changesRequiringRestart.value.length > 0) {
       warnings.push({
         type: 'warning',
@@ -68,7 +65,7 @@ export function useDatabaseConfiguration() {
         }),
       });
     }
-    
+
     return warnings;
   });
 
@@ -79,7 +76,7 @@ export function useDatabaseConfiguration() {
   const loadDatabaseConfiguration = async () => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await api.get('/api/v1/instance');
       databaseConfig.value = {
@@ -105,21 +102,21 @@ export function useDatabaseConfiguration() {
   const updateDatabaseConfiguration = async (configData) => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       // Check which changes require restart
-      const restartSettings = Object.keys(configData).filter(key => 
+      const restartSettings = Object.keys(configData).filter((key) =>
         RESTART_REQUIRED_SETTINGS.includes(key)
       );
       restartRequired.value = restartSettings.length > 0;
-      
+
       const response = await api.patch('/api/v1/instance/settings', configData);
       databaseConfig.value = {
         ...databaseConfig.value,
         ...configData,
       };
       changes.value = {};
-      
+
       return {
         data: response.data,
         restartRequired: restartRequired.value,
@@ -138,7 +135,7 @@ export function useDatabaseConfiguration() {
    */
   const trackChange = (key, value) => {
     changes.value[key] = value;
-    
+
     // Check if this change requires restart
     if (RESTART_REQUIRED_SETTINGS.includes(key)) {
       restartRequired.value = true;
@@ -191,7 +188,7 @@ export function useDatabaseConfiguration() {
    */
   const validateAllChanges = () => {
     const errors = [];
-    
+
     for (const [key, value] of Object.entries(changes.value)) {
       if (!validateConfigValue(key, value)) {
         errors.push({
@@ -200,7 +197,7 @@ export function useDatabaseConfiguration() {
         });
       }
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors,
@@ -221,12 +218,12 @@ export function useDatabaseConfiguration() {
     error,
     changes,
     restartRequired,
-    
+
     // Computed
     hasChanges,
     changesRequiringRestart,
     warnings,
-    
+
     // Methods
     loadDatabaseConfiguration,
     updateDatabaseConfiguration,

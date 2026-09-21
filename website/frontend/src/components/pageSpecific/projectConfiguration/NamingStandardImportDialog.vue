@@ -322,7 +322,11 @@ function toggleSelectedStandard(standardId, event) {
   min-height: 82px;
   padding: 18px 72px 18px 28px;
   gap: 14px;
-  background: linear-gradient(145deg, var(--color-surface), var(--color-blue-50-alt));
+  background: linear-gradient(
+    145deg,
+    var(--color-surface),
+    var(--color-blue-50-alt)
+  );
   border-bottom: 1px solid var(--color-blue-100);
 }
 

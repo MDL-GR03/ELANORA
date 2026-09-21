@@ -14,7 +14,7 @@
   overflow: hidden;
   border: 1px solid var(--color-gray-blue-30, #dbe2ea);
   border-radius: 1.25rem;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface, #ffffff);
   box-shadow: 0 1.5rem 4rem rgb(15 23 42 / 12%);
 }
 
@@ -162,7 +162,7 @@
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--color-slate-300, #cbd5e1);
   border-radius: 0.6rem;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface, #ffffff);
   color: var(--color-text, #172033);
   font: inherit;
 }
@@ -185,14 +185,14 @@
   padding: 0.2rem;
   border: 1px solid var(--color-slate-300, #cbd5e1);
   border-radius: 0.6rem;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface, #ffffff);
 }
 
 .setup-form-panel button {
   min-height: 3rem;
   border: 0;
   border-radius: 0.65rem;
-  color: var(--color-text-inverse, #fff);
+  color: var(--color-text-inverse, #ffffff);
   background: var(--primary-color);
   font: inherit;
   font-weight: 750;

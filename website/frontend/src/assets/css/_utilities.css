@@ -70,34 +70,85 @@
    SPACING UTILITIES
    ======================================== */
 
-:where(.p-sm) { padding: 0.5rem; }
-:where(.p-md) { padding: 0.75rem; }
-:where(.p-lg) { padding: 1rem; }
-:where(.p-xl) { padding: 1.5rem; }
+:where(.p-sm) {
+  padding: 0.5rem;
+}
 
-:where(.px-sm) { padding-inline: 0.5rem; }
-:where(.px-md) { padding-inline: 0.75rem; }
-:where(.px-lg) { padding-inline: 1rem; }
+:where(.p-md) {
+  padding: 0.75rem;
+}
 
-:where(.py-sm) { padding-block: 0.5rem; }
-:where(.py-md) { padding-block: 0.75rem; }
-:where(.py-lg) { padding-block: 1rem; }
+:where(.p-lg) {
+  padding: 1rem;
+}
 
-:where(.mt-sm) { margin-top: 0.5rem; }
-:where(.mt-md) { margin-top: 0.75rem; }
-:where(.mt-lg) { margin-top: 1rem; }
+:where(.p-xl) {
+  padding: 1.5rem;
+}
 
-:where(.mb-sm) { margin-bottom: 0.5rem; }
-:where(.mb-md) { margin-bottom: 0.75rem; }
-:where(.mb-lg) { margin-bottom: 1rem; }
+:where(.px-sm) {
+  padding-inline: 0.5rem;
+}
+
+:where(.px-md) {
+  padding-inline: 0.75rem;
+}
+
+:where(.px-lg) {
+  padding-inline: 1rem;
+}
+
+:where(.py-sm) {
+  padding-block: 0.5rem;
+}
+
+:where(.py-md) {
+  padding-block: 0.75rem;
+}
+
+:where(.py-lg) {
+  padding-block: 1rem;
+}
+
+:where(.mt-sm) {
+  margin-top: 0.5rem;
+}
+
+:where(.mt-md) {
+  margin-top: 0.75rem;
+}
+
+:where(.mt-lg) {
+  margin-top: 1rem;
+}
+
+:where(.mb-sm) {
+  margin-bottom: 0.5rem;
+}
+
+:where(.mb-md) {
+  margin-bottom: 0.75rem;
+}
+
+:where(.mb-lg) {
+  margin-bottom: 1rem;
+}
 
 /* ========================================
    SIZING UTILITIES
    ======================================== */
 
-:where(.w-full) { width: 100%; }
-:where(.h-full) { height: 100%; }
-:where(.w-fit) { width: fit-content; }
+:where(.w-full) {
+  width: 100%;
+}
+
+:where(.h-full) {
+  height: 100%;
+}
+
+:where(.w-fit) {
+  width: fit-content;
+}
 
 /* ========================================
    BORDER UTILITIES
@@ -139,63 +190,165 @@
    COLOR UTILITIES - TEXT
    ======================================== */
 
-:where(.text-primary) { color: var(--color-primary); }
-:where(.text-primary-dark) { color: var(--color-primary-dark); }
-:where(.text-primary-light) { color: var(--color-primary-light); }
+:where(.text-primary) {
+  color: var(--color-primary);
+}
 
-:where(.text-success) { color: var(--color-success); }
-:where(.text-error) { color: var(--color-error); }
-:where(.text-warning) { color: var(--color-warning); }
-:where(.text-muted) { color: var(--color-text-muted); }
-:where(.text-subtle) { color: var(--color-text-subtle); }
-:where(.text-inverse) { color: var(--color-text-inverse); }
+:where(.text-primary-dark) {
+  color: var(--color-primary-dark);
+}
+
+:where(.text-primary-light) {
+  color: var(--color-primary-light);
+}
+
+:where(.text-success) {
+  color: var(--color-success);
+}
+
+:where(.text-error) {
+  color: var(--color-error);
+}
+
+:where(.text-warning) {
+  color: var(--color-warning);
+}
+
+:where(.text-muted) {
+  color: var(--color-text-muted);
+}
+
+:where(.text-subtle) {
+  color: var(--color-text-subtle);
+}
+
+:where(.text-inverse) {
+  color: var(--color-text-inverse);
+}
 
 /* ========================================
    COLOR UTILITIES - BACKGROUND
    ======================================== */
 
-:where(.bg-surface) { background-color: var(--color-surface); }
-:where(.bg-surface-subtle) { background-color: var(--color-surface-subtle); }
-:where(.bg-canvas) { background-color: var(--color-canvas); }
+:where(.bg-surface) {
+  background-color: var(--color-surface);
+}
 
-:where(.bg-primary) { background-color: var(--color-primary); }
-:where(.bg-primary-dark) { background-color: var(--color-primary-dark); }
-:where(.bg-primary-subtle) { background-color: var(--color-primary-subtle); }
-:where(.bg-primary-bg) { background-color: var(--color-primary-bg); }
+:where(.bg-surface-subtle) {
+  background-color: var(--color-surface-subtle);
+}
 
-:where(.bg-success) { background-color: var(--color-success); }
-:where(.bg-success-bg) { background-color: var(--color-success-bg); }
-:where(.bg-error) { background-color: var(--color-error); }
-:where(.bg-error-bg) { background-color: var(--color-error-bg); }
-:where(.bg-warning) { background-color: var(--color-warning); }
-:where(.bg-info) { background-color: var(--color-info); }
+:where(.bg-canvas) {
+  background-color: var(--color-canvas);
+}
+
+:where(.bg-primary) {
+  background-color: var(--color-primary);
+}
+
+:where(.bg-primary-dark) {
+  background-color: var(--color-primary-dark);
+}
+
+:where(.bg-primary-subtle) {
+  background-color: var(--color-primary-subtle);
+}
+
+:where(.bg-primary-bg) {
+  background-color: var(--color-primary-bg);
+}
+
+:where(.bg-success) {
+  background-color: var(--color-success);
+}
+
+:where(.bg-success-bg) {
+  background-color: var(--color-success-bg);
+}
+
+:where(.bg-error) {
+  background-color: var(--color-error);
+}
+
+:where(.bg-error-bg) {
+  background-color: var(--color-error-bg);
+}
+
+:where(.bg-warning) {
+  background-color: var(--color-warning);
+}
+
+:where(.bg-info) {
+  background-color: var(--color-info);
+}
 
 /* ========================================
    SHADOW UTILITIES
    ======================================== */
 
-:where(.shadow-sm) { box-shadow: var(--shadow-sm); }
-:where(.shadow-md) { box-shadow: var(--shadow-md); }
-:where(.shadow-lg) { box-shadow: var(--shadow-lg); }
-:where(.shadow-xl) { box-shadow: var(--shadow-xl); }
+:where(.shadow-sm) {
+  box-shadow: var(--shadow-sm);
+}
 
-:where(.shadow-btn) { box-shadow: var(--btn-shadow); }
-:where(.shadow-btn-hover) { box-shadow: var(--btn-shadow-hover); }
+:where(.shadow-md) {
+  box-shadow: var(--shadow-md);
+}
+
+:where(.shadow-lg) {
+  box-shadow: var(--shadow-lg);
+}
+
+:where(.shadow-xl) {
+  box-shadow: var(--shadow-xl);
+}
+
+:where(.shadow-btn) {
+  box-shadow: var(--btn-shadow);
+}
+
+:where(.shadow-btn-hover) {
+  box-shadow: var(--btn-shadow-hover);
+}
 
 /* ========================================
    TYPOGRAPHY UTILITIES
    ======================================== */
 
-:where(.font-bold) { font-weight: 700; }
-:where(.font-semibold) { font-weight: 600; }
-:where(.font-medium) { font-weight: 500; }
-:where(.font-normal) { font-weight: 400; }
+:where(.font-bold) {
+  font-weight: 700;
+}
 
-:where(.text-xs) { font-size: var(--font-size-xs); }
-:where(.text-sm) { font-size: var(--font-size-sm); }
-:where(.text-base) { font-size: var(--font-size-base); }
-:where(.text-lg) { font-size: var(--font-size-lg); }
-:where(.text-xl) { font-size: var(--font-size-xl); }
+:where(.font-semibold) {
+  font-weight: 600;
+}
+
+:where(.font-medium) {
+  font-weight: 500;
+}
+
+:where(.font-normal) {
+  font-weight: 400;
+}
+
+:where(.text-xs) {
+  font-size: var(--font-size-xs);
+}
+
+:where(.text-sm) {
+  font-size: var(--font-size-sm);
+}
+
+:where(.text-base) {
+  font-size: var(--font-size-base);
+}
+
+:where(.text-lg) {
+  font-size: var(--font-size-lg);
+}
+
+:where(.text-xl) {
+  font-size: var(--font-size-xl);
+}
 
 :where(.truncate) {
   overflow: hidden;
@@ -211,17 +364,39 @@
    INTERACTION UTILITIES
    ======================================== */
 
-:where(.cursor-pointer) { cursor: pointer; }
-:where(.cursor-default) { cursor: default; }
-:where(.cursor-wait) { cursor: wait; }
-:where(.cursor-not-allowed) { cursor: not-allowed; }
+:where(.cursor-pointer) {
+  cursor: pointer;
+}
 
-:where(.transition-fast) { transition: all var(--transition-fast); }
-:where(.transition-base) { transition: all var(--transition-base); }
-:where(.transition-slow) { transition: all var(--transition-slow); }
+:where(.cursor-default) {
+  cursor: default;
+}
+
+:where(.cursor-wait) {
+  cursor: wait;
+}
+
+:where(.cursor-not-allowed) {
+  cursor: not-allowed;
+}
+
+:where(.transition-fast) {
+  transition: all var(--transition-fast);
+}
+
+:where(.transition-base) {
+  transition: all var(--transition-base);
+}
+
+:where(.transition-slow) {
+  transition: all var(--transition-slow);
+}
 
 :where(.transition-colors) {
-  transition: color var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
+  transition:
+    color var(--transition-base),
+    background-color var(--transition-base),
+    border-color var(--transition-base);
 }
 
 /* ========================================
@@ -236,13 +411,16 @@
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
-  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
 :where(.form-input:focus) {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 
 :where(.form-input:disabled) {
@@ -455,11 +633,11 @@
   :where(.mobile-hidden) {
     display: none;
   }
-  
+
   :where(.mobile-block) {
     display: block;
   }
-  
+
   :where(.mobile-flex) {
     display: flex;
   }

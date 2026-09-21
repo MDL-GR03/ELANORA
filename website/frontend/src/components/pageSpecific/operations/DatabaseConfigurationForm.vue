@@ -8,16 +8,18 @@
       <p class="panel-description">{{ t('database.description') }}</p>
     </div>
 
-    <form @submit.prevent="handleSubmit" class="settings-form">
+    <form class="settings-form" @submit.prevent="handleSubmit">
       <!-- Storage & Limits Section -->
       <fieldset class="form-section">
         <legend class="section-title">{{ t('database.storage.title') }}</legend>
-        
+
         <div class="form-grid">
           <div class="form-group">
             <label for="max-file-size">
               {{ t('database.storage.maxFileSize') }}
-              <span class="hint">{{ t('database.storage.maxFileSizeHint') }}</span>
+              <span class="hint">{{
+                t('database.storage.maxFileSizeHint')
+              }}</span>
             </label>
             <div class="input-with-unit">
               <input
@@ -27,8 +29,10 @@
                 min="1"
                 max="10000"
                 step="0.01"
-                @change="trackChange('max_file_size_mb', formData.max_file_size_mb)"
                 :disabled="isLoading"
+                @change="
+                  trackChange('max_file_size_mb', formData.max_file_size_mb)
+                "
               />
               <span class="unit">MB</span>
             </div>
@@ -48,8 +52,8 @@
               type="number"
               min="1"
               max="100000"
-              @change="trackChange('max_users', formData.max_users)"
               :disabled="isLoading"
+              @change="trackChange('max_users', formData.max_users)"
             />
             <span v-if="errors.max_users" class="error-message">
               {{ errors.max_users }}
@@ -61,8 +65,8 @@
             <select
               id="timezone"
               v-model="formData.timezone"
-              @change="trackChange('timezone', formData.timezone)"
               :disabled="isLoading"
+              @change="trackChange('timezone', formData.timezone)"
             >
               <option value="UTC">UTC</option>
               <option value="America/New_York">America/New_York</option>
@@ -77,15 +81,19 @@
       <!-- System Settings Section -->
       <fieldset class="form-section">
         <legend class="section-title">{{ t('database.system.title') }}</legend>
-        
+
         <div class="form-grid">
           <div class="form-group">
-            <label for="default-language">{{ t('database.system.defaultLanguage') }}</label>
+            <label for="default-language">{{
+              t('database.system.defaultLanguage')
+            }}</label>
             <select
               id="default-language"
               v-model="formData.default_language"
-              @change="trackChange('default_language', formData.default_language)"
               :disabled="isLoading"
+              @change="
+                trackChange('default_language', formData.default_language)
+              "
             >
               <option value="en">English</option>
               <option value="fr">Francais</option>
@@ -101,8 +109,8 @@
             <select
               id="is-active"
               v-model="formData.is_active"
-              @change="trackChange('is_active', formData.is_active)"
               :disabled="isLoading"
+              @change="trackChange('is_active', formData.is_active)"
             >
               <option :value="true">{{ t('common.yes') }}</option>
               <option :value="false">{{ t('common.no') }}</option>
@@ -130,22 +138,22 @@
         <button
           type="button"
           class="btn btn-text"
-          @click="handleCancel"
           :disabled="isLoading"
+          @click="handleCancel"
         >
           {{ t('common.cancel') }}
         </button>
-        
+
         <button
           type="button"
           class="btn btn-secondary"
-          @click="handleReset"
           :disabled="isLoading"
+          @click="handleReset"
         >
           <font-awesome-icon icon="fa-solid fa-undo" />
           {{ t('common.reset') }}
         </button>
-        
+
         <button
           type="submit"
           class="btn btn-primary"
@@ -188,24 +196,22 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDatabaseConfiguration } from '@/composables/useDatabaseConfiguration';
-import { DEFAULT_DATABASE_CONFIG, RESTART_REQUIRED_SETTINGS } from '@/composables/useDatabaseConfiguration';
+import {
+  DEFAULT_DATABASE_CONFIG,
+  RESTART_REQUIRED_SETTINGS,
+} from '@/composables/useDatabaseConfiguration';
 
 const { t } = useI18n();
 
 const {
-  databaseConfig,
   isLoading,
-  error,
   changes,
-  restartRequired,
   warnings,
   loadDatabaseConfiguration,
   updateDatabaseConfiguration,
   trackChange,
   clearChanges,
   validateConfigValue,
-  validateAllChanges,
-  requiresRestart,
 } = useDatabaseConfiguration();
 
 // Form data
@@ -241,23 +247,27 @@ const restartRequiredForSave = computed(() => {
 });
 
 const changesRequiringRestart = computed(() => {
-  return Object.keys(changes.value).filter(key => RESTART_REQUIRED_SETTINGS.includes(key));
+  return Object.keys(changes.value).filter((key) =>
+    RESTART_REQUIRED_SETTINGS.includes(key)
+  );
 });
 
 // Methods
 const loadData = async () => {
   try {
     const config = await loadDatabaseConfiguration();
-    
+
     if (config) {
       formData.value = {
-        max_file_size_mb: config.max_file_size_mb || DEFAULT_DATABASE_CONFIG.max_file_size_mb,
+        max_file_size_mb:
+          config.max_file_size_mb || DEFAULT_DATABASE_CONFIG.max_file_size_mb,
         max_users: config.max_users || DEFAULT_DATABASE_CONFIG.max_users,
         timezone: config.timezone || DEFAULT_DATABASE_CONFIG.timezone,
-        default_language: config.default_language || DEFAULT_DATABASE_CONFIG.default_language,
+        default_language:
+          config.default_language || DEFAULT_DATABASE_CONFIG.default_language,
         is_active: config.is_active !== undefined ? config.is_active : true,
       };
-      
+
       // Initialize changes tracking
       clearChanges();
     }
@@ -286,13 +296,13 @@ const handleSubmit = async () => {
     };
 
     const result = await updateDatabaseConfiguration(configData);
-    
+
     if (result.restartRequired) {
       successMessage.value = t('database.saveSuccessWithRestart');
     } else {
       successMessage.value = t('database.saveSuccess');
     }
-    
+
     // Clear changes after successful save
     clearChanges();
 
@@ -322,28 +332,29 @@ const handleReset = () => {
     default_language: DEFAULT_DATABASE_CONFIG.default_language,
     is_active: true,
   };
-  
+
   // Track all as changes
-  Object.keys(formData.value).forEach(key => {
+  Object.keys(formData.value).forEach((key) => {
     trackChange(key, formData.value[key]);
   });
 };
 
 // Validate form fields
 watch(
-  () => [
-    formData.value.max_file_size_mb,
-    formData.value.max_users,
-  ],
+  () => [formData.value.max_file_size_mb, formData.value.max_users],
   () => {
     errors.value.max_file_size_mb = validateConfigValue(
       'max_file_size_mb',
       formData.value.max_file_size_mb
-    ) ? '' : t('database.storage.invalidMaxFileSize');
+    )
+      ? ''
+      : t('database.storage.invalidMaxFileSize');
     errors.value.max_users = validateConfigValue(
       'max_users',
       formData.value.max_users
-    ) ? '' : t('database.storage.invalidMaxUsers');
+    )
+      ? ''
+      : t('database.storage.invalidMaxUsers');
   },
   { deep: true, immediate: true }
 );
@@ -473,7 +484,8 @@ onMounted(() => {
   background: var(--color-surface, #fff);
   color: var(--color-text, #172033);
   font-size: var(--text-base, 1rem);
-  transition: border-color var(--transition-fast, 0.15s) ease,
+  transition:
+    border-color var(--transition-fast, 0.15s) ease,
     box-shadow var(--transition-fast, 0.15s) ease;
 }
 

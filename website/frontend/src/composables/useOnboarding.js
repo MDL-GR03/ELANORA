@@ -1,6 +1,6 @@
 /**
  * Composable for managing onboarding workflow state.
- * 
+ *
  * This composable provides methods for:
  * - Loading onboarding status
  * - Starting the onboarding workflow
@@ -39,14 +39,26 @@ export function useOnboarding() {
   const error = ref(null);
 
   // Computed properties
-  const currentStep = computed(() => onboardingStatus.value?.current_step || 'not_started');
-  const isComplete = computed(() => onboardingStatus.value?.is_complete || false);
+  const currentStep = computed(
+    () => onboardingStatus.value?.current_step || 'not_started'
+  );
+  const isComplete = computed(
+    () => onboardingStatus.value?.is_complete || false
+  );
   const isSkipped = computed(() => onboardingStatus.value?.is_skipped || false);
-  
-  const projectCreated = computed(() => onboardingStatus.value?.project_created || false);
-  const protocolConfigured = computed(() => onboardingStatus.value?.protocol_configured || false);
-  const collaboratorInvited = computed(() => onboardingStatus.value?.collaborator_invited || false);
-  const firstUpload = computed(() => onboardingStatus.value?.first_upload || false);
+
+  const projectCreated = computed(
+    () => onboardingStatus.value?.project_created || false
+  );
+  const protocolConfigured = computed(
+    () => onboardingStatus.value?.protocol_configured || false
+  );
+  const collaboratorInvited = computed(
+    () => onboardingStatus.value?.collaborator_invited || false
+  );
+  const firstUpload = computed(
+    () => onboardingStatus.value?.first_upload || false
+  );
 
   const stepsCompleted = computed(() => {
     return [
@@ -110,7 +122,7 @@ export function useOnboarding() {
   const loadOnboardingStatus = async () => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await api.get('/api/v1/onboarding/status');
       onboardingStatus.value = response.data;
@@ -128,7 +140,7 @@ export function useOnboarding() {
   const startOnboarding = async () => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await api.post('/api/v1/onboarding/start');
       onboardingStatus.value = {
@@ -151,9 +163,11 @@ export function useOnboarding() {
   const markStepComplete = async (step) => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
-      const response = await api.post('/api/v1/onboarding/step/complete', { step });
+      const response = await api.post('/api/v1/onboarding/step/complete', {
+        step,
+      });
       onboardingStatus.value = {
         ...onboardingStatus.value,
         current_step: response.data.current_step,
@@ -175,7 +189,7 @@ export function useOnboarding() {
   const skipOnboarding = async () => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await api.post('/api/v1/onboarding/skip');
       onboardingStatus.value = {
@@ -198,7 +212,7 @@ export function useOnboarding() {
   const updateStepFlags = async (flags) => {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await api.patch('/api/v1/onboarding/status', flags);
       onboardingStatus.value = response.data;
@@ -216,8 +230,9 @@ export function useOnboarding() {
    * Check if a specific step should be blocked (not yet available).
    */
   const isStepBlocked = (stepId) => {
-    const stepIndex = ONBOARDING_STEPS.findIndex(s => s.id === stepId);
-    const currentIndex = ONBOARDING_STEPS.findIndex(s => s.id === nextStep.value) || 0;
+    const stepIndex = ONBOARDING_STEPS.findIndex((s) => s.id === stepId);
+    const currentIndex =
+      ONBOARDING_STEPS.findIndex((s) => s.id === nextStep.value) || 0;
     return stepIndex > currentIndex;
   };
 
@@ -245,7 +260,7 @@ export function useOnboarding() {
     onboardingStatus,
     isLoading,
     error,
-    
+
     // Computed
     currentStep,
     isComplete,
@@ -259,7 +274,7 @@ export function useOnboarding() {
     completionPercentage,
     nextStep,
     steps,
-    
+
     // Methods
     loadOnboardingStatus,
     startOnboarding,

@@ -5,8 +5,12 @@
         <font-awesome-icon icon="fa-solid fa-file-import" />
       </div>
       <div class="guide-title-wrap">
-        <h2 id="first-upload-heading">{{ t('onboarding.steps.upload.title') }}</h2>
-        <p class="guide-subtitle">{{ t('onboarding.steps.upload.description') }}</p>
+        <h2 id="first-upload-heading">
+          {{ t('onboarding.steps.upload.title') }}
+        </h2>
+        <p class="guide-subtitle">
+          {{ t('onboarding.steps.upload.description') }}
+        </p>
       </div>
     </div>
 
@@ -51,22 +55,22 @@
 
       <!-- Quick Actions -->
       <div class="quick-actions">
-        <button
-          type="button"
-          class="btn btn-primary"
-          @click="navigateToUpload"
-        >
+        <button type="button" class="btn btn-primary" @click="navigateToUpload">
           <font-awesome-icon icon="fa-solid fa-upload" />
           {{ t('onboarding.upload.uploadFiles') }}
         </button>
-        
+
         <button
           type="button"
           class="btn btn-text learn-more"
           @click="showHelp = !showHelp"
         >
           {{ t('common.learnMore') }}
-          <font-awesome-icon :icon="showHelp ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" />
+          <font-awesome-icon
+            :icon="
+              showHelp ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'
+            "
+          />
         </button>
       </div>
 
@@ -99,9 +103,14 @@
         <span class="status-value" :class="statusClass">
           <font-awesome-icon v-if="isLoading" icon="fa-solid fa-spinner" spin />
           <template v-else>
-            <font-awesome-icon v-if="completed" icon="fa-solid fa-circle-check" />
+            <font-awesome-icon
+              v-if="completed"
+              icon="fa-solid fa-circle-check"
+            />
             <font-awesome-icon v-else icon="fa-regular fa-circle" />
-            {{ completed ? t('onboarding.completed') : t('onboarding.pending') }}
+            {{
+              completed ? t('onboarding.completed') : t('onboarding.pending')
+            }}
           </template>
         </span>
       </div>
@@ -118,11 +127,7 @@ import { useOnboarding } from '@/composables/useOnboarding';
 const { t } = useI18n();
 const router = useRouter();
 
-const {
-  firstUpload,
-  isLoading,
-  markStepComplete,
-} = useOnboarding();
+const { firstUpload, isLoading, markStepComplete } = useOnboarding();
 
 const showHelp = ref(false);
 

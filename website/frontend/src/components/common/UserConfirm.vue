@@ -162,7 +162,8 @@ defineExpose({ confirm, cancel });
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 18px;
-  box-shadow: 0 24px 70px color-mix(in srgb, var(--color-slate-800) 28%, transparent);
+  box-shadow: 0 24px 70px
+    color-mix(in srgb, var(--color-slate-800) 28%, transparent);
   animation: dialog-in 170ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -288,12 +289,14 @@ defineExpose({ confirm, cancel });
 
 .tone-success .confirm-button.primary {
   background: var(--color-success);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-emerald-700) 20%, transparent);
+  box-shadow: 0 4px 12px
+    color-mix(in srgb, var(--color-emerald-700) 20%, transparent);
 }
 
 .tone-danger .confirm-button.primary {
   background: var(--color-error);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-red-600) 20%, transparent);
+  box-shadow: 0 4px 12px
+    color-mix(in srgb, var(--color-red-600) 20%, transparent);
 }
 
 .confirm-button:hover {

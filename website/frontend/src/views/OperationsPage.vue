@@ -281,8 +281,18 @@
             class="secondary-action"
             @click="toggleInstallationSettings"
           >
-            <font-awesome-icon :icon="showInstallationSettings ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" />
-            {{ showInstallationSettings ? t('common.hide') : t('operations.installation.configure') }}
+            <font-awesome-icon
+              :icon="
+                showInstallationSettings
+                  ? 'fa-solid fa-chevron-up'
+                  : 'fa-solid fa-chevron-down'
+              "
+            />
+            {{
+              showInstallationSettings
+                ? t('common.hide')
+                : t('operations.installation.configure')
+            }}
           </button>
         </div>
         <div v-if="showInstallationSettings" class="expanded-content">
@@ -308,8 +318,18 @@
             class="secondary-action"
             @click="toggleDatabaseConfig"
           >
-            <font-awesome-icon :icon="showDatabaseConfig ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'" />
-            {{ showDatabaseConfig ? t('common.hide') : t('operations.database.configure') }}
+            <font-awesome-icon
+              :icon="
+                showDatabaseConfig
+                  ? 'fa-solid fa-chevron-up'
+                  : 'fa-solid fa-chevron-down'
+              "
+            />
+            {{
+              showDatabaseConfig
+                ? t('common.hide')
+                : t('operations.database.configure')
+            }}
           </button>
         </div>
         <div v-if="showDatabaseConfig" class="expanded-content">
@@ -343,7 +363,8 @@
             />
           </div>
           <p class="progress-text">
-            {{ onboardingCompletedSteps }}/4 {{ t('operations.onboarding.stepsComplete') }}
+            {{ onboardingCompletedSteps }}/4
+            {{ t('operations.onboarding.stepsComplete') }}
           </p>
         </div>
         <div class="onboarding-steps">
@@ -352,16 +373,24 @@
             :key="step.id"
             class="onboarding-step"
             :class="{
-              'completed': step.completed,
-              'current': currentOnboardingStep === step.id,
+              completed: step.completed,
+              current: currentOnboardingStep === step.id,
             }"
           >
             <span class="step-icon">
-              <font-awesome-icon v-if="step.completed" icon="fa-solid fa-check-circle" />
-              <font-awesome-icon v-else-if="currentOnboardingStep === step.id" icon="fa-solid fa-circle" />
+              <font-awesome-icon
+                v-if="step.completed"
+                icon="fa-solid fa-check-circle"
+              />
+              <font-awesome-icon
+                v-else-if="currentOnboardingStep === step.id"
+                icon="fa-solid fa-circle"
+              />
               <span v-else class="step-number">{{ step.order }}</span>
             </span>
-            <span class="step-label">{{ t(`onboarding.steps.${step.id}.title`) }}</span>
+            <span class="step-label">{{
+              t(`onboarding.steps.${step.id}.title`)
+            }}</span>
           </div>
         </div>
         <div class="card-action">
@@ -389,8 +418,18 @@
             @click="toggleOnboarding"
             v-if="onboardingStarted && !onboardingComplete"
           >
-            <font-awesome-icon :icon="showOnboardingDetails ? 'fa-solid fa-chevron-up' : 'fa-solid fa-list-check'" />
-            {{ showOnboardingDetails ? t('common.hide') : t('operations.onboarding.continue') }}
+            <font-awesome-icon
+              :icon="
+                showOnboardingDetails
+                  ? 'fa-solid fa-chevron-up'
+                  : 'fa-solid fa-list-check'
+              "
+            />
+            {{
+              showOnboardingDetails
+                ? t('common.hide')
+                : t('operations.onboarding.continue')
+            }}
           </button>
         </div>
         <div v-if="showOnboardingDetails" class="expanded-content">
@@ -444,7 +483,10 @@ const showDatabaseConfig = ref(false);
 
 // Computed onboarding state
 const onboardingStarted = computed(() => {
-  return onboardingStatus.value !== null && onboardingStatus.value.current_step !== 'not_started';
+  return (
+    onboardingStatus.value !== null &&
+    onboardingStatus.value.current_step !== 'not_started'
+  );
 });
 
 const currentOnboardingStep = computed(() => {
@@ -914,7 +956,11 @@ code {
 
 .onboarding-summary .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-primary-light)
+  );
   border-radius: var(--radius-full);
   transition: width 0.3s ease;
 }
@@ -996,6 +1042,7 @@ code {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

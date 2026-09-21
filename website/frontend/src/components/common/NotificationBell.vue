@@ -84,7 +84,10 @@
                   />
                 </svg>
               </div>
-              <h3 :id="headingId" class="text-lg font-semibold text-gray-900 truncate">
+              <h3
+                :id="headingId"
+                class="text-lg font-semibold text-gray-900 truncate"
+              >
                 {{ t('notificationBell.title') }}
               </h3>
             </div>
@@ -547,7 +550,8 @@ onUnmounted(() => {
   background: var(--color-primary-bg);
   color: var(--color-primary-dark);
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
 .notification-open-button {

@@ -8,7 +8,8 @@ setup of their first project, collaborator, and file upload.
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, ForeignKey, Integer
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -29,7 +30,7 @@ class OnboardingStep(StrEnum):
 
 class OnboardingStatus(Base):
     """Tracks the onboarding progress for an installation.
-    
+
     Each installation can have one onboarding status record that tracks
     which steps have been completed. This allows administrators to be guided
     through the initial setup process or to resume where they left off.
@@ -46,13 +47,19 @@ class OnboardingStatus(Base):
         default=OnboardingStep.NOT_STARTED,
         nullable=False,
     )
-    
+
     # Individual step completion flags for granular tracking
-    project_created: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    protocol_configured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    collaborator_invited: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    project_created: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    protocol_configured: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    collaborator_invited: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     first_upload: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    
+
     # Timestamps
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None, nullable=True
@@ -68,6 +75,7 @@ class OnboardingStatus(Base):
     )
 
     def __repr__(self) -> str:
+        """Return a string representation of the OnboardingStatus."""
         return f"<OnboardingStatus(id={self.id}, instance_id={self.instance_id}, current_step={self.current_step.value})>"
 
     @property
@@ -83,9 +91,11 @@ class OnboardingStatus(Base):
     @property
     def all_steps_complete(self) -> bool:
         """Check if all individual steps are marked complete."""
-        return all([
-            self.project_created,
-            self.protocol_configured,
-            self.collaborator_invited,
-            self.first_upload,
-        ])
+        return all(
+            [
+                self.project_created,
+                self.protocol_configured,
+                self.collaborator_invited,
+                self.first_upload,
+            ]
+        )

@@ -16,8 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import ElanoraError, ErrorCode
 from app.model.instance import Instance
-from app.model.onboarding import OnboardingStep, OnboardingStatus
-from app.model.user import User
+from app.model.onboarding import OnboardingStatus, OnboardingStep
 
 
 class OnboardingService:
@@ -28,11 +27,12 @@ class OnboardingService:
         db: AsyncSession, instance_id: int
     ) -> OnboardingStatus | None:
         """Retrieve the onboarding status for a specific instance."""
-        return await db.scalar(
-            select(OnboardingStatus).where(
-                OnboardingStatus.instance_id == instance_id
-            )
+        result = await db.scalar(
+            select(OnboardingStatus).where(OnboardingStatus.instance_id == instance_id)
         )
+        if result is None:
+            return None
+        return result
 
     @staticmethod
     async def get_or_create_onboarding_status(
@@ -50,11 +50,9 @@ class OnboardingService:
         return status
 
     @staticmethod
-    async def start_onboarding(
-        db: AsyncSession, instance_id: int
-    ) -> OnboardingStatus:
+    async def start_onboarding(db: AsyncSession, instance_id: int) -> OnboardingStatus:
         """Start the onboarding workflow for an instance.
-        
+
         Creates a new onboarding status record if one doesn't exist,
         or resets an existing one to start from the beginning.
         """
@@ -66,8 +64,10 @@ class OnboardingService:
             raise ElanoraError(ErrorCode.INSTITUTION_NOT_FOUND)
 
         # Get or create onboarding status
-        status = await OnboardingService.get_or_create_onboarding_status(db, instance_id)
-        
+        status = await OnboardingService.get_or_create_onboarding_status(
+            db, instance_id
+        )
+
         # Reset to starting state
         status.current_step = OnboardingStep.NOT_STARTED
         status.project_created = False
@@ -76,7 +76,7 @@ class OnboardingService:
         status.first_upload = False
         status.completed_at = None
         status.updated_at = datetime.now()
-        
+
         await db.commit()
         return status
 
@@ -85,7 +85,7 @@ class OnboardingService:
         db: AsyncSession, instance_id: int, step: OnboardingStep
     ) -> OnboardingStatus:
         """Mark a specific onboarding step as complete.
-        
+
         Updates the current step and the corresponding completion flag.
         If all steps are complete, marks the onboarding as complete.
         """
@@ -117,16 +117,16 @@ class OnboardingService:
         return status
 
     @staticmethod
-    async def skip_onboarding(
-        db: AsyncSession, instance_id: int
-    ) -> OnboardingStatus:
+    async def skip_onboarding(db: AsyncSession, instance_id: int) -> OnboardingStatus:
         """Skip the onboarding workflow entirely."""
-        status = await OnboardingService.get_or_create_onboarding_status(db, instance_id)
-        
+        status = await OnboardingService.get_or_create_onboarding_status(
+            db, instance_id
+        )
+
         status.current_step = OnboardingStep.SKIPPED
         status.completed_at = datetime.now()
         status.updated_at = datetime.now()
-        
+
         await db.commit()
         return status
 
@@ -140,7 +140,7 @@ class OnboardingService:
         first_upload: bool | None = None,
     ) -> OnboardingStatus:
         """Update individual step completion flags.
-        
+
         Allows for granular updates to the step flags without changing
         the current step.
         """
@@ -160,12 +160,14 @@ class OnboardingService:
         status.updated_at = datetime.now()
 
         # Update current step based on progress
-        if not any([
-            status.project_created,
-            status.protocol_configured,
-            status.collaborator_invited,
-            status.first_upload,
-        ]):
+        if not any(
+            [
+                status.project_created,
+                status.protocol_configured,
+                status.collaborator_invited,
+                status.first_upload,
+            ]
+        ):
             status.current_step = OnboardingStep.NOT_STARTED
         elif status.project_created and not status.protocol_configured:
             status.current_step = OnboardingStep.PROJECT_CREATED
@@ -187,13 +189,13 @@ class OnboardingService:
     @staticmethod
     async def get_onboarding_progress(
         db: AsyncSession, instance_id: int
-    ) -> dict:
+    ) -> dict[str, object]:
         """Get detailed progress information for the onboarding workflow.
-        
+
         Returns a dictionary with progress metrics.
         """
         status = await OnboardingService.get_onboarding_status(db, instance_id)
-        
+
         if status is None:
             return {
                 "current_step": OnboardingStep.NOT_STARTED,
@@ -211,12 +213,14 @@ class OnboardingService:
             OnboardingStep.FIRST_UPLOAD,
         ]
 
-        steps_completed = sum([
-            status.project_created,
-            status.protocol_configured,
-            status.collaborator_invited,
-            status.first_upload,
-        ])
+        steps_completed = sum(
+            [
+                status.project_created,
+                status.protocol_configured,
+                status.collaborator_invited,
+                status.first_upload,
+            ]
+        )
 
         completion_percentage = (steps_completed / len(steps)) * 100
 
@@ -241,17 +245,13 @@ class OnboardingService:
         }
 
     @staticmethod
-    async def is_onboarding_complete(
-        db: AsyncSession, instance_id: int
-    ) -> bool:
+    async def is_onboarding_complete(db: AsyncSession, instance_id: int) -> bool:
         """Check if onboarding is complete for an instance."""
         status = await OnboardingService.get_onboarding_status(db, instance_id)
         return status is not None and status.is_complete
 
     @staticmethod
-    async def is_onboarding_skipped(
-        db: AsyncSession, instance_id: int
-    ) -> bool:
+    async def is_onboarding_skipped(db: AsyncSession, instance_id: int) -> bool:
         """Check if onboarding was skipped for an instance."""
         status = await OnboardingService.get_onboarding_status(db, instance_id)
         return status is not None and status.is_skipped

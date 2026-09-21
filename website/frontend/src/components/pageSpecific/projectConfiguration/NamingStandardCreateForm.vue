@@ -275,7 +275,7 @@ watch(
   margin: 32px auto 0;
   background: var(--color-surface);
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 2px 12px rgb(0 0 0 / 2%);
   padding: 32px 36px 28px;
   display: flex;
   flex-direction: column;
@@ -386,7 +386,7 @@ watch(
   border-radius: 6px;
   overflow: hidden;
   background: var(--color-surface);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.01);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 1%);
 }
 
 .configure-naming-components-edit-table input {
