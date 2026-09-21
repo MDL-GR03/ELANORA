@@ -9,7 +9,7 @@ progress, including:
 - Calculating progress
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,7 +75,7 @@ class OnboardingService:
         status.collaborator_invited = False
         status.first_upload = False
         status.completed_at = None
-        status.updated_at = datetime.now()
+        status.updated_at = datetime.now(UTC)
 
         await db.commit()
         return status
@@ -106,12 +106,12 @@ class OnboardingService:
 
         # Update current step
         status.current_step = step
-        status.updated_at = datetime.now()
+        status.updated_at = datetime.now(UTC)
 
         # Check if all steps are complete
         if status.all_steps_complete:
             status.current_step = OnboardingStep.COMPLETE
-            status.completed_at = datetime.now()
+            status.completed_at = datetime.now(UTC)
 
         await db.commit()
         return status
@@ -124,8 +124,8 @@ class OnboardingService:
         )
 
         status.current_step = OnboardingStep.SKIPPED
-        status.completed_at = datetime.now()
-        status.updated_at = datetime.now()
+        status.completed_at = datetime.now(UTC)
+        status.updated_at = datetime.now(UTC)
 
         await db.commit()
         return status
@@ -157,7 +157,7 @@ class OnboardingService:
         if first_upload is not None:
             status.first_upload = first_upload
 
-        status.updated_at = datetime.now()
+        status.updated_at = datetime.now(UTC)
 
         # Update current step based on progress
         if not any(
@@ -181,7 +181,7 @@ class OnboardingService:
         # Check if all steps are complete
         if status.all_steps_complete:
             status.current_step = OnboardingStep.COMPLETE
-            status.completed_at = datetime.now()
+            status.completed_at = datetime.now(UTC)
 
         await db.commit()
         return status
