@@ -34,15 +34,34 @@ if ($response -ne "yes") {
     exit 0
 }
 
-# Restore database using input redirection
-# Read file content and pipe to docker via stdin
-$sqlContent = Get-Content $absolutePath -Raw
-$sqlContent | & docker compose -f $composeFile exec -T db psql -U elanora -d elanora
+# Restore database using temporary file (more reliable than piping in PowerShell)
+$tempFile = [System.IO.Path]::GetTempFileName()
+try {
+    # Copy SQL dump to temp location
+    Copy-Item $absolutePath $tempFile -Force
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Success "Database restored successfully!"
-    Write-Info "The backend will pick up the new data on the next request."
-} else {
-    Write-Error "Error restoring database"
-    exit 1
+    # Copy temp file into container and restore
+    # First, copy the SQL file into the container
+    docker compose -f $composeFile cp $tempFile db:/tmp/restore.sql
+
+    if ($LASTEXITCODE -eq 0) {
+        # Execute psql with the file in the container
+        docker compose -f $composeFile exec -T db psql -U elanora -d elanora -f /tmp/restore.sql
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Database restored successfully!"
+            Write-Info "The backend will pick up the new data on the next request."
+        } else {
+            Write-Error "Error restoring database"
+            exit 1
+        }
+    } else {
+        Write-Error "Error copying SQL file to container"
+        exit 1
+    }
+} finally {
+    # Clean up temp file
+    if (Test-Path $tempFile) {
+        Remove-Item $tempFile -Force
+    }
 }
