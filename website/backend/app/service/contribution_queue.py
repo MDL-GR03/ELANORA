@@ -167,7 +167,9 @@ class ContributionQueueService:
 
         for item in items:
             item["annotation_collisions"] = self.inspection.annotation_collisions(
-                int(item.get("upload_id", 0)), targets_by_upload, collision_candidate_ids
+                int(item.get("upload_id", 0)),
+                targets_by_upload,
+                collision_candidate_ids,
             )
 
         return ReviewQueueResponse(

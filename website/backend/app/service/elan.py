@@ -162,7 +162,8 @@ class ElanService:
 
             # Now that tiers have IDs, sync associations
             tier_ids = [
-                tier_id for tier in file_info["tiers"]
+                tier_id
+                for tier in file_info["tiers"]
                 if (tier_id := tier.get("tier_id")) is not None
             ]
             await sync_elan_file_to_tiers(self.db, elan_id, tier_ids)

@@ -27,7 +27,9 @@ PASSWORD_MAXIMUM_BYTES = 72
 SERVICE_WORDS = ("elanora", "elan", "password")
 MINIMUM_CONTEXT_WORD_LENGTH = 4
 
-PolicyViolationCode = Literal["too_short", "too_long", "common", "repetitive", "personal"]
+PolicyViolationCode = Literal[
+    "too_short", "too_long", "common", "repetitive", "personal"
+]
 
 COMMON_PASSWORDS_FILE = Path(__file__).with_name("common_passwords.txt")
 
