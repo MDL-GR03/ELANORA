@@ -298,10 +298,23 @@
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
 }
 
 .upload-btn:hover:not(:disabled) {
   background: var(--primary-color-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px
+    color-mix(in srgb, var(--primary-color) 30%, transparent);
+}
+
+.upload-btn:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
 .upload-btn:disabled {

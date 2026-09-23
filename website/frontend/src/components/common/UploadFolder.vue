@@ -715,6 +715,7 @@ defineExpose({
   background: var(--color-surface-subtle);
   border-color: var(--color-primary);
   color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 .action-btn.clear:hover {
@@ -842,6 +843,11 @@ defineExpose({
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .upload-browse-button {
@@ -849,15 +855,43 @@ defineExpose({
   background: var(--color-primary);
 }
 
+.upload-browse-button:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px
+    color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.upload-browse-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .upload-folder-button {
   color: var(--color-primary);
   background: white;
 }
 
+.upload-folder-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px
+    color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+.upload-folder-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .upload-browse-button:focus-visible,
 .upload-folder-button:focus-visible,
 .action-btn:focus-visible,
-.remove-btn:focus-visible {
+.remove-btn:focus-visible,
+.rename-btn:focus-visible,
+.rename-confirm-btn:focus-visible,
+.rename-cancel-btn:focus-visible,
+.rename-suggestion-btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -929,6 +963,13 @@ defineExpose({
   border-color: transparent;
   color: var(--color-error-dark);
   background: var(--color-error-bg-subtle);
+  transform: translateY(-1px);
+}
+
+.remove-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .file-noncompliant {
@@ -1005,6 +1046,7 @@ defineExpose({
 .rename-btn:hover {
   color: var(--color-primary-dark);
   background: var(--color-primary-bg-subtle);
+  transform: translateY(-1px);
 }
 
 .rename-btn:disabled {
@@ -1099,6 +1141,7 @@ defineExpose({
 .rename-confirm-btn:hover:not(:disabled) {
   background: var(--color-success-bg-subtle);
   color: var(--color-success-dark);
+  transform: translateY(-1px);
 }
 
 .rename-confirm-btn:disabled {
@@ -1113,6 +1156,7 @@ defineExpose({
 .rename-cancel-btn:hover:not(:disabled) {
   background: var(--color-error-bg-subtle);
   color: var(--color-error-dark);
+  transform: translateY(-1px);
 }
 
 .rename-cancel-btn:disabled {
