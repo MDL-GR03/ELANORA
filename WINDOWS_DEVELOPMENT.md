@@ -16,7 +16,7 @@ The `Makefile` contains development commands that are standard on Linux/Mac but 
 
 ## Project Structure
 
-```
+```text
 ELANORA/
 ├── Makefile                 ← Development commands (Linux/Mac)
 ├── WINDOWS_DEVELOPMENT.md   ← This file
@@ -40,14 +40,14 @@ The `installer/` directory is **separate and stays as-is** because:
 1. **Purpose**: It's for **production deployments** on customer Linux servers, not development
 2. **Audience**: System administrators deploying to production, not developers
 3. **Scope**: Shell script (`install.sh`) with complex setup logic, not a Makefile
-4. **Separation of concerns**: 
+4. **Separation of concerns**:
    - `installer/` → What an institution runs once to deploy ELANORA on their servers
    - `scripts/windows/` → What developers run daily to develop ELANORA
 
 ## For Different Developers
 
 | You are... | Use this |
-|-----------|----------|
+| --- | --- |
 | Developing on **Linux/Mac** with `make` | `make dev-up`, `make dev-logs`, etc. (Makefile) |
 | Developing on **Windows** with PowerShell | `.\dev-up.ps1`, `.\dev-logs.ps1`, etc. (scripts/windows/) |
 | Developing on **Windows with WSL2** | `make dev-up`, etc. (same as Linux) |
@@ -56,6 +56,7 @@ The `installer/` directory is **separate and stays as-is** because:
 ## Getting Started
 
 See [scripts/windows/README.md](scripts/windows/README.md) for:
+
 - Prerequisites (Docker Desktop, PowerShell)
 - Detailed commands
 - Troubleshooting
@@ -64,6 +65,7 @@ See [scripts/windows/README.md](scripts/windows/README.md) for:
 ## Questions?
 
 Check the appropriate guide:
+
 - **Windows development**: [scripts/windows/README.md](scripts/windows/README.md)
 - **Linux/Mac development**: Run `make help` or see the Makefile
 - **Production deployment**: See [installer/README.md](installer/README.md)

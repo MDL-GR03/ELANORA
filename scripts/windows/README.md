@@ -5,7 +5,7 @@ This directory contains PowerShell scripts to make ELANORA development easier on
 ## Prerequisites
 
 1. **Docker Desktop for Windows**
-   - Install from https://www.docker.com/products/docker-desktop
+   - Install from <https://www.docker.com/products/docker-desktop>
    - Enable WSL 2 backend (recommended) for best performance
    - Verify: Run `docker --version` in PowerShell
 
@@ -29,8 +29,9 @@ This directory contains PowerShell scripts to make ELANORA development easier on
 ```
 
 Access the application:
-- **Website**: http://localhost:8777
-- **API Docs**: http://localhost:8018/docs
+
+- **Website**: <http://localhost:8777>
+- **API Docs**: <http://localhost:8018/docs>
 - **Setup token**: `elanora-local-setup`
 
 ## Available Scripts
@@ -38,7 +39,7 @@ Access the application:
 ### Core Commands
 
 | Script | Purpose |
-|--------|---------|
+| --- | --- |
 | `dev-up.ps1` | Build and start all containers |
 | `dev-down.ps1` | Stop containers (preserves database) |
 | `dev-logs.ps1` | Follow container logs (use new PowerShell window) |
@@ -47,7 +48,7 @@ Access the application:
 ### Database Commands
 
 | Script | Purpose |
-|--------|---------|
+| --- | --- |
 | `dev-bootstrap.ps1` | Create first administrator (run once after `dev-up`) |
 | `dev-db-status.ps1` | Show current database migration version |
 | `dev-db-dump.ps1` | Export database to SQL file |
@@ -117,6 +118,7 @@ docker compose -f website/docker/website-dev/docker-compose.yml down
 ## Troubleshooting
 
 ### Containers won't start
+
 ```powershell
 # Check Docker is running
 docker ps
@@ -130,12 +132,15 @@ docker compose -f website/docker/website-dev/docker-compose.yml down --volumes
 ```
 
 ### Port 8777 already in use
+
 Something else is running on port 8777. Stop it or check `docker ps` to see if containers are already running:
+
 ```powershell
 .\dev-status.ps1
 ```
 
 ### Database connection errors
+
 ```powershell
 # Check database is ready
 .\dev-db-status.ps1
@@ -147,6 +152,7 @@ docker compose -f website/docker/website-dev/docker-compose.yml down --volumes
 ```
 
 ### Performance issues
+
 - If using WSL 1 instead of WSL 2, upgrade to WSL 2 for better performance
 - Don't store the project in Windows system folders (C:\Windows\...), use your user folder
 - Consider excluding the project from Windows Defender scanning
@@ -154,6 +160,7 @@ docker compose -f website/docker/website-dev/docker-compose.yml down --volumes
 ## Linux/Mac Users
 
 If you have `make` available, you can still use the Makefile directly:
+
 ```bash
 make dev-up
 make dev-logs
