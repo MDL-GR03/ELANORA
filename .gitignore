@@ -17,6 +17,7 @@ website/frontend/test-results/
 # Editor directories and files
 .vscode/
 website/frontend/.vscode/
+.claude/
 .idea
 .DS_Store
 *.suo
