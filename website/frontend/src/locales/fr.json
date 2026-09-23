@@ -1850,7 +1850,14 @@
     "filesAdded": "Ajouté {count} fichiers",
     "chooseFiles": "Choisir des fichiers",
     "chooseFolder": "Choisir un dossier",
-    "removeNamedFile": "Retirer {name}"
+    "removeNamedFile": "Retirer {name}",
+    "renameNamedFile": "Renommer {name}",
+    "renamePlaceholder": "Nouveau nom de fichier",
+    "renameConfirm": "Renommer",
+    "renameCancel": "Annuler",
+    "renameNonCompliant": "Ce nom ne correspond pas au modèle requis",
+    "renameDuplicate": "Un fichier nommé {name} est déjà sélectionné",
+    "renameSuccess": "Renommé en {name}"
   },
   "uploadPage": {
     "title": "Upload des fichiers ELAN",

@@ -110,25 +110,88 @@
               class="file-icon"
             />
             <div class="file-details">
-              <span class="file-name" :title="file.name">{{ file.name }}</span>
-              <span class="file-size">{{ formatFileSize(file.size) }}</span>
-              <span
-                v-if="file.webkitRelativePath"
-                class="file-path"
-                :title="file.webkitRelativePath"
-              >
-                {{ getFileDirectory(file.webkitRelativePath) }}
-              </span>
+              <div v-if="renamingIndex !== index" class="file-info">
+                <span class="file-name" :title="file.name">{{
+                  file.name
+                }}</span>
+                <span class="file-size">{{ formatFileSize(file.size) }}</span>
+                <span
+                  v-if="file.webkitRelativePath"
+                  class="file-path"
+                  :title="file.webkitRelativePath"
+                >
+                  {{ getFileDirectory(file.webkitRelativePath) }}
+                </span>
+              </div>
+              <div v-else class="file-rename-control">
+                <input
+                  v-model="renameDraft"
+                  type="text"
+                  class="rename-input"
+                  :placeholder="$t('upload.renamePlaceholder')"
+                  :aria-label="$t('upload.renamePlaceholder')"
+                  :disabled="disabled"
+                  @keydown.enter="confirmRename"
+                  @keydown.escape="cancelRename"
+                />
+                <div
+                  v-if="
+                    renameDraft.trim() &&
+                    props.standard &&
+                    !isRenameDraftCompliant
+                  "
+                  class="rename-warning"
+                >
+                  {{ $t('upload.renameNonCompliant') }}
+                </div>
+                <div v-if="isDuplicateName" class="rename-warning">
+                  {{
+                    $t('upload.renameDuplicate', { name: renameDraft.trim() })
+                  }}
+                </div>
+              </div>
             </div>
-            <button
-              type="button"
-              class="remove-btn"
-              :aria-label="$t('upload.removeNamedFile', { name: file.name })"
-              :disabled="disabled"
-              @click.stop="removeFile(index)"
-            >
-              <font-awesome-icon icon="fa-solid fa-xmark" />
-            </button>
+            <div v-if="renamingIndex !== index" class="file-actions">
+              <button
+                v-if="filesWithCompliance?.[index]?.isCompliant === false"
+                type="button"
+                class="rename-btn"
+                :aria-label="$t('upload.renameNamedFile', { name: file.name })"
+                :disabled="disabled"
+                @click.stop="startRename(index)"
+              >
+                <font-awesome-icon icon="fa-solid fa-pen-to-square" />
+              </button>
+              <button
+                type="button"
+                class="remove-btn"
+                :aria-label="$t('upload.removeNamedFile', { name: file.name })"
+                :disabled="disabled"
+                @click.stop="removeFile(index)"
+              >
+                <font-awesome-icon icon="fa-solid fa-xmark" />
+              </button>
+            </div>
+            <div v-else class="file-rename-actions">
+              <button
+                type="button"
+                class="rename-confirm-btn"
+                :disabled="!isValidRename || disabled"
+                :title="$t('upload.renameConfirm')"
+                @click.stop="confirmRename"
+              >
+                <font-awesome-icon icon="fa-solid fa-check" />
+              </button>
+              <button
+                type="button"
+                class="rename-cancel-btn"
+                :disabled="disabled"
+                :title="$t('upload.renameCancel')"
+                @click.stop="cancelRename"
+              >
+                <font-awesome-icon icon="fa-solid fa-xmark" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -158,6 +221,7 @@ import { ref, computed, watch } from 'vue';
 import FontAwesomeIcon from '@/plugins/fontawesome';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useI18n } from 'vue-i18n';
+import { isFilenameCompliant } from '@/utils/filenameCompliance';
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -167,6 +231,7 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
   allowDuplicates: { type: Boolean, default: false },
   filesWithCompliance: { type: Array, default: () => [] }, // New: Array of compliance statuses
+  standard: { type: Object, default: null },
   disabled: { type: Boolean, default: false },
 });
 
@@ -178,6 +243,8 @@ const selectedFiles = ref([]);
 const isDragOver = ref(false);
 const fileInput = ref(null);
 const folderInput = ref(null);
+const renamingIndex = ref(null);
+const renameDraft = ref('');
 
 // Initialize from modelValue and sort
 watch(
@@ -202,6 +269,53 @@ const hasOversizedFiles = computed(
     props.maxFileSize &&
     selectedFiles.value.some((file) => file.size > props.maxFileSize)
 );
+
+function withEafExtension(name) {
+  return name.toLowerCase().endsWith('.eaf') ? name : `${name}.eaf`;
+}
+
+const isRenameDraftCompliant = computed(() => {
+  const trimmed = renameDraft.value.trim();
+  if (!trimmed || !props.standard) return true;
+  return isFilenameCompliant(props.standard, trimmed);
+});
+
+const isDuplicateName = computed(() => {
+  const trimmed = renameDraft.value.trim();
+  if (!trimmed || renamingIndex.value === null) return false;
+  const currentFile = selectedFiles.value[renamingIndex.value];
+  if (!currentFile) return false;
+  const candidateName = withEafExtension(trimmed).toLowerCase();
+  // Check if any other file has the same name (case-insensitive)
+  return selectedFiles.value.some(
+    (file, index) =>
+      index !== renamingIndex.value && file.name.toLowerCase() === candidateName
+  );
+});
+
+const isValidRename = computed(() => {
+  const trimmed = renameDraft.value.trim();
+  const currentFile =
+    renamingIndex.value !== null
+      ? selectedFiles.value[renamingIndex.value]
+      : null;
+
+  // Draft must not be empty
+  if (!trimmed) return false;
+
+  // Must be different from current name
+  if (currentFile && currentFile.name === withEafExtension(trimmed)) {
+    return false;
+  }
+
+  // Must not be a duplicate
+  if (isDuplicateName.value) return false;
+
+  // Must be compliant (if standard exists)
+  if (props.standard && !isRenameDraftCompliant.value) return false;
+
+  return true;
+});
 
 // Helper functions
 function getFileKey(file, index) {
@@ -434,6 +548,55 @@ function clearFiles() {
   updateModelValue();
 }
 
+function startRename(index) {
+  if (props.disabled) return;
+  renamingIndex.value = index;
+  renameDraft.value = selectedFiles.value[index].name;
+}
+
+function cancelRename() {
+  renamingIndex.value = null;
+  renameDraft.value = '';
+}
+
+function confirmRename() {
+  if (!isValidRename.value || renamingIndex.value === null) return;
+
+  const oldFile = selectedFiles.value[renamingIndex.value];
+  const finalName = withEafExtension(renameDraft.value.trim());
+
+  // Create a new File object with the new name
+  const renamed = new File([oldFile], finalName, {
+    type: oldFile.type,
+    lastModified: oldFile.lastModified,
+  });
+
+  // Preserve webkitRelativePath if it exists
+  if (oldFile.webkitRelativePath) {
+    Object.defineProperty(renamed, 'webkitRelativePath', {
+      value: oldFile.webkitRelativePath.replace(/[^/]*$/, finalName),
+      writable: false,
+    });
+  }
+
+  // Replace the file
+  selectedFiles.value[renamingIndex.value] = renamed;
+
+  // Sort alphabetically
+  selectedFiles.value.sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+  );
+
+  updateModelValue();
+
+  // Show success toast
+  eventMessageStore.addMessage('upload.renameSuccess', 'success', 3000, {
+    name: finalName,
+  });
+
+  cancelRename();
+}
+
 function updateModelValue() {
   emit('update:modelValue', selectedFiles.value);
   emit('files-changed', selectedFiles.value);
@@ -447,40 +610,9 @@ defineExpose({
 </script>
 
 <style scoped>
-:where(.upload-zone) {
-  border: 2px dashed var(--color-primary);
-  border-radius: var(--radius-lg);
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: var(--color-surface-subtle);
-  min-height: 140px;
-  position: relative;
-}
-
-:where(.upload-zone:hover) {
-  border-color: var(--color-primary-dark);
-  background: color-mix(in srgb, var(--color-primary) 4%, white);
-}
-
 .upload-zone.compact {
   padding: 24px 16px;
   min-height: 100px;
-}
-
-:where(.upload-zone.dragover) {
-  border-color: var(--color-secondary);
-  background: var(--color-secondary-bg);
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgb(15 118 110 / 20%);
-}
-
-:where(.upload-zone.has-files) {
-  cursor: default;
-  text-align: left;
-  padding: 16px;
-  min-height: auto;
-  pointer-events: none;
 }
 
 .upload-zone.has-files:hover {
@@ -494,7 +626,7 @@ defineExpose({
   pointer-events: auto;
 }
 
-:where(.upload-content) {
+.upload-content {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -513,21 +645,6 @@ defineExpose({
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.95rem;
-}
-
-:where(.upload-icon) {
-  font-size: 3.5rem;
-  opacity: 0.7;
-  margin-bottom: 4px;
-}
-
-:where(.preview-header) {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .preview-header h4 {
@@ -566,21 +683,8 @@ defineExpose({
   color: var(--color-error);
 }
 
-:where(.files-list) {
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 12px;
-}
-
 .files-list.compact-list {
   max-height: 200px;
-}
-
-:where(.file-item) {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .file-item:last-child {
@@ -601,14 +705,6 @@ defineExpose({
   gap: 2px;
 }
 
-:where(.file-name) {
-  font-weight: 500;
-  color: var(--color-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .file-size {
   font-size: 0.85rem;
   color: var(--color-text-muted);
@@ -621,26 +717,6 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-:where(.remove-btn) {
-  width: 24px;
-  height: 24px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  border: 1px solid var(--color-border);
-}
-
-:where(.remove-btn:hover) {
-  background: var(--color-error);
-  color: white;
-  border-color: var(--color-error);
 }
 
 .upload-zone {
@@ -677,11 +753,15 @@ defineExpose({
 }
 
 .upload-zone.has-files {
+  cursor: default;
+  text-align: left;
   width: 100%;
   display: block;
   padding: 1rem;
   border-style: solid;
   background: white;
+  min-height: auto;
+  pointer-events: none;
 }
 
 .upload-icon {
@@ -739,6 +819,9 @@ defineExpose({
 }
 
 .preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.55rem;
   padding-bottom: 0.7rem;
   border-color: var(--color-border);
@@ -754,9 +837,12 @@ defineExpose({
   display: grid;
   gap: 0.4rem;
   margin: 0 0 0.7rem;
+  overflow-y: auto;
 }
 
 .file-item {
+  display: flex;
+  align-items: center;
   gap: 0.7rem;
   margin: 0;
   padding: 0.65rem 0.7rem;
@@ -768,6 +854,9 @@ defineExpose({
 .file-name {
   font-size: 0.88rem;
   font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-size,
@@ -785,6 +874,11 @@ defineExpose({
   border-radius: var(--radius-sm);
   color: var(--color-error);
   background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .remove-btn:hover {
@@ -834,5 +928,129 @@ defineExpose({
   .upload-zone {
     transition: none;
   }
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.rename-btn {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.rename-btn:hover {
+  color: var(--color-primary-dark);
+  background: var(--color-primary-bg-subtle);
+}
+
+.rename-btn:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.file-rename-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.rename-input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-family: monospace;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.rename-input:focus {
+  outline: none;
+  border-color: var(--color-primary-dark);
+  box-shadow: 0 0 0 2px var(--color-primary-bg-subtle);
+}
+
+.rename-input:disabled {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.rename-warning {
+  font-size: 0.75rem;
+  color: var(--color-error);
+  line-height: 1.3;
+  padding: 0.25rem 0;
+}
+
+.file-rename-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.rename-confirm-btn,
+.rename-cancel-btn {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.rename-confirm-btn {
+  color: var(--color-success);
+}
+
+.rename-confirm-btn:hover:not(:disabled) {
+  background: var(--color-success-bg-subtle);
+  color: var(--color-success-dark);
+}
+
+.rename-confirm-btn:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.rename-cancel-btn {
+  color: var(--color-error);
+}
+
+.rename-cancel-btn:hover:not(:disabled) {
+  background: var(--color-error-bg-subtle);
+  color: var(--color-error-dark);
+}
+
+.rename-cancel-btn:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
 }
 </style>

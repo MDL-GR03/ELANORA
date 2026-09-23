@@ -1850,7 +1850,14 @@
     "filesAdded": "{count}件追加しました",
     "chooseFiles": "ファイルを選択",
     "chooseFolder": "フォルダーを選択",
-    "removeNamedFile": "{name}を削除"
+    "removeNamedFile": "{name}を削除",
+    "renameNamedFile": "{name}を名前変更",
+    "renamePlaceholder": "新しいファイル名",
+    "renameConfirm": "名前変更",
+    "renameCancel": "キャンセル",
+    "renameNonCompliant": "このファイル名は必須パターンと一致していません",
+    "renameDuplicate": "{name}というファイルが既に選択されています",
+    "renameSuccess": "{name}に名前変更しました"
   },
   "uploadPage": {
     "title": "ELANファイルのアップロード",

@@ -30,11 +30,12 @@ def test_a_refusal_reaches_the_client_with_its_code_and_parameters() -> None:
     response = TestClient(app).get("/busy")
 
     assert response.status_code == 400
-    assert response.json() == {
-        "detail": "File too large. Maximum size is 50 MB per file",
-        "code": "upload_file_too_large",
-        "params": {"max_mb": 50},
-    }
+    body = response.json()
+    assert body["detail"] == "File too large. Maximum size is 50 MB per file"
+    assert body["code"] == "upload_file_too_large"
+    assert body["params"] == {"max_mb": 50}
+    assert "correlation_id" in body
+    assert isinstance(body["correlation_id"], str)
 
 
 def test_a_message_with_a_missing_parameter_still_renders() -> None:

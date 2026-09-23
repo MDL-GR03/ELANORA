@@ -17,6 +17,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from pydantic import JsonValue
 
+from app.core.exception_handler import get_client_info, get_exception_logger
+
 
 class ErrorCode(StrEnum):
     """Stable identifiers the interface translates."""
@@ -451,4 +453,30 @@ async def elanora_error_handler(request: Request, exc: Exception) -> JSONRespons
     """Report an :class:`ElanoraError` with its status, code and parameters."""
     if not isinstance(exc, ElanoraError):
         raise exc
-    return JSONResponse(status_code=exc.status_code, content=error_body(exc))
+
+    # Get logger and client info
+    logger = get_exception_logger("elanora_error")
+    client_info = get_client_info(request)
+
+    # Build extra dict for logging
+    extra = {
+        "event_type": "elanora_error",
+        "method": client_info["method"],
+        "path": client_info["path"],
+        "correlation_id": client_info["correlation_id"],
+        "error_code": exc.code.value,
+        "params": exc.params,
+    }
+
+    # Add cause if present
+    if exc.__cause__ is not None:
+        extra["cause"] = str(exc.__cause__)
+
+    # Log the error
+    logger.warning("Request refused: %s", exc.code.value, extra=extra)
+
+    # Build response body with correlation_id
+    body = error_body(exc)
+    body["correlation_id"] = client_info["correlation_id"]
+
+    return JSONResponse(status_code=exc.status_code, content=body)

@@ -78,6 +78,7 @@
                   : t('uploadPage.uploadZone.subtitle')
               "
               :files-with-compliance="filesWithCompliance"
+              :standard="standard"
               :disabled="uploading || standardsLoading || standardsLoadFailed"
               @error="error = $event"
             />
@@ -251,6 +252,7 @@ const researchTopicsLoading = ref(false);
 
 const uploadStandard = useUploadStandard();
 const {
+  standard,
   loading: standardsLoading,
   failed: standardsLoadFailed,
   hasStandard: hasEffectiveStandard,
