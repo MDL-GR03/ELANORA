@@ -283,7 +283,7 @@ def validate_eaf(content: bytes) -> etree._Element:
             }
         for entry in vocabulary.findall("CV_ENTRY_ML"):
             for cve_value in entry.findall("CVE_VALUE"):
-                cve_value = cast(etree._Element, cve_value)
+                cve_value = cast("etree._Element", cve_value)
                 lang_ref = cve_value.get("LANG_REF")
                 if lang_ref and lang_ref not in language_ids:
                     issues.append(
