@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -145,7 +145,7 @@ class ProtocolRules(BaseModel):
         normalized = {key.strip(): value for key, value in values.items()}
         if any(not key for key in normalized):
             raise ValueError("linguistic type identifiers cannot be empty")
-        return cast(dict[str, ConstraintStereotype], dict(sorted(normalized.items())))
+        return cast("dict[str, ConstraintStereotype]", dict(sorted(normalized.items())))
 
     @field_validator("tier_parents", "tier_linguistic_types", "tier_languages")
     @classmethod

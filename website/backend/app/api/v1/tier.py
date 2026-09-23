@@ -217,7 +217,7 @@ async def create_research_topic(
         ).all()
     )
     try:
-        require_distinct_topic_name(request.name, cast(list[Any], existing_topics))
+        require_distinct_topic_name(request.name, cast("list[Any]", existing_topics))
     except SimilarResearchTopicError as exc:
         raise ElanoraError(
             ErrorCode.RESEARCH_TOPIC_USE_EXISTING, name=exc.topic.name
@@ -269,7 +269,7 @@ async def update_research_topic(
         ).all()
     )
     try:
-        require_distinct_topic_name(request.name, cast(list[Any], other_topics))
+        require_distinct_topic_name(request.name, cast("list[Any]", other_topics))
     except SimilarResearchTopicError as exc:
         raise ElanoraError(
             ErrorCode.RESEARCH_TOPIC_USE_EXISTING, name=exc.topic.name
@@ -328,7 +328,7 @@ async def get_tiers(
 
     # Now serialize
     serialized = {k: [n.model_dump() for n in v] for k, v in tiers_dict.items()}
-    return TierTreeResponse(tiers=cast(dict[str, Any], serialized))
+    return TierTreeResponse(tiers=cast("dict[str, Any]", serialized))
 
 
 @router.get("/{project_id}/sections", response_model=SectionsAndGroupsResponse)
