@@ -204,7 +204,23 @@
       :correction-case-id="correctionCase?.case_id ?? null"
     />
 
-    <div v-if="error" class="error-message" role="alert">{{ error }}</div>
+    <div
+      v-if="error"
+      :class="
+        errorIsInformational
+          ? 'upload-compliance-banner upload-compliance-banner--warning'
+          : 'error-message'
+      "
+      :role="errorIsInformational ? 'status' : 'alert'"
+    >
+      <template v-if="errorIsInformational">
+        <font-awesome-icon icon="fa-solid fa-circle-info" />
+        <span>{{ error }}</span>
+      </template>
+      <template v-else>
+        {{ error }}
+      </template>
+    </div>
   </div>
 </template>
 
@@ -228,7 +244,7 @@ import { useUploadStandard } from '@/composables/useUploadStandard';
 import { useEventMessageStore } from '@/stores/eventMessage';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
-import { apiErrorMessage } from '@/utils/apiError';
+import { apiErrorCode, apiErrorMessage } from '@/utils/apiError';
 import { findMissingCorrectionFiles } from '@/utils/correctionFiles';
 import { formatEafUploadError } from '@/utils/eafValidationError';
 
@@ -247,6 +263,7 @@ const uploadResults = ref([]);
 const completedUploadId = ref(null);
 const correctionCase = ref(null);
 const error = ref('');
+const errorIsInformational = ref(false);
 const researchTopics = ref([]);
 const researchTopicsLoading = ref(false);
 
@@ -342,6 +359,7 @@ function resetForProject() {
   completedUploadId.value = null;
   correctionCase.value = null;
   error.value = '';
+  errorIsInformational.value = false;
   context.reset();
 }
 
@@ -399,6 +417,7 @@ async function uploadFiles() {
   uploading.value = true;
   uploadResults.value = [];
   error.value = '';
+  errorIsInformational.value = false;
   try {
     const response = await gitService.uploadElanFiles(
       selectedProject.value,
@@ -424,6 +443,10 @@ async function uploadFiles() {
       await linkCorrection(response.upload_id);
     }
   } catch (uploadError) {
+    const code = apiErrorCode(uploadError);
+    errorIsInformational.value =
+      code === 'contribution_no_changes' ||
+      code === 'contribution_duplicate_pending';
     error.value = formatEafUploadError(
       uploadError,
       t,
