@@ -728,6 +728,11 @@ defineExpose({
   background: color-mix(in srgb, var(--color-primary) 0.5%, white);
   min-height: 140px;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1rem;
 }
 
 .upload-zone:hover {
