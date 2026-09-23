@@ -6,4 +6,9 @@ $ErrorActionPreference = "Stop"
 function Write-Info { Write-Host $args -ForegroundColor Cyan }
 
 Write-Info "Database migration status:"
-docker compose -f website/docker/website-dev/docker-compose.yml exec backend alembic current
+
+# Find repository root (go up from scripts/windows to repo root)
+$repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+$composeFile = Join-Path $repoRoot "website" "docker" "website-dev" "docker-compose.yml"
+
+docker compose -f $composeFile exec backend alembic current

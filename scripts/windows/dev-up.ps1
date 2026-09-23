@@ -9,16 +9,21 @@ function Write-Info { Write-Host $args -ForegroundColor Cyan }
 
 Write-Info "Starting ELANORA development environment..."
 
+# Find repository root (go up from scripts/windows to repo root)
+$repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+
 # Check if .env.dev.docker exists, if not copy from example
-$envFile = "website/env/.env.dev.docker"
+$envFile = Join-Path $repoRoot "website" "env" ".env.dev.docker"
+$envExample = Join-Path $repoRoot "website" "env" ".env.dev.docker.example"
 if (-not (Test-Path $envFile)) {
-    Write-Info "Creating $envFile from example..."
-    Copy-Item "website/env/.env.dev.docker.example" $envFile
+    Write-Info "Creating .env.dev.docker from example..."
+    Copy-Item $envExample $envFile
 }
 
 # Start Docker Compose
 Write-Info "Building and starting containers..."
-docker compose -f website/docker/website-dev/docker-compose.yml up --build --wait -d
+$composeFile = Join-Path $repoRoot "website" "docker" "website-dev" "docker-compose.yml"
+docker compose -f $composeFile up --build --wait -d
 
 if ($LASTEXITCODE -eq 0) {
     Write-Success "`nELANORA is running!"

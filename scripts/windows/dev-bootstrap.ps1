@@ -8,7 +8,11 @@ function Write-Success { Write-Host $args -ForegroundColor Green }
 
 Write-Info "Creating first administrator user..."
 
-docker compose -f website/docker/website-dev/docker-compose.yml exec backend elanora-bootstrap `
+# Find repository root (go up from scripts/windows to repo root)
+$repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+$composeFile = Join-Path $repoRoot "website" "docker" "website-dev" "docker-compose.yml"
+
+docker compose -f $composeFile exec backend elanora-bootstrap `
     --instance-name "Local ELANORA" `
     --institution-name "Development Institute" `
     --contact-email "admin@example.org" `
