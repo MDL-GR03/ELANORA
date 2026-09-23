@@ -6,7 +6,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import cast
 
-from lxml import etree  # type: ignore[import-not-found]
+from lxml import etree
 
 from app.elan.domain import (
     AlignableAnnotation,
@@ -52,7 +52,7 @@ def _parse_optional_int(value: str | None) -> int | None:
 
 def _attributes(element: etree._Element) -> StringMap:
     return immutable_attributes(
-        {str(key): value for key, value in element.attrib.items()}
+        {str(key): str(value) for key, value in element.attrib.items()}
     )
 
 

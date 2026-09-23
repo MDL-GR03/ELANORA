@@ -10,7 +10,7 @@ Running it again creates nothing new for standards already copied.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import Any
 
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -95,14 +95,14 @@ async def _copy_one(
         rule = FilenameStandardRule(
             name=full.name,
             pattern=full.pattern,
-            components=cast(list[Any], [
+            components=[
                 {
                     "name": component.name,
                     "regex": component.regex,
                     "accepted_values": component.accepted_values,
                 }
                 for component in full.components
-            ]),
+            ],
         )
     except ValidationError:
         skip("unusable_standard")

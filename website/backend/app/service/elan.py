@@ -112,7 +112,7 @@ class ElanService:
             if parent_name:
                 parent_id = tier_name_to_id.get(parent_name)
                 if parent_id:
-                    tier_id = tier_data.get("tier_id")  # type: ignore[typeddict-unknown-key]
+                    tier_id = tier_data.get("tier_id")
                     if tier_id:
                         await update_parent_tier(self.db, tier_id, parent_id)
 
@@ -161,7 +161,10 @@ class ElanService:
             await self._store_tiers_and_annotations(file_info["tiers"], elan_id)
 
             # Now that tiers have IDs, sync associations
-            tier_ids = [tier.get("tier_id") for tier in file_info["tiers"] if tier.get("tier_id")]  # type: ignore[typeddict-unknown-key]
+            tier_ids = [
+                tier_id for tier in file_info["tiers"]
+                if (tier_id := tier.get("tier_id")) is not None
+            ]
             await sync_elan_file_to_tiers(self.db, elan_id, tier_ids)
 
             if commit_changes:

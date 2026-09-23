@@ -4,9 +4,8 @@ import json
 from copy import deepcopy
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import cast
 
-from lxml import etree  # type: ignore[import-not-found]
+from lxml import etree
 
 from app.elan.validation import secure_xml_parser, validate_eaf
 
@@ -340,11 +339,15 @@ def reintegrate_tier_subset(  # noqa: PLR0912, PLR0915
                             if annotation.get(attribute) == slot_id:
                                 annotation.set(attribute, new_slot_id)
             else:
-                existing_slot.set("TIME_VALUE", incoming_slot.get("TIME_VALUE"))
+                time_value = incoming_slot.get("TIME_VALUE")
+                if time_value is not None:
+                    existing_slot.set("TIME_VALUE", time_value)
 
     for tier_id in selected:
         old_tier = current_tiers[tier_id]
-        old_tier.getparent().replace(old_tier, replacement_tiers[tier_id])
+        parent = old_tier.getparent()
+        if parent is not None:
+            parent.replace(old_tier, replacement_tiers[tier_id])
 
     # New topic tiers are appended after existing tiers. Their parent references
     # remain valid because required parent tiers were retained in the extract.
@@ -387,4 +390,4 @@ def reintegrate_tier_subset(  # noqa: PLR0912, PLR0915
         pretty_print=True,
     )
     validate_eaf(result)
-    return cast("bytes", result)
+    return result

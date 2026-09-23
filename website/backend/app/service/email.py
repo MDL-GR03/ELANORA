@@ -5,10 +5,9 @@ import html
 import re
 from collections.abc import Mapping
 from pathlib import Path
-from typing import cast
 
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
-from pydantic import SecretStr
+from pydantic import NameEmail, SecretStr
 
 from app.core import config
 from app.core.centralized_logging import get_logger
@@ -121,7 +120,7 @@ class EmailService:
         await FastMail(self.conf).send_message(
             MessageSchema(
                 subject=subject,
-                recipients=cast(list[Any], [recipient]),
+                recipients=[NameEmail(name=recipient, email=recipient)],
                 body=body,
                 subtype=MessageType.html,
             )

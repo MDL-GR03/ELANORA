@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import pairwise
 from pathlib import Path
-from typing import Final, cast
+from typing import Final
 
-from lxml import etree  # type: ignore[import-not-found]
+from lxml import etree
 
 from app.elan.xsd_types import parse_xsd_boolean
 
@@ -64,7 +64,7 @@ def _validate_schema(root: etree._Element, issues: list[ValidationIssue]) -> Non
         return
     issues.extend(
         _issue("xsd_validation", entry.message, f"line {entry.line}")
-        for entry in schema.error_log[:MAX_SCHEMA_ISSUES]
+        for entry in list(schema.error_log)[:MAX_SCHEMA_ISSUES]
     )
 
 
@@ -91,7 +91,7 @@ def _required(
             )
         )
         return None
-    return cast("str", value)
+    return value
 
 
 def _duplicates(values: list[str]) -> set[str]:
