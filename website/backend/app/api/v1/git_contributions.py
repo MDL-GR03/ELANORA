@@ -351,8 +351,12 @@ async def upload_elan_files(  # noqa: PLR0913, PLR0917
         ) from e
     except (HTTPException, ElanoraError):
         raise
-    except (DuplicatePendingContributionError, ContributionAlreadyCurrentError) as e:
-        raise ElanoraError(ErrorCode.CONTRIBUTION_STATE_CONFLICT) from e
+    except ContributionAlreadyCurrentError as e:
+        raise ElanoraError(ErrorCode.CONTRIBUTION_NO_CHANGES) from e
+    except DuplicatePendingContributionError as e:
+        raise ElanoraError(
+            ErrorCode.CONTRIBUTION_DUPLICATE_PENDING, upload_id=e.upload_id
+        ) from e
     except FileNotFoundError as e:
         raise ElanoraError(ErrorCode.PROJECT_FILE_NOT_FOUND) from e
     except ValueError as e:

@@ -100,7 +100,8 @@ class ErrorCode(StrEnum):
     PROJECT_STORAGE_INTACT = "project_storage_intact"
     RECOVERY_BACKUP_NOT_FOUND = "recovery_backup_not_found"
     # Contributions, research topics and copies
-    CONTRIBUTION_STATE_CONFLICT = "contribution_state_conflict"
+    CONTRIBUTION_DUPLICATE_PENDING = "contribution_duplicate_pending"
+    CONTRIBUTION_NO_CHANGES = "contribution_no_changes"
     CORRECTION_REQUEST_NOT_FOUND = "correction_request_not_found"
     CORRECTION_REQUEST_CLOSED = "correction_request_closed"
     EAF_REVIEW_UNAVAILABLE = "eaf_review_unavailable"
@@ -304,7 +305,14 @@ ERRORS: Mapping[ErrorCode, ErrorDefinition] = {
     _E.RECOVERY_BACKUP_NOT_FOUND: ErrorDefinition(
         404, "No recovery backup exists for this project"
     ),
-    _E.CONTRIBUTION_STATE_CONFLICT: ErrorDefinition(409, "Contribution state conflict"),
+    _E.CONTRIBUTION_DUPLICATE_PENDING: ErrorDefinition(
+        409,
+        "This exact contribution is already awaiting review as contribution #{upload_id}.",
+    ),
+    _E.CONTRIBUTION_NO_CHANGES: ErrorDefinition(
+        409,
+        "These files are already the current accepted version. No tiers or content changed, so nothing was submitted.",
+    ),
     _E.CORRECTION_REQUEST_NOT_FOUND: ErrorDefinition(
         404, "Correction request not found"
     ),
