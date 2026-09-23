@@ -94,11 +94,9 @@ These have no runtime references and are preserved by Git history:
 - generated `website/frontend/dist`, caches, coverage output, and other ignored
   build products whenever local disk cleanup is desired.
 
-The Python `installer/setup_instance.py` and two `run_setup_instance` wrappers
-are also technically redundant: the browser setup is primary and
-`elanora-bootstrap` is the maintained automation/recovery CLI. They can be
-removed if no external deployment documentation or operator still invokes the
-old path.
+The `installer/` directory (including legacy `setup_instance.py`, launch wrappers,
+and `install.sh`) is redundant: the browser setup is primary and `elanora-bootstrap`
+is the maintained automation/recovery CLI. This has been removed.
 
 ## Conditional domain removal
 

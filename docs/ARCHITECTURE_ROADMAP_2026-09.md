@@ -100,8 +100,9 @@ tests and the production build. The database is at migration 0038.
 
 ### Operations, for installations nobody staffs
 
-- `installer/install.sh` installs an institution from three answers and is safe
-  to re-run; `elanora-setup` generates every secret and never rotates one.
+- A web-based setup interface (protected by a setup token) installs an institution
+  from a form and is safe to revisit; `elanora-setup` generates every secret and
+  never rotates one.
 - A `maintenance-worker` backs up daily, verifies weekly, applies retention
   daily and watches disk capacity hourly, deciding what is due from runs
   recorded in PostgreSQL. The operations page reports what actually happened.

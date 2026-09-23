@@ -21,7 +21,6 @@ database recommendation, and phased recovery plan.
 - `website/frontend`: Vue 3 and Vite client
 - `website/docker`: development, production, and server Compose prototypes
 - `website/static`: sanitized/sample EAF corpora used during development
-- `installer`: institutional instance setup prototype
 - `docs`: design artifacts, database drafts, prototype screens, and audit
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the enforced development commands and
