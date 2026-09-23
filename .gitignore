@@ -36,8 +36,7 @@ __pycache__/
 
 # .env files (keep examples)
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
 !.env.*.example
 
