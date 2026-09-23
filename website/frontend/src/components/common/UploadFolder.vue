@@ -124,16 +124,36 @@
                 </span>
               </div>
               <div v-else class="file-rename-control">
-                <input
-                  v-model="renameDraft"
-                  type="text"
-                  class="rename-input"
-                  :placeholder="$t('upload.renamePlaceholder')"
-                  :aria-label="$t('upload.renamePlaceholder')"
-                  :disabled="disabled"
-                  @keydown.enter="confirmRename"
-                  @keydown.escape="cancelRename"
-                />
+                <div class="rename-input-row">
+                  <input
+                    v-model="renameDraft"
+                    type="text"
+                    class="rename-input"
+                    :placeholder="$t('upload.renamePlaceholder')"
+                    :aria-label="$t('upload.renamePlaceholder')"
+                    :disabled="disabled"
+                    @keydown.enter="confirmRename"
+                    @keydown.escape="cancelRename"
+                  />
+                  <button
+                    type="button"
+                    class="rename-confirm-btn"
+                    :disabled="!isValidRename || disabled"
+                    :title="$t('upload.renameConfirm')"
+                    @click.stop="confirmRename"
+                  >
+                    <font-awesome-icon icon="fa-solid fa-check" />
+                  </button>
+                  <button
+                    type="button"
+                    class="rename-cancel-btn"
+                    :disabled="disabled"
+                    :title="$t('upload.renameCancel')"
+                    @click.stop="cancelRename"
+                  >
+                    <font-awesome-icon icon="fa-solid fa-xmark" />
+                  </button>
+                </div>
                 <button
                   v-if="renameSuggestion"
                   type="button"
@@ -181,26 +201,6 @@
                 :aria-label="$t('upload.removeNamedFile', { name: file.name })"
                 :disabled="disabled"
                 @click.stop="removeFile(index)"
-              >
-                <font-awesome-icon icon="fa-solid fa-xmark" />
-              </button>
-            </div>
-            <div v-else class="file-rename-actions">
-              <button
-                type="button"
-                class="rename-confirm-btn"
-                :disabled="!isValidRename || disabled"
-                :title="$t('upload.renameConfirm')"
-                @click.stop="confirmRename"
-              >
-                <font-awesome-icon icon="fa-solid fa-check" />
-              </button>
-              <button
-                type="button"
-                class="rename-cancel-btn"
-                :disabled="disabled"
-                :title="$t('upload.renameCancel')"
-                @click.stop="cancelRename"
               >
                 <font-awesome-icon icon="fa-solid fa-xmark" />
               </button>
@@ -1062,8 +1062,15 @@ defineExpose({
   min-width: 0;
 }
 
+.rename-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .rename-input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-sm);
@@ -1112,12 +1119,6 @@ defineExpose({
 .rename-suggestion-btn:disabled {
   color: var(--color-text-muted);
   cursor: not-allowed;
-}
-
-.file-rename-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-shrink: 0;
 }
 
 .rename-confirm-btn,
