@@ -97,6 +97,12 @@
   width: min(32rem, 100%);
 }
 
+.upload-folder-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .upload-step-placeholder {
   min-height: 8rem;
   display: grid;
