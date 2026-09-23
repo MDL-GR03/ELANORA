@@ -521,5 +521,9 @@ watch(selectedProject, async (projectId) => {
   }
 });
 
-watch(selectedFiles, (files) => context.detectFrom(files));
+watch(selectedFiles, (files) => {
+  context.detectFrom(files);
+  error.value = '';
+  errorIsInformational.value = false;
+});
 </script>
