@@ -32,14 +32,14 @@ website/backend/.venv/*
 __pycache__/
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 
-# .env files
-.env.*
-.env*
+# .env files (keep examples)
 .env
-!**/.env.example
-!**/.env.*.example
-
+.env.local
+.env.*.local
+!.env.example
+!.env.*.example
 
 # Ignore SQL Dumps
 *.sql
@@ -54,20 +54,13 @@ __pycache__/
 # Ignore the coverage folders
 coverage/
 .coverage
-/coverage
 
 # Ignore open project ELAN files
 *.pfsx
 
 # Ignore backup folder/files
-elanora_projects_backups
 website/backend/elanora_backups/
 website/dumps/
-
-# Ignore project (ELAN) specific files
-elanora_projects/*
-!elanora_projects/.githooks/
-!elanora_projects/.githooks/**
 
 # Runtime PostgreSQL project and recovery data
 /website/data/
