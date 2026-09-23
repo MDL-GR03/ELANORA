@@ -43,7 +43,7 @@ from app.service.git_command_runner import GitCommandRunner
 from app.service.project_filesystem_sync import ProjectFilesystemSyncService
 from app.service.project_history import ProjectHistoryService, ProjectRestoreCommand
 from app.service.project_integrity import ProjectIntegrityService
-from app.service.project_lifecycle import ProjectLifecycleService
+from app.service.project_lifecycle import ProjectLifecycleService, ProjectRenameResult
 from app.service.project_recovery import ProjectRecoveryService
 from app.storage.paths import safe_project_path
 
@@ -586,7 +586,7 @@ class GitService:
         new_project_name: str,
         new_project_description: str | None,
         db: AsyncSession,
-    ) -> dict[str, str | None]:
+    ) -> ProjectRenameResult:
         """Rename a project and update its description as one change."""
         return await self.project_lifecycle.rename_project(
             db, old_project_name, new_project_name, new_project_description

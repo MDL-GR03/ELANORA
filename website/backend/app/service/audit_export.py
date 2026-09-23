@@ -9,7 +9,7 @@ project and period actually being asked about.
 import csv
 import json
 from datetime import datetime
-from typing import IO, Any, Literal, cast
+from typing import IO, Literal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,10 +60,10 @@ async def export_audit_events(
     rows = [_row(event) for event in (await db.scalars(statement)).all()]
 
     if output_format == "csv":
-        writer = csv.DictWriter(output, fieldnames=list(COLUMNS))
+        writer: csv.DictWriter[str] = csv.DictWriter(output, fieldnames=list(COLUMNS))
         writer.writeheader()
         for row in rows:
-            writer.writerow(cast(dict[str, Any], {**row, "details": json.dumps(row["details"])}))
+            writer.writerow({**row, "details": json.dumps(row["details"])})
     else:
         json.dump(rows, output, indent=2, sort_keys=True)
     return len(rows)

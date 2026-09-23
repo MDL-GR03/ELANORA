@@ -22,7 +22,11 @@ from app.crud.project_naming_standard import get_standard_with_components_full
 from app.model.audit_event import AuditEvent
 from app.model.project import Project
 from app.model.protocol import Protocol, ProtocolVersion
-from app.schema.protocol import FilenameStandardRule, ProtocolRules
+from app.schema.protocol import (
+    FilenameComponentRule,
+    FilenameStandardRule,
+    ProtocolRules,
+)
 from app.service.protocol_administration import create_protocol, create_protocol_version
 from app.service.protocol_errors import ProtocolConflictError
 from app.service.protocol_shared import get_pinned_protocol_version
@@ -96,11 +100,11 @@ async def _copy_one(
             name=full.name,
             pattern=full.pattern,
             components=[
-                {
-                    "name": component.name,
-                    "regex": component.regex,
-                    "accepted_values": component.accepted_values,
-                }
+                FilenameComponentRule(
+                    name=component.name,
+                    regex=component.regex,
+                    accepted_values=component.accepted_values or [],
+                )
                 for component in full.components
             ],
         )

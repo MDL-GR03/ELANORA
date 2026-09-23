@@ -189,11 +189,14 @@ class ContributionIntakeService:
         db: AsyncSession,
         context: SubmissionContext,
     ) -> None:
+        branch_name = upload_info.get("branch_name")
+        if not branch_name:
+            raise RuntimeError("Pending upload is missing its branch name")
         upload_record = {
             "type": "PENDING_UPLOAD",
             "status": "PENDING_ADMIN_APPROVAL",
             "upload_data": {
-                "branch_name": upload_info.get("branch_name"),
+                "branch_name": branch_name,
                 "original_branch": upload_info.get("original_branch"),
                 "uploaded_by": context.username,
                 "new_files_count": len(upload_info.get("new_files", [])),
@@ -219,7 +222,7 @@ class ContributionIntakeService:
         pending = await save_pending_upload(
             db,
             project_id,
-            upload_info["branch_name"],
+            branch_name,
             upload_record,
             submitted_by=context.user_id,
             base_commit=context.base_commit,

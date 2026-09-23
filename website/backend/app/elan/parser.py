@@ -4,7 +4,6 @@ import hashlib
 from datetime import UTC, datetime
 from pathlib import Path
 from types import MappingProxyType
-from typing import cast
 
 from lxml import etree
 
@@ -43,7 +42,7 @@ def _required(element: etree._Element, attribute: str) -> str:
     value = element.get(attribute)
     if value is None:
         raise AssertionError(f"validated element is missing {attribute}")
-    return cast("str", value)
+    return value
 
 
 def _parse_optional_int(value: str | None) -> int | None:
@@ -148,9 +147,7 @@ def _annotation_value(element: etree._Element) -> str:
 def _parse_annotation(
     element: etree._Element, time_values: dict[str, int | None]
 ) -> EafAnnotation:
-    attributes = immutable_attributes(
-        {str(key): value for key, value in element.attrib.items()}
-    )
+    attributes = _attributes(element)
     if element.tag == "ALIGNABLE_ANNOTATION":
         start_ref = _required(element, "TIME_SLOT_REF1")
         end_ref = _required(element, "TIME_SLOT_REF2")
@@ -203,9 +200,7 @@ def parse_eaf(content: bytes, *, source_path: Path | None = None) -> EafDocument
             relative_media_url=item.get("RELATIVE_MEDIA_URL"),
             extracted_from=item.get("EXTRACTED_FROM"),
             time_origin_ms=_parse_optional_int(item.get("TIME_ORIGIN")),
-            attributes=immutable_attributes(
-                {str(key): value for key, value in item.attrib.items()}
-            ),
+            attributes=_attributes(item),
         )
         for item in header_element.findall("MEDIA_DESCRIPTOR")
     )
@@ -232,9 +227,7 @@ def parse_eaf(content: bytes, *, source_path: Path | None = None) -> EafDocument
             )
             for item in header_element.findall("PROPERTY")
         ),
-        attributes=immutable_attributes(
-            {str(key): value for key, value in header_element.attrib.items()}
-        ),
+        attributes=_attributes(header_element),
     )
 
     tiers: list[EafTier] = []
@@ -254,9 +247,7 @@ def parse_eaf(content: bytes, *, source_path: Path | None = None) -> EafDocument
                 lang_ref=tier.get("LANG_REF"),
                 ext_ref=tier.get("EXT_REF"),
                 annotations=annotations,
-                attributes=immutable_attributes(
-                    {str(key): value for key, value in tier.attrib.items()}
-                ),
+                attributes=_attributes(tier),
             )
         )
 

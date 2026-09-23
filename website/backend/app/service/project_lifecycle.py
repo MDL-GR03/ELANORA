@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from fastapi import UploadFile
 from sqlalchemy import or_, select
@@ -37,6 +37,13 @@ from app.utils.project_setup_utils import (
 )
 
 logger = get_logger()
+
+
+class ProjectRenameResult(TypedDict):
+    """Outcome of renaming a project's folder, backup, and record."""
+
+    new_project_name: str
+    new_project_description: str | None
 
 
 class ProjectNameUnavailableError(FileExistsError):
@@ -314,7 +321,7 @@ class ProjectLifecycleService:
         old_project_name: str,
         new_project_name: str,
         new_project_description: str | None,
-    ) -> dict[str, str | None]:
+    ) -> ProjectRenameResult:
         """Rename a project's folder, recovery backup and record as one change.
 
         Every precondition is checked, and the record is flushed, before anything

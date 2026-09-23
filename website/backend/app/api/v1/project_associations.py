@@ -1,7 +1,6 @@
 """API endpoints for managing project-user associations (admin only)."""
 
 import logging
-from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +28,9 @@ from app.schema.requests.project_association import (
 )
 from app.schema.responses.project_association import (
     ProjectAssociationResponse,
+    ProjectUserInfo,
     ProjectUserListResponse,
+    UserProjectInfo,
     UserProjectListResponse,
 )
 from app.schema.responses.user import UserListResponse, UserResponse
@@ -92,13 +93,13 @@ async def list_project_users(
         return ProjectUserListResponse(
             project_name=access.project.project_name,
             users=[
-                {
-                    "user_id": user_info["user_id"],
-                    "username": user_info["username"],
-                    "email": user_info["email"],
-                    "permission": user_info["permission"],
-                    "capabilities": user_info["capabilities"],
-                }
+                ProjectUserInfo(
+                    user_id=user_info["user_id"],
+                    username=user_info["username"],
+                    email=user_info["email"],
+                    permission=user_info["permission"],
+                    capabilities=user_info["capabilities"],
+                )
                 for user_info in users
             ],
         )
@@ -140,11 +141,11 @@ async def list_user_projects_admin(
             user_id=user_id,
             username=target_user.username,
             projects=[
-                {
-                    "project_id": project.project_id,
-                    "project_name": project.project_name,
-                    "description": project.description,
-                }
+                UserProjectInfo(
+                    project_id=project.project_id,
+                    project_name=project.project_name,
+                    description=project.description or "",
+                )
                 for project in projects
             ],
         )

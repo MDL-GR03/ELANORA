@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from functools import cache
 from itertools import pairwise
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any, Literal
 
 from pydantic import AfterValidator
 from pydantic_core import PydanticCustomError
@@ -27,9 +27,11 @@ PASSWORD_MAXIMUM_BYTES = 72
 SERVICE_WORDS = ("elanora", "elan", "password")
 MINIMUM_CONTEXT_WORD_LENGTH = 4
 
+PolicyViolationCode = Literal["too_short", "too_long", "common", "repetitive", "personal"]
+
 COMMON_PASSWORDS_FILE = Path(__file__).with_name("common_passwords.txt")
 
-MESSAGES = {
+MESSAGES: dict[PolicyViolationCode, str] = {
     "too_short": f"Password must be at least {PASSWORD_MINIMUM_LENGTH} characters",
     "too_long": f"Password must be at most {PASSWORD_MAXIMUM_BYTES} bytes",
     "common": "Password is too common",
@@ -68,7 +70,7 @@ def _context_words(context: Iterable[str | None]) -> set[str]:
 
 def password_policy_violation(
     password: str, context: Iterable[str | None] = ()
-) -> str | None:
+) -> PolicyViolationCode | None:
     """The first rule the password breaks, as an error code; None when acceptable.
 
     ``context`` holds the account's own details (username, email address,
@@ -93,9 +95,13 @@ def password_policy_violation(
     return None
 
 
-def password_policy_error(code: str) -> PydanticCustomError:
+def password_policy_error(code: PolicyViolationCode) -> PydanticCustomError:
     """The validation error reported for a broken rule."""
-    return PydanticCustomError(f"password_{code}", MESSAGES[code])
+    # pydantic-core stubs declare PydanticCustomError.__init__ with
+    # message_template: LiteralString, but dict lookup can't guarantee
+    # LiteralString. Any documents this intentional stub gap.
+    message: Any = MESSAGES[code]
+    return PydanticCustomError(f"password_{code}", message)
 
 
 def enforce_password_policy(password: str, context: Iterable[str | None] = ()) -> str:

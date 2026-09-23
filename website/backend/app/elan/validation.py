@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import pairwise
 from pathlib import Path
-from typing import Final
+from typing import Any, Final
 
 from lxml import etree
 
@@ -62,9 +62,12 @@ def _validate_schema(root: etree._Element, issues: list[ValidationIssue]) -> Non
     schema = _eaf_schema()
     if schema.validate(root):
         return
+    # lxml-stubs declares _ErrorLog with no members; it is iterable and
+    # indexable at runtime. Any documents this intentional stub gap.
+    error_log: Any = schema.error_log
     issues.extend(
         _issue("xsd_validation", entry.message, f"line {entry.line}")
-        for entry in list(schema.error_log)[:MAX_SCHEMA_ISSUES]
+        for entry in list(error_log)[:MAX_SCHEMA_ISSUES]
     )
 
 
@@ -152,7 +155,10 @@ def validate_eaf(content: bytes) -> etree._Element:
             (_issue("xml_syntax", "XML is not well formed", f"line {exc.lineno}"),)
         ) from exc
 
-    if root.getroottree().docinfo.doctype:
+    # lxml-stubs' DocInfo omits `doctype`, which exists at runtime. Any
+    # documents this intentional stub gap.
+    docinfo: Any = root.getroottree().docinfo
+    if docinfo.doctype:
         raise EafValidationError(
             (
                 _issue(
@@ -271,9 +277,9 @@ def validate_eaf(content: bytes) -> etree._Element:
         cv_id = vocabulary.get("CV_ID")
         if cv_id:
             vocabulary_entries[cv_id] = {
-                entry.get("CVE_ID")
+                cve_id
                 for entry in vocabulary.findall("CV_ENTRY_ML")
-                if entry.get("CVE_ID")
+                if (cve_id := entry.get("CVE_ID"))
             }
         for value in vocabulary.findall("./CV_ENTRY_ML/CVE_VALUE"):
             lang_ref = value.get("LANG_REF")
