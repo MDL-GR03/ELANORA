@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import pairwise
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from lxml import etree
 
@@ -281,16 +281,18 @@ def validate_eaf(content: bytes) -> etree._Element:
                 for entry in vocabulary.findall("CV_ENTRY_ML")
                 if (cve_id := entry.get("CVE_ID"))
             }
-        for value in vocabulary.findall("./CV_ENTRY_ML/CVE_VALUE"):
-            lang_ref = value.get("LANG_REF")
-            if lang_ref and lang_ref not in language_ids:
-                issues.append(
-                    _issue(
-                        "unknown_language",
-                        f"CVE_VALUE refers to unknown language {lang_ref!r}",
-                        value.getroottree().getpath(value),
+        for entry in vocabulary.findall("CV_ENTRY_ML"):
+            for cve_value in entry.findall("CVE_VALUE"):
+                cve_value = cast(etree._Element, cve_value)
+                lang_ref = cve_value.get("LANG_REF")
+                if lang_ref and lang_ref not in language_ids:
+                    issues.append(
+                        _issue(
+                            "unknown_language",
+                            f"CVE_VALUE refers to unknown language {lang_ref!r}",
+                            cve_value.getroottree().getpath(cve_value),
+                        )
                     )
-                )
 
     cv_by_linguistic_type: dict[str, str] = {}
     alignable_by_linguistic_type: dict[str, bool] = {}
