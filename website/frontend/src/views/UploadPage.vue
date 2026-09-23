@@ -79,6 +79,7 @@
               "
               :files-with-compliance="filesWithCompliance"
               :standard="standard"
+              :media-standard="mediaStandard"
               :disabled="uploading || standardsLoading || standardsLoadFailed"
               @error="error = $event"
             />
@@ -241,12 +242,15 @@ import UploadCorrectionContext from '@/components/pageSpecific/upload/UploadCorr
 import UploadResults from '@/components/pageSpecific/upload/UploadResults.vue';
 import { useContributionContext } from '@/composables/useContributionContext';
 import { useUploadStandard } from '@/composables/useUploadStandard';
+import { useEffectiveStandardStore } from '@/stores/effectiveStandard';
 import { useEventMessageStore } from '@/stores/eventMessage';
+import { useNamingStandardStore } from '@/stores/namingStandard';
 import { useProjectStore } from '@/stores/project';
 import { useUserStore } from '@/stores/user';
 import { apiErrorCode, apiErrorMessage } from '@/utils/apiError';
 import { findMissingCorrectionFiles } from '@/utils/correctionFiles';
 import { formatEafUploadError } from '@/utils/eafValidationError';
+import { getMediaStandardForProject } from '@/utils/filenameFromMediaFile';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -266,6 +270,7 @@ const error = ref('');
 const errorIsInformational = ref(false);
 const researchTopics = ref([]);
 const researchTopicsLoading = ref(false);
+const mediaStandard = ref(null);
 
 const uploadStandard = useUploadStandard();
 const {
@@ -345,11 +350,27 @@ async function loadCorrectionContext() {
   }
 }
 
+async function loadMediaStandard() {
+  if (!selectedProject.value) {
+    mediaStandard.value = null;
+    return;
+  }
+  const effectiveStandardStore = useEffectiveStandardStore();
+  const namingStandardStore = useNamingStandardStore();
+  const standard = await getMediaStandardForProject(
+    selectedProject.value,
+    effectiveStandardStore,
+    namingStandardStore
+  );
+  mediaStandard.value = standard || null;
+}
+
 function loadProjectContext() {
   return Promise.all([
     loadStandard(),
     loadCorrectionContext(),
     loadResearchTopics(),
+    loadMediaStandard(),
   ]);
 }
 
@@ -360,6 +381,7 @@ function resetForProject() {
   correctionCase.value = null;
   error.value = '';
   errorIsInformational.value = false;
+  mediaStandard.value = null;
   context.reset();
 }
 
@@ -493,7 +515,10 @@ watch(selectedProject, async (projectId) => {
   }
   resetForProject();
   if (projectId) await loadProjectContext();
-  else uploadStandard.clear();
+  else {
+    uploadStandard.clear();
+    mediaStandard.value = null;
+  }
 });
 
 watch(selectedFiles, (files) => context.detectFrom(files));

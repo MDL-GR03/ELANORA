@@ -134,6 +134,19 @@
                   @keydown.enter="confirmRename"
                   @keydown.escape="cancelRename"
                 />
+                <button
+                  v-if="renameSuggestion"
+                  type="button"
+                  class="rename-suggestion-btn"
+                  :disabled="disabled"
+                  @click="applySuggestion"
+                >
+                  {{
+                    $t('upload.renameSuggestionAvailable', {
+                      name: renameSuggestion,
+                    })
+                  }}
+                </button>
                 <div
                   v-if="
                     renameDraft.trim() &&
@@ -222,6 +235,7 @@ import FontAwesomeIcon from '@/plugins/fontawesome';
 import { useEventMessageStore } from '@stores/eventMessage';
 import { useI18n } from 'vue-i18n';
 import { isFilenameCompliant } from '@/utils/filenameCompliance';
+import { suggestEafFilenameFromMedia } from '@/utils/filenameFromMediaFile';
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -232,6 +246,7 @@ const props = defineProps({
   allowDuplicates: { type: Boolean, default: false },
   filesWithCompliance: { type: Array, default: () => [] }, // New: Array of compliance statuses
   standard: { type: Object, default: null },
+  mediaStandard: { type: Object, default: null },
   disabled: { type: Boolean, default: false },
 });
 
@@ -245,6 +260,7 @@ const fileInput = ref(null);
 const folderInput = ref(null);
 const renamingIndex = ref(null);
 const renameDraft = ref('');
+const renameSuggestion = ref(null);
 
 // Initialize from modelValue and sort
 watch(
@@ -548,15 +564,38 @@ function clearFiles() {
   updateModelValue();
 }
 
-function startRename(index) {
+async function startRename(index) {
   if (props.disabled) return;
   renamingIndex.value = index;
   renameDraft.value = selectedFiles.value[index].name;
+  renameSuggestion.value = null;
+
+  if (props.standard && props.mediaStandard) {
+    const result = await suggestEafFilenameFromMedia(
+      selectedFiles.value[index],
+      props.standard,
+      props.mediaStandard
+    );
+    if (
+      renamingIndex.value === index &&
+      result &&
+      result !== selectedFiles.value[index].name
+    ) {
+      renameSuggestion.value = result;
+    }
+  }
 }
 
 function cancelRename() {
   renamingIndex.value = null;
   renameDraft.value = '';
+  renameSuggestion.value = null;
+}
+
+function applySuggestion() {
+  if (renameSuggestion.value) {
+    renameDraft.value = renameSuggestion.value;
+  }
 }
 
 function confirmRename() {
@@ -1009,6 +1048,28 @@ defineExpose({
   color: var(--color-error);
   line-height: 1.3;
   padding: 0.25rem 0;
+}
+
+.rename-suggestion-btn {
+  background: none;
+  border: none;
+  padding: 0.2rem 0;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: color 0.2s;
+}
+
+.rename-suggestion-btn:hover:not(:disabled) {
+  color: var(--color-primary-dark);
+}
+
+.rename-suggestion-btn:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
 }
 
 .file-rename-actions {

@@ -2,6 +2,60 @@ import { extractComponentsFromFilename } from '@/utils/filenameCompliance';
 import { reportClientError } from '@/utils/errorDiagnostics';
 
 /**
+ * Derive a media file's basename from its MEDIA_DESCRIPTOR URL attributes,
+ * mirroring the backend's extraction in
+ * app/crud/elan_file_media.py:get_project_files_with_media_simple so a
+ * not-yet-uploaded file's media filenames match what the server would report
+ * once it's committed.
+ * @param {string|null} mediaUrl - MEDIA_DESCRIPTOR@MEDIA_URL
+ * @param {string|null} relativeMediaUrl - MEDIA_DESCRIPTOR@RELATIVE_MEDIA_URL
+ * @returns {string|null} The media file's basename, or null if neither URL yields one
+ */
+function mediaUrlBasename(mediaUrl, relativeMediaUrl) {
+  const source = relativeMediaUrl || mediaUrl;
+  if (!source) return null;
+  const withoutFileScheme = source.startsWith('file:///')
+    ? source.slice('file:///'.length)
+    : source;
+  const segments = withoutFileScheme.split(/[/\\]/);
+  const basename = segments[segments.length - 1];
+  return basename || null;
+}
+
+/**
+ * Extract the linked media filenames from raw ELAN (.eaf) XML text, without
+ * uploading the file first. Used to suggest a compliant filename for a file
+ * still sitting in the browser's upload selection, the same way an already
+ * uploaded file's linked media suggests one on the Projects page.
+ * @param {string} eafText - Raw XML content of an .eaf file
+ * @returns {string[]} Deduplicated media filenames referenced by the file, or [] if none/unparsable
+ */
+export function extractMediaFilenamesFromEafText(eafText) {
+  if (!eafText || typeof DOMParser === 'undefined') return [];
+  try {
+    const doc = new DOMParser().parseFromString(eafText, 'text/xml');
+    if (doc.querySelector('parsererror')) return [];
+    const descriptors = Array.from(
+      doc.querySelectorAll('HEADER > MEDIA_DESCRIPTOR')
+    );
+    const filenames = [];
+    for (const descriptor of descriptors) {
+      const filename = mediaUrlBasename(
+        descriptor.getAttribute('MEDIA_URL'),
+        descriptor.getAttribute('RELATIVE_MEDIA_URL')
+      );
+      if (filename && !filenames.includes(filename)) {
+        filenames.push(filename);
+      }
+    }
+    return filenames;
+  } catch (error) {
+    reportClientError('Error parsing EAF media descriptors', error);
+    return [];
+  }
+}
+
+/**
  * Extract naming components from media filenames using a naming standard
  * @param {Array} mediaFilenames - Array of media filenames
  * @param {Object} mediaStandard - The naming standard for media files
@@ -166,6 +220,37 @@ export function generateSuggestedFilename(
 
   const result = suggestedName + extension;
   return result;
+}
+
+/**
+ * Suggest a compliant filename for a not-yet-uploaded .eaf file by reading
+ * its own linked media descriptors, the same information an already
+ * uploaded file's suggestion is built from on the Projects page.
+ * @param {File} file - The selected .eaf file, not yet uploaded
+ * @param {Object|null} targetStandard - The project's EAF naming standard
+ * @param {Object|null} mediaStandard - The project's media naming standard
+ * @returns {Promise<string|null>} A suggested filename, or null if none could be derived
+ */
+export async function suggestEafFilenameFromMedia(
+  file,
+  targetStandard,
+  mediaStandard
+) {
+  if (!file || !targetStandard || !mediaStandard) return null;
+  let text;
+  try {
+    text = await file.text();
+  } catch (error) {
+    reportClientError('Error reading EAF file for rename suggestion', error);
+    return null;
+  }
+  const mediaFilenames = extractMediaFilenamesFromEafText(text);
+  const extractedComponents = extractComponentsFromMedia(
+    mediaFilenames,
+    mediaStandard
+  );
+  if (!extractedComponents) return null;
+  return generateSuggestedFilename(extractedComponents, targetStandard);
 }
 
 /**

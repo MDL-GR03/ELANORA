@@ -1857,7 +1857,8 @@
     "renameCancel": "Annuler",
     "renameNonCompliant": "Ce nom ne correspond pas au modèle requis",
     "renameDuplicate": "Un fichier nommé {name} est déjà sélectionné",
-    "renameSuccess": "Renommé en {name}"
+    "renameSuccess": "Renommé en {name}",
+    "renameSuggestionAvailable": "Utiliser le nom suggéré : {name}"
   },
   "uploadPage": {
     "title": "Upload des fichiers ELAN",

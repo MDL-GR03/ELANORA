@@ -1857,7 +1857,8 @@
     "renameCancel": "Cancel",
     "renameNonCompliant": "This name still doesn't match the required pattern",
     "renameDuplicate": "A file named {name} is already selected",
-    "renameSuccess": "Renamed to {name}"
+    "renameSuccess": "Renamed to {name}",
+    "renameSuggestionAvailable": "Use suggested name: {name}"
   },
   "uploadPage": {
     "title": "Upload ELAN Files",

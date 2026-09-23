@@ -1857,7 +1857,8 @@
     "renameCancel": "キャンセル",
     "renameNonCompliant": "このファイル名は必須パターンと一致していません",
     "renameDuplicate": "{name}というファイルが既に選択されています",
-    "renameSuccess": "{name}に名前変更しました"
+    "renameSuccess": "{name}に名前変更しました",
+    "renameSuggestionAvailable": "推奨名を使用：{name}"
   },
   "uploadPage": {
     "title": "ELANファイルのアップロード",
