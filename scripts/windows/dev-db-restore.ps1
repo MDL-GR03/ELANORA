@@ -34,8 +34,10 @@ if ($response -ne "yes") {
     exit 0
 }
 
-# Restore database
-Get-Content $absolutePath | docker compose -f $composeFile exec -T db psql -U elanora -d elanora
+# Restore database using input redirection
+# Read file content and pipe to docker via stdin
+$sqlContent = Get-Content $absolutePath -Raw
+$sqlContent | & docker compose -f $composeFile exec -T db psql -U elanora -d elanora
 
 if ($LASTEXITCODE -eq 0) {
     Write-Success "Database restored successfully!"
