@@ -6,7 +6,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import cast
 
-from lxml import etree
+from lxml import etree  # type: ignore[import-not-found]
 
 from app.elan.domain import (
     AlignableAnnotation,

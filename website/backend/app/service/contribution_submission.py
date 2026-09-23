@@ -167,13 +167,13 @@ class ContributionSubmissionService:
         """
         if (
             not auto_accept_new_files
-            or upload_info["modified_files"]
-            or upload_info["deleted_files"]
+            or upload_info.get("modified_files")  # type: ignore[typeddict-unknown-key]
+            or upload_info.get("deleted_files")  # type: ignore[typeddict-unknown-key]
             or has_failed_files
         ):
             return False
         try:
-            await self.accept(project_name, upload_info["branch_name"], db, user_id)
+            await self.accept(project_name, upload_info.get("branch_name"), db, user_id)  # type: ignore[typeddict-unknown-key]
         except Exception as error:
             await db.rollback()
             logger.error(

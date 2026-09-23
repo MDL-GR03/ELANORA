@@ -7,7 +7,7 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Final, cast
 
-from lxml import etree
+from lxml import etree  # type: ignore[import-not-found]
 
 from app.elan.xsd_types import parse_xsd_boolean
 

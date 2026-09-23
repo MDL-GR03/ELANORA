@@ -36,7 +36,7 @@ async def bulk_create_annotations(
     """Bulk create annotations for multiple tiers."""
     all_annotations = []
     for tier_data in tiers_data:
-        tier_id = tier_data["tier_id"]
+        tier_id = tier_data.get("tier_id")
         for ann in tier_data["annotations"]:
             all_annotations.append(
                 {

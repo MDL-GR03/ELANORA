@@ -1,6 +1,7 @@
 """API endpoints for managing project-user associations (admin only)."""
 
 import logging
+from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -90,7 +91,7 @@ async def list_project_users(
 
         return ProjectUserListResponse(
             project_name=access.project.project_name,
-            users=[
+            users=cast(list[Any], [
                 {
                     "user_id": user_info["user_id"],
                     "username": user_info["username"],
@@ -99,7 +100,7 @@ async def list_project_users(
                     "capabilities": user_info["capabilities"],
                 }
                 for user_info in users
-            ],
+            ]),
         )
     except (HTTPException, ElanoraError):
         raise
@@ -138,14 +139,14 @@ async def list_user_projects_admin(
         return UserProjectListResponse(
             user_id=user_id,
             username=target_user.username,
-            projects=[
+            projects=cast(list[Any], [
                 {
                     "project_id": project.project_id,
                     "project_name": project.project_name,
                     "description": project.description,
                 }
                 for project in projects
-            ],
+            ]),
         )
     except (HTTPException, ElanoraError):
         raise

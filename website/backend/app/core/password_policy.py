@@ -14,7 +14,7 @@ from collections.abc import Iterable
 from functools import cache
 from itertools import pairwise
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, cast
 
 from pydantic import AfterValidator
 from pydantic_core import PydanticCustomError
@@ -56,7 +56,7 @@ def _is_repetitive(password: str) -> bool:
 
 
 def _context_words(context: Iterable[str | None]) -> set[str]:
-    words = set(SERVICE_WORDS)
+    words: set[str] = set(SERVICE_WORDS)
     for value in context:
         if not value:
             continue
@@ -95,7 +95,8 @@ def password_policy_violation(
 
 def password_policy_error(code: str) -> PydanticCustomError:
     """The validation error reported for a broken rule."""
-    return PydanticCustomError(f"password_{code}", MESSAGES[code])
+    error_type = cast("str", f"password_{code}")
+    return PydanticCustomError(error_type, MESSAGES[code])
 
 
 def enforce_password_policy(password: str, context: Iterable[str | None] = ()) -> str:

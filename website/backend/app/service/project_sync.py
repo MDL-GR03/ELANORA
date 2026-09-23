@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,7 +51,7 @@ class ProjectSyncCoordinator:
             await append_project_revision(
                 db,
                 project_id=project.project_id,
-                git_commit=operation.resulting_commit,
+                git_commit=cast(str, operation.resulting_commit),
                 parent_git_commit=operation.starting_commit,
                 source_type="migration",
                 actor_user_id=user_id,

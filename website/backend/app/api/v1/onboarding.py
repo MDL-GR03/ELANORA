@@ -5,6 +5,8 @@ workflow, allowing administrators to be guided through the initial setup
 of their ELANORA installation.
 """
 
+from typing import cast
+
 from fastapi import APIRouter, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -81,12 +83,12 @@ async def get_onboarding_progress(
     progress = await OnboardingService.get_onboarding_progress(db, instance_id)
 
     return OnboardingProgressResponse(
-        current_step=progress["current_step"],
-        steps_completed=progress["steps_completed"],
-        total_steps=progress["total_steps"],
-        completion_percentage=progress["completion_percentage"],
-        next_step=progress["next_step"],
-        next_step_description=progress["next_step_description"],
+        current_step=cast(OnboardingStep, progress["current_step"]),
+        steps_completed=cast(int, progress["steps_completed"]),
+        total_steps=cast(int, progress["total_steps"]),
+        completion_percentage=cast(float, progress["completion_percentage"]),
+        next_step=cast(OnboardingStep | None, progress["next_step"]),
+        next_step_description=cast(str | None, progress["next_step_description"]),
     )
 
 

@@ -1,0 +1,8 @@
+{
+  "pythonVersion": "3.13",
+  "pythonPath": "/home/jonathanreid/Github_Repositories/ELANORA/website/backend/.venv/bin/python",
+  "typeCheckingMode": "standard",
+  "include": ["website/backend/app"],
+  "exclude": ["website/backend/.venv", ".git", "node_modules"],
+  "venvPath": "/home/jonathanreid/Github_Repositories/ELANORA/website/backend"
+}

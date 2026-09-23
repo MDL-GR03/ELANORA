@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -99,7 +99,7 @@ class ContributionReviewService:
                     )
                 ).all()
             )
-            require_distinct_topic_name(cleaned_name, project_topics)
+            require_distinct_topic_name(cleaned_name, cast(list[Any], project_topics))
             if not changed_tiers:
                 raise ValueError(
                     "A topic cannot be created because no changed tiers were detected"

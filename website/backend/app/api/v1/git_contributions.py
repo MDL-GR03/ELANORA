@@ -3,7 +3,7 @@
 import uuid
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
 from sqlalchemy import select
@@ -172,7 +172,7 @@ async def _prepare_tier_scoped_uploads(
             ).all()
         )
         try:
-            require_distinct_topic_name(proposed_name, project_topics)
+            require_distinct_topic_name(proposed_name, cast(list[Any], project_topics))
         except SimilarResearchTopicError as exc:
             suggested = exc.topic
             raise ElanoraError(
@@ -376,7 +376,7 @@ async def get_pending_uploads(
         result = await git_shared.git_service.get_pending_uploads_with_status(
             project_name, db
         )
-        return PendingUploadsResponse(**result)
+        return PendingUploadsResponse(**cast(dict[str, Any], result))
     except ElanoraError:
         raise
     except FileNotFoundError as e:
@@ -421,7 +421,7 @@ async def review_pending_eaf(
         comparison = compare_repository_eaf(
             git_shared.git_service.base_path, project_name, branch_name, filename
         )
-        return EafReviewResponse(**comparison_payload(comparison))
+        return EafReviewResponse(**cast(dict[str, Any], comparison_payload(comparison)))
     except FileNotFoundError as exc:
         raise ElanoraError(ErrorCode.PROJECT_RESOURCE_NOT_FOUND) from exc
     except (EafReviewUnavailableError, EafValidationError) as exc:

@@ -1,6 +1,6 @@
 """Creating, listing, editing and deleting projects."""
 
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -232,7 +232,7 @@ async def edit_project(
 ) -> ProjectEditResponse:
     try:
         result = await git_shared.git_service.edit_project(
-            project_name, req.new_project_name, req.new_project_description, db
+            project_name, cast(str, req.new_project_name), req.new_project_description, db
         )
         return ProjectEditResponse(**result)
     except ElanoraError:

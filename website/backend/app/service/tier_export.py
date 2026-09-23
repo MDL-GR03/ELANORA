@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 from typing import cast
 
-from lxml import etree
+from lxml import etree  # type: ignore[import-not-found]
 
 from app.elan.validation import secure_xml_parser, validate_eaf
 

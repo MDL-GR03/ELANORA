@@ -193,20 +193,20 @@ class ContributionIntakeService:
             "type": "PENDING_UPLOAD",
             "status": "PENDING_ADMIN_APPROVAL",
             "upload_data": {
-                "branch_name": upload_info["branch_name"],
-                "original_branch": upload_info["original_branch"],
+                "branch_name": upload_info.get("branch_name"),  # type: ignore[typeddict-unknown-key]
+                "original_branch": upload_info.get("original_branch"),  # type: ignore[typeddict-unknown-key]
                 "uploaded_by": context.username,
-                "new_files_count": len(upload_info["new_files"]),
-                "modified_files_count": len(upload_info["modified_files"]),
-                "deleted_files_count": len(upload_info["deleted_files"]),
-                "new_files": upload_info["new_files"],
-                "modified_files": upload_info["modified_files"],
-                "deleted_files": upload_info["deleted_files"],
-                "pending_since": upload_info["pending_approval_since"],
-                "has_differences": upload_info["has_differences"],
-                "has_conflicts": upload_info["has_conflicts"],
-                "protocol_validation": upload_info["protocol_validation"],
-                "research_context": upload_info["research_context"],
+                "new_files_count": len(upload_info.get("new_files", [])),  # type: ignore[typeddict-unknown-key]
+                "modified_files_count": len(upload_info.get("modified_files", [])),  # type: ignore[typeddict-unknown-key]
+                "deleted_files_count": len(upload_info.get("deleted_files", [])),  # type: ignore[typeddict-unknown-key]
+                "new_files": upload_info.get("new_files"),  # type: ignore[typeddict-unknown-key]
+                "modified_files": upload_info.get("modified_files"),  # type: ignore[typeddict-unknown-key]
+                "deleted_files": upload_info.get("deleted_files"),  # type: ignore[typeddict-unknown-key]
+                "pending_since": upload_info.get("pending_approval_since"),  # type: ignore[typeddict-unknown-key]
+                "has_differences": upload_info.get("has_differences"),  # type: ignore[typeddict-unknown-key]
+                "has_conflicts": upload_info.get("has_conflicts"),  # type: ignore[typeddict-unknown-key]
+                "protocol_validation": upload_info.get("protocol_validation"),  # type: ignore[typeddict-unknown-key]
+                "research_context": upload_info.get("research_context"),  # type: ignore[typeddict-unknown-key]
             },
             "resolution_info": {
                 "can_auto_resolve": False,
@@ -214,7 +214,7 @@ class ContributionIntakeService:
                 "suggested_action": "admin_test_merge",
                 "available_strategies": ["test_merge"],
             },
-            "detected_at": upload_info["pending_approval_since"],
+            "detected_at": upload_info.get("pending_approval_since"),  # type: ignore[typeddict-unknown-key]
         }
         pending = await save_pending_upload(
             db,
@@ -247,7 +247,7 @@ class ContributionIntakeService:
             "total_failed": len(failed_files),
             "existing_files_updated": updated,
             "new_files_added": len(uploaded_files) - updated,
-            "status": upload_info["status"],
+            "status": upload_info.get("status"),  # type: ignore[typeddict-unknown-key]
             "requires_approval": upload_info.get("requires_approval", True),
             "has_differences": upload_info.get("has_differences", False),
             "auto_accepted": upload_info.get("auto_accepted", False),

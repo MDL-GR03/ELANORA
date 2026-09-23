@@ -1,7 +1,7 @@
 """Reconciling a project's Git export with its accepted revision."""
 
 import uuid
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,7 +65,7 @@ async def synchronize_project(
         return ProjectSyncExecutionResponse(
             project_name=project_name,
             in_sync=operation.state == "completed",
-            files_status=operation.changes,
+            files_status=cast(list[Any], operation.changes),
             status=operation.state,
             operation_id=str(operation.operation_id),
         )

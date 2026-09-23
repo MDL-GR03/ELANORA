@@ -5,6 +5,7 @@ import html
 import re
 from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import SecretStr
@@ -120,7 +121,7 @@ class EmailService:
         await FastMail(self.conf).send_message(
             MessageSchema(
                 subject=subject,
-                recipients=[recipient],
+                recipients=cast(list[Any], [recipient]),
                 body=body,
                 subtype=MessageType.html,
             )

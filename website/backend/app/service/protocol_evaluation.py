@@ -13,7 +13,7 @@ from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
-from lxml import etree
+from lxml import etree  # type: ignore[import-not-found]
 
 from app.core.filename_standard import filename_matches
 from app.elan.validation import SCHEMA_PATH, validate_eaf

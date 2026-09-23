@@ -10,7 +10,7 @@ class CityResponse(CustomBaseModel):
 
     city_id: int
     name: str
-    country: str
+    country: str | None
 
 
 class AddressResponse(CustomBaseModel):
