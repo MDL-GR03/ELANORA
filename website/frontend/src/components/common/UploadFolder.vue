@@ -173,7 +173,7 @@
                 :disabled="disabled"
                 @click.stop="startRename(index)"
               >
-                <font-awesome-icon icon="fa-solid fa-pen-to-square" />
+                <font-awesome-icon icon="fa-regular fa-pen-to-square" />
               </button>
               <button
                 type="button"
