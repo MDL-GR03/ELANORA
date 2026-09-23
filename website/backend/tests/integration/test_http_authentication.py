@@ -80,7 +80,11 @@ async def test_a_wrong_password_and_an_unknown_account_look_the_same(
     )
 
     assert wrong.status_code == unknown.status_code == 400
-    assert wrong.json() == unknown.json()
+    wrong_data = wrong.json()
+    unknown_data = unknown.json()
+    wrong_data.pop("correlation_id")
+    unknown_data.pop("correlation_id")
+    assert wrong_data == unknown_data
     assert "set-cookie" not in wrong.headers
     assert (await api_client.get(ME)).status_code == 401
 
